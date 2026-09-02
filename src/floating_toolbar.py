@@ -36,9 +36,9 @@ class FloatingQuickToolbar(tk.Toplevel):
 
         # 기본 크기 및 위치 (화면 상단 우측)
         sw = self.winfo_screenwidth()
-        self.full_width = 690
+        self.full_width = 700
         self.collapsed_width = 90
-        self.tb_height = 46
+        self.tb_height = 52
         x = max(10, sw - self.full_width - 40)
         y = 30
         self.geometry(f"{self.full_width}x{self.tb_height}+{x}+{y}")
@@ -91,72 +91,74 @@ class FloatingQuickToolbar(tk.Toplevel):
         )
         self.container.pack(fill="both", expand=True, padx=1, pady=1)
 
+        from src.icon_renderer import get_icon, COL_MAIN, COL_ACTIVE, COL_DANGER, COL_ORANGE
+        ICO = 20
+
         # 1. 드래그 핸들
-        self.drag_handle = ctk.CTkLabel(
-            self.container,
-            text="⋮⋮",
-            font=get_font(13, "bold"),
-            text_color="#64748b",
-            width=16,
-            cursor="fleur"
+        drag_lbl = ctk.CTkLabel(
+            self.container, text="", image=get_icon("drag", "#475569", ICO),
+            width=18, cursor="fleur"
         )
-        self.drag_handle.pack(side="left", padx=(8, 2))
-        self.drag_handle.bind("<Button-1>", self._start_drag)
-        self.drag_handle.bind("<B1-Motion>", self._on_drag)
-        attach_tooltip(self.drag_handle, "드래그하여 퀵 툴바 위치 이동")
+        drag_lbl.pack(side="left", padx=(8, 2))
+        drag_lbl.bind("<Button-1>", self._start_drag)
+        drag_lbl.bind("<B1-Motion>", self._on_drag)
+        attach_tooltip(drag_lbl, "드래그하여 퀵 툴바 위치 이동")
 
         # 2. 실시간 CPU 미니 칩
         self.res_chip = ctk.CTkLabel(
             self.container,
-            text="💻 15%",
-            font=get_font(10, "bold"),
+            text="CPU  --%",
+            font=get_font(9, "bold"),
             text_color="#38bdf8",
             fg_color="#1e293b",
             corner_radius=8,
-            width=48,
-            height=28
+            width=52,
+            height=26
         )
         self.res_chip.pack(side="left", padx=(0, 4))
         attach_tooltip(self.res_chip, "현재 컴퓨터 CPU 실시간 사용량")
 
-        # 3. 주요 도구 단축 버튼들 (5대 교실 도구 완비)
+        def _sep():
+            ctk.CTkFrame(self.container, width=1, height=22, fg_color="#334155").pack(side="left", padx=2)
+
+        _sep()
+
+        # 3. 주요 도구 단축 버튼들 (아이콘 + 짧은 레이블)
         tools = [
-            ("✏️ 판서", self._open_drawing, "화면 위 자유 판서 (펜/형광펜/도형)"),
-            ("⏱️ 타이머", self._open_timer, "교실 집중 수업 타이머 & 스톱워치"),
-            ("🎲 뽑기", self._open_picker, "공정한 학생 발표자 무작위 추첨"),
-            ("🎡 돌림판", self._open_wheel, "모둠/벌칙/보상 돌려돌려 돌림판"),
-            ("🪜 사다리", self._open_ladder, "짜릿한 학생/모둠 사다리타기 게임"),
-            ("⚾ 핀볼", self._open_pinball, "아케이드 통통 튀는 핀볼 추첨기"),
-            ("📅 위젯", self._open_mini_widget, "바탕화면 올웨이즈온 시간표/급식 위젯"),
-            ("💻 메인", self._open_main_app, "놀티쳐 데스크 메인 창 열기")
+            ("drawing",  "판서",  self._open_drawing,      COL_ORANGE, "화면 위 자유 판서 (펜/형광펜/도형)"),
+            ("timer",    "타이머", self._open_timer,         COL_MAIN,   "교실 집중 수업 타이머 & 스톱워치"),
+            ("dice",     "뽑기",  self._open_picker,        COL_MAIN,   "공정한 학생 발표자 무작위 추첨"),
+            ("wheel",    "돌림판", self._open_wheel,         COL_MAIN,   "모둠/벌칙/보상 돌려돌려 돌림판"),
+            ("ladder",   "사다리", self._open_ladder,        COL_MAIN,   "짜릿한 학생/모둠 사다리타기 게임"),
+            ("pinball",  "핀볼",  self._open_pinball,       COL_MAIN,   "아케이드 통통 튀는 핀볼 추첨기"),
+            ("widget",   "위젯",  self._open_mini_widget,   COL_MAIN,   "바탕화면 올웨이즈온 시간표/급식 위젯"),
+            ("home",     "메인",  self._open_main_app,      COL_ACTIVE, "놀티쳐 데스크 메인 창 열기"),
         ]
 
-        for label, cmd, tip in tools:
+        for icon_name, label, cmd, icon_col, tip in tools:
             btn = ctk.CTkButton(
                 self.container,
                 text=label,
-                font=get_font(10, "bold"),
-                width=50,
-                height=30,
+                image=get_icon(icon_name, icon_col, ICO),
+                compound="top",
+                font=get_font(8, "bold"),
+                width=48, height=38,
                 corner_radius=8,
                 fg_color="#1e293b",
                 hover_color="#0284c7",
-                text_color="#f8fafc",
+                text_color="#94a3b8",
                 command=cmd
             )
             btn.pack(side="left", padx=1)
             attach_tooltip(btn, tip)
 
-        ctk.CTkFrame(self.container, width=1, height=22, fg_color="#334155").pack(side="left", padx=3)
+        _sep()
 
         # 4. 윈도우 컨트롤러 (핀 고정, 최소화, 닫기)
         self.pin_btn = ctk.CTkButton(
             self.container,
-            text="📌" if self.is_pinned else "📍",
-            font=get_font(10),
-            width=24,
-            height=28,
-            corner_radius=8,
+            text="", image=get_icon("pin", COL_ACTIVE if self.is_pinned else COL_MAIN, ICO),
+            width=28, height=30, corner_radius=8,
             fg_color="#1e293b" if self.is_pinned else "transparent",
             hover_color="#334155",
             command=self._toggle_pin
@@ -166,13 +168,9 @@ class FloatingQuickToolbar(tk.Toplevel):
 
         collapse_btn = ctk.CTkButton(
             self.container,
-            text="—",
-            font=get_font(12, "bold"),
-            width=24,
-            height=28,
-            corner_radius=8,
-            fg_color="#1e293b",
-            hover_color="#334155",
+            text="", image=get_icon("minus", COL_MAIN, ICO),
+            width=28, height=30, corner_radius=8,
+            fg_color="#1e293b", hover_color="#334155",
             command=self._toggle_collapse
         )
         collapse_btn.pack(side="left", padx=1)
@@ -180,14 +178,9 @@ class FloatingQuickToolbar(tk.Toplevel):
 
         close_btn = ctk.CTkButton(
             self.container,
-            text="✕",
-            font=get_font(11, "bold"),
-            width=24,
-            height=28,
-            corner_radius=8,
-            fg_color="#3f1d24",
-            hover_color="#dc2626",
-            text_color="#fca5a5",
+            text="", image=get_icon("close", COL_DANGER, ICO),
+            width=28, height=30, corner_radius=8,
+            fg_color="#3f1d24", hover_color="#dc2626",
             command=self.close
         )
         close_btn.pack(side="left", padx=(1, 6))
@@ -216,15 +209,20 @@ class FloatingQuickToolbar(tk.Toplevel):
         self.is_pinned = not self.is_pinned
         self.attributes("-topmost", self.is_pinned)
         if hasattr(self, "pin_btn"):
+            from src.icon_renderer import get_icon, COL_ACTIVE, COL_MAIN
             self.pin_btn.configure(
-                text="📌" if self.is_pinned else "📍",
+                image=get_icon("pin", COL_ACTIVE if self.is_pinned else COL_MAIN, 20),
                 fg_color="#1e293b" if self.is_pinned else "transparent"
             )
 
     def _on_metrics_updated(self, metrics: dict):
         if hasattr(self, "res_chip") and self.res_chip.winfo_exists():
             cpu_p = metrics.get("cpu_percent", 0.0)
-            self.res_chip.configure(text=f"💻 {int(cpu_p)}%")
+            col = "#4ade80" if cpu_p < 50 else ("#fb923c" if cpu_p < 80 else "#f87171")
+            self.res_chip.configure(
+                text=f"CPU {int(cpu_p):2d}%",
+                text_color=col
+            )
 
     def _open_drawing(self):
         ScreenDrawingOverlay.get_instance(self.parent).show()

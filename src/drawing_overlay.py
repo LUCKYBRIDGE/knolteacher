@@ -105,9 +105,8 @@ class ScreenDrawingOverlay:
 
     def _build_toolbar(self):
         sw = self.root.winfo_screenwidth()
-        sh = self.root.winfo_screenheight()
 
-        tb_w = 720
+        tb_w = 680
         tb_h = 56
         tb_x = (sw - tb_w) // 2
         tb_y = 20
@@ -127,39 +126,40 @@ class ScreenDrawingOverlay:
         )
         bg_frame.pack(fill="both", expand=True, padx=1, pady=1)
 
-        # 드래그 핸들
-        drag_handle = ctk.CTkLabel(
-            bg_frame,
-            text="⋮⋮",
-            font=get_font(13, "bold"),
-            text_color="#64748b",
-            width=18,
-            cursor="fleur"
-        )
-        drag_handle.pack(side="left", padx=(8, 2))
-        drag_handle.bind("<Button-1>", self._start_toolbar_drag)
-        drag_handle.bind("<B1-Motion>", self._on_toolbar_drag)
-        attach_tooltip(drag_handle, "드래그하여 판서 도구함 위치 이동")
+        from src.icon_renderer import get_icon, COL_MAIN, COL_ACTIVE, COL_DANGER, COL_GREEN, COL_ORANGE
+        ICO = 22  # 아이콘 표시 크기
 
-        # 1. 도구 선택 (일반펜, 형광펜, 화살표, 사각형, 텍스트, 지우개)
+        # ── 드래그 핸들 ──────────────────────────────────────────────────
+        drag_lbl = ctk.CTkLabel(
+            bg_frame, text="", image=get_icon("drag", "#475569", ICO),
+            width=20, cursor="fleur"
+        )
+        drag_lbl.pack(side="left", padx=(8, 2))
+        drag_lbl.bind("<Button-1>", self._start_toolbar_drag)
+        drag_lbl.bind("<B1-Motion>", self._on_toolbar_drag)
+        attach_tooltip(drag_lbl, "드래그하여 판서 도구함 위치 이동")
+
+        def _sep():
+            ctk.CTkFrame(bg_frame, width=1, height=24, fg_color="#334155").pack(side="left", padx=3)
+
+        # ── 도구 선택 버튼 ────────────────────────────────────────────────
         self.tool_btns = {}
         tools = [
-            ("pen", "✏️", "일반 펜 판서"),
-            ("highlighter", "🖍️", "반투명 형광펜 강조"),
-            ("arrow", "↗", "화살표 그리기"),
-            ("rect", "▢", "사각형 박스 그리기"),
-            ("text", "🔤", "화면에 텍스트 글자 입력"),
-            ("eraser", "🧹", "부분 지우개")
+            ("pen",         "pen",         COL_MAIN,   "일반 펜 판서 (P)"),
+            ("highlighter", "highlighter", COL_ORANGE, "반투명 형광펜 강조 (H)"),
+            ("arrow",       "arrow",       COL_MAIN,   "화살표 그리기 (A)"),
+            ("rect",        "rect",        COL_MAIN,   "사각형 박스 그리기 (R)"),
+            ("text",        "text",        COL_MAIN,   "화면에 텍스트 입력 (T)"),
+            ("eraser",      "eraser",      COL_MAIN,   "부분 지우개 (E)"),
         ]
 
-        for t_key, icon, desc in tools:
+        for t_key, icon_name, icon_col, desc in tools:
+            is_active = (t_key == self.current_tool)
+            ico = get_icon(icon_name, COL_ACTIVE if is_active else icon_col, ICO)
             btn = ctk.CTkButton(
-                bg_frame,
-                text=icon,
-                width=32,
-                height=32,
-                font=get_font(12, "bold"),
-                fg_color="#0284c7" if t_key == "pen" else "transparent",
+                bg_frame, text="", image=ico,
+                width=34, height=34,
+                fg_color="#0284c7" if is_active else "transparent",
                 hover_color="#0369a1",
                 corner_radius=10,
                 command=lambda k=t_key: self._select_tool(k)
@@ -168,29 +168,21 @@ class ScreenDrawingOverlay:
             self.tool_btns[t_key] = btn
             attach_tooltip(btn, desc)
 
-        ctk.CTkFrame(bg_frame, width=1, height=24, fg_color="#334155").pack(side="left", padx=3)
+        _sep()
 
-        # 2. 색상 팔레트
+        # ── 색상 팔레트 ───────────────────────────────────────────────────
         self.color_btns = {}
         colors = [
-            ("#ff3b30", "빨간색"),
-            ("#ff9500", "주황색"),
-            ("#ffd60a", "노란색"),
-            ("#30d158", "초록색"),
-            ("#0a84ff", "파란색"),
-            ("#bf5af2", "보라색"),
-            ("#ffffff", "흰색")
+            ("#ff3b30", "빨간색"), ("#ff9500", "주황색"),
+            ("#ffd60a", "노란색"), ("#30d158", "초록색"),
+            ("#0a84ff", "파란색"), ("#bf5af2", "보라색"),
+            ("#ffffff",  "흰색"),
         ]
-
         for c_hex, c_name in colors:
             btn = ctk.CTkButton(
-                bg_frame,
-                text="",
-                width=20,
-                height=20,
-                corner_radius=10,
-                fg_color=c_hex,
-                hover_color=c_hex,
+                bg_frame, text="",
+                width=20, height=20, corner_radius=10,
+                fg_color=c_hex, hover_color=c_hex,
                 border_width=2 if c_hex == self.current_color else 0,
                 border_color="#ffffff",
                 command=lambda c=c_hex: self._select_color(c)
@@ -199,100 +191,81 @@ class ScreenDrawingOverlay:
             self.color_btns[c_hex] = btn
             attach_tooltip(btn, f"펜 색상: {c_name}")
 
-        ctk.CTkFrame(bg_frame, width=1, height=24, fg_color="#334155").pack(side="left", padx=3)
+        _sep()
 
-        # 3. 굵기 조절 (•, ●, ⬤)
-        widths = [(3, "•", "가는 펜 (3px)"), (6, "●", "보통 펜 (6px)"), (12, "⬤", "굵은 펜 (12px)")]
-        for w_val, w_sym, w_desc in widths:
+        # ── 굵기 (슬라이더처럼 보이는 3단 점 버튼) ───────────────────────
+        widths = [(3, 6, "가는 펜 (3px)"), (6, 10, "보통 펜 (6px)"), (12, 14, "굵은 펜 (12px)")]
+        for w_val, dot_sz, w_desc in widths:
+            # 원 크기로 굵기를 시각화
+            from PIL import Image as PILImage, ImageDraw as PILDraw
+            dot_img = PILImage.new("RGBA", (22, 22), (0, 0, 0, 0))
+            dd = PILDraw.Draw(dot_img)
+            r = dot_sz // 2
+            c = 11
+            dd.ellipse([c-r, c-r, c+r, c+r], fill=(226, 232, 240, 255))
+            import customtkinter as ctk2
+            dot_ctk = ctk2.CTkImage(dot_img, dot_img, size=(22, 22))
+
             btn = ctk.CTkButton(
-                bg_frame,
-                text=w_sym,
-                width=26,
-                height=26,
-                font=get_font(11, "bold"),
-                corner_radius=8,
-                fg_color="#1e293b",
-                hover_color="#334155",
+                bg_frame, text="", image=dot_ctk,
+                width=26, height=26, corner_radius=8,
+                fg_color="#1e293b", hover_color="#334155",
                 command=lambda w=w_val: self._select_width(w)
             )
             btn.pack(side="left", padx=1)
             attach_tooltip(btn, f"펜 굵기: {w_desc}")
 
-        ctk.CTkFrame(bg_frame, width=1, height=24, fg_color="#334155").pack(side="left", padx=3)
+        _sep()
 
-        # 4. 배경 모드 3단 전환 (화면 ↔ 초록칠판 ↔ 블랙보드)
+        # ── 배경 모드 전환 ────────────────────────────────────────────────
         self.board_btn = ctk.CTkButton(
-            bg_frame,
-            text="🪟 화면",
-            width=54,
-            height=30,
+            bg_frame, text="화면",
             font=get_font(10, "bold"),
-            fg_color="#0284c7",
-            hover_color="#0369a1",
+            width=44, height=30,
+            fg_color="#0284c7", hover_color="#0369a1",
             corner_radius=8,
             command=self._cycle_background_mode
         )
         self.board_btn.pack(side="left", padx=2)
-        attach_tooltip(self.board_btn, "배경 전환 (🪟 현재 화면 ↔ 🟢 초록 칠판 ↔ ⚫ 블랙보드)")
+        attach_tooltip(self.board_btn, "배경 전환: 현재 화면 ↔ 초록 칠판 ↔ 블랙보드")
 
-        # 5. 액션 버튼 (실행취소, 전체삭제, 캡처저장, 판서종료)
+        _sep()
+
+        # ── 액션 버튼 (실행취소, 전체삭제, 캡처저장, 종료) ──────────────
         undo_btn = ctk.CTkButton(
-            bg_frame,
-            text="↩",
-            width=28,
-            height=30,
-            font=get_font(12, "bold"),
-            fg_color="#334155",
-            hover_color="#475569",
-            corner_radius=8,
-            command=self.undo
+            bg_frame, text="", image=get_icon("undo", COL_MAIN, ICO),
+            width=32, height=30, fg_color="#334155", hover_color="#475569",
+            corner_radius=8, command=self.undo
         )
         undo_btn.pack(side="left", padx=1)
-        attach_tooltip(undo_btn, "실행 취소 (Undo / Ctrl+Z)")
+        attach_tooltip(undo_btn, "실행 취소 (Ctrl+Z / 우클릭)")
 
         clear_btn = ctk.CTkButton(
-            bg_frame,
-            text="🗑️",
-            width=28,
-            height=30,
-            font=get_font(11),
-            fg_color="#7f1d1d",
-            hover_color="#991b1b",
-            text_color="#fca5a5",
-            corner_radius=8,
-            command=self.clear_all
+            bg_frame, text="", image=get_icon("trash", COL_DANGER, ICO),
+            width=32, height=30, fg_color="#7f1d1d", hover_color="#991b1b",
+            corner_radius=8, command=self.clear_all
         )
         clear_btn.pack(side="left", padx=1)
         attach_tooltip(clear_btn, "화면 판서 전체 지우기")
 
         cap_btn = ctk.CTkButton(
-            bg_frame,
-            text="📸",
-            width=28,
-            height=30,
-            font=get_font(11),
-            fg_color="#059669",
-            hover_color="#047857",
-            corner_radius=8,
-            command=self.save_screenshot
+            bg_frame, text="", image=get_icon("camera", COL_GREEN, ICO),
+            width=32, height=30, fg_color="#064e3b", hover_color="#047857",
+            corner_radius=8, command=self.save_screenshot
         )
         cap_btn.pack(side="left", padx=1)
-        attach_tooltip(cap_btn, "판서 화면 전체 캡처 저장")
+        attach_tooltip(cap_btn, "판서 화면 캡처 저장 (PNG)")
 
         close_btn = ctk.CTkButton(
-            bg_frame,
-            text="✕ 종료",
-            width=64,
-            height=30,
-            font=get_font(11, "bold"),
-            fg_color="#dc2626",
-            hover_color="#b91c1c",
-            text_color="#ffffff",
-            corner_radius=8,
+            bg_frame, text="종료", image=get_icon("close", COL_DANGER, ICO),
+            font=get_font(10, "bold"),
+            width=58, height=30,
+            fg_color="#dc2626", hover_color="#b91c1c", text_color="#ffffff",
+            corner_radius=8, compound="left",
             command=self.close
         )
-        close_btn.pack(side="left", padx=(3, 6))
-        attach_tooltip(close_btn, "판서 모드를 완전히 종료하고 일반 마우스 제어로 복귀 (ESC)")
+        close_btn.pack(side="left", padx=(2, 6))
+        attach_tooltip(close_btn, "판서 종료 — 일반 마우스 모드 복귀 (ESC)")
 
     def _cycle_background_mode(self):
         modes = ["screen", "greenboard", "blackboard"]
@@ -303,17 +276,17 @@ class ScreenDrawingOverlay:
             self.canvas.configure(bg="#000000")
             if self.bg_item_id:
                 self.canvas.itemconfigure(self.bg_item_id, state="normal")
-            self.board_btn.configure(text="🪟 화면", fg_color="#0284c7")
+            self.board_btn.configure(text="화면", fg_color="#0284c7")
         elif self.bg_mode == "greenboard":
             if self.bg_item_id:
                 self.canvas.itemconfigure(self.bg_item_id, state="hidden")
             self.canvas.configure(bg="#1e3a2f")
-            self.board_btn.configure(text="🟢 칠판", fg_color="#059669")
+            self.board_btn.configure(text="초록칠판", fg_color="#059669")
         elif self.bg_mode == "blackboard":
             if self.bg_item_id:
                 self.canvas.itemconfigure(self.bg_item_id, state="hidden")
             self.canvas.configure(bg="#111827")
-            self.board_btn.configure(text="⚫ 칠판", fg_color="#374151")
+            self.board_btn.configure(text="블랙보드", fg_color="#374151")
 
     def _start_toolbar_drag(self, event):
         self._tb_drag_x = event.x
