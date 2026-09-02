@@ -27,6 +27,7 @@ from src.site_bookmarks import site_bookmark_manager, SiteBookmarksDialog
 from src.theme_manager import theme_manager, THEMES
 from src.config_utils import APP_VERSION, self_consolidate_and_clean
 from src.github_updater import github_updater
+from src.tooltip import attach_tooltip
 from src.neis_auto_input import (
     ExcelNeisParser, DataValidator, ValidationResult,
     NeisPageType, PAGE_INFO, NeisScriptGenerator, cdp_bridge
@@ -933,17 +934,17 @@ class App(ctk.CTk):
         ctk.CTkLabel(lb_inner, text="🚀 빠른 도구:", font=get_font(11, "bold"), text_color=palette["text_main"]).pack(side="left", padx=(4, 8))
 
         quick_actions = [
-            ("✏️ 화면 판서", "#ea580c", "#c2410c", self._open_screen_drawing),
-            ("🛠️ 스마트 퀵바", "#0284c7", "#0369a1", self._open_floating_quick_toolbar),
-            ("⏱️ 교실 타이머", "#10b981", "#059669", lambda: self._open_classroom_tools("timer")),
-            ("🎲 발표자 뽑기", "#f59e0b", "#d97706", lambda: self._open_classroom_tools("picker")),
-            ("📌 미니 시간표", "#1e293b", "#334155", self._open_mini_widget),
-            ("📺 학생용 화면", "#7c3aed", "#6d28d9", self._open_student_display),
-            ("🌐 교육 사이트", "#0ea5e9", "#0284c7", self._open_site_bookmarks)
+            ("✏️ 화면 판서", "#ea580c", "#c2410c", self._open_screen_drawing, "어떤 화면 위에서도 펜/형광펜으로 자유롭게 판서"),
+            ("🛠️ 스마트 퀵바", "#0284c7", "#0369a1", self._open_floating_quick_toolbar, "모니터 구석에 띄워두는 올웨이즈온 미니 퀵바"),
+            ("⏱️ 교실 타이머", "#10b981", "#059669", lambda: self._open_classroom_tools("timer"), "수업 및 모둠 활동 타이머 & 스톱워치"),
+            ("🎲 발표자 뽑기", "#f59e0b", "#d97706", lambda: self._open_classroom_tools("picker"), "공정한 학생 발표자 무작위 랜덤 추첨"),
+            ("📌 미니 위젯", "#7c3aed", "#6d28d9", self._open_mini_widget, "바탕화면에 띄워두는 미니 시간표 및 오늘 급식"),
+            ("📺 학생용 화면", "#0284c7", "#0369a1", self._open_student_display, "전자칠판/TV에 띄우는 대형 학생용 일과 화면"),
+            ("🌐 교육 사이트", "#0ea5e9", "#0284c7", self._open_site_bookmarks, "놀퀴즈, 업무포털 등 교사용 필수 사이트 바로가기")
         ]
 
-        for a_title, a_col, a_hov, a_cmd in quick_actions:
-            ctk.CTkButton(
+        for a_title, a_col, a_hov, a_cmd, a_tip in quick_actions:
+            btn = ctk.CTkButton(
                 lb_inner,
                 text=a_title,
                 font=get_font(11, "bold"),
@@ -951,7 +952,9 @@ class App(ctk.CTk):
                 fg_color=a_col,
                 hover_color=a_hov,
                 command=a_cmd
-            ).pack(side="left", fill="x", expand=True, padx=2)
+            )
+            btn.pack(side="left", fill="x", expand=True, padx=2)
+            attach_tooltip(btn, a_tip)
 
         self._render_today_items()
         self._refresh_today_meal()
