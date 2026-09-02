@@ -1323,18 +1323,50 @@ class App(ctk.CTk):
     # 뷰 2: ✏️ 수업 도구 & 바로가기 (화면 판서, 플로팅 바, 타이머, 뽑기, 사이트 모음)
     # =========================================================================
     def _build_classroom_tools_tab(self, parent):
+        palette = theme_manager.get_theme()
         scroll = ctk.CTkScrollableFrame(parent, fg_color="transparent")
         scroll.pack(fill="both", expand=True, padx=6, pady=6)
 
-        # 1. ✏️ 교실 수업 진행 도구 5종 카드
-        tools_card = ctk.CTkFrame(scroll, corner_radius=12, fg_color="#182234", border_width=1, border_color="#38bdf8")
+        # 1. 👥 우리 반 학생 명렬표 관리 카드 (로컬 단독 보관)
+        roster_card = ctk.CTkFrame(scroll, corner_radius=12, fg_color=palette["card_inner_bg"], border_width=1, border_color=palette["card_border"])
+        roster_card.pack(fill="x", pady=(0, 10))
+
+        r_hdr = ctk.CTkFrame(roster_card, fg_color="transparent")
+        r_hdr.pack(fill="x", padx=14, pady=(10, 4))
+
+        ctk.CTkLabel(
+            r_hdr,
+            text="👥 우리 반 학생 명렬표 관리 (발표자 뽑기 & 교실 도구 연동)",
+            font=get_font(13, "bold"),
+            text_color=palette["accent_green"]
+        ).pack(side="left")
+
+        from src.student_manager import student_manager
+        from src.classroom_tools import StudentRosterEditDialog
+
+        stu_cnt = student_manager.get_count()
+        ctk.CTkButton(
+            r_hdr,
+            text="👥 학생 명단 등록 / 수정",
+            font=get_font(11, "bold"),
+            fg_color=palette["accent_green"],
+            hover_color="#059669",
+            height=28,
+            command=lambda: StudentRosterEditDialog(self, on_saved_callback=lambda: self._switch_view("classroom_tools"))
+        ).pack(side="right")
+
+        sec_info = f"• 현재 등록된 학생: 총 {stu_cnt}명 | 발표자 뽑기(🎲)에서 [👦 학생 이름 모드] 또는 [🔢 번호 전용 모드]를 선택하여 사용하실 수 있습니다.\n• 🔒 100% 로컬 영구 보관: 학생 개인정보는 외부 서버로 절대 전송되지 않으며 선생님 PC에만 안전하게 저장됩니다."
+        ctk.CTkLabel(roster_card, text=sec_info, font=get_font(10), text_color=palette["text_sub"], justify="left", anchor="w").pack(fill="x", padx=14, pady=(0, 10))
+
+        # 2. ✏️ 교실 수업 진행 도구 6종 카드
+        tools_card = ctk.CTkFrame(scroll, corner_radius=12, fg_color=palette["card_inner_bg"], border_width=1, border_color=palette["card_border"])
         tools_card.pack(fill="x", pady=(0, 10))
 
         ctk.CTkLabel(
             tools_card,
             text="✏️ 교실 수업 진행 도구 (원클릭 실행)",
             font=get_font(13, "bold"),
-            text_color="#38bdf8"
+            text_color=palette["accent_blue"]
         ).pack(anchor="w", padx=14, pady=(10, 6))
 
         t_grid = ctk.CTkFrame(tools_card, fg_color="transparent")
@@ -1343,23 +1375,26 @@ class App(ctk.CTk):
             t_grid.grid_columnconfigure(col_idx, weight=1)
 
         tool_items = [
-            ("✏️ 화면 위 자유 판서", "모니터 위 모든 웹/앱 위에 펜으로 직접 판서 및 밑줄", "#ea580c", "#c2410c", self._open_screen_drawing),
-            ("🛠️ 스마트 플로팅 퀵바", "모니터 구석에 띄워두고 도구를 1초 만에 실행하는 미니바", "#0284c7", "#0369a1", self._open_floating_quick_toolbar),
-            ("⏱️ 교실 활동 타이머", "1분/3분/5분 모둠 활동 카운트다운 및 알람음", "#10b981", "#059669", lambda: self._open_classroom_tools("timer")),
-            ("🎲 발표자 랜덤 뽑기", "학급 학생 번호 룰렛 애니메이션 추첨 (중복 제외)", "#f59e0b", "#d97706", lambda: self._open_classroom_tools("picker")),
-            ("📌 바탕화면 미니 시간표", "모서리 드래그 크기 조절 & 상단 핀 고정 미니 위젯", "#1e293b", "#334155", self._open_mini_widget),
-            ("📺 학생용 대형 스크린", "교실 TV/전자칠판용 대형 시간표 및 알림판", "#7c3aed", "#6d28d9", self._open_student_display)
+            ("✏️ 화면 위 자유 판서", "모니터 위 모든 웹/앱 위에 펜으로 직접 판서 및 밑줄", palette["accent_orange"], "#c2410c", self._open_screen_drawing),
+            ("🛠️ 스마트 플로팅 퀵바", "모니터 구석에 띄워두고 도구를 1초 만에 실행하는 미니바", palette["accent_blue"], "#0369a1", self._open_floating_quick_toolbar),
+            ("⏱️ 교실 활동 타이머", "1분/3분/5분 모둠 활동 카운트다운 및 알람음", palette["accent_green"], "#059669", lambda: self._open_classroom_tools("timer")),
+            ("🎲 발표자 랜덤 뽑기", "학급 학생 이름/번호 롤링 추첨 (중복 제외)", palette["accent_blue"], "#0369a1", lambda: self._open_classroom_tools("picker")),
+            ("🎡 돌려돌려 돌림판", "모둠, 발표자, 벌칙, 보상 돌려돌려 돌림판", palette["accent_orange"], "#c2410c", lambda: self._open_classroom_tools("wheel")),
+            ("🪜 짜릿한 사다리타기", "학생/모둠 사다리타기 게임", palette["accent_purple"], "#7c3aed", lambda: self._open_classroom_tools("ladder")),
+            ("⚾ 아케이드 핀볼", "통통 튀는 물리 바운스 핀볼 추첨기", palette["accent_green"], "#059669", lambda: self._open_classroom_tools("pinball")),
+            ("📌 바탕화면 미니 시간표", "모서리 드래그 크기 조절 & 상단 핀 고정 미니 위젯", palette["sidebar_btn_hover"], palette["accent_blue"], self._open_mini_widget),
+            ("📺 학생용 대형 스크린", "교실 TV/전자칠판용 대형 시간표 및 알림판", palette["accent_purple"], "#6d28d9", self._open_student_display)
         ]
 
         for idx, (t_title, t_desc, t_col, t_hov, t_cmd) in enumerate(tool_items):
             r = idx // 3
             c = idx % 3
 
-            c_box = ctk.CTkFrame(t_grid, fg_color="#101726", corner_radius=10, border_width=1, border_color="#26334d")
+            c_box = ctk.CTkFrame(t_grid, fg_color=palette["card_bg"], corner_radius=10, border_width=1, border_color=palette["card_border"])
             c_box.grid(row=r, column=c, padx=4, pady=4, sticky="nsew")
 
-            ctk.CTkLabel(c_box, text=t_title, font=get_font(12, "bold"), text_color="#f8fafc", anchor="w").pack(fill="x", padx=10, pady=(8, 2))
-            ctk.CTkLabel(c_box, text=t_desc, font=get_font(10), text_color="#94a3b8", anchor="w", wraplength=190).pack(fill="x", padx=10, pady=(0, 6))
+            ctk.CTkLabel(c_box, text=t_title, font=get_font(12, "bold"), text_color=palette["text_main"], anchor="w").pack(fill="x", padx=10, pady=(8, 2))
+            ctk.CTkLabel(c_box, text=t_desc, font=get_font(10), text_color=palette["text_sub"], anchor="w", wraplength=190).pack(fill="x", padx=10, pady=(0, 6))
 
             ctk.CTkButton(
                 c_box,
@@ -1368,6 +1403,7 @@ class App(ctk.CTk):
                 height=26,
                 fg_color=t_col,
                 hover_color=t_hov,
+                text_color="#ffffff" if t_col != palette["sidebar_btn_hover"] else palette["text_main"],
                 command=t_cmd
             ).pack(fill="x", padx=10, pady=(0, 8))
 

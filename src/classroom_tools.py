@@ -11,15 +11,128 @@ from src.font_config import setup_global_fonts, get_font
 from src.sound_manager import sound_manager
 from src.theme_manager import theme_manager
 from src.tooltip import attach_tooltip
+from src.student_manager import student_manager
+
+class StudentRosterEditDialog(ctk.CTkToplevel):
+    """
+    학생 명렬표 로컬 등록 및 편집 팝업
+    - 🔒 100% 로컬 영구 저장 안내 명시
+    - 엑셀/한글 복사-붙여넣기 1초 일괄 등록
+    """
+    def __init__(self, parent=None, on_saved_callback=None):
+        super().__init__(parent)
+        self.parent = parent
+        self.on_saved_callback = on_saved_callback
+
+        self.title("👥 우리 반 학생 명렬표 관리")
+        self.geometry("440x520")
+        self.minsize(380, 440)
+        self.attributes("-topmost", True)
+
+        setup_global_fonts(self)
+        self._load_icon()
+        self._build_ui()
+
+    def _load_icon(self):
+        base_dir = getattr(sys, '_MEIPASS', os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+        icon_path = os.path.join(base_dir, "assets", "app_icon.ico")
+        if os.path.exists(icon_path):
+            try:
+                self.iconbitmap(icon_path)
+            except Exception:
+                pass
+
+    def _build_ui(self):
+        palette = theme_manager.get_theme()
+        
+        container = ctk.CTkFrame(self, fg_color=palette["card_bg"], corner_radius=14, border_width=1, border_color=palette["card_border"])
+        container.pack(fill="both", expand=True, padx=8, pady=8)
+
+        # 상단 타이틀
+        ctk.CTkLabel(
+            container,
+            text="👥 우리 반 학생 명렬표 등록 & 수정",
+            font=get_font(13, "bold"),
+            text_color=palette["text_main"]
+        ).pack(anchor="w", padx=14, pady=(12, 4))
+
+        # 로컬 보안 안내 배너
+        sec_box = ctk.CTkFrame(container, fg_color=palette["card_inner_bg"], corner_radius=8, border_width=1, border_color=palette["accent_green"])
+        sec_box.pack(fill="x", padx=12, pady=(0, 8))
+
+        sec_lbl = ctk.CTkLabel(
+            sec_box,
+            text="🔒 100% 로컬 단독 보관: 학생 이름은 외부 서버로 절대 전송되지 않으며\n선생님의 PC에만 안전하게 보관되어 연속해서 계속 사용하실 수 있습니다.",
+            font=get_font(10),
+            text_color=palette["accent_green"],
+            justify="left"
+        )
+        sec_lbl.pack(padx=10, pady=6)
+
+        ctk.CTkLabel(
+            container,
+            text="• 엑셀/한글 명단을 복사하여 아래에 붙여넣으세요 (한 줄에 1명씩 / 예: 1번 김민수 또는 김민수):",
+            font=get_font(10),
+            text_color=palette["text_sub"],
+            justify="left"
+        ).pack(anchor="w", padx=14, pady=(0, 4))
+
+        # 텍스트 박스
+        self.text_box = ctk.CTkTextbox(container, font=get_font(11), fg_color=palette["card_inner_bg"], text_color=palette["text_main"])
+        self.text_box.pack(fill="both", expand=True, padx=12, pady=(0, 8))
+
+        # 기존 학생 목록 로드
+        existing = student_manager.get_student_list()
+        if existing:
+            raw_lines = [f"{s['number']}번 {s['name']}" if s.get('name') else f"{s['number']}번" for s in existing]
+            self.text_box.insert("1.0", "\n".join(raw_lines))
+        else:
+            sample_lines = [f"{i}번 학생{i}" for i in range(1, 26)]
+            self.text_box.insert("1.0", "\n".join(sample_lines))
+
+        # 하단 버튼 바
+        btn_bar = ctk.CTkFrame(container, fg_color="transparent")
+        btn_bar.pack(fill="x", padx=12, pady=(0, 10))
+
+        save_btn = ctk.CTkButton(
+            btn_bar,
+            text="💾 학생 명렬표 로컬 저장",
+            font=get_font(12, "bold"),
+            fg_color=palette["accent_green"],
+            hover_color="#059669",
+            height=34,
+            command=self._save_roster
+        )
+        save_btn.pack(side="left", fill="x", expand=True, padx=(0, 6))
+
+        cancel_btn = ctk.CTkButton(
+            btn_bar,
+            text="닫기",
+            font=get_font(11, "bold"),
+            fg_color=palette["sidebar_btn_hover"],
+            hover_color=palette["accent_blue"],
+            text_color=palette["text_main"],
+            height=34,
+            command=self.destroy
+        )
+        cancel_btn.pack(side="right", padx=(6, 0))
+
+    def _save_roster(self):
+        txt = self.text_box.get("1.0", "end").strip()
+        count = student_manager.import_from_text(txt)
+        if self.on_saved_callback:
+            self.on_saved_callback()
+        self.destroy()
+
 
 class ClassroomToolsDialog(ctk.CTkToplevel):
     """
     놀티쳐 데스크 교실 5대 인터랙티브 수업 도구 모음 (Classroom Interactive Tools)
     1. ⏱️ 활동 타이머 & 스톱워치
-    2. 🎲 학생 무작위 뽑기 (Random Student Picker)
-    3. 🎡 돌려돌려 돌림판 (Spin the Wheel / Roulette)
-    4. 🪜 짜릿한 사다리타기 (Ghost Leg Ladder Game)
-    5. ⚾ 아케이드 핀볼 뽑기 (Pinball / Plinko Lottery Picker)
+    2. 🎲 학생 무작위 뽑기 (이름 모드 / 번호 모드 로컬 연동)
+    3. 🎡 돌려돌려 돌림판 (학생 명단 원클릭 불러오기)
+    4. 🪜 짜릿한 사다리타기 (학생 명단 원클릭 불러오기)
+    5. ⚾ 아케이드 핀볼 뽑기 (학생 명단 원클릭 불러오기)
     """
     _instance = None
 
@@ -53,9 +166,10 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
         self.timer_job = None
 
         # 2. 뽑기 상태
-        self.max_students = 25
-        self.picked_numbers = []
-        self.roulette_running = False
+        self.picked_candidates = []
+        self.picked_history = []
+        self.picker_running = False
+        self.picker_mode = "name" if student_manager.use_names_in_picker else "num"
 
         # 3. 돌림판 상태
         self.wheel_items = ["1모둠", "2모둠", "3모둠", "4모둠", "5모둠", "6모둠"]
@@ -132,7 +246,7 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
             width=28,
             height=28,
             font=get_font(11),
-            fg_color="#0284c7",
+            fg_color=palette["accent_blue"],
             hover_color="#0369a1",
             corner_radius=8,
             command=self._toggle_pin
@@ -162,10 +276,11 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
 
     def _toggle_pin(self):
         self.is_pinned = not self.is_pinned
+        palette = theme_manager.get_theme()
         self.attributes("-topmost", self.is_pinned)
         self.pin_btn.configure(
             text="📌" if self.is_pinned else "📍",
-            fg_color="#0284c7" if self.is_pinned else "#334155"
+            fg_color=palette["accent_blue"] if self.is_pinned else palette["sidebar_btn_hover"]
         )
 
     def _on_tab_changed(self, choice: str):
@@ -211,7 +326,7 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
     def _render_timer_view(self):
         palette = theme_manager.get_theme()
 
-        box = ctk.CTkFrame(self.content_frame, fg_color=palette["sidebar_bg"], corner_radius=14, border_width=1, border_color=palette["card_border"])
+        box = ctk.CTkFrame(self.content_frame, fg_color=palette["card_inner_bg"], corner_radius=14, border_width=1, border_color=palette["card_border"])
         box.pack(fill="both", expand=True, padx=4, pady=4)
 
         disp_card = ctk.CTkFrame(box, fg_color="#090d16", corner_radius=16, border_width=2, border_color="#0284c7")
@@ -237,8 +352,9 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
                 height=32,
                 font=get_font(10, "bold"),
                 corner_radius=10,
-                fg_color="#1e293b",
-                hover_color="#334155",
+                fg_color=palette["sidebar_btn_hover"],
+                hover_color=palette["accent_blue"],
+                text_color=palette["text_main"],
                 command=lambda s=sec: self._add_timer(s)
             )
             btn.pack(side="left", padx=3)
@@ -254,7 +370,7 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
             height=40,
             font=get_font(13, "bold"),
             corner_radius=12,
-            fg_color="#10b981",
+            fg_color=palette["accent_green"],
             hover_color="#059669",
             command=self._toggle_timer
         )
@@ -268,8 +384,9 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
             height=40,
             font=get_font(12, "bold"),
             corner_radius=12,
-            fg_color="#334155",
-            hover_color="#475569",
+            fg_color=palette["sidebar_btn_hover"],
+            hover_color=palette["accent_blue"],
+            text_color=palette["text_main"],
             command=self._reset_timer
         )
         reset_btn.pack(side="left", padx=4)
@@ -326,53 +443,85 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
             self.start_btn.configure(text="▶ 시작", fg_color="#10b981")
 
     # ==========================================
-    # 2. 🎲 발표자 뽑기 뷰
+    # 2. 🎲 발표자 뽑기 뷰 (이름 모드 / 번호 모드 지원)
     # ==========================================
     def _render_picker_view(self):
         palette = theme_manager.get_theme()
 
-        box = ctk.CTkFrame(self.content_frame, fg_color=palette["sidebar_bg"], corner_radius=14, border_width=1, border_color=palette["card_border"])
+        box = ctk.CTkFrame(self.content_frame, fg_color=palette["card_inner_bg"], corner_radius=14, border_width=1, border_color=palette["card_border"])
         box.pack(fill="both", expand=True, padx=4, pady=4)
 
-        opt_row = ctk.CTkFrame(box, fg_color="transparent")
-        opt_row.pack(fill="x", padx=14, pady=(12, 4))
+        # 상단 모드 선택 바 (👦 학생 이름으로 뽑기 | 🔢 번호로만 뽑기)
+        mode_row = ctk.CTkFrame(box, fg_color="transparent")
+        mode_row.pack(fill="x", padx=14, pady=(10, 4))
 
-        ctk.CTkLabel(opt_row, text="학급 총 학생 수:", font=get_font(11, "bold"), text_color=palette["text_main"]).pack(side="left")
+        self.mode_seg = ctk.CTkSegmentedButton(
+            mode_row,
+            values=["👦 학생 이름 모드", "🔢 번호 전용 모드"],
+            font=get_font(10, "bold"),
+            command=self._on_picker_mode_changed
+        )
+        self.mode_seg.set("👦 학생 이름 모드" if self.picker_mode == "name" else "🔢 번호 전용 모드")
+        self.mode_seg.pack(side="left")
+
+        # 학생 명단 편집 버튼
+        roster_btn = ctk.CTkButton(
+            mode_row,
+            text="👥 학생 명단 등록/수정",
+            font=get_font(10, "bold"),
+            fg_color=palette["sidebar_btn_hover"],
+            hover_color=palette["accent_blue"],
+            text_color=palette["text_main"],
+            height=28,
+            command=self._open_roster_dialog
+        )
+        roster_btn.pack(side="right")
+        attach_tooltip(roster_btn, "우리 반 학생 이름 명렬표를 1초 만에 등록 및 수정 (로컬 영구 저장)")
+
+        # 옵션 바 (총 인원 수 / 중복 제외)
+        opt_row = ctk.CTkFrame(box, fg_color="transparent")
+        opt_row.pack(fill="x", padx=14, pady=(4, 4))
+
+        ctk.CTkLabel(opt_row, text="추첨 대상 인원:", font=get_font(11, "bold"), text_color=palette["text_main"]).pack(side="left")
         
-        self.num_spin = ctk.CTkEntry(opt_row, width=54, height=28, font=get_font(11, "bold"), corner_radius=6)
-        self.num_spin.insert(0, str(self.max_students))
+        cur_cnt = student_manager.get_count()
+        self.num_spin = ctk.CTkEntry(opt_row, width=54, height=28, font=get_font(11, "bold"), fg_color=palette["card_bg"], text_color=palette["text_main"])
+        self.num_spin.insert(0, str(cur_cnt))
         self.num_spin.pack(side="left", padx=6)
 
         self.no_dup_var = ctk.BooleanVar(value=True)
-        ctk.CTkCheckBox(opt_row, text="중복 제외", variable=self.no_dup_var, font=get_font(11)).pack(side="left", padx=10)
+        chk = ctk.CTkCheckBox(opt_row, text="중복 제외", variable=self.no_dup_var, font=get_font(11), text_color=palette["text_main"])
+        chk.pack(side="left", padx=10)
 
+        # 번호/이름 대형 전광판 카드
         card = ctk.CTkFrame(box, fg_color="#090d16", corner_radius=16, border_width=2, border_color="#f59e0b")
-        card.pack(fill="x", padx=16, pady=(10, 10))
+        card.pack(fill="x", padx=16, pady=(8, 8))
 
         self.picker_num_lbl = ctk.CTkLabel(
             card,
             text="?",
-            font=ctk.CTkFont(family="Malgun Gothic", size=68, weight="bold"),
+            font=ctk.CTkFont(family="Malgun Gothic", size=56, weight="bold"),
             text_color="#f59e0b"
         )
-        self.picker_num_lbl.pack(pady=14)
+        self.picker_num_lbl.pack(pady=12)
 
+        # 추첨 버튼 바
         btn_row = ctk.CTkFrame(box, fg_color="transparent")
         btn_row.pack(pady=4)
 
         self.pick_btn = ctk.CTkButton(
             btn_row,
-            text="🎲 번호 뽑기!",
-            width=130,
+            text="🎲 발표자 뽑기!",
+            width=140,
             height=40,
             font=get_font(13, "bold"),
             corner_radius=12,
-            fg_color="#0284c7",
+            fg_color=palette["accent_blue"],
             hover_color="#0369a1",
             command=self._start_pick
         )
         self.pick_btn.pack(side="left", padx=4)
-        attach_tooltip(self.pick_btn, "학생 번호를 랜덤으로 롤링 추첨")
+        attach_tooltip(self.pick_btn, "학생을 랜덤으로 롤링 추첨")
 
         reset_btn = ctk.CTkButton(
             btn_row,
@@ -381,53 +530,88 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
             height=40,
             font=get_font(11, "bold"),
             corner_radius=12,
-            fg_color="#334155",
-            hover_color="#475569",
+            fg_color=palette["sidebar_btn_hover"],
+            hover_color=palette["accent_blue"],
+            text_color=palette["text_main"],
             command=self._reset_picker
         )
         reset_btn.pack(side="left", padx=4)
-        attach_tooltip(reset_btn, "뽑힌 번호 기록 초기화")
+        attach_tooltip(reset_btn, "뽑힌 기록 초기화")
 
+        # 뽑힌 명단 목록
         self.picked_list_lbl = ctk.CTkLabel(
             box,
-            text="뽑힌 번호: 없음",
+            text="뽑힌 기록: 없음",
             font=get_font(11),
             text_color=palette["text_sub"],
-            wraplength=380
+            wraplength=440
         )
-        self.picked_list_lbl.pack(pady=(10, 12))
+        self.picked_list_lbl.pack(pady=(6, 8))
+
+        # 하단 로컬 저장 안내 문구
+        ctk.CTkLabel(
+            box,
+            text="🔒 학생 명단은 외부 서버로 전송되지 않고 로컬 PC에만 100% 안전하게 저장됩니다.",
+            font=get_font(9),
+            text_color=palette["text_muted"]
+        ).pack(pady=(0, 6))
+
+    def _on_picker_mode_changed(self, choice: str):
+        self.picker_mode = "name" if "이름" in choice else "num"
+        student_manager.save_roster(student_manager.get_student_list(), use_names=(self.picker_mode == "name"))
+        self._reset_picker()
+
+    def _open_roster_dialog(self):
+        StudentRosterEditDialog(self, on_saved_callback=self._on_roster_saved)
+
+    def _on_roster_saved(self):
+        cur_cnt = student_manager.get_count()
+        if hasattr(self, "num_spin") and self.num_spin.winfo_exists():
+            self.num_spin.delete(0, "end")
+            self.num_spin.insert(0, str(cur_cnt))
+        self._reset_picker()
 
     def _start_pick(self):
-        if self.roulette_running:
+        if self.picker_running:
             return
+
+        is_name_mode = (self.picker_mode == "name")
+        students = student_manager.get_student_list()
+
         try:
-            self.max_students = max(1, int(self.num_spin.get()))
+            target_count = max(1, int(self.num_spin.get()))
         except Exception:
-            self.max_students = 25
+            target_count = len(students) if (students and is_name_mode) else 25
 
-        candidates = list(range(1, self.max_students + 1))
+        if is_name_mode and students:
+            candidates = [f"{s['number']}번 {s['name']}" if s.get('name') else f"{s['number']}번" for s in students[:target_count]]
+        else:
+            candidates = [f"{i}번" for i in range(1, target_count + 1)]
+
         if self.no_dup_var.get():
-            candidates = [c for c in candidates if c not in self.picked_numbers]
+            available = [c for c in candidates if c not in self.picked_history]
+        else:
+            available = candidates
 
-        if not candidates:
-            self.picker_num_lbl.configure(text="완료!")
-            self.picked_list_lbl.configure(text=f"모든 학생({self.max_students}명)이 한 번씩 다 뽑혔습니다!")
+        if not available:
+            self.picker_num_lbl.configure(text="추첨 완료!")
+            self.picked_list_lbl.configure(text=f"모든 대상({len(candidates)}명)이 한 번씩 다 뽑혔습니다!")
             return
 
-        self.roulette_running = True
+        self.picker_running = True
         self.pick_btn.configure(state="disabled")
 
         def _rolling(count=0, max_count=18):
             if count < max_count:
-                temp_pick = random.randint(1, self.max_students)
-                self.picker_num_lbl.configure(text=f"{temp_pick}번")
+                temp_pick = random.choice(candidates)
+                self.picker_num_lbl.configure(text=temp_pick)
                 self.after(50 + count * 15, lambda: _rolling(count + 1, max_count))
             else:
-                final_winner = random.choice(candidates)
-                self.picked_numbers.append(final_winner)
-                self.picker_num_lbl.configure(text=f"{final_winner}번", text_color="#10b981")
-                self.picked_list_lbl.configure(text=f"뽑힌 번호 ({len(self.picked_numbers)}명): {', '.join(map(lambda x: str(x)+'번', self.picked_numbers))}")
-                self.roulette_running = False
+                final_winner = random.choice(available)
+                self.picked_history.append(final_winner)
+                self.picker_num_lbl.configure(text=final_winner, text_color="#10b981")
+                self.picked_list_lbl.configure(text=f"뽑힌 명단 ({len(self.picked_history)}명): {', '.join(self.picked_history)}")
+                self.picker_running = False
                 self.pick_btn.configure(state="normal")
                 try:
                     winsound.MessageBeep(winsound.MB_OK)
@@ -437,50 +621,62 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
         _rolling()
 
     def _reset_picker(self):
-        self.picked_numbers.clear()
+        self.picked_history.clear()
         self.picker_num_lbl.configure(text="?", text_color="#f59e0b")
-        self.picked_list_lbl.configure(text="뽑힌 번호: 없음")
+        self.picked_list_lbl.configure(text="뽑힌 기록: 없음")
 
     # ==========================================
-    # 3. 🎡 돌려돌려 돌림판 뷰
+    # 3. 🎡 돌려돌려 돌림판 뷰 (학생명단 불러오기 지원)
     # ==========================================
     def _render_wheel_view(self):
         palette = theme_manager.get_theme()
 
-        box = ctk.CTkFrame(self.content_frame, fg_color=palette["sidebar_bg"], corner_radius=14, border_width=1, border_color=palette["card_border"])
+        box = ctk.CTkFrame(self.content_frame, fg_color=palette["card_inner_bg"], corner_radius=14, border_width=1, border_color=palette["card_border"])
         box.pack(fill="both", expand=True, padx=4, pady=4)
 
         input_row = ctk.CTkFrame(box, fg_color="transparent")
-        input_row.pack(fill="x", padx=12, pady=(10, 4))
+        input_row.pack(fill="x", padx=12, pady=(8, 2))
 
         ctk.CTkLabel(input_row, text="항목 (쉼표구분):", font=get_font(10, "bold"), text_color=palette["text_main"]).pack(side="left")
         
-        self.wheel_entry = ctk.CTkEntry(input_row, height=28, font=get_font(10), corner_radius=6)
+        self.wheel_entry = ctk.CTkEntry(input_row, height=26, font=get_font(10), fg_color=palette["card_bg"], text_color=palette["text_main"])
         self.wheel_entry.insert(0, ", ".join(self.wheel_items))
-        self.wheel_entry.pack(side="left", fill="x", expand=True, padx=6)
+        self.wheel_entry.pack(side="left", fill="x", expand=True, padx=4)
 
         set_btn = ctk.CTkButton(
             input_row,
             text="적용",
-            width=48,
-            height=28,
+            width=42,
+            height=26,
             font=get_font(10, "bold"),
-            corner_radius=6,
-            fg_color="#334155",
-            hover_color="#475569",
+            fg_color=palette["sidebar_btn_hover"],
+            hover_color=palette["accent_blue"],
+            text_color=palette["text_main"],
             command=self._apply_wheel_items
         )
-        set_btn.pack(side="left")
-        attach_tooltip(set_btn, "입력한 항목으로 돌림판 갱신")
+        set_btn.pack(side="left", padx=1)
+
+        load_stu_btn = ctk.CTkButton(
+            input_row,
+            text="👥 학생불러오기",
+            width=80,
+            height=26,
+            font=get_font(10, "bold"),
+            fg_color=palette["accent_green"],
+            hover_color="#059669",
+            command=self._load_students_into_wheel
+        )
+        load_stu_btn.pack(side="left", padx=2)
+        attach_tooltip(load_stu_btn, "우리 반 학생 명렬표를 돌림판 항목으로 1초 불러오기")
 
         self.wheel_canvas = tk.Canvas(
             box,
-            width=290,
-            height=290,
-            bg=palette["sidebar_bg"],
+            width=280,
+            height=280,
+            bg=palette["card_inner_bg"],
             highlightthickness=0
         )
-        self.wheel_canvas.pack(pady=4)
+        self.wheel_canvas.pack(pady=2)
 
         self._draw_wheel(self.wheel_angle)
 
@@ -488,23 +684,32 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
             box,
             text="🚀 돌려돌려 돌림판!",
             width=160,
-            height=40,
+            height=38,
             font=get_font(13, "bold"),
             corner_radius=12,
-            fg_color="#ea580c",
+            fg_color=palette["accent_orange"],
             hover_color="#c2410c",
             command=self._start_spin_wheel
         )
-        self.spin_btn.pack(pady=(4, 6))
+        self.spin_btn.pack(pady=(2, 4))
         attach_tooltip(self.spin_btn, "돌림판을 힘차게 회전!")
 
         self.wheel_result_lbl = ctk.CTkLabel(
             box,
             text="돌림판을 돌려 당첨 항목을 뽑아보세요!",
             font=get_font(11, "bold"),
-            text_color="#38bdf8"
+            text_color=palette["accent_blue"]
         )
-        self.wheel_result_lbl.pack(pady=(0, 8))
+        self.wheel_result_lbl.pack(pady=(0, 6))
+
+    def _load_students_into_wheel(self):
+        names = student_manager.get_student_names()
+        if names:
+            self.wheel_items = [n.split()[-1] if " " in n else n for n in names[:12]]
+            self.wheel_entry.delete(0, "end")
+            self.wheel_entry.insert(0, ", ".join(self.wheel_items))
+            self._draw_wheel(self.wheel_angle)
+            self.wheel_result_lbl.configure(text=f"학생 명단 {len(self.wheel_items)}명을 불러왔습니다.")
 
     def _apply_wheel_items(self):
         txt = self.wheel_entry.get().strip()
@@ -517,7 +722,7 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
 
     def _draw_wheel(self, start_angle: float):
         self.wheel_canvas.delete("all")
-        cx, cy, r = 145, 145, 125
+        cx, cy, r = 140, 140, 120
         n = len(self.wheel_items)
         if n == 0:
             return
@@ -544,15 +749,15 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
                 tx, ty,
                 text=it[:6],
                 fill="#ffffff",
-                font=("Malgun Gothic", 10, "bold")
+                font=("Malgun Gothic", 9, "bold")
             )
 
-        self.wheel_canvas.create_oval(cx - 20, cy - 20, cx + 20, cy + 20, fill="#0f172a", outline="#f59e0b", width=3)
+        self.wheel_canvas.create_oval(cx - 18, cy - 18, cx + 18, cy + 18, fill="#0f172a", outline="#f59e0b", width=3)
 
         self.wheel_canvas.create_polygon(
-            cx, cy - r - 10,
-            cx - 12, cy - r + 14,
-            cx + 12, cy - r + 14,
+            cx, cy - r - 8,
+            cx - 10, cy - r + 12,
+            cx + 10, cy - r + 12,
             fill="#fbbf24", outline="#b45309", width=2
         )
 
@@ -600,20 +805,32 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
     def _render_ladder_view(self):
         palette = theme_manager.get_theme()
 
-        box = ctk.CTkFrame(self.content_frame, fg_color=palette["sidebar_bg"], corner_radius=14, border_width=1, border_color=palette["card_border"])
+        box = ctk.CTkFrame(self.content_frame, fg_color=palette["card_inner_bg"], corner_radius=14, border_width=1, border_color=palette["card_border"])
         box.pack(fill="both", expand=True, padx=4, pady=4)
 
         p_row = ctk.CTkFrame(box, fg_color="transparent")
-        p_row.pack(fill="x", padx=12, pady=(8, 2))
+        p_row.pack(fill="x", padx=12, pady=(6, 2))
         ctk.CTkLabel(p_row, text="출발 (위):", font=get_font(10, "bold"), text_color=palette["text_main"]).pack(side="left")
-        self.lad_p_entry = ctk.CTkEntry(p_row, height=26, font=get_font(10), corner_radius=6)
+        self.lad_p_entry = ctk.CTkEntry(p_row, height=26, font=get_font(10), fg_color=palette["card_bg"], text_color=palette["text_main"])
         self.lad_p_entry.insert(0, ", ".join(self.ladder_players))
         self.lad_p_entry.pack(side="left", fill="x", expand=True, padx=4)
+
+        load_btn = ctk.CTkButton(
+            p_row,
+            text="👥 학생불러오기",
+            width=80,
+            height=26,
+            font=get_font(10, "bold"),
+            fg_color=palette["accent_green"],
+            hover_color="#059669",
+            command=self._load_students_into_ladder
+        )
+        load_btn.pack(side="right")
 
         g_row = ctk.CTkFrame(box, fg_color="transparent")
         g_row.pack(fill="x", padx=12, pady=(2, 4))
         ctk.CTkLabel(g_row, text="도착 (아래):", font=get_font(10, "bold"), text_color=palette["text_main"]).pack(side="left")
-        self.lad_g_entry = ctk.CTkEntry(g_row, height=26, font=get_font(10), corner_radius=6)
+        self.lad_g_entry = ctk.CTkEntry(g_row, height=26, font=get_font(10), fg_color=palette["card_bg"], text_color=palette["text_main"])
         self.lad_g_entry.insert(0, ", ".join(self.ladder_goals))
         self.lad_g_entry.pack(side="left", fill="x", expand=True, padx=4)
 
@@ -621,10 +838,10 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
             box,
             width=420,
             height=260,
-            bg=palette["sidebar_bg"],
+            bg=palette["card_inner_bg"],
             highlightthickness=0
         )
-        self.lad_canvas.pack(pady=4)
+        self.lad_canvas.pack(pady=2)
 
         self._generate_and_draw_ladder()
 
@@ -638,12 +855,12 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
             height=34,
             font=get_font(11, "bold"),
             corner_radius=10,
-            fg_color="#334155",
-            hover_color="#475569",
+            fg_color=palette["sidebar_btn_hover"],
+            hover_color=palette["accent_blue"],
+            text_color=palette["text_main"],
             command=self._generate_and_draw_ladder
         )
         gen_btn.pack(side="left", padx=4)
-        attach_tooltip(gen_btn, "새로운 무작위 사다리 발판 생성")
 
         self.lad_start_btn = ctk.CTkButton(
             btn_row,
@@ -652,20 +869,27 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
             height=34,
             font=get_font(11, "bold"),
             corner_radius=10,
-            fg_color="#0284c7",
+            fg_color=palette["accent_blue"],
             hover_color="#0369a1",
             command=self._start_ladder_animation
         )
         self.lad_start_btn.pack(side="left", padx=4)
-        attach_tooltip(self.lad_start_btn, "모든 참가자의 사다리 결과 애니메이션 시작")
 
         self.lad_result_lbl = ctk.CTkLabel(
             box,
             text="사다리 타기를 시작해보세요!",
             font=get_font(11, "bold"),
-            text_color="#38bdf8"
+            text_color=palette["accent_blue"]
         )
-        self.lad_result_lbl.pack(pady=(0, 6))
+        self.lad_result_lbl.pack(pady=(0, 4))
+
+    def _load_students_into_ladder(self):
+        names = student_manager.get_student_names()
+        if names:
+            self.ladder_players = [n.split()[-1] if " " in n else n for n in names[:6]]
+            self.lad_p_entry.delete(0, "end")
+            self.lad_p_entry.insert(0, ", ".join(self.ladder_players))
+            self._generate_and_draw_ladder()
 
     def _generate_and_draw_ladder(self):
         p_txt = self.lad_p_entry.get().strip()
@@ -695,8 +919,8 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
         for i in range(num_col):
             x = self.ladder_col_x[i]
             self.lad_canvas.create_line(x, top_y, x, bot_y, fill="#64748b", width=3, capstyle=tk.ROUND)
-            self.lad_canvas.create_text(x, top_y - 15, text=self.ladder_players[i][:5], fill="#38bdf8", font=("Malgun Gothic", 10, "bold"))
-            self.lad_canvas.create_text(x, bot_y + 15, text=self.ladder_goals[i][:5], fill="#f59e0b", font=("Malgun Gothic", 10, "bold"))
+            self.lad_canvas.create_text(x, top_y - 15, text=self.ladder_players[i][:5], fill="#0284c7", font=("Malgun Gothic", 10, "bold"))
+            self.lad_canvas.create_text(x, bot_y + 15, text=self.ladder_goals[i][:5], fill="#ea580c", font=("Malgun Gothic", 10, "bold"))
 
         levels = 6
         step_h = (bot_y - top_y) / (levels + 1)
@@ -765,67 +989,64 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
     def _render_pinball_view(self):
         palette = theme_manager.get_theme()
 
-        box = ctk.CTkFrame(self.content_frame, fg_color=palette["sidebar_bg"], corner_radius=14, border_width=1, border_color=palette["card_border"])
+        box = ctk.CTkFrame(self.content_frame, fg_color=palette["card_inner_bg"], corner_radius=14, border_width=1, border_color=palette["card_border"])
         box.pack(fill="both", expand=True, padx=4, pady=4)
 
-        # 슬롯 항목 설정
         s_row = ctk.CTkFrame(box, fg_color="transparent")
-        s_row.pack(fill="x", padx=12, pady=(8, 2))
+        s_row.pack(fill="x", padx=12, pady=(6, 2))
         ctk.CTkLabel(s_row, text="슬롯 항목 (쉼표구분):", font=get_font(10, "bold"), text_color=palette["text_main"]).pack(side="left")
         
-        self.pin_slot_entry = ctk.CTkEntry(s_row, height=26, font=get_font(10), corner_radius=6)
+        self.pin_slot_entry = ctk.CTkEntry(s_row, height=26, font=get_font(10), fg_color=palette["card_bg"], text_color=palette["text_main"])
         self.pin_slot_entry.insert(0, ", ".join(self.pinball_slots))
         self.pin_slot_entry.pack(side="left", fill="x", expand=True, padx=4)
 
         set_btn = ctk.CTkButton(
             s_row,
             text="적용",
-            width=48,
+            width=42,
             height=26,
             font=get_font(10, "bold"),
-            corner_radius=6,
-            fg_color="#334155",
-            hover_color="#475569",
+            fg_color=palette["sidebar_btn_hover"],
+            hover_color=palette["accent_blue"],
+            text_color=palette["text_main"],
             command=self._apply_pinball_slots
         )
         set_btn.pack(side="left")
-        attach_tooltip(set_btn, "하단 슬롯 항목 갱신")
 
         # 핀볼 아케이드 캔버스
         self.pin_canvas = tk.Canvas(
             box,
             width=420,
-            height=280,
+            height=270,
             bg="#070b12",
             highlightthickness=1,
             highlightbackground="#0284c7"
         )
-        self.pin_canvas.pack(pady=4)
+        self.pin_canvas.pack(pady=2)
 
         self._draw_pinball_board()
 
-        # 제어 버튼
         self.pin_drop_btn = ctk.CTkButton(
             box,
             text="⚾ 핀볼 투하!",
             width=160,
-            height=40,
+            height=38,
             font=get_font(13, "bold"),
             corner_radius=12,
-            fg_color="#10b981",
+            fg_color=palette["accent_green"],
             hover_color="#059669",
             command=self._start_pinball_drop
         )
-        self.pin_drop_btn.pack(pady=(4, 4))
+        self.pin_drop_btn.pack(pady=(2, 4))
         attach_tooltip(self.pin_drop_btn, "상단에서 핀볼을 투하하여 슬롯 추첨 시작")
 
         self.pin_result_lbl = ctk.CTkLabel(
             box,
             text="핀볼을 투하하여 짜릿한 추첨을 즐겨보세요!",
             font=get_font(11, "bold"),
-            text_color="#38bdf8"
+            text_color=palette["accent_blue"]
         )
-        self.pin_result_lbl.pack(pady=(0, 6))
+        self.pin_result_lbl.pack(pady=(0, 4))
 
     def _apply_pinball_slots(self):
         txt = self.pin_slot_entry.get().strip()
@@ -838,12 +1059,11 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
 
     def _draw_pinball_board(self, highlight_slot=None):
         self.pin_canvas.delete("all")
-        w, h = 420, 280
+        w, h = 420, 270
 
-        # 1. 핀(Pegs) 배치 (피라미드/격자 지그재그 패턴)
         self.pinball_pegs.clear()
         rows = 6
-        start_y = 50
+        start_y = 45
         gap_y = 30
 
         for r_idx in range(rows):
@@ -857,10 +1077,8 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
                 px = start_x + c_idx * gap_x
                 py = cur_y
                 self.pinball_pegs.append((px, py))
-                # 핀 그리기 (골드 네온 핀)
                 self.pin_canvas.create_oval(px - 3, py - 3, px + 3, py + 3, fill="#fbbf24", outline="#ffffff", width=1)
 
-        # 2. 하단 슬롯 칸막이 및 라벨
         n_slots = len(self.pinball_slots)
         slot_w = w / n_slots
         bot_y = h - 45
@@ -876,15 +1094,11 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
             is_win = (highlight_slot == i)
             fill_c = scol if is_win else "#111827"
             
-            # 슬롯 배경
             self.pin_canvas.create_rectangle(sx1 + 2, bot_y, sx2 - 2, floor_y, fill=fill_c, outline=scol, width=2 if is_win else 1)
-
-            # 슬롯 칸막이 기둥
             self.pin_canvas.create_line(sx1, bot_y - 12, sx1, floor_y, fill="#64748b", width=2)
             if i == n_slots - 1:
                 self.pin_canvas.create_line(sx2, bot_y - 12, sx2, floor_y, fill="#64748b", width=2)
 
-            # 슬롯 텍스트 라벨
             lbl_txt = self.pinball_slots[i][:6]
             self.pin_canvas.create_text(
                 (sx1 + sx2) / 2.0, (bot_y + floor_y) / 2.0,
@@ -893,9 +1107,8 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
                 font=("Malgun Gothic", 9, "bold")
             )
 
-        # 3. 상단 투하구
-        self.pin_canvas.create_line(w / 2.0 - 25, 6, w / 2.0 - 10, 30, fill="#38bdf8", width=3)
-        self.pin_canvas.create_line(w / 2.0 + 25, 6, w / 2.0 + 10, 30, fill="#38bdf8", width=3)
+        self.pin_canvas.create_line(w / 2.0 - 25, 6, w / 2.0 - 10, 26, fill="#38bdf8", width=3)
+        self.pin_canvas.create_line(w / 2.0 + 25, 6, w / 2.0 + 10, 26, fill="#38bdf8", width=3)
 
     def _start_pinball_drop(self):
         if self.pinball_animating:
@@ -905,9 +1118,9 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
         self.pin_drop_btn.configure(state="disabled")
         self.pin_result_lbl.configure(text="⚾ 핀볼이 통통 튀며 낙하하는 중...!", text_color="#f59e0b")
 
-        w, h = 420, 280
+        w, h = 420, 270
         self.ball_x = w / 2.0 + random.uniform(-4, 4)
-        self.ball_y = 15.0
+        self.ball_y = 12.0
         self.ball_vx = random.uniform(-1.2, 1.2)
         self.ball_vy = 2.0
         ball_r = 7
@@ -916,13 +1129,11 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
             if not self.pinball_animating:
                 return
 
-            # 중력 가속도 및 감쇠
             self.ball_vy += 0.45
             self.ball_vx *= 0.985
             self.ball_x += self.ball_vx
             self.ball_y += self.ball_vy
 
-            # 좌우 벽면 충돌
             if self.ball_x < ball_r + 8:
                 self.ball_x = ball_r + 8
                 self.ball_vx = abs(self.ball_vx) * 0.75 + 1.0
@@ -930,7 +1141,6 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
                 self.ball_x = w - ball_r - 8
                 self.ball_vx = -abs(self.ball_vx) * 0.75 - 1.0
 
-            # 핀(Pegs) 충돌 검사
             for px, py in self.pinball_pegs:
                 dx = self.ball_x - px
                 dy = self.ball_y - py
@@ -938,7 +1148,6 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
                 min_dist = ball_r + 3
 
                 if dist < min_dist and dist > 0.001:
-                    # 법선 벡터 반사
                     nx = dx / dist
                     ny = dy / dist
                     dot = self.ball_vx * nx + self.ball_vy * ny
@@ -949,17 +1158,14 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
                     self.ball_x = px + nx * min_dist
                     self.ball_y = py + ny * min_dist
 
-            # 캔버스 갱신
             self._draw_pinball_board()
             
-            # 볼 그리기 (네온 레드/오렌지 볼 + 글로우)
             self.pin_canvas.create_oval(
                 self.ball_x - ball_r, self.ball_y - ball_r,
                 self.ball_x + ball_r, self.ball_y + ball_r,
                 fill="#ef4444", outline="#ffffff", width=2
             )
 
-            # 바닥 슬롯 도착 체크
             bot_y = h - 40
             if self.ball_y >= bot_y:
                 self.pinball_animating = False
@@ -973,7 +1179,6 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
                 winner = self.pinball_slots[win_slot_idx]
                 self._draw_pinball_board(highlight_slot=win_slot_idx)
 
-                # 최종 위치 볼 그리기
                 self.pin_canvas.create_oval(
                     self.ball_x - ball_r, bot_y + 10 - ball_r,
                     self.ball_x + ball_r, bot_y + 10 + ball_r,
