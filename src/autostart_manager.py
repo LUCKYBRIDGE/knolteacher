@@ -3,11 +3,13 @@ import sys
 import winreg
 from typing import Tuple
 
-APP_REG_NAME = "TeacherAssistantScheduler"
+APP_REG_NAME = "KnolTeacherDesk"
+LEGACY_REG_NAMES = ["TeacherAssistantScheduler", "TeacherMate", "Teachermate"]
 
 class AutoStartManager:
     """
     Windows 시작 프로그램 등록 및 해제 관리자 (HKCU Registry 기반)
+    - 레거시 레지스트리 키 자동 정리 및 KnolTeacherDesk 단일화
     """
     REG_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
 
@@ -34,6 +36,13 @@ class AutoStartManager:
     def set_autostart(cls, enable: bool) -> Tuple[bool, str]:
         try:
             with winreg.OpenKey(winreg.HKEY_CURRENT_USER, cls.REG_KEY, 0, winreg.KEY_SET_VALUE) as key:
+                # 과거 레거시 키 정리
+                for old_k in LEGACY_REG_NAMES:
+                    try:
+                        winreg.DeleteValue(key, old_k)
+                    except Exception:
+                        pass
+
                 if enable:
                     exe_cmd = cls.get_executable_path()
                     winreg.SetValueEx(key, APP_REG_NAME, 0, winreg.REG_SZ, exe_cmd)

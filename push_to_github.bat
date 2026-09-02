@@ -1,7 +1,7 @@
 @echo off
 chcp 65001 > nul
 echo ===================================================
-echo [티처메이트] GitHub 저장소(LUCKYBRIDGE/teachermate)에 소스코드 업로드
+echo [놀티쳐 데스크] GitHub 저장소(LUCKYBRIDGE/teachermate)에 소스코드 업로드
 echo ===================================================
 echo.
 
@@ -16,7 +16,7 @@ echo [2/4] 변경된 파일들을 추가합니다...
 git add .
 
 echo [3/4] 최신 커밋을 생성합니다...
-git commit -m "Update TeacherMate Pro v5.7 - Auto-Updater and UI Polish"
+git commit -m "Update KnolTeacher Desk (놀티쳐 데스크 v5.7) - Full Polish"
 
 echo [4/4] GitHub로 푸시합니다...
 git push -u origin main

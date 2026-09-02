@@ -79,7 +79,7 @@ THEMES: Dict[str, Dict[str, Any]] = {
 
 class ThemeManager:
     """
-    티처메이트의 테마(베이지, 다크, 라이트) 관리자
+    놀티쳐 데스크의 테마(베이지, 다크, 라이트) 관리자
     """
     _instance = None
 

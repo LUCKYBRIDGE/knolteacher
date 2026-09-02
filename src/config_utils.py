@@ -1,69 +1,72 @@
 import os
 import sys
-import glob
 import shutil
-import subprocess
-import time
+import glob
 
 APP_VERSION = "5.7"
 
 def get_config_dir() -> str:
     """
-    티처메이트의 글로벌 영구 설정 디렉터리 (~/.teacher_mate)
-    - 새로운 버전의 exe를 다운로드받거나 경로를 변경하더라도
-      사용자가 저장한 모든 설정(시간표, 학교, 나이스 키, 바로가기, 테마 등)이 100% 영구 보존됩니다.
+    놀티쳐 데스크의 글로벌 영구 설정 디렉터리 (~/.knol_teacher_desk)
+    - 버전 업데이트나 파일 위치 변경 시에도 사용자 설정(시간표, 학교, 바로가기, 테마) 영구 보존
+    - 과거 레거시 디렉터리(~/.teacher_mate 및 local config/) 자동 마이그레이션 지원
     """
     home_dir = os.path.expanduser("~")
-    config_dir = os.path.join(home_dir, ".teacher_mate")
-    os.makedirs(config_dir, exist_ok=True)
+    config_dir = os.path.join(home_dir, ".knol_teacher_desk")
+    
+    if not os.path.exists(config_dir):
+        try:
+            os.makedirs(config_dir, exist_ok=True)
+        except Exception:
+            # Fallback to local config if home directory access fails
+            config_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "config"))
+            os.makedirs(config_dir, exist_ok=True)
+            return config_dir
 
-    # 기존 구버전 로컬 config/ 디렉터리가 있을 경우 자동 마이그레이션
+    # 기존 레거시 설정 파일 자동 이전 (무손실 마이그레이션)
     _migrate_legacy_configs(config_dir)
 
     return config_dir
 
 def _migrate_legacy_configs(target_dir: str):
     """
-    과거 로컬 config/ 폴더에 저장되어 있던 설정 파일들을 새 영구 폴더로 자동 복사
+    과거 설정 디렉터리(~/.teacher_mate 및 프로젝트 local config/)에서
+    새로운 ~/.knol_teacher_desk 디렉터리로 설정 파일들을 안전하게 자동 복사
     """
-    candidate_legacy_dirs = []
-    
-    if getattr(sys, 'frozen', False):
-        candidate_legacy_dirs.append(os.path.join(os.path.dirname(sys.executable), "config"))
-    
-    source_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-    candidate_legacy_dirs.append(os.path.join(source_root, "config"))
-
-    config_files = [
-        "custom_timetable.json",
-        "schedule_periods.json",
-        "timetable_settings.json",
-        "neis_settings.json",
-        "weekly_schedule.json",
-        "site_bookmarks.json",
-        "scheduler_history.json"
+    legacy_dirs = [
+        os.path.join(os.path.expanduser("~"), ".teacher_mate"),
+        os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "config"))
     ]
 
-    for leg_dir in candidate_legacy_dirs:
+    target_files = [
+        "schedule_config.json",
+        "timetable_config.json",
+        "neis_config.json",
+        "bookmarks_config.json",
+        "mini_ticker_config.json",
+        "updater_config.json",
+        "theme_config.json"
+    ]
+
+    for leg_dir in legacy_dirs:
         if os.path.exists(leg_dir) and os.path.abspath(leg_dir) != os.path.abspath(target_dir):
-            for fname in config_files:
-                src_file = os.path.join(leg_dir, fname)
-                dst_file = os.path.join(target_dir, fname)
-                if os.path.exists(src_file) and not os.path.exists(dst_file):
+            for fname in target_files:
+                src_f = os.path.join(leg_dir, fname)
+                dst_f = os.path.join(target_dir, fname)
+                if os.path.exists(src_f) and not os.path.exists(dst_f):
                     try:
-                        shutil.copy2(src_file, dst_file)
-                        print(f"[Migration] Copied {fname} to persistent config directory.")
-                    except Exception as e:
-                        print(f"[Migration Warning] Could not copy {fname}: {e}")
+                        shutil.copy2(src_f, dst_f)
+                    except Exception:
+                        pass
 
 def self_consolidate_and_clean():
     """
     스마트 단일 파일 유지 시스템 (Self-Consolidation & Duplicate Cleaner)
-    1) 현재 실행된 파일이 '티처메이트 (1).exe' 등 중복 복사본인 경우:
-       -> 바탕화면의 메인 '티처메이트.exe'를 최신인 자기 자신으로 자동 갱신
-    2) 바탕화면 및 실행 폴더 주변에 남아있는 '티처메이트 (1).exe', '티처메이트 (2).exe' 등
+    1) 현재 실행된 파일이 '놀티쳐 데스크 (1).exe' 등 중복 복사본인 경우:
+       -> 바탕화면의 메인 '놀티쳐 데스크.exe'를 최신인 자기 자신으로 자동 갱신
+    2) 바탕화면 및 실행 폴더 주변에 남아있는 과거 파일(티처메이트, TeacherMate 등)과
        모든 중복/잉여 다운로드 파일들을 자동으로 감지하여 깔끔하게 삭제 정리
-    => 결과: 언제나 오직 단 1개의 '티처메이트.exe'만 바탕화면에 영구 유지됩니다!
+    => 결과: 언제나 오직 단 1개의 '놀티쳐 데스크.exe'만 바탕화면에 영구 유지됩니다!
     """
     if not getattr(sys, 'frozen', False):
         return
@@ -97,6 +100,7 @@ def self_consolidate_and_clean():
             "놀퀴즈*.exe",
             "티처메이트*.exe",
             "TeacherMate*.exe",
+            "TeacherDesk*.exe",
             "컴퓨터종료*.exe",
             "컴퓨터예약*.exe"
         ]
