@@ -9,7 +9,7 @@ def build():
         except Exception:
             pass
 
-    print("[Build] '티처메이트.exe' 빌드를 시작합니다...")
+    print("[Build] '놀티쳐 데스크.exe' 빌드를 시작합니다...")
     
     icon_path = os.path.abspath(os.path.join("assets", "app_icon.ico"))
     if not os.path.exists(icon_path):
@@ -22,7 +22,7 @@ def build():
         "--clean",
         "--onefile",
         "--windowed",
-        "--name=티처메이트",
+        "--name=놀티쳐 데스크",
         f"--icon={icon_path}",
         f"--add-data=assets{os.pathsep}assets",
         "--collect-all=customtkinter",
@@ -32,7 +32,7 @@ def build():
     result = subprocess.run(cmd)
     
     if result.returncode == 0:
-        exe_path = os.path.abspath(os.path.join("dist", "티처메이트.exe"))
+        exe_path = os.path.abspath(os.path.join("dist", "놀티쳐 데스크.exe"))
         print("\n===========================================")
         print("[Success] 빌드가 성공적으로 완료되었습니다!")
         print(f"생성된 실행 파일 경로: {exe_path}")

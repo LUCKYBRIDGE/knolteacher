@@ -526,7 +526,7 @@ class App(ctk.CTk):
         
         setup_global_fonts(self)
 
-        self.title(f"티처메이트 (TeacherMate v{APP_VERSION} - 스마트 교사 통합 도우미)")
+        self.title(f"놀티쳐 데스크 (KnolTeacher Desk v{APP_VERSION} - 스마트 교사용 올인원 데스크)")
         self.geometry("960x820")
         self.minsize(780, 680)
         self.resizable(True, True)
@@ -629,7 +629,7 @@ class App(ctk.CTk):
 
         self.logo_title_lbl = ctk.CTkLabel(
             title_row,
-            text="티처메이트",
+            text="놀티쳐 데스크",
             font=get_font(17, "bold"),
             text_color=palette["text_main"]
         )
@@ -637,7 +637,7 @@ class App(ctk.CTk):
 
         self.logo_sub_lbl = ctk.CTkLabel(
             logo_frame,
-            text="TeacherMate 교사도우미",
+            text="KnolTeacher Desk",
             font=get_font(10, "bold"),
             text_color=palette["text_sub"]
         )
@@ -3081,11 +3081,11 @@ class App(ctk.CTk):
         nk_info = "• 인증키를 비워두셔도 전국 17개 교육청의 모든 학교 및 시간표 조회가 기본 작동합니다.\n• 공식 교육부 Open API 포털(open.neis.go.kr)에서 발급받은 개인 키가 있으시면 입력 후 저장하세요."
         ctk.CTkLabel(neis_key_card, text=nk_info, font=get_font(10), text_color="#94a3b8", justify="left", anchor="w").pack(fill="x", padx=12, pady=(2, 10))
 
-        # 6. 🚀 티처메이트 최신 버전 & 1초 스마트 자동 업데이트 카드
+        # 6. 🚀 놀티쳐 데스크 최신 버전 & 1초 스마트 자동 업데이트 카드
         updater_card = ctk.CTkFrame(scroll, corner_radius=10, fg_color="#182234", border_width=1, border_color="#38bdf8")
         updater_card.pack(fill="x", pady=(0, 8))
 
-        ctk.CTkLabel(updater_card, text="🚀 6. 티처메이트 최신 버전 & 1초 스마트 자동 업데이트", font=get_font(13, "bold"), text_color="#38bdf8").pack(anchor="w", padx=12, pady=(10, 4))
+        ctk.CTkLabel(updater_card, text="🚀 6. 놀티쳐 데스크 최신 버전 & 1초 스마트 자동 업데이트", font=get_font(13, "bold"), text_color="#38bdf8").pack(anchor="w", padx=12, pady=(10, 4))
 
         up_row = ctk.CTkFrame(updater_card, fg_color="transparent")
         up_row.pack(fill="x", padx=12, pady=4)
@@ -3131,8 +3131,9 @@ class App(ctk.CTk):
 
         ctk.CTkLabel(info_card, text="ℹ️ 7. 프로그램 정보 & 저작권", font=get_font(13, "bold"), text_color="#cbd5e1").pack(anchor="w", padx=12, pady=(10, 4))
         info_str = (
-            f"• 프로그램명: 티처메이트 (TeacherMate v{APP_VERSION})\n"
+            f"• 프로그램명: 놀티쳐 데스크 (KnolTeacher Desk v{APP_VERSION})\n"
             "• 개발 및 저작권: Copyright 2026. 교사 서정완. All rights reserved.\n"
+            "• 브랜드: Knol (Knowledge & Play - 즐거운 배움과 스마트 교실 생태계)\n"
             "• 기능: 4세대 나이스 학생번호 기준 안전 자동입력, 전국 17개 교육청 전역 학교 시간표 연동,\n"
             "        화면 전체 판서 & 플로팅 퀵바, 올웨이즈온 미니바/급식 위젯, 수업 알람, PC 전원 예약."
         )
@@ -3150,7 +3151,7 @@ class App(ctk.CTk):
                 if has_update and download_url:
                     self.updater_status_lbl.configure(text=f"🎉 새 버전 발견: v{latest_ver}", text_color="#f59e0b")
                     ans = messagebox.askyesno(
-                        "티처메이트 새 버전 업데이트",
+                        "놀티쳐 데스크 새 버전 업데이트",
                         f"새로운 버전(v{latest_ver})이 출시되었습니다!\n\n"
                         f"[업데이트 주요 내용]\n{notes[:200]}\n\n"
                         f"지금 바로 1초 자동 업데이트를 적용하시겠습니까?\n"

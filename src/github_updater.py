@@ -137,13 +137,13 @@ class GitHubUpdater:
                     on_progress(0.95, "업데이트 적용 스크립트 실행 중...")
 
                 # 2. 대상 실행 파일 경로 결정
-                current_exe = sys.executable if getattr(sys, 'frozen', False) else os.path.join(os.path.expanduser("~"), "Desktop", "티처메이트.exe")
+                current_exe = sys.executable if getattr(sys, 'frozen', False) else os.path.join(os.path.expanduser("~"), "Desktop", "놀티쳐 데스크.exe")
                 
                 # 3. 안전한 교체 배치 스크립트 작성 (update_helper.bat)
                 bat_path = os.path.join(get_config_dir(), "apply_update.bat")
                 bat_content = f"""@echo off
 chcp 65001 > nul
-echo [티처메이트] 최신 버전으로 업데이트 중입니다...
+echo [놀티쳐 데스크] 최신 버전으로 업데이트 중입니다...
 timeout /t 2 /nobreak > nul
 :loop
 taskkill /f /im "{os.path.basename(current_exe)}" > nul 2>&1

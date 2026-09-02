@@ -1,12 +1,13 @@
-# 📅 티처메이트 (TeacherMate v5.7)
+# 📅 놀티쳐 데스크 (KnolTeacher Desk v5.7)
 
-> **대한민국 선생님들을 위한 스마트 올인원 올웨이즈온(Always-On) 교사용 업무 & 수업 도우미**
+> **대한민국 선생님들을 위한 스마트 올인원 교사용 올웨이즈온(Always-On) 수업 & 업무 데스크**
 > 
+> *Knol (Knowledge & Play - 지식과 즐거운 배움의 생태계)*  
 > *초등·중등·고등학교 선생님들의 일과 관리, 실시간 급식 확인, 화면 판서, 수업 도구, 나이스(NEIS) 엑셀 안전 자동입력, PC 전원 예약을 하나의 프로그램으로 완벽하게 지원합니다.*
 
 <div align="center">
 
-[![최신 버전 다운로드](https://img.shields.io/badge/📥_최신_버전_다운로드-티처메이트.exe-0284c7?style=for-the-badge&logo=windows)](https://github.com/LUCKYBRIDGE/teachermate/releases/latest)
+[![최신 버전 다운로드](https://img.shields.io/badge/📥_최신_버전_다운로드-놀티쳐_데스크.exe-0284c7?style=for-the-badge&logo=windows)](https://github.com/LUCKYBRIDGE/teachermate/releases/latest)
 [![GitHub Release](https://img.shields.io/github/v/release/LUCKYBRIDGE/teachermate?color=orange&label=Release&style=for-the-badge)](https://github.com/LUCKYBRIDGE/teachermate/releases)
 [![Platform](https://img.shields.io/badge/Platform-Windows_10_/_11-blue.svg?style=for-the-badge)](https://github.com/LUCKYBRIDGE/teachermate)
 
@@ -17,11 +18,11 @@
 ## 📥 다운로드 및 빠른 시작 (Quick Start)
 
 ### 1️⃣ 다운로드
-👉 **[🚀 최신 버전 티처메이트.exe 다운로드하기 (GitHub Releases)](https://github.com/LUCKYBRIDGE/teachermate/releases/latest)**
+👉 **[🚀 최신 버전 놀티쳐 데스크.exe 다운로드하기 (GitHub Releases)](https://github.com/LUCKYBRIDGE/teachermate/releases/latest)**
 
 ### 2️⃣ 실행 및 설치
 * 별도의 복잡한 설치 과정이나 Python 설치가 **전혀 필요 없습니다.**
-* 다운로드받은 **`티처메이트.exe`**를 바탕화면에 두고 더블 클릭하여 바로 실행하시면 됩니다.
+* 다운로드받은 **`놀티쳐 데스크.exe`**를 바탕화면에 두고 더블 클릭하여 바로 실행하시면 됩니다.
 
 ### 3️⃣ 자동 업데이트 지원
 * 한 번 다운로드받아 두시면, 향후 새 버전이 출시되었을 때 앱 내부의 **`[🔄 최신 업데이트 확인]`** 버튼 클릭 한 번으로 웹 브라우저를 열 필요 없이 1초 만에 최신 버전으로 자동 덮어쓰기 업데이트됩니다.
