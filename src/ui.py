@@ -639,11 +639,14 @@ class App(ctk.CTk):
 
         self.logo_sub_lbl = ctk.CTkLabel(
             logo_frame,
-            text="KnolTeacher Desk",
+            text="KnolTeacher Desk • pinky-ne.com",
             font=get_font(10, "bold"),
-            text_color=palette["text_sub"]
+            text_color=palette["text_sub"],
+            cursor="hand2"
         )
         self.logo_sub_lbl.pack(anchor="w", padx=(32, 0), pady=(1, 0))
+        self.logo_sub_lbl.bind("<Button-1>", lambda e: webbrowser.open("https://pinky-ne.com"))
+        attach_tooltip(self.logo_sub_lbl, "놀퀴즈(pinky-ne.com) 플랫폼 바로가기")
 
         # 사이드바 메뉴 (직관적이고 단순한 4대 핵심 탭)
         self.menu_buttons: dict[str, ctk.CTkButton] = {}
@@ -695,6 +698,41 @@ class App(ctk.CTk):
         th_display_map = {"Beige": "🌾 베이지", "Dark": "🌙 다크", "Light": "☀️ 라이트"}
         self.theme_seg_btn.set(th_display_map.get(curr_th, "🌾 베이지"))
         self.theme_seg_btn.pack(fill="x")
+
+        # 사이드바 상시 투명도 조절 바
+        alpha_box = ctk.CTkFrame(theme_selector_box, fg_color="transparent")
+        alpha_box.pack(fill="x", pady=(8, 0))
+
+        ab_top = ctk.CTkFrame(alpha_box, fg_color="transparent")
+        ab_top.pack(fill="x")
+
+        ctk.CTkLabel(
+            ab_top,
+            text="👁️ 창 투명도:",
+            font=get_font(10, "bold"),
+            text_color=palette["text_sub"]
+        ).pack(side="left")
+
+        init_alpha = timetable_manager.settings.get("window_alpha", 1.0)
+        self.sidebar_alpha_lbl = ctk.CTkLabel(
+            ab_top,
+            text=f"{int(init_alpha * 100)}%",
+            font=get_font(10, "bold"),
+            text_color=palette["accent_blue"]
+        )
+        self.sidebar_alpha_lbl.pack(side="right")
+
+        self.sidebar_alpha_slider = ctk.CTkSlider(
+            alpha_box,
+            from_=0.4,
+            to=1.0,
+            number_of_steps=60,
+            height=14,
+            command=self._on_alpha_changed
+        )
+        self.sidebar_alpha_slider.set(init_alpha)
+        self.sidebar_alpha_slider.pack(fill="x", pady=(2, 0))
+        attach_tooltip(self.sidebar_alpha_slider, "창 전체 투명도를 40% ~ 100% 사이로 실시간 조절합니다")
 
         # 2. 우측 메인 컨텐츠 영역
         self.content_area = ctk.CTkFrame(self.root_frame, fg_color="transparent")
@@ -831,9 +869,42 @@ class App(ctk.CTk):
             text_color=palette["text_main"] if not is_hol else "#f97316"
         ).pack(side="left")
 
+        # 우측 상단 유틸리티 박스 (투명도 조절 바 + 미니멀 시스템 자원 칩)
+        top_right_box = ctk.CTkFrame(tb_inner, fg_color="transparent")
+        top_right_box.pack(side="right")
+
+        # 상단 상시 투명도 조절 바
+        top_alpha_chip = ctk.CTkFrame(top_right_box, fg_color=palette["sidebar_bg"], corner_radius=8, border_width=1, border_color=palette["card_border"])
+        top_alpha_chip.pack(side="left", padx=(0, 6))
+
+        tac_inner = ctk.CTkFrame(top_alpha_chip, fg_color="transparent")
+        tac_inner.pack(padx=6, pady=2)
+
+        init_alpha = timetable_manager.settings.get("window_alpha", 1.0)
+        self.top_alpha_lbl = ctk.CTkLabel(
+            tac_inner,
+            text=f"👁️ 투명도 {int(init_alpha * 100)}%",
+            font=get_font(9, "bold"),
+            text_color=palette["accent_blue"]
+        )
+        self.top_alpha_lbl.pack(side="left", padx=(0, 4))
+
+        self.top_alpha_slider = ctk.CTkSlider(
+            tac_inner,
+            from_=0.4,
+            to=1.0,
+            number_of_steps=60,
+            width=80,
+            height=12,
+            command=self._on_alpha_changed
+        )
+        self.top_alpha_slider.set(init_alpha)
+        self.top_alpha_slider.pack(side="left")
+        attach_tooltip(top_alpha_chip, "화면 위 다른 창을 보면서 작업할 수 있도록 투명도를 40% ~ 100% 사이로 실시간 조절합니다")
+
         # 우측 미니멀 시스템 자원 칩 (CPU / RAM / GPU)
-        res_chip_box = ctk.CTkFrame(tb_inner, fg_color=palette["sidebar_bg"], corner_radius=8, border_width=1, border_color=palette["card_border"])
-        res_chip_box.pack(side="right")
+        res_chip_box = ctk.CTkFrame(top_right_box, fg_color=palette["sidebar_bg"], corner_radius=8, border_width=1, border_color=palette["card_border"])
+        res_chip_box.pack(side="left")
 
         chip_inner = ctk.CTkFrame(res_chip_box, fg_color="transparent")
         chip_inner.pack(padx=8, pady=3)
@@ -850,6 +921,51 @@ class App(ctk.CTk):
 
         self.gpu_label = ctk.CTkLabel(chip_inner, text="🎮 GPU: -- %", font=get_font(10, "bold"), text_color=palette["accent_orange"])
         self.gpu_label.pack(side="left", padx=4)
+
+        # 1.5. 💡 놀퀴즈 (pinky-ne.com) 소프트 베젤 스마트 연결 유도 배너
+        pinky_banner = ctk.CTkFrame(
+            scroll,
+            fg_color=palette["card_inner_bg"],
+            corner_radius=10,
+            border_width=1,
+            border_color=palette["card_border"],
+            height=38
+        )
+        pinky_banner.pack(fill="x", pady=(0, 8))
+
+        pb_inner = ctk.CTkFrame(pinky_banner, fg_color="transparent")
+        pb_inner.pack(fill="x", padx=12, pady=5)
+
+        pb_left = ctk.CTkFrame(pb_inner, fg_color="transparent")
+        pb_left.pack(side="left")
+
+        ctk.CTkLabel(
+            pb_left,
+            text="✨ 지식과 놀이의 배움터:",
+            font=get_font(10, "bold"),
+            text_color=palette["text_sub"]
+        ).pack(side="left", padx=(0, 4))
+
+        ctk.CTkLabel(
+            pb_left,
+            text="선생님과 학생이 함께하는 인터랙티브 수업 퀴즈 플랫폼",
+            font=get_font(10),
+            text_color=palette["text_main"]
+        ).pack(side="left")
+
+        pinky_btn = ctk.CTkButton(
+            pb_inner,
+            text="💡 놀퀴즈 (pinky-ne.com) 바로가기 ↗",
+            font=get_font(10, "bold"),
+            fg_color=palette["sidebar_btn_hover"],
+            hover_color=palette["accent_blue"],
+            text_color=palette["accent_blue"],
+            height=26,
+            corner_radius=6,
+            command=lambda: webbrowser.open("https://pinky-ne.com")
+        )
+        pinky_btn.pack(side="right")
+        attach_tooltip(pinky_btn, "선생님과 아이들이 함께 즐기는 놀퀴즈 (pinky-ne.com) 웹사이트로 이동합니다")
 
         # 2. 메인 컨텐츠 영역 (좌측: 오늘 시간표 / 우측: 오늘의 급식 식단표)
         content_row = ctk.CTkFrame(scroll, fg_color="transparent")
@@ -1238,9 +1354,8 @@ class App(ctk.CTk):
         if hasattr(self, "ram_progress") and self.ram_progress.winfo_exists():
             self.ram_progress.set(min(1.0, max(0.0, ram_p / 100.0)))
 
-        short_gpu_name = gpu_name.split()[0] if gpu_name else "GPU"
         self.gpu_label.configure(
-            text=f"🎮 {short_gpu_name} {gpu_p:.0f}%",
+            text=f"🎮 GPU {gpu_p:.0f}%",
             text_color="#ef4444" if gpu_p > 85 else "#f59e0b"
         )
         if hasattr(self, "gpu_progress") and self.gpu_progress.winfo_exists():
@@ -1689,59 +1804,104 @@ class App(ctk.CTk):
     # 뷰 4: PC 전원 & 도구 설정 통합 (컴퓨터 예약 + 화면 분할 + 테마/설정)
     # =========================================================================
     def _build_tools_and_settings_tab(self, parent):
+        palette = theme_manager.get_theme()
         scroll = ctk.CTkScrollableFrame(parent, fg_color="transparent")
         scroll.pack(fill="both", expand=True, padx=6, pady=6)
 
         # 1. 컴퓨터 예약/종료 카드
-        pc_card = ctk.CTkFrame(scroll, corner_radius=10, fg_color="#1e2230", border_width=1, border_color="#374151")
-        pc_card.pack(fill="x", pady=(0, 8))
+        pc_card = ctk.CTkFrame(scroll, corner_radius=12, fg_color=palette["card_inner_bg"], border_width=1, border_color=palette["card_border"])
+        pc_card.pack(fill="x", pady=(0, 10))
 
-        ctk.CTkLabel(pc_card, text="⏰ 컴퓨터 예약 / 종료 / 회의 알람 설정", font=get_font(13, "bold"), text_color="#60a5fa").pack(anchor="w", padx=12, pady=(10, 6))
+        ctk.CTkLabel(
+            pc_card,
+            text="⏰ 컴퓨터 예약 / 종료 / 회의 알람 설정",
+            font=get_font(13, "bold"),
+            text_color=palette["accent_blue"]
+        ).pack(anchor="w", padx=14, pady=(10, 6))
 
+        # 1-1. 동작 선택 행 (깔끔한 세그먼트 버튼 & 라벨)
         pc_row1 = ctk.CTkFrame(pc_card, fg_color="transparent")
-        pc_row1.pack(fill="x", padx=12, pady=4)
+        pc_row1.pack(fill="x", padx=14, pady=4)
 
-        ctk.CTkLabel(pc_row1, text="동작 선택:", font=get_font(11, "bold")).pack(side="left", padx=(0, 6))
-        ctk.CTkRadioButton(pc_row1, text="종료", value="shutdown", variable=self.pc_action, font=get_font(11, "bold")).pack(side="left", padx=4)
-        ctk.CTkRadioButton(pc_row1, text="다시 시작", value="restart", variable=self.pc_action, font=get_font(11)).pack(side="left", padx=4)
-        ctk.CTkRadioButton(pc_row1, text="절전", value="sleep", variable=self.pc_action, font=get_font(11)).pack(side="left", padx=4)
-        ctk.CTkRadioButton(pc_row1, text="알람(소리)", value="alarm", variable=self.pc_action, font=get_font(11)).pack(side="left", padx=4)
+        ctk.CTkLabel(
+            pc_row1,
+            text="동작 선택:",
+            font=get_font(11, "bold"),
+            text_color=palette["text_main"],
+            width=70,
+            anchor="w"
+        ).pack(side="left")
 
+        act_map = {"종료": "shutdown", "다시 시작": "restart", "절전": "sleep", "알람(소리)": "alarm"}
+        inv_act_map = {v: k for k, v in act_map.items()}
+
+        def _on_action_seg(choice):
+            self.pc_action.set(act_map.get(choice, "shutdown"))
+
+        act_seg = ctk.CTkSegmentedButton(
+            pc_row1,
+            values=["종료", "다시 시작", "절전", "알람(소리)"],
+            font=get_font(11, "bold"),
+            command=_on_action_seg
+        )
+        act_seg.set(inv_act_map.get(self.pc_action.get(), "종료"))
+        act_seg.pack(side="left", fill="x", expand=True, padx=(0, 8))
+
+        # 1-2. 시간 선택 행 (동작 선택과 완벽히 일치하는 버튼 배치)
         pc_row2 = ctk.CTkFrame(pc_card, fg_color="transparent")
-        pc_row2.pack(fill="x", padx=12, pady=(4, 10))
+        pc_row2.pack(fill="x", padx=14, pady=(6, 12))
+
+        ctk.CTkLabel(
+            pc_row2,
+            text="시간 예약:",
+            font=get_font(11, "bold"),
+            text_color=palette["text_main"],
+            width=70,
+            anchor="w"
+        ).pack(side="left")
+
+        time_btn_box = ctk.CTkFrame(pc_row2, fg_color="transparent")
+        time_btn_box.pack(side="left", fill="x", expand=True, padx=(0, 8))
+        for col_idx in range(4):
+            time_btn_box.grid_columnconfigure(col_idx, weight=1)
 
         presets = [(30, "30분 뒤"), (60, "1시간 뒤"), (90, "1.5시간 뒤"), (120, "2시간 뒤")]
-        for m, lbl in presets:
-            ctk.CTkButton(
-                pc_row2,
+        for idx, (m, lbl) in enumerate(presets):
+            btn = ctk.CTkButton(
+                time_btn_box,
                 text=lbl,
                 font=get_font(11, "bold"),
-                width=80,
                 height=30,
-                fg_color="#334155",
-                hover_color="#475569",
+                corner_radius=8,
+                fg_color=palette["sidebar_btn_hover"],
+                hover_color=palette["accent_blue"],
+                text_color=palette["text_main"],
                 command=lambda mins=m: self._quick_schedule_pc(mins)
-            ).pack(side="left", padx=2)
+            )
+            btn.grid(row=0, column=idx, padx=2, sticky="nsew")
 
-        ctk.CTkButton(
+        cancel_btn = ctk.CTkButton(
             pc_row2,
             text="🛑 예약 취소",
             font=get_font(11, "bold"),
-            fg_color="#dc2626",
-            hover_color="#b91c1c",
-            width=90,
+            fg_color="#3f1d24",
+            hover_color="#dc2626",
+            text_color="#fca5a5",
+            width=85,
             height=30,
+            corner_radius=8,
             command=self._cancel_schedule
-        ).pack(side="right")
+        )
+        cancel_btn.pack(side="right")
 
         # 2. 화면 분할 & 위젯 도구
-        screen_card = ctk.CTkFrame(scroll, corner_radius=10, fg_color="#1e2230", border_width=1, border_color="#374151")
-        screen_card.pack(fill="x", pady=(0, 8))
+        screen_card = ctk.CTkFrame(scroll, corner_radius=12, fg_color=palette["card_inner_bg"], border_width=1, border_color=palette["card_border"])
+        screen_card.pack(fill="x", pady=(0, 10))
 
-        ctk.CTkLabel(screen_card, text="🖥️ 화면 분할 최적화 & 미니 도크 위치", font=get_font(13, "bold"), text_color="#38bdf8").pack(anchor="w", padx=12, pady=(10, 6))
+        ctk.CTkLabel(screen_card, text="🖥️ 화면 분할 최적화 & 미니 도크 위치", font=get_font(13, "bold"), text_color=palette["accent_green"]).pack(anchor="w", padx=14, pady=(10, 6))
 
         sc_row = ctk.CTkFrame(screen_card, fg_color="transparent")
-        sc_row.pack(fill="x", padx=12, pady=(2, 10))
+        sc_row.pack(fill="x", padx=14, pady=(2, 10))
 
         snap_presets = [
             ("좌측 반", "left_half"),
@@ -1754,11 +1914,12 @@ class App(ctk.CTk):
             ctk.CTkButton(
                 sc_row,
                 text=name,
-                font=get_font(11),
+                font=get_font(11, "bold"),
                 width=75,
                 height=28,
-                fg_color="#2563eb",
-                hover_color="#1d4ed8",
+                fg_color=palette["sidebar_btn_hover"],
+                hover_color=palette["accent_blue"],
+                text_color=palette["text_main"],
                 command=lambda m=mode: self._snap_window(m)
             ).pack(side="left", padx=2)
 
@@ -3430,6 +3591,20 @@ class App(ctk.CTk):
         try:
             self.attributes("-alpha", val)
             timetable_manager.save_settings({"window_alpha": val})
+            pct_str = f"{int(val * 100)}%"
+
+            if hasattr(self, "top_alpha_lbl") and self.top_alpha_lbl.winfo_exists():
+                self.top_alpha_lbl.configure(text=f"👁️ 투명도 {pct_str}")
+            if hasattr(self, "top_alpha_slider") and self.top_alpha_slider.winfo_exists() and abs(self.top_alpha_slider.get() - val) > 0.01:
+                self.top_alpha_slider.set(val)
+
+            if hasattr(self, "sidebar_alpha_lbl") and self.sidebar_alpha_lbl.winfo_exists():
+                self.sidebar_alpha_lbl.configure(text=pct_str)
+            if hasattr(self, "sidebar_alpha_slider") and self.sidebar_alpha_slider.winfo_exists() and abs(self.sidebar_alpha_slider.get() - val) > 0.01:
+                self.sidebar_alpha_slider.set(val)
+
+            if hasattr(self, "alpha_slider") and self.alpha_slider.winfo_exists() and abs(self.alpha_slider.get() - val) > 0.01:
+                self.alpha_slider.set(val)
         except Exception:
             pass
 

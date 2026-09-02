@@ -2,18 +2,18 @@ import os
 import sys
 import datetime
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import filedialog, messagebox, simpledialog
 import customtkinter as ctk
-from PIL import ImageGrab
+from PIL import ImageGrab, ImageTk, Image
 from src.font_config import get_font
 from src.tooltip import attach_tooltip
 
 class ScreenDrawingOverlay:
     """
-    놀티쳐 데스크 전체화면 투명 판서 오버레이
-    - 모니터 위 어떤 웹페이지/앱(나이스, 유튜브, PPT 등) 위에서도 자유롭게 판서
-    - 판서 모드 중에는 화면의 어디를 클릭하더라도 다른 앱이 클릭되지 않고 100% 판서로만 작동
-    - ESC 또는 [✕ 판서 종료]를 눌러야만 안전하게 판서 종료
+    놀티쳐 데스크 전체화면 스크린 판서 오버레이
+    - 바탕화면, 웹 브라우저, 나이스, 유튜브, PPT 등 어떤 화면 위에서도 완벽하게 판서
+    - 화면 캡처 동결(Freeze) 레이어로 뒤의 웹/앱 클릭 관통 오류 100% 차단
+    - 펜, 형광펜, 직선/화살표, 사각형, 텍스트 입력(T), 칠판 모드, 캡처 저장 지원
     """
     _instance = None
 
@@ -29,16 +29,19 @@ class ScreenDrawingOverlay:
         self.canvas = None
         self.toolbar = None
 
+        # 화면 배경 이미지
+        self.bg_photo = None
+        self.bg_mode = "screen"  # "screen", "greenboard", "blackboard"
+
         # 그리기 상태 변수
-        self.current_tool = "pen"  # pen, highlighter, arrow, rect, line, eraser
+        self.current_tool = "pen"  # pen, highlighter, arrow, rect, text, eraser
         self.current_color = "#ff3b30"  # 기본 빨강
         self.current_width = 4
-        self.is_blackboard = False
 
-        self.history = []  # Undo history: list of item IDs
+        self.history = []  # Undo history
         self.current_stroke = []
 
-        # 드래그 좌표
+        # 마우스 드래그 좌표
         self.last_x = None
         self.last_y = None
         self.start_x = None
@@ -54,26 +57,35 @@ class ScreenDrawingOverlay:
             self.root.lift()
             return
 
+        # 1. 켜는 순간 현재 화면 전체 고해상도 캡처 (웹/바탕화면 동결)
+        try:
+            screen_img = ImageGrab.grab()
+        except Exception:
+            screen_img = None
+
         self.root = tk.Toplevel(self.parent) if self.parent else tk.Tk()
         self.root.title("놀티쳐 데스크 - 화면 판서")
         self.root.attributes("-topmost", True)
         self.root.attributes("-fullscreen", True)
+        self.root.configure(bg="#000000")
 
-        # Windows 투명 배경 설정 (키 색상을 투명하게 처리하되 마우스 이벤트는 100% 캔버스가 캡처)
-        self.trans_color = "#abcdef"
-        self.root.configure(bg=self.trans_color)
-        self.root.wm_attributes("-transparentcolor", self.trans_color)
-
-        # 캔버스 생성 (전체화면 마우스 포커스 획득)
+        # 2. 전체화면 캔버스 생성
         self.canvas = tk.Canvas(
             self.root,
-            bg=self.trans_color,
+            bg="#000000",
             highlightthickness=0,
             cursor="crosshair"
         )
         self.canvas.pack(fill="both", expand=True)
 
-        # 마우스 판서 이벤트 바인딩
+        # 3. 캡처한 화면을 캔버스 배경으로 1:1 렌더링
+        if screen_img:
+            self.bg_photo = ImageTk.PhotoImage(screen_img)
+            self.bg_item_id = self.canvas.create_image(0, 0, image=self.bg_photo, anchor="nw", tags="bg_layer")
+        else:
+            self.bg_item_id = None
+
+        # 4. 마우스 판서 이벤트 바인딩 (뒤의 웹이나 앱이 전혀 클릭되지 않고 100% 판서로만 동작)
         self.canvas.bind("<Button-1>", self._on_mouse_down)
         self.canvas.bind("<B1-Motion>", self._on_mouse_move)
         self.canvas.bind("<ButtonRelease-1>", self._on_mouse_up)
@@ -95,8 +107,7 @@ class ScreenDrawingOverlay:
         sw = self.root.winfo_screenwidth()
         sh = self.root.winfo_screenheight()
 
-        # 상단 중앙에 플로팅 툴바 배치
-        tb_w = 640
+        tb_w = 720
         tb_h = 56
         tb_x = (sw - tb_w) // 2
         tb_y = 20
@@ -107,7 +118,6 @@ class ScreenDrawingOverlay:
         self.toolbar.overrideredirect(True)
         self.toolbar.attributes("-topmost", True)
 
-        # macOS 스타일 플로팅 캡슐 프레임
         bg_frame = ctk.CTkFrame(
             self.toolbar,
             fg_color="#090d16",
@@ -117,7 +127,7 @@ class ScreenDrawingOverlay:
         )
         bg_frame.pack(fill="both", expand=True, padx=1, pady=1)
 
-        # 드래그 이동 핸들
+        # 드래그 핸들
         drag_handle = ctk.CTkLabel(
             bg_frame,
             text="⋮⋮",
@@ -131,13 +141,14 @@ class ScreenDrawingOverlay:
         drag_handle.bind("<B1-Motion>", self._on_toolbar_drag)
         attach_tooltip(drag_handle, "드래그하여 판서 도구함 위치 이동")
 
-        # 1. 도구 선택 (일반펜, 형광펜, 직선/화살표, 사각형, 지우개)
+        # 1. 도구 선택 (일반펜, 형광펜, 화살표, 사각형, 텍스트, 지우개)
         self.tool_btns = {}
         tools = [
             ("pen", "✏️", "일반 펜 판서"),
             ("highlighter", "🖍️", "반투명 형광펜 강조"),
             ("arrow", "↗", "화살표 그리기"),
             ("rect", "▢", "사각형 박스 그리기"),
+            ("text", "🔤", "화면에 텍스트 글자 입력"),
             ("eraser", "🧹", "부분 지우개")
         ]
 
@@ -145,19 +156,19 @@ class ScreenDrawingOverlay:
             btn = ctk.CTkButton(
                 bg_frame,
                 text=icon,
-                width=34,
-                height=34,
+                width=32,
+                height=32,
                 font=get_font(12, "bold"),
                 fg_color="#0284c7" if t_key == "pen" else "transparent",
                 hover_color="#0369a1",
                 corner_radius=10,
                 command=lambda k=t_key: self._select_tool(k)
             )
-            btn.pack(side="left", padx=2)
+            btn.pack(side="left", padx=1)
             self.tool_btns[t_key] = btn
-            attach_tooltip(btn, f"{desc}")
+            attach_tooltip(btn, desc)
 
-        ctk.CTkFrame(bg_frame, width=1, height=26, fg_color="#334155").pack(side="left", padx=4)
+        ctk.CTkFrame(bg_frame, width=1, height=24, fg_color="#334155").pack(side="left", padx=3)
 
         # 2. 색상 팔레트
         self.color_btns = {}
@@ -175,30 +186,30 @@ class ScreenDrawingOverlay:
             btn = ctk.CTkButton(
                 bg_frame,
                 text="",
-                width=22,
-                height=22,
-                corner_radius=11,
+                width=20,
+                height=20,
+                corner_radius=10,
                 fg_color=c_hex,
                 hover_color=c_hex,
                 border_width=2 if c_hex == self.current_color else 0,
                 border_color="#ffffff",
                 command=lambda c=c_hex: self._select_color(c)
             )
-            btn.pack(side="left", padx=2)
+            btn.pack(side="left", padx=1)
             self.color_btns[c_hex] = btn
             attach_tooltip(btn, f"펜 색상: {c_name}")
 
-        ctk.CTkFrame(bg_frame, width=1, height=26, fg_color="#334155").pack(side="left", padx=4)
+        ctk.CTkFrame(bg_frame, width=1, height=24, fg_color="#334155").pack(side="left", padx=3)
 
-        # 3. 굵기 조절 (세련된 점 기호)
+        # 3. 굵기 조절 (•, ●, ⬤)
         widths = [(3, "•", "가는 펜 (3px)"), (6, "●", "보통 펜 (6px)"), (12, "⬤", "굵은 펜 (12px)")]
         for w_val, w_sym, w_desc in widths:
             btn = ctk.CTkButton(
                 bg_frame,
                 text=w_sym,
-                width=28,
-                height=28,
-                font=get_font(12, "bold"),
+                width=26,
+                height=26,
+                font=get_font(11, "bold"),
                 corner_radius=8,
                 fg_color="#1e293b",
                 hover_color="#334155",
@@ -207,93 +218,102 @@ class ScreenDrawingOverlay:
             btn.pack(side="left", padx=1)
             attach_tooltip(btn, f"펜 굵기: {w_desc}")
 
-        ctk.CTkFrame(bg_frame, width=1, height=26, fg_color="#334155").pack(side="left", padx=4)
+        ctk.CTkFrame(bg_frame, width=1, height=24, fg_color="#334155").pack(side="left", padx=3)
 
-        # 4. 액션 버튼 (칠판모드, 실행취소, 전체삭제, 캡처저장, 판서종료)
+        # 4. 배경 모드 3단 전환 (화면 ↔ 초록칠판 ↔ 블랙보드)
         self.board_btn = ctk.CTkButton(
             bg_frame,
-            text="⬛",
-            width=32,
-            height=32,
-            font=get_font(11),
-            fg_color="#1e293b",
-            hover_color="#334155",
-            corner_radius=10,
-            command=self._toggle_blackboard
+            text="🪟 화면",
+            width=54,
+            height=30,
+            font=get_font(10, "bold"),
+            fg_color="#0284c7",
+            hover_color="#0369a1",
+            corner_radius=8,
+            command=self._cycle_background_mode
         )
         self.board_btn.pack(side="left", padx=2)
-        attach_tooltip(self.board_btn, "칠판 모드 전환 (투명 ↔ 어두운 칠판)")
+        attach_tooltip(self.board_btn, "배경 전환 (🪟 현재 화면 ↔ 🟢 초록 칠판 ↔ ⚫ 블랙보드)")
 
+        # 5. 액션 버튼 (실행취소, 전체삭제, 캡처저장, 판서종료)
         undo_btn = ctk.CTkButton(
             bg_frame,
             text="↩",
-            width=32,
-            height=32,
+            width=28,
+            height=30,
             font=get_font(12, "bold"),
             fg_color="#334155",
             hover_color="#475569",
-            corner_radius=10,
+            corner_radius=8,
             command=self.undo
         )
-        undo_btn.pack(side="left", padx=2)
+        undo_btn.pack(side="left", padx=1)
         attach_tooltip(undo_btn, "실행 취소 (Undo / Ctrl+Z)")
 
         clear_btn = ctk.CTkButton(
             bg_frame,
             text="🗑️",
-            width=32,
-            height=32,
+            width=28,
+            height=30,
             font=get_font(11),
             fg_color="#7f1d1d",
             hover_color="#991b1b",
             text_color="#fca5a5",
-            corner_radius=10,
+            corner_radius=8,
             command=self.clear_all
         )
-        clear_btn.pack(side="left", padx=2)
+        clear_btn.pack(side="left", padx=1)
         attach_tooltip(clear_btn, "화면 판서 전체 지우기")
 
         cap_btn = ctk.CTkButton(
             bg_frame,
             text="📸",
-            width=32,
-            height=32,
+            width=28,
+            height=30,
             font=get_font(11),
             fg_color="#059669",
             hover_color="#047857",
-            corner_radius=10,
+            corner_radius=8,
             command=self.save_screenshot
         )
-        cap_btn.pack(side="left", padx=2)
+        cap_btn.pack(side="left", padx=1)
         attach_tooltip(cap_btn, "판서 화면 전체 캡처 저장")
 
         close_btn = ctk.CTkButton(
             bg_frame,
-            text="✕ 판서 종료",
-            width=84,
-            height=32,
+            text="✕ 종료",
+            width=64,
+            height=30,
             font=get_font(11, "bold"),
             fg_color="#dc2626",
             hover_color="#b91c1c",
             text_color="#ffffff",
-            corner_radius=10,
+            corner_radius=8,
             command=self.close
         )
-        close_btn.pack(side="left", padx=(4, 6))
-        attach_tooltip(close_btn, "판서 모드를 완전히 종료하고 마우스 제어 복원 (ESC)")
+        close_btn.pack(side="left", padx=(3, 6))
+        attach_tooltip(close_btn, "판서 모드를 완전히 종료하고 일반 마우스 제어로 복귀 (ESC)")
 
-    def _toggle_blackboard(self):
-        self.is_blackboard = not self.is_blackboard
-        if self.is_blackboard:
-            self.root.wm_attributes("-transparentcolor", "")
-            self.root.configure(bg="#1c2826")
-            self.canvas.configure(bg="#1c2826")
-            self.board_btn.configure(text="🪟", fg_color="#0284c7")
-        else:
-            self.root.configure(bg=self.trans_color)
-            self.canvas.configure(bg=self.trans_color)
-            self.root.wm_attributes("-transparentcolor", self.trans_color)
-            self.board_btn.configure(text="⬛", fg_color="#1e293b")
+    def _cycle_background_mode(self):
+        modes = ["screen", "greenboard", "blackboard"]
+        cur_idx = modes.index(self.bg_mode) if self.bg_mode in modes else 0
+        self.bg_mode = modes[(cur_idx + 1) % len(modes)]
+
+        if self.bg_mode == "screen":
+            self.canvas.configure(bg="#000000")
+            if self.bg_item_id:
+                self.canvas.itemconfigure(self.bg_item_id, state="normal")
+            self.board_btn.configure(text="🪟 화면", fg_color="#0284c7")
+        elif self.bg_mode == "greenboard":
+            if self.bg_item_id:
+                self.canvas.itemconfigure(self.bg_item_id, state="hidden")
+            self.canvas.configure(bg="#1e3a2f")
+            self.board_btn.configure(text="🟢 칠판", fg_color="#059669")
+        elif self.bg_mode == "blackboard":
+            if self.bg_item_id:
+                self.canvas.itemconfigure(self.bg_item_id, state="hidden")
+            self.canvas.configure(bg="#111827")
+            self.board_btn.configure(text="⚫ 칠판", fg_color="#374151")
 
     def _start_toolbar_drag(self, event):
         self._tb_drag_x = event.x
@@ -329,6 +349,8 @@ class ScreenDrawingOverlay:
 
         if tool_key == "eraser":
             self.canvas.configure(cursor="circle")
+        elif tool_key == "text":
+            self.canvas.configure(cursor="xterm")
         else:
             self.canvas.configure(cursor="crosshair")
 
@@ -339,10 +361,23 @@ class ScreenDrawingOverlay:
         self.last_y = event.y
         self.current_stroke = []
 
-        if self.current_tool in ["pen", "highlighter"]:
-            pass
-        elif self.current_tool == "eraser":
+        if self.current_tool == "eraser":
             self._erase_at(event.x, event.y)
+        elif self.current_tool == "text":
+            self._prompt_text_input(event.x, event.y)
+
+    def _prompt_text_input(self, x, y):
+        txt = simpledialog.askstring("텍스트 입력", "화면에 표시할 글자를 입력하세요:", parent=self.root)
+        if txt:
+            f_size = max(14, self.current_width * 5)
+            item_id = self.canvas.create_text(
+                x, y,
+                text=txt,
+                fill=self.current_color,
+                font=("Malgun Gothic", f_size, "bold"),
+                anchor="nw"
+            )
+            self.history.append(("single", item_id))
 
     def _on_mouse_move(self, event):
         if self.current_tool == "pen":
@@ -359,7 +394,6 @@ class ScreenDrawingOverlay:
             self.last_y = event.y
 
         elif self.current_tool == "highlighter":
-            # 형광펜 (굵은 선 + 반투명 stipple 질감)
             item_id = self.canvas.create_line(
                 self.last_x, self.last_y, event.x, event.y,
                 fill=self.current_color,
@@ -410,7 +444,9 @@ class ScreenDrawingOverlay:
     def _erase_at(self, x, y, radius=18):
         items = self.canvas.find_overlapping(x - radius, y - radius, x + radius, y + radius)
         for item in items:
-            self.canvas.delete(item)
+            # 배경 이미지는 지우지 않음
+            if item != self.bg_item_id:
+                self.canvas.delete(item)
 
     def undo(self):
         if not self.history:
@@ -424,7 +460,10 @@ class ScreenDrawingOverlay:
             self.canvas.delete(target)
 
     def clear_all(self):
-        self.canvas.delete("all")
+        # 배경 이미지만 남기고 판서 획만 삭제
+        for item in self.canvas.find_all():
+            if item != self.bg_item_id:
+                self.canvas.delete(item)
         self.history.clear()
 
     def save_screenshot(self):
@@ -469,3 +508,4 @@ class ScreenDrawingOverlay:
             self.root = None
 
         ScreenDrawingOverlay._instance = None
+

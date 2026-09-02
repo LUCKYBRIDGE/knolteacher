@@ -983,21 +983,23 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
         except Exception:
             pass
 
-    # ==========================================
-    # 5. ⚾ 아케이드 핀볼(Plinko) 뽑기 뷰
-    # ==========================================
+    # =========================================================================
+    # 5. ⚾ 통통 구슬 레이스 & 도착 순위 줄세우기 (Marble Drop Race)
+    # =========================================================================
     def _render_pinball_view(self):
         palette = theme_manager.get_theme()
 
         box = ctk.CTkFrame(self.content_frame, fg_color=palette["card_inner_bg"], corner_radius=14, border_width=1, border_color=palette["card_border"])
         box.pack(fill="both", expand=True, padx=4, pady=4)
 
+        # 상단 참가자 설정 바
         s_row = ctk.CTkFrame(box, fg_color="transparent")
         s_row.pack(fill="x", padx=12, pady=(6, 2))
-        ctk.CTkLabel(s_row, text="슬롯 항목 (쉼표구분):", font=get_font(10, "bold"), text_color=palette["text_main"]).pack(side="left")
+        ctk.CTkLabel(s_row, text="참가자 (쉼표구분):", font=get_font(10, "bold"), text_color=palette["text_main"]).pack(side="left")
         
+        self.marble_players = ["1번", "2번", "3번", "4번", "5번", "6번"]
         self.pin_slot_entry = ctk.CTkEntry(s_row, height=26, font=get_font(10), fg_color=palette["card_bg"], text_color=palette["text_main"])
-        self.pin_slot_entry.insert(0, ", ".join(self.pinball_slots))
+        self.pin_slot_entry.insert(0, ", ".join(self.marble_players))
         self.pin_slot_entry.pack(side="left", fill="x", expand=True, padx=4)
 
         set_btn = ctk.CTkButton(
@@ -1009,191 +1011,357 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
             fg_color=palette["sidebar_btn_hover"],
             hover_color=palette["accent_blue"],
             text_color=palette["text_main"],
-            command=self._apply_pinball_slots
+            command=self._apply_marble_players
         )
-        set_btn.pack(side="left")
+        set_btn.pack(side="left", padx=1)
 
-        # 핀볼 아케이드 캔버스
+        load_btn = ctk.CTkButton(
+            s_row,
+            text="👥 학생불러오기",
+            width=80,
+            height=26,
+            font=get_font(10, "bold"),
+            fg_color=palette["accent_green"],
+            hover_color="#059669",
+            command=self._load_students_into_marble_race
+        )
+        load_btn.pack(side="left", padx=2)
+        attach_tooltip(load_btn, "우리 반 학생 명렬표를 구슬 레이스 참가자로 1초 불러오기")
+
+        # 메인 시뮬레이션 영역 (좌측: 구슬 트랙 캔버스 / 우측: 실시간 도착 순위 리더보드)
+        track_row = ctk.CTkFrame(box, fg_color="transparent")
+        track_row.pack(fill="both", expand=True, padx=8, pady=2)
+
+        # 캔버스 (장애물 코스 + 하단 깔때기 골인 출구)
         self.pin_canvas = tk.Canvas(
-            box,
-            width=420,
+            track_row,
+            width=300,
             height=270,
             bg="#070b12",
             highlightthickness=1,
             highlightbackground="#0284c7"
         )
-        self.pin_canvas.pack(pady=2)
+        self.pin_canvas.pack(side="left", fill="both", expand=True, padx=(0, 4))
 
-        self._draw_pinball_board()
+        # 우측 실시간 도착 순위 판 (Leaderboard)
+        rank_frame = ctk.CTkFrame(track_row, fg_color=palette["card_bg"], corner_radius=10, border_width=1, border_color=palette["card_border"], width=135)
+        rank_frame.pack(side="right", fill="both", padx=(4, 0))
+        rank_frame.pack_propagate(False)
+
+        ctk.CTkLabel(
+            rank_frame,
+            text="🏆 도착 순위표",
+            font=get_font(11, "bold"),
+            text_color=palette["accent_orange"]
+        ).pack(anchor="w", padx=8, pady=(6, 2))
+
+        self.rank_scroll = ctk.CTkScrollableFrame(rank_frame, fg_color="transparent")
+        self.rank_scroll.pack(fill="both", expand=True, padx=2, pady=2)
+
+        self.rank_items_labels = []
+
+        # 상태 및 컨트롤 바
+        self._init_marble_race_state()
+        self._draw_marble_track()
+
+        ctrl_row = ctk.CTkFrame(box, fg_color="transparent")
+        ctrl_row.pack(fill="x", padx=12, pady=(4, 6))
 
         self.pin_drop_btn = ctk.CTkButton(
-            box,
-            text="⚾ 핀볼 투하!",
+            ctrl_row,
+            text="🚀 구슬 와르르 출발!",
             width=160,
-            height=38,
-            font=get_font(13, "bold"),
-            corner_radius=12,
+            height=36,
+            font=get_font(12, "bold"),
+            corner_radius=10,
             fg_color=palette["accent_green"],
             hover_color="#059669",
-            command=self._start_pinball_drop
+            command=self._start_marble_race
         )
-        self.pin_drop_btn.pack(pady=(2, 4))
-        attach_tooltip(self.pin_drop_btn, "상단에서 핀볼을 투하하여 슬롯 추첨 시작")
+        self.pin_drop_btn.pack(side="left", padx=4)
+        attach_tooltip(self.pin_drop_btn, "모든 구슬을 출발시켜 장애물을 통과해 먼저 골인하는 순서대로 줄세우기!")
+
+        reset_btn = ctk.CTkButton(
+            ctrl_row,
+            text="🔄 초기화",
+            width=80,
+            height=36,
+            font=get_font(11, "bold"),
+            corner_radius=10,
+            fg_color=palette["sidebar_btn_hover"],
+            hover_color=palette["accent_blue"],
+            text_color=palette["text_main"],
+            command=self._reset_marble_race
+        )
+        reset_btn.pack(side="left", padx=2)
 
         self.pin_result_lbl = ctk.CTkLabel(
-            box,
-            text="핀볼을 투하하여 짜릿한 추첨을 즐겨보세요!",
+            ctrl_row,
+            text="구슬을 출발시켜 골인 순위를 겨뤄보세요!",
             font=get_font(11, "bold"),
-            text_color=palette["accent_blue"]
+            text_color=palette["accent_blue"],
+            anchor="w"
         )
-        self.pin_result_lbl.pack(pady=(0, 4))
+        self.pin_result_lbl.pack(side="left", fill="x", expand=True, padx=8)
 
-    def _apply_pinball_slots(self):
+    def _load_students_into_marble_race(self):
+        names = student_manager.get_student_names()
+        if names:
+            self.marble_players = [n.split()[-1] if " " in n else n for n in names[:12]]
+            self.pin_slot_entry.delete(0, "end")
+            self.pin_slot_entry.insert(0, ", ".join(self.marble_players))
+            self._reset_marble_race()
+
+    def _apply_marble_players(self):
         txt = self.pin_slot_entry.get().strip()
         if txt:
-            slots = [x.strip() for x in txt.split(",") if x.strip()]
-            if len(slots) >= 2:
-                self.pinball_slots = slots
-                self._draw_pinball_board()
-                self.pin_result_lbl.configure(text=f"{len(self.pinball_slots)}개 슬롯으로 설정되었습니다.")
+            players = [x.strip() for x in txt.split(",") if x.strip()]
+            if len(players) >= 2:
+                self.marble_players = players
+                self._reset_marble_race()
 
-    def _draw_pinball_board(self, highlight_slot=None):
+    def _init_marble_race_state(self):
+        self.marbles = []
+        self.finished_marbles = []
+        self.race_running = False
+
+        colors = ["#ef4444", "#f97316", "#f59e0b", "#10b981", "#06b6d4", "#3b82f6", "#8b5cf6", "#ec4899", "#14b8a6", "#84cc16"]
+        
+        w = 300
+        n = len(self.marble_players)
+        gap = min(26, max(14, (w - 40) / max(1, n)))
+        start_x = (w - (n - 1) * gap) / 2.0
+
+        for i, name in enumerate(self.marble_players):
+            self.marbles.append({
+                "id": i,
+                "name": name,
+                "color": colors[i % len(colors)],
+                "x": start_x + i * gap + random.uniform(-2, 2),
+                "y": 14.0 + random.uniform(-4, 4),
+                "vx": random.uniform(-0.5, 0.5),
+                "vy": random.uniform(0.5, 1.5),
+                "r": 7,
+                "finished": False,
+                "finish_time": 0
+            })
+
+    def _reset_marble_race(self):
+        self.race_running = False
+        self.finished_marbles.clear()
+        for w in self.rank_scroll.winfo_children():
+            w.destroy()
+        self.rank_items_labels.clear()
+        self._init_marble_race_state()
+        self._draw_marble_track()
+        self.pin_drop_btn.configure(state="normal")
+        self.pin_result_lbl.configure(text="구슬을 출발시켜 골인 순위를 겨뤄보세요!", text_color="#38bdf8")
+
+    def _draw_marble_track(self):
         self.pin_canvas.delete("all")
-        w, h = 420, 270
+        w, h = 300, 270
 
-        self.pinball_pegs.clear()
-        rows = 6
-        start_y = 45
-        gap_y = 30
+        # 1. 상단 출발 게이트
+        self.pin_canvas.create_line(15, 26, w - 15, 26, fill="#38bdf8", width=2, dash=(4, 4))
+        self.pin_canvas.create_text(w / 2.0, 10, text="▼ START GATE ▼", fill="#64748b", font=("Consolas", 8, "bold"))
 
+        # 2. 장애물 핀들 (Staggered Pegs)
+        self.track_pegs = []
+        rows = 5
+        start_y = 52
+        gap_y = 28
         for r_idx in range(rows):
             cols = r_idx + 4
-            gap_x = 34
+            gap_x = 28
             row_w = (cols - 1) * gap_x
-            start_x = (w - row_w) / 2.0
+            sx = (w - row_w) / 2.0
             cur_y = start_y + r_idx * gap_y
-
             for c_idx in range(cols):
-                px = start_x + c_idx * gap_x
+                px = sx + c_idx * gap_x
                 py = cur_y
-                self.pinball_pegs.append((px, py))
+                self.track_pegs.append((px, py))
                 self.pin_canvas.create_oval(px - 3, py - 3, px + 3, py + 3, fill="#fbbf24", outline="#ffffff", width=1)
 
-        n_slots = len(self.pinball_slots)
-        slot_w = w / n_slots
-        bot_y = h - 45
-        floor_y = h - 6
+        # 3. 중간 회전 범퍼 / 튕김 장애물 바
+        self.pin_canvas.create_oval(w / 2.0 - 12, 120 - 12, w / 2.0 + 12, 120 + 12, fill="#ec4899", outline="#ffffff", width=2)
+        self.pin_canvas.create_text(w / 2.0, 120, text="⚡", fill="#ffffff", font=("Segoe UI Emoji", 9))
 
-        slot_colors = ["#ef4444", "#f59e0b", "#10b981", "#06b6d4", "#3b82f6", "#8b5cf6", "#ec4899"]
+        # 4. 하단 역삼각형 깔때기(Funnel) 골인 출구
+        gate_w = 26
+        cx = w / 2.0
+        funnel_top_y = 195
+        funnel_bot_y = 238
 
-        for i in range(n_slots):
-            sx1 = i * slot_w
-            sx2 = (i + 1) * slot_w
-            scol = slot_colors[i % len(slot_colors)]
+        # 깔때기 좌측 벽 / 우측 벽
+        self.pin_canvas.create_line(10, funnel_top_y, cx - gate_w / 2.0, funnel_bot_y, fill="#0284c7", width=4, capstyle=tk.ROUND)
+        self.pin_canvas.create_line(w - 10, funnel_top_y, cx + gate_w / 2.0, funnel_bot_y, fill="#0284c7", width=4, capstyle=tk.ROUND)
 
-            is_win = (highlight_slot == i)
-            fill_c = scol if is_win else "#111827"
-            
-            self.pin_canvas.create_rectangle(sx1 + 2, bot_y, sx2 - 2, floor_y, fill=fill_c, outline=scol, width=2 if is_win else 1)
-            self.pin_canvas.create_line(sx1, bot_y - 12, sx1, floor_y, fill="#64748b", width=2)
-            if i == n_slots - 1:
-                self.pin_canvas.create_line(sx2, bot_y - 12, sx2, floor_y, fill="#64748b", width=2)
+        # 골인 단일 출구 슈트 (Chute)
+        self.pin_canvas.create_line(cx - gate_w / 2.0, funnel_bot_y, cx - gate_w / 2.0, h - 4, fill="#10b981", width=3)
+        self.pin_canvas.create_line(cx + gate_w / 2.0, funnel_bot_y, cx + gate_w / 2.0, h - 4, fill="#10b981", width=3)
+        self.pin_canvas.create_line(cx - gate_w / 2.0, h - 4, cx + gate_w / 2.0, h - 4, fill="#10b981", width=3)
 
-            lbl_txt = self.pinball_slots[i][:6]
-            self.pin_canvas.create_text(
-                (sx1 + sx2) / 2.0, (bot_y + floor_y) / 2.0,
-                text=lbl_txt,
-                fill="#ffffff",
-                font=("Malgun Gothic", 9, "bold")
-            )
+        self.pin_canvas.create_text(cx, h - 14, text="🏁 GOAL", fill="#4ade80", font=("Consolas", 8, "bold"))
 
-        self.pin_canvas.create_line(w / 2.0 - 25, 6, w / 2.0 - 10, 26, fill="#38bdf8", width=3)
-        self.pin_canvas.create_line(w / 2.0 + 25, 6, w / 2.0 + 10, 26, fill="#38bdf8", width=3)
+        # 5. 구슬 그리기
+        for m in self.marbles:
+            if not m["finished"]:
+                mx, my, mr = m["x"], m["y"], m["r"]
+                self.pin_canvas.create_oval(mx - mr, my - mr, mx + mr, my + mr, fill=m["color"], outline="#ffffff", width=1)
+                self.pin_canvas.create_text(mx, my, text=m["name"][:2], fill="#ffffff", font=("Malgun Gothic", 7, "bold"))
 
-    def _start_pinball_drop(self):
-        if self.pinball_animating:
+        # 6. 골인한 구슬들 줄세우기 표시 (하단 게이트 아래 멈춤)
+        for idx, fm in enumerate(self.finished_marbles):
+            fy = (h - 8) - idx * 13
+            if fy > funnel_bot_y:
+                self.pin_canvas.create_oval(cx - 6, fy - 6, cx + 6, fy + 6, fill=fm["color"], outline="#ffffff", width=1)
+                self.pin_canvas.create_text(cx, fy, text=str(idx + 1), fill="#ffffff", font=("Consolas", 7, "bold"))
+
+    def _start_marble_race(self):
+        if self.race_running:
             return
 
-        self.pinball_animating = True
+        self._reset_marble_race()
+        self.race_running = True
         self.pin_drop_btn.configure(state="disabled")
-        self.pin_result_lbl.configure(text="⚾ 핀볼이 통통 튀며 낙하하는 중...!", text_color="#f59e0b")
+        self.pin_result_lbl.configure(text="🏁 구슬들이 맹렬히 레이스 중입니다!", text_color="#f59e0b")
 
-        w, h = 420, 270
-        self.ball_x = w / 2.0 + random.uniform(-4, 4)
-        self.ball_y = 12.0
-        self.ball_vx = random.uniform(-1.2, 1.2)
-        self.ball_vy = 2.0
-        ball_r = 7
+        w, h = 300, 270
+        cx = w / 2.0
+        gate_w = 26
+        funnel_top_y = 195
+        funnel_bot_y = 238
 
-        def _physics_step():
-            if not self.pinball_animating:
+        def _step():
+            if not self.race_running:
                 return
 
-            self.ball_vy += 0.45
-            self.ball_vx *= 0.985
-            self.ball_x += self.ball_vx
-            self.ball_y += self.ball_vy
+            all_done = True
 
-            if self.ball_x < ball_r + 8:
-                self.ball_x = ball_r + 8
-                self.ball_vx = abs(self.ball_vx) * 0.75 + 1.0
-            elif self.ball_x > w - ball_r - 8:
-                self.ball_x = w - ball_r - 8
-                self.ball_vx = -abs(self.ball_vx) * 0.75 - 1.0
+            for m in self.marbles:
+                if m["finished"]:
+                    continue
+                all_done = False
 
-            for px, py in self.pinball_pegs:
-                dx = self.ball_x - px
-                dy = self.ball_y - py
-                dist = math.hypot(dx, dy)
-                min_dist = ball_r + 3
+                # 물리 연산: 중력 및 속도
+                m["vy"] += 0.32
+                m["vx"] *= 0.99
+                m["x"] += m["vx"]
+                m["y"] += m["vy"]
 
-                if dist < min_dist and dist > 0.001:
-                    nx = dx / dist
-                    ny = dy / dist
-                    dot = self.ball_vx * nx + self.ball_vy * ny
-                    
-                    self.ball_vx = (self.ball_vx - 1.8 * dot * nx) + random.uniform(-0.8, 0.8)
-                    self.ball_vy = abs(self.ball_vy - 1.8 * dot * ny) * 0.7 + 1.0
+                mr = m["r"]
 
-                    self.ball_x = px + nx * min_dist
-                    self.ball_y = py + ny * min_dist
+                # 좌우 외벽 충돌
+                if m["x"] < mr + 4:
+                    m["x"] = mr + 4
+                    m["vx"] = abs(m["vx"]) * 0.7 + random.uniform(0.2, 0.8)
+                elif m["x"] > w - mr - 4:
+                    m["x"] = w - mr - 4
+                    m["vx"] = -abs(m["vx"]) * 0.7 - random.uniform(0.2, 0.8)
 
-            self._draw_pinball_board()
-            
-            self.pin_canvas.create_oval(
-                self.ball_x - ball_r, self.ball_y - ball_r,
-                self.ball_x + ball_r, self.ball_y + ball_r,
-                fill="#ef4444", outline="#ffffff", width=2
-            )
+                # 상단 핀들과의 충돌
+                for px, py in self.track_pegs:
+                    dx = m["x"] - px
+                    dy = m["y"] - py
+                    dist = math.hypot(dx, dy)
+                    min_dist = mr + 3
+                    if dist < min_dist and dist > 0.001:
+                        nx = dx / dist
+                        ny = dy / dist
+                        dot = m["vx"] * nx + m["vy"] * ny
+                        m["vx"] = (m["vx"] - 1.8 * dot * nx) + random.uniform(-0.6, 0.6)
+                        m["vy"] = abs(m["vy"] - 1.8 * dot * ny) * 0.7 + random.uniform(0.5, 1.2)
+                        m["x"] = px + nx * min_dist
+                        m["y"] = py + ny * min_dist
 
-            bot_y = h - 40
-            if self.ball_y >= bot_y:
-                self.pinball_animating = False
+                # 중앙 튕김 범퍼
+                bx, by = cx, 120
+                b_dist = math.hypot(m["x"] - bx, m["y"] - by)
+                if b_dist < mr + 12 and b_dist > 0.001:
+                    bnx = (m["x"] - bx) / b_dist
+                    bny = (m["y"] - by) / b_dist
+                    m["vx"] = bnx * 3.5 + random.uniform(-1, 1)
+                    m["vy"] = bny * 3.5 + 1.0
+                    m["x"] = bx + bnx * (mr + 13)
+                    m["y"] = by + bny * (mr + 13)
+
+                # 하단 깔때기 경사면 안내
+                if m["y"] >= funnel_top_y:
+                    t = (m["y"] - funnel_top_y) / (funnel_bot_y - funnel_top_y)
+                    t = max(0.0, min(1.0, t))
+                    left_wall_x = 10 + t * (cx - gate_w / 2.0 - 10)
+                    right_wall_x = (w - 10) - t * (w - 10 - (cx + gate_w / 2.0))
+
+                    if m["x"] < left_wall_x + mr:
+                        m["x"] = left_wall_x + mr
+                        m["vx"] = abs(m["vx"]) * 0.5 + 1.2
+                    elif m["x"] > right_wall_x - mr:
+                        m["x"] = right_wall_x - mr
+                        m["vx"] = -abs(m["vx"]) * 0.5 - 1.2
+
+                # 골인 지점 통과 판정 (하단 단일 출구 도달)
+                if m["y"] >= funnel_bot_y:
+                    if abs(m["x"] - cx) <= gate_w:
+                        m["finished"] = True
+                        m["finish_time"] = time.time()
+                        self.finished_marbles.append(m)
+                        self._add_to_leaderboard(len(self.finished_marbles), m)
+                        try:
+                            winsound.MessageBeep(winsound.MB_OK)
+                        except Exception:
+                            pass
+
+            # 구슬끼리의 충돌 반발
+            for i in range(len(self.marbles)):
+                for j in range(i + 1, len(self.marbles)):
+                    m1 = self.marbles[i]
+                    m2 = self.marbles[j]
+                    if not m1["finished"] and not m2["finished"]:
+                        cdx = m2["x"] - m1["x"]
+                        cdy = m2["y"] - m1["y"]
+                        cdist = math.hypot(cdx, cdy)
+                        if cdist < 14 and cdist > 0.001:
+                            cnx = cdx / cdist
+                            cny = cdy / cdist
+                            m1["vx"] -= cnx * 0.8
+                            m1["vy"] -= cny * 0.8
+                            m2["vx"] += cnx * 0.8
+                            m2["vy"] += cny * 0.8
+
+            self._draw_marble_track()
+
+            if all_done:
+                self.race_running = False
                 self.pin_drop_btn.configure(state="normal")
-
-                n_slots = len(self.pinball_slots)
-                slot_w = w / n_slots
-                win_slot_idx = int(self.ball_x // slot_w)
-                win_slot_idx = max(0, min(n_slots - 1, win_slot_idx))
-
-                winner = self.pinball_slots[win_slot_idx]
-                self._draw_pinball_board(highlight_slot=win_slot_idx)
-
-                self.pin_canvas.create_oval(
-                    self.ball_x - ball_r, bot_y + 10 - ball_r,
-                    self.ball_x + ball_r, bot_y + 10 + ball_r,
-                    fill="#10b981", outline="#ffffff", width=2
-                )
-
-                self.pin_result_lbl.configure(
-                    text=f"🎉 핀볼 골인 결과: [ {winner} ] !",
-                    text_color="#10b981"
-                )
-                try:
-                    winsound.MessageBeep(winsound.MB_ICONASTERISK)
-                except Exception:
-                    pass
+                if self.finished_marbles:
+                    winner = self.finished_marbles[0]["name"]
+                    self.pin_result_lbl.configure(text=f"🎉 1등 골인: [ {winner} ] 축하합니다!", text_color="#10b981")
             else:
-                self.after(20, _physics_step)
+                self.after(20, _step)
 
-        _physics_step()
+        _step()
+
+    def _add_to_leaderboard(self, rank: int, marble: dict):
+        palette = theme_manager.get_theme()
+        
+        medals = {1: "🥇", 2: "🥈", 3: "🥉"}
+        icon = medals.get(rank, f"{rank}위")
+
+        row = ctk.CTkFrame(self.rank_scroll, fg_color=palette["card_inner_bg"], corner_radius=6)
+        row.pack(fill="x", pady=2)
+
+        ctk.CTkLabel(
+            row,
+            text=f"{icon}",
+            font=get_font(10, "bold"),
+            text_color="#f59e0b" if rank == 1 else palette["text_main"],
+            width=24
+        ).pack(side="left", padx=2)
+
+        ctk.CTkLabel(
+            row,
+            text=marble["name"],
+            font=get_font(10, "bold"),
+            text_color=marble["color"],
+            anchor="w"
+        ).pack(side="left", fill="x", expand=True, padx=2)
