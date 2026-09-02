@@ -940,8 +940,9 @@ class App(ctk.CTk):
             ("🎲 뽑기", "#f59e0b", "#d97706", lambda: self._open_classroom_tools("picker"), "공정한 학생 발표자 무작위 랜덤 추첨"),
             ("🎡 돌림판", "#ea580c", "#c2410c", lambda: self._open_classroom_tools("wheel"), "모둠/벌칙/보상 돌려돌려 돌림판"),
             ("🪜 사다리", "#8b5cf6", "#7c3aed", lambda: self._open_classroom_tools("ladder"), "짜릿한 학생/모둠 사다리타기 게임"),
-            ("📌 위젯", "#7c3aed", "#6d28d9", self._open_mini_widget, "바탕화면에 띄워두는 미니 시간표 및 오늘 급식"),
-            ("🌐 사이트", "#0ea5e9", "#0284c7", self._open_site_bookmarks, "놀퀴즈, 업무포털 등 교사용 필수 사이트 바로가기")
+            ("⚾ 핀볼", "#ec4899", "#db2777", lambda: self._open_classroom_tools("pinball"), "아케이드 통통 튀는 핀볼 추첨기"),
+            ("📌 위젯", "#0ea5e9", "#0284c7", self._open_mini_widget, "바탕화면에 띄워두는 미니 시간표 및 오늘 급식"),
+            ("🌐 사이트", "#0284c7", "#0369a1", self._open_site_bookmarks, "놀퀴즈, 업무포털 등 교사용 필수 사이트 바로가기")
         ]
 
         for a_title, a_col, a_hov, a_cmd, a_tip in quick_actions:

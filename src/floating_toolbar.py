@@ -36,7 +36,7 @@ class FloatingQuickToolbar(tk.Toplevel):
 
         # 기본 크기 및 위치 (화면 상단 우측)
         sw = self.winfo_screenwidth()
-        self.full_width = 630
+        self.full_width = 690
         self.collapsed_width = 90
         self.tb_height = 46
         x = max(10, sw - self.full_width - 40)
@@ -119,13 +119,14 @@ class FloatingQuickToolbar(tk.Toplevel):
         self.res_chip.pack(side="left", padx=(0, 4))
         attach_tooltip(self.res_chip, "현재 컴퓨터 CPU 실시간 사용량")
 
-        # 3. 주요 도구 단축 버튼들
+        # 3. 주요 도구 단축 버튼들 (5대 교실 도구 완비)
         tools = [
             ("✏️ 판서", "#ea580c", "#c2410c", self._open_drawing, "화면 위 자유 판서 (펜/형광펜/도형)"),
             ("⏱️ 타이머", "#0284c7", "#0369a1", self._open_timer, "교실 집중 수업 타이머 & 스톱워치"),
             ("🎲 뽑기", "#10b981", "#059669", self._open_picker, "공정한 학생 발표자 무작위 추첨"),
             ("🎡 돌림판", "#f59e0b", "#d97706", self._open_wheel, "모둠/벌칙/보상 돌려돌려 돌림판"),
             ("🪜 사다리", "#8b5cf6", "#7c3aed", self._open_ladder, "짜릿한 학생/모둠 사다리타기 게임"),
+            ("⚾ 핀볼", "#ec4899", "#db2777", self._open_pinball, "아케이드 통통 튀는 핀볼 추첨기"),
             ("📅 위젯", "#0ea5e9", "#0284c7", self._open_mini_widget, "바탕화면 올웨이즈온 시간표/급식 위젯"),
             ("💻 메인", "#334155", "#475569", self._open_main_app, "놀티쳐 데스크 메인 창 열기")
         ]
@@ -135,14 +136,14 @@ class FloatingQuickToolbar(tk.Toplevel):
                 self.container,
                 text=label,
                 font=get_font(10, "bold"),
-                width=52,
+                width=50,
                 height=30,
                 corner_radius=10,
                 fg_color=bg_c,
                 hover_color=hov_c,
                 command=cmd
             )
-            btn.pack(side="left", padx=2)
+            btn.pack(side="left", padx=1)
             attach_tooltip(btn, tip)
 
         ctk.CTkFrame(self.container, width=1, height=22, fg_color="#334155").pack(side="left", padx=3)
@@ -238,6 +239,9 @@ class FloatingQuickToolbar(tk.Toplevel):
 
     def _open_ladder(self):
         ClassroomToolsDialog.get_instance(self.parent, initial_tab="ladder")
+
+    def _open_pinball(self):
+        ClassroomToolsDialog.get_instance(self.parent, initial_tab="pinball")
 
     def _open_bookmarks(self):
         from src.site_bookmarks import SiteBookmarksDialog

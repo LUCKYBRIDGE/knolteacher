@@ -14,11 +14,12 @@ from src.tooltip import attach_tooltip
 
 class ClassroomToolsDialog(ctk.CTkToplevel):
     """
-    놀티쳐 데스크 교실 활동 도구 모음 (Classroom Interactive Tools)
-    - ⏱️ 활동 타이머 & 스톱워치
-    - 🎲 학생 무작위 뽑기 (Random Student Picker)
-    - 🎡 돌려돌려 돌림판 (Spin the Wheel / Roulette)
-    - 🪜 짜릿한 사다리타기 (Ghost Leg Ladder Game)
+    놀티쳐 데스크 교실 5대 인터랙티브 수업 도구 모음 (Classroom Interactive Tools)
+    1. ⏱️ 활동 타이머 & 스톱워치
+    2. 🎲 학생 무작위 뽑기 (Random Student Picker)
+    3. 🎡 돌려돌려 돌림판 (Spin the Wheel / Roulette)
+    4. 🪜 짜릿한 사다리타기 (Ghost Leg Ladder Game)
+    5. ⚾ 아케이드 핀볼 뽑기 (Pinball / Plinko Lottery Picker)
     """
     _instance = None
 
@@ -36,8 +37,8 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
         super().__init__(parent)
         self.parent = parent
         self.title("놀티쳐 교실 도구")
-        self.geometry("490x600")
-        self.minsize(430, 520)
+        self.geometry("520x620")
+        self.minsize(460, 540)
         self.attributes("-topmost", True)
         self.resizable(True, True)
 
@@ -46,26 +47,35 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
 
         self.is_pinned = True
         
-        # 타이머 상태
+        # 1. 타이머 상태
         self.timer_seconds = 0
         self.timer_running = False
         self.timer_job = None
 
-        # 뽑기 상태
+        # 2. 뽑기 상태
         self.max_students = 25
         self.picked_numbers = []
         self.roulette_running = False
 
-        # 돌림판 상태
+        # 3. 돌림판 상태
         self.wheel_items = ["1모둠", "2모둠", "3모둠", "4모둠", "5모둠", "6모둠"]
         self.wheel_angle = 0.0
         self.wheel_animating = False
 
-        # 사다리타기 상태
+        # 4. 사다리타기 상태
         self.ladder_players = ["1번", "2번", "3번", "4번"]
         self.ladder_goals = ["발표", "통과", "보너스", "청소"]
         self.ladder_lines = []
         self.ladder_animating = False
+
+        # 5. 핀볼 뽑기 상태
+        self.pinball_slots = ["1등(선물)", "2등(간식)", "3등(칭찬)", "4등(발표)", "5등(청소)"]
+        self.pinball_animating = False
+        self.pinball_pegs = []
+        self.ball_x = 0.0
+        self.ball_y = 0.0
+        self.ball_vx = 0.0
+        self.ball_vy = 0.0
 
         self._build_ui(initial_tab)
 
@@ -98,12 +108,13 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
             "timer": "⏱️ 타이머",
             "picker": "🎲 뽑기",
             "wheel": "🎡 돌림판",
-            "ladder": "🪜 사다리"
+            "ladder": "🪜 사다리",
+            "pinball": "⚾ 핀볼"
         }
 
         self.seg_btn = ctk.CTkSegmentedButton(
             hdr,
-            values=["⏱️ 타이머", "🎲 뽑기", "🎡 돌림판", "🪜 사다리"],
+            values=["⏱️ 타이머", "🎲 뽑기", "🎡 돌림판", "🪜 사다리", "⚾ 핀볼"],
             font=get_font(11, "bold"),
             command=self._on_tab_changed
         )
@@ -166,12 +177,20 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
             self._switch_to_tab("wheel")
         elif "사다리" in choice:
             self._switch_to_tab("ladder")
+        elif "핀볼" in choice:
+            self._switch_to_tab("pinball")
 
     def _switch_to_tab(self, tab_key: str):
         for w in self.content_frame.winfo_children():
             w.destroy()
 
-        tab_names = {"timer": "⏱️ 타이머", "picker": "🎲 뽑기", "wheel": "🎡 돌림판", "ladder": "🪜 사다리"}
+        tab_names = {
+            "timer": "⏱️ 타이머",
+            "picker": "🎲 뽑기",
+            "wheel": "🎡 돌림판",
+            "ladder": "🪜 사다리",
+            "pinball": "⚾ 핀볼"
+        }
         if tab_key in tab_names:
             self.seg_btn.set(tab_names[tab_key])
 
@@ -183,9 +202,11 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
             self._render_wheel_view()
         elif tab_key == "ladder":
             self._render_ladder_view()
+        elif tab_key == "pinball":
+            self._render_pinball_view()
 
     # ==========================================
-    # 1. ⏱️ 타이머 뷰 (모던 네온 LED 디자인)
+    # 1. ⏱️ 타이머 뷰
     # ==========================================
     def _render_timer_view(self):
         palette = theme_manager.get_theme()
@@ -193,7 +214,6 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
         box = ctk.CTkFrame(self.content_frame, fg_color=palette["sidebar_bg"], corner_radius=14, border_width=1, border_color=palette["card_border"])
         box.pack(fill="both", expand=True, padx=4, pady=4)
 
-        # 시간 디스플레이 카드
         disp_card = ctk.CTkFrame(box, fg_color="#090d16", corner_radius=16, border_width=2, border_color="#0284c7")
         disp_card.pack(fill="x", padx=16, pady=(18, 12))
 
@@ -205,7 +225,6 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
         )
         self.timer_display.pack(pady=16)
 
-        # 프리셋 버튼 바
         p_row = ctk.CTkFrame(box, fg_color="transparent")
         p_row.pack(pady=6)
 
@@ -225,7 +244,6 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
             btn.pack(side="left", padx=3)
             attach_tooltip(btn, f"타이머에 {txt} 추가")
 
-        # 제어 버튼 바
         ctrl_row = ctk.CTkFrame(box, fg_color="transparent")
         ctrl_row.pack(pady=(12, 16))
 
@@ -275,7 +293,7 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
             self.start_btn.configure(text="▶ 재개", fg_color="#10b981")
         else:
             if self.timer_seconds <= 0:
-                self.timer_seconds = 180  # 기본 3분
+                self.timer_seconds = 180
             self.timer_running = True
             self.start_btn.configure(text="⏸ 일시정지", fg_color="#ea580c")
             self._timer_tick()
@@ -328,7 +346,6 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
         self.no_dup_var = ctk.BooleanVar(value=True)
         ctk.CTkCheckBox(opt_row, text="중복 제외", variable=self.no_dup_var, font=get_font(11)).pack(side="left", padx=10)
 
-        # 번호 대형 전광판 카드
         card = ctk.CTkFrame(box, fg_color="#090d16", corner_radius=16, border_width=2, border_color="#f59e0b")
         card.pack(fill="x", padx=16, pady=(10, 10))
 
@@ -340,7 +357,6 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
         )
         self.picker_num_lbl.pack(pady=14)
 
-        # 추첨 버튼 바
         btn_row = ctk.CTkFrame(box, fg_color="transparent")
         btn_row.pack(pady=4)
 
@@ -372,7 +388,6 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
         reset_btn.pack(side="left", padx=4)
         attach_tooltip(reset_btn, "뽑힌 번호 기록 초기화")
 
-        # 뽑힌 번호 목록
         self.picked_list_lbl = ctk.CTkLabel(
             box,
             text="뽑힌 번호: 없음",
@@ -427,7 +442,7 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
         self.picked_list_lbl.configure(text="뽑힌 번호: 없음")
 
     # ==========================================
-    # 3. 🎡 돌려돌려 돌림판 뷰 (비비드 룰렛 & 다이아몬드 바늘)
+    # 3. 🎡 돌려돌려 돌림판 뷰
     # ==========================================
     def _render_wheel_view(self):
         palette = theme_manager.get_theme()
@@ -435,7 +450,6 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
         box = ctk.CTkFrame(self.content_frame, fg_color=palette["sidebar_bg"], corner_radius=14, border_width=1, border_color=palette["card_border"])
         box.pack(fill="both", expand=True, padx=4, pady=4)
 
-        # 항목 입력 바
         input_row = ctk.CTkFrame(box, fg_color="transparent")
         input_row.pack(fill="x", padx=12, pady=(10, 4))
 
@@ -459,7 +473,6 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
         set_btn.pack(side="left")
         attach_tooltip(set_btn, "입력한 항목으로 돌림판 갱신")
 
-        # 룰렛 캔버스
         self.wheel_canvas = tk.Canvas(
             box,
             width=290,
@@ -471,7 +484,6 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
 
         self._draw_wheel(self.wheel_angle)
 
-        # 돌리기 버튼
         self.spin_btn = ctk.CTkButton(
             box,
             text="🚀 돌려돌려 돌림판!",
@@ -513,7 +525,6 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
         slice_deg = 360.0 / n
         wheel_colors = ["#ef4444", "#f97316", "#f59e0b", "#10b981", "#06b6d4", "#3b82f6", "#8b5cf6", "#ec4899"]
 
-        # 외곽 골드 링 테두리
         self.wheel_canvas.create_oval(cx - r - 4, cy - r - 4, cx + r + 4, cy + r + 4, outline="#f59e0b", width=3)
 
         for i, it in enumerate(self.wheel_items):
@@ -536,10 +547,8 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
                 font=("Malgun Gothic", 10, "bold")
             )
 
-        # 중앙 허브
         self.wheel_canvas.create_oval(cx - 20, cy - 20, cx + 20, cy + 20, fill="#0f172a", outline="#f59e0b", width=3)
 
-        # 상단 다이아몬드 바늘
         self.wheel_canvas.create_polygon(
             cx, cy - r - 10,
             cx - 12, cy - r + 14,
@@ -610,7 +619,7 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
 
         self.lad_canvas = tk.Canvas(
             box,
-            width=390,
+            width=420,
             height=260,
             bg=palette["sidebar_bg"],
             highlightthickness=0
@@ -674,7 +683,7 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
 
         self.lad_canvas.delete("all")
 
-        w, h = 390, 260
+        w, h = 420, 260
         margin_x = 42
         top_y = 35
         bot_y = 225
@@ -749,3 +758,237 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
             winsound.MessageBeep(winsound.MB_OK)
         except Exception:
             pass
+
+    # ==========================================
+    # 5. ⚾ 아케이드 핀볼(Plinko) 뽑기 뷰
+    # ==========================================
+    def _render_pinball_view(self):
+        palette = theme_manager.get_theme()
+
+        box = ctk.CTkFrame(self.content_frame, fg_color=palette["sidebar_bg"], corner_radius=14, border_width=1, border_color=palette["card_border"])
+        box.pack(fill="both", expand=True, padx=4, pady=4)
+
+        # 슬롯 항목 설정
+        s_row = ctk.CTkFrame(box, fg_color="transparent")
+        s_row.pack(fill="x", padx=12, pady=(8, 2))
+        ctk.CTkLabel(s_row, text="슬롯 항목 (쉼표구분):", font=get_font(10, "bold"), text_color=palette["text_main"]).pack(side="left")
+        
+        self.pin_slot_entry = ctk.CTkEntry(s_row, height=26, font=get_font(10), corner_radius=6)
+        self.pin_slot_entry.insert(0, ", ".join(self.pinball_slots))
+        self.pin_slot_entry.pack(side="left", fill="x", expand=True, padx=4)
+
+        set_btn = ctk.CTkButton(
+            s_row,
+            text="적용",
+            width=48,
+            height=26,
+            font=get_font(10, "bold"),
+            corner_radius=6,
+            fg_color="#334155",
+            hover_color="#475569",
+            command=self._apply_pinball_slots
+        )
+        set_btn.pack(side="left")
+        attach_tooltip(set_btn, "하단 슬롯 항목 갱신")
+
+        # 핀볼 아케이드 캔버스
+        self.pin_canvas = tk.Canvas(
+            box,
+            width=420,
+            height=280,
+            bg="#070b12",
+            highlightthickness=1,
+            highlightbackground="#0284c7"
+        )
+        self.pin_canvas.pack(pady=4)
+
+        self._draw_pinball_board()
+
+        # 제어 버튼
+        self.pin_drop_btn = ctk.CTkButton(
+            box,
+            text="⚾ 핀볼 투하!",
+            width=160,
+            height=40,
+            font=get_font(13, "bold"),
+            corner_radius=12,
+            fg_color="#10b981",
+            hover_color="#059669",
+            command=self._start_pinball_drop
+        )
+        self.pin_drop_btn.pack(pady=(4, 4))
+        attach_tooltip(self.pin_drop_btn, "상단에서 핀볼을 투하하여 슬롯 추첨 시작")
+
+        self.pin_result_lbl = ctk.CTkLabel(
+            box,
+            text="핀볼을 투하하여 짜릿한 추첨을 즐겨보세요!",
+            font=get_font(11, "bold"),
+            text_color="#38bdf8"
+        )
+        self.pin_result_lbl.pack(pady=(0, 6))
+
+    def _apply_pinball_slots(self):
+        txt = self.pin_slot_entry.get().strip()
+        if txt:
+            slots = [x.strip() for x in txt.split(",") if x.strip()]
+            if len(slots) >= 2:
+                self.pinball_slots = slots
+                self._draw_pinball_board()
+                self.pin_result_lbl.configure(text=f"{len(self.pinball_slots)}개 슬롯으로 설정되었습니다.")
+
+    def _draw_pinball_board(self, highlight_slot=None):
+        self.pin_canvas.delete("all")
+        w, h = 420, 280
+
+        # 1. 핀(Pegs) 배치 (피라미드/격자 지그재그 패턴)
+        self.pinball_pegs.clear()
+        rows = 6
+        start_y = 50
+        gap_y = 30
+
+        for r_idx in range(rows):
+            cols = r_idx + 4
+            gap_x = 34
+            row_w = (cols - 1) * gap_x
+            start_x = (w - row_w) / 2.0
+            cur_y = start_y + r_idx * gap_y
+
+            for c_idx in range(cols):
+                px = start_x + c_idx * gap_x
+                py = cur_y
+                self.pinball_pegs.append((px, py))
+                # 핀 그리기 (골드 네온 핀)
+                self.pin_canvas.create_oval(px - 3, py - 3, px + 3, py + 3, fill="#fbbf24", outline="#ffffff", width=1)
+
+        # 2. 하단 슬롯 칸막이 및 라벨
+        n_slots = len(self.pinball_slots)
+        slot_w = w / n_slots
+        bot_y = h - 45
+        floor_y = h - 6
+
+        slot_colors = ["#ef4444", "#f59e0b", "#10b981", "#06b6d4", "#3b82f6", "#8b5cf6", "#ec4899"]
+
+        for i in range(n_slots):
+            sx1 = i * slot_w
+            sx2 = (i + 1) * slot_w
+            scol = slot_colors[i % len(slot_colors)]
+
+            is_win = (highlight_slot == i)
+            fill_c = scol if is_win else "#111827"
+            
+            # 슬롯 배경
+            self.pin_canvas.create_rectangle(sx1 + 2, bot_y, sx2 - 2, floor_y, fill=fill_c, outline=scol, width=2 if is_win else 1)
+
+            # 슬롯 칸막이 기둥
+            self.pin_canvas.create_line(sx1, bot_y - 12, sx1, floor_y, fill="#64748b", width=2)
+            if i == n_slots - 1:
+                self.pin_canvas.create_line(sx2, bot_y - 12, sx2, floor_y, fill="#64748b", width=2)
+
+            # 슬롯 텍스트 라벨
+            lbl_txt = self.pinball_slots[i][:6]
+            self.pin_canvas.create_text(
+                (sx1 + sx2) / 2.0, (bot_y + floor_y) / 2.0,
+                text=lbl_txt,
+                fill="#ffffff",
+                font=("Malgun Gothic", 9, "bold")
+            )
+
+        # 3. 상단 투하구
+        self.pin_canvas.create_line(w / 2.0 - 25, 6, w / 2.0 - 10, 30, fill="#38bdf8", width=3)
+        self.pin_canvas.create_line(w / 2.0 + 25, 6, w / 2.0 + 10, 30, fill="#38bdf8", width=3)
+
+    def _start_pinball_drop(self):
+        if self.pinball_animating:
+            return
+
+        self.pinball_animating = True
+        self.pin_drop_btn.configure(state="disabled")
+        self.pin_result_lbl.configure(text="⚾ 핀볼이 통통 튀며 낙하하는 중...!", text_color="#f59e0b")
+
+        w, h = 420, 280
+        self.ball_x = w / 2.0 + random.uniform(-4, 4)
+        self.ball_y = 15.0
+        self.ball_vx = random.uniform(-1.2, 1.2)
+        self.ball_vy = 2.0
+        ball_r = 7
+
+        def _physics_step():
+            if not self.pinball_animating:
+                return
+
+            # 중력 가속도 및 감쇠
+            self.ball_vy += 0.45
+            self.ball_vx *= 0.985
+            self.ball_x += self.ball_vx
+            self.ball_y += self.ball_vy
+
+            # 좌우 벽면 충돌
+            if self.ball_x < ball_r + 8:
+                self.ball_x = ball_r + 8
+                self.ball_vx = abs(self.ball_vx) * 0.75 + 1.0
+            elif self.ball_x > w - ball_r - 8:
+                self.ball_x = w - ball_r - 8
+                self.ball_vx = -abs(self.ball_vx) * 0.75 - 1.0
+
+            # 핀(Pegs) 충돌 검사
+            for px, py in self.pinball_pegs:
+                dx = self.ball_x - px
+                dy = self.ball_y - py
+                dist = math.hypot(dx, dy)
+                min_dist = ball_r + 3
+
+                if dist < min_dist and dist > 0.001:
+                    # 법선 벡터 반사
+                    nx = dx / dist
+                    ny = dy / dist
+                    dot = self.ball_vx * nx + self.ball_vy * ny
+                    
+                    self.ball_vx = (self.ball_vx - 1.8 * dot * nx) + random.uniform(-0.8, 0.8)
+                    self.ball_vy = abs(self.ball_vy - 1.8 * dot * ny) * 0.7 + 1.0
+
+                    self.ball_x = px + nx * min_dist
+                    self.ball_y = py + ny * min_dist
+
+            # 캔버스 갱신
+            self._draw_pinball_board()
+            
+            # 볼 그리기 (네온 레드/오렌지 볼 + 글로우)
+            self.pin_canvas.create_oval(
+                self.ball_x - ball_r, self.ball_y - ball_r,
+                self.ball_x + ball_r, self.ball_y + ball_r,
+                fill="#ef4444", outline="#ffffff", width=2
+            )
+
+            # 바닥 슬롯 도착 체크
+            bot_y = h - 40
+            if self.ball_y >= bot_y:
+                self.pinball_animating = False
+                self.pin_drop_btn.configure(state="normal")
+
+                n_slots = len(self.pinball_slots)
+                slot_w = w / n_slots
+                win_slot_idx = int(self.ball_x // slot_w)
+                win_slot_idx = max(0, min(n_slots - 1, win_slot_idx))
+
+                winner = self.pinball_slots[win_slot_idx]
+                self._draw_pinball_board(highlight_slot=win_slot_idx)
+
+                # 최종 위치 볼 그리기
+                self.pin_canvas.create_oval(
+                    self.ball_x - ball_r, bot_y + 10 - ball_r,
+                    self.ball_x + ball_r, bot_y + 10 + ball_r,
+                    fill="#10b981", outline="#ffffff", width=2
+                )
+
+                self.pin_result_lbl.configure(
+                    text=f"🎉 핀볼 골인 결과: [ {winner} ] !",
+                    text_color="#10b981"
+                )
+                try:
+                    winsound.MessageBeep(winsound.MB_ICONASTERISK)
+                except Exception:
+                    pass
+            else:
+                self.after(20, _physics_step)
+
+        _physics_step()
