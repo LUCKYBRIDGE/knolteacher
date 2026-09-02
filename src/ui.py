@@ -3851,120 +3851,113 @@ class App(ctk.CTk):
         hours = remaining_sec // 3600
         mins = (remaining_sec % 3600) // 60
         secs = remaining_sec % 60
-        time_formatted = f"{hours:02d} : {mins:02d} : {secs:02d}"
-        
-        self.timer_label.configure(
-            text=time_formatted,
-            text_color="#4ade80"
-        )
+        time_formatted = f"{hours:02d}:{mins:02d}:{secs:02d}"
         
         act = self.manager.action_type
-        if act == "alarm" and self.manager.memo:
-            self.target_time_label.configure(
-                text=f"알람 예정: {target_time_str} | 📌 {self.manager.memo}",
-                text_color="#93c5fd"
+        act_name = SchedulerManager._get_action_name(act or "shutdown")
+
+        if hasattr(self, "timer_label") and self.timer_label.winfo_exists():
+            self.timer_label.configure(
+                text=time_formatted,
+                text_color="#4ade80"
             )
-        else:
-            self.target_time_label.configure(
-                text=f"실행 예정 시각: {target_time_str}",
-                text_color="#93c5fd"
-            )
+
+        if hasattr(self, "target_time_label") and self.target_time_label.winfo_exists():
+            if act == "alarm" and self.manager.memo:
+                self.target_time_label.configure(
+                    text=f"알람 예정: {target_time_str} | 📌 {self.manager.memo}",
+                    text_color="#93c5fd"
+                )
+            else:
+                self.target_time_label.configure(
+                    text=f"실행 예정 시각: {target_time_str}",
+                    text_color="#93c5fd"
+                )
+
+        if hasattr(self, "active_schedule_lbl") and self.active_schedule_lbl.winfo_exists():
+            palette = theme_manager.get_theme()
+            if act == "alarm" and self.manager.memo:
+                self.active_schedule_lbl.configure(
+                    text=f"🔔 [회의/연수 알람] {target_time_str} ({time_formatted} 남음) | 📌 {self.manager.memo}",
+                    text_color=palette["accent_blue"]
+                )
+            else:
+                self.active_schedule_lbl.configure(
+                    text=f"⏰ [컴퓨터 {act_name} 예약] {target_time_str} 실행 예정 (남은 시간: {time_formatted})",
+                    text_color=palette["accent_green"]
+                )
 
     # =========================================================================
     # Apple 스타일 하단 액션 바 & 저작권 표기
     # =========================================================================
+    # =========================================================================
+    # 하단 스마트 상태 바 & 저작권 표기
+    # =========================================================================
     def _create_bottom_actions(self, parent):
-        bottom_frame = ctk.CTkFrame(parent, fg_color="transparent")
-        bottom_frame.pack(fill="x", pady=(4, 0))
+        palette = theme_manager.get_theme()
 
-        self.cancel_btn = ctk.CTkButton(
-            bottom_frame, 
-            text="✕  예약 취소", 
-            font=get_font(13, "bold"),
-            height=42,
-            corner_radius=11,
-            fg_color="#1e293b",
-            hover_color="#334155",
-            text_color="#64748b",
-            state="disabled",
+        # 평상시 숨겨져 있다가, PC 예약/알람이 가동 중일 때만 부드럽게 나타나는 스마트 상태 바
+        self.active_schedule_bar = ctk.CTkFrame(
+            parent,
+            fg_color=palette["card_inner_bg"],
+            corner_radius=10,
+            border_width=1,
+            border_color=palette["accent_blue"]
+        )
+        # 기본 상태는 숨김 (예약 가동 시 pack)
+
+        asb_inner = ctk.CTkFrame(self.active_schedule_bar, fg_color="transparent")
+        asb_inner.pack(fill="x", padx=12, pady=6)
+
+        self.active_schedule_lbl = ctk.CTkLabel(
+            asb_inner,
+            text="⏰ 컴퓨터 예약 가동 중",
+            font=get_font(12, "bold"),
+            text_color=palette["accent_blue"],
+            anchor="w"
+        )
+        self.active_schedule_lbl.pack(side="left", fill="x", expand=True)
+
+        self.active_cancel_btn = ctk.CTkButton(
+            asb_inner,
+            text="🛑 컴퓨터 예약 취소",
+            font=get_font(11, "bold"),
+            fg_color="#3f1d24",
+            hover_color="#dc2626",
+            text_color="#fca5a5",
+            width=130,
+            height=28,
+            corner_radius=8,
             command=self._confirm_cancel_schedule
         )
-        self.cancel_btn.pack(side="left", fill="x", expand=True, padx=(0, 6))
+        self.active_cancel_btn.pack(side="right")
 
-        self.schedule_btn = ctk.CTkButton(
-            bottom_frame, 
-            text="🚀  현재 설정으로 예약하기", 
-            font=get_font(13, "bold"),
-            height=42,
-            corner_radius=11,
-            fg_color="#0a84ff",
-            hover_color="#0071e3",
-            text_color="#ffffff",
-            command=self._on_schedule_clicked
-        )
-        self.schedule_btn.pack(side="right", fill="x", expand=True, padx=(6, 0))
-
-        copyright_lbl = ctk.CTkLabel(
+        # 저작권 표기
+        self.copyright_lbl = ctk.CTkLabel(
             parent,
             text="Copyright 2026. 교사 서정완. All rights reserved.",
             font=get_font(10),
-            text_color="#475569"
+            text_color=palette["text_muted"]
         )
-        copyright_lbl.pack(pady=(4, 0))
+        self.copyright_lbl.pack(pady=(6, 0))
 
     def _on_manager_state_change(self, is_scheduled: bool, action_type: Optional[str], message: str):
         self.after(0, self._update_state_ui, is_scheduled, action_type, message)
 
     def _update_state_ui(self, is_scheduled: bool, action_type: Optional[str], message: str):
+        palette = theme_manager.get_theme()
+        if not hasattr(self, "active_schedule_bar") or not self.active_schedule_bar.winfo_exists():
+            return
+
         if is_scheduled:
             action_name = SchedulerManager._get_action_name(action_type or "shutdown")
-            self.status_card.configure(
-                border_color="#10b981",
-                fg_color="#06281e"
+            self.active_schedule_lbl.configure(
+                text=f"⏰ [컴퓨터 {action_name} 예약 가동 중]  {message}",
+                text_color=palette["accent_green"]
             )
-            self.status_badge.configure(
-                text="● 예약 가동 중",
-                fg_color="#059669",
-                text_color="#ffffff"
-            )
-            self.status_title_label.configure(
-                text=f"[{action_name}] 예약이 활성화되었습니다",
-                text_color="#6ee7b7"
-            )
-            self.cancel_btn.configure(
-                state="normal",
-                fg_color="#ef4444",
-                hover_color="#dc2626",
-                text_color="#ffffff"
-            )
+            self.active_schedule_bar.pack(fill="x", pady=(4, 2), before=self.copyright_lbl)
         else:
-            self.status_card.configure(
-                border_color="#2c3b59",
-                fg_color="#0f172a"
-            )
-            self.status_badge.configure(
-                text="● 대기 중",
-                fg_color="#1e293b",
-                text_color="#94a3b8"
-            )
-            self.status_title_label.configure(
-                text="설정된 예약이 없습니다.",
-                text_color="#94a3b8"
-            )
-            self.timer_label.configure(
-                text="-- : -- : --",
-                text_color="#475569"
-            )
-            self.target_time_label.configure(
-                text="원하는 일과 또는 시간을 설정한 후 [예약하기]를 눌러주세요.",
-                text_color="#94a3b8"
-            )
-            self.cancel_btn.configure(
-                state="disabled",
-                fg_color="#1e293b",
-                hover_color="#334155",
-                text_color="#64748b"
-            )
+            self.active_schedule_bar.pack_forget()
 
     def _on_manager_alarm_triggered(self, memo: str, sound_id: str):
         self.after(0, self._open_alarm_popup, memo, sound_id)
