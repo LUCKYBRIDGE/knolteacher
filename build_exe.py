@@ -26,6 +26,9 @@ def build():
         f"--icon={icon_path}",
         f"--add-data=assets{os.pathsep}assets",
         "--collect-all=customtkinter",
+        "--hidden-import=pystray",
+        "--hidden-import=pystray._win32",
+        "--hidden-import=PIL._tkinter_finder",
         "main.py"
     ]
 

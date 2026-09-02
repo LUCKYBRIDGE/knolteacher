@@ -571,7 +571,12 @@ class App(ctk.CTk):
 
         system_monitor.register_listener(self._on_system_metrics_updated)
 
-        self.protocol("WM_DELETE_WINDOW", self._on_closing)
+        # 시스템 트레이 초기화 (작업 표시줄 알림 영역 상주)
+        from src.tray_manager import init_tray
+        self.tray = init_tray(self)
+
+        # 창 닫기 버튼(X) = 트레이로 최소화 (완전 종료는 트레이 우클릭 > 종료)
+        self.protocol("WM_DELETE_WINDOW", self._minimize_to_tray)
 
     def _load_icon(self):
         base_dir = getattr(sys, '_MEIPASS', os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -3959,6 +3964,13 @@ class App(ctk.CTk):
         else:
             self.active_schedule_bar.pack_forget()
 
+        # 트레이 메뉴 동적 갱신 (예약 상태 반영)
+        if hasattr(self, "tray") and self.tray:
+            try:
+                self.tray.update_menu()
+            except Exception:
+                pass
+
     def _on_manager_alarm_triggered(self, memo: str, sound_id: str):
         self.after(0, self._open_alarm_popup, memo, sound_id)
 
@@ -3974,6 +3986,27 @@ class App(ctk.CTk):
             on_snooze_callback=lambda: self.manager.snooze_alarm(minutes=5)
         )
         self.wait_window(dialog)
+
+    def _minimize_to_tray(self):
+        """창 X 버튼 → 트레이로 최소화 (앱은 백그라운드에서 계속 실행됨)"""
+        self.withdraw()  # 창 숨기기 (종료 아님)
+        if hasattr(self, "tray") and self.tray:
+            self.tray.update_menu()
+        # Windows 풍선 알림 한 번만 표시
+        if not getattr(self, "_tray_hint_shown", False):
+            self._tray_hint_shown = True
+            self._show_tray_balloon()
+
+    def _show_tray_balloon(self):
+        """트레이 풍선 안내 — 오른쪽 하단 알림 영역 클릭 안내"""
+        try:
+            if hasattr(self, "tray") and self.tray and self.tray.tray_icon:
+                self.tray.tray_icon.notify(
+                    "놀티쳐 데스크가 트레이에 상주 중입니다.\n트레이 아이콘을 더블클릭하거나 우클릭하여 기능을 사용하세요.",
+                    "놀티쳐 데스크 — 백그라운드 실행 중"
+                )
+        except Exception:
+            pass
 
     def _on_closing(self):
         if self.manager.is_scheduled:
@@ -4002,5 +4035,12 @@ class App(ctk.CTk):
                 self.student_window.destroy()
             except Exception:
                 pass
+        # 트레이 아이콘 제거
+        if hasattr(self, "tray") and self.tray:
+            try:
+                self.tray.stop()
+            except Exception:
+                pass
         sound_manager.stop_all()
         self.destroy()
+
