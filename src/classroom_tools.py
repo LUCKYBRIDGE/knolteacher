@@ -201,8 +201,10 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
 
         # 3. 돌림판 상태
         self.wheel_items = ["1모둠", "2모둠", "3모둠", "4모둠", "5모둠", "6모둠"]
+        self.wheel_weights = [1] * len(self.wheel_items)  # 기본은 1:1:1 균등
         self.wheel_angle = 0.0
         self.wheel_animating = False
+        self._wheel_slices = []
 
         # 4. 사다리타기 상태
         self.ladder_players = ["1번", "2번", "3번", "4번"]
@@ -662,20 +664,18 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
         box = ctk.CTkFrame(self.content_frame, fg_color=palette["card_inner_bg"], corner_radius=14, border_width=1, border_color=palette["card_border"])
         box.pack(fill="both", expand=True, padx=4, pady=4)
 
+        # 항목 입력 행
         input_row = ctk.CTkFrame(box, fg_color="transparent")
         input_row.pack(fill="x", padx=12, pady=(8, 2))
 
         ctk.CTkLabel(input_row, text="항목 (쉼표구분):", font=get_font(10, "bold"), text_color=palette["text_main"]).pack(side="left")
-        
+
         self.wheel_entry = ctk.CTkEntry(input_row, height=26, font=get_font(10), fg_color=palette["card_bg"], text_color=palette["text_main"])
         self.wheel_entry.insert(0, ", ".join(self.wheel_items))
         self.wheel_entry.pack(side="left", fill="x", expand=True, padx=4)
 
         set_btn = ctk.CTkButton(
-            input_row,
-            text="적용",
-            width=42,
-            height=26,
+            input_row, text="적용", width=42, height=26,
             font=get_font(10, "bold"),
             fg_color=palette["sidebar_btn_hover"],
             hover_color=palette["accent_blue"],
@@ -685,10 +685,7 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
         set_btn.pack(side="left", padx=1)
 
         load_stu_btn = ctk.CTkButton(
-            input_row,
-            text="👥 학생불러오기",
-            width=80,
-            height=26,
+            input_row, text="👥 학생불러오기", width=80, height=26,
             font=get_font(10, "bold"),
             fg_color=palette["accent_green"],
             hover_color="#059669",
@@ -697,43 +694,89 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
         load_stu_btn.pack(side="left", padx=2)
         attach_tooltip(load_stu_btn, "우리 반 학생 명렬표를 돌림판 항목으로 1초 불러오기")
 
+        # ── 가중치(비율) 설정 행 ──────────────────────────────────────────
+        weight_row = ctk.CTkFrame(box, fg_color="transparent")
+        weight_row.pack(fill="x", padx=12, pady=(2, 4))
+
+        ctk.CTkLabel(weight_row, text="비율 설정 (쉼표구분, 비워두면 1:1:1):",
+                     font=get_font(10), text_color=palette["text_sub"]).pack(side="left")
+
+        self.wheel_weight_entry = ctk.CTkEntry(
+            weight_row, height=24, font=get_font(10),
+            placeholder_text="예) 1, 2, 5  →  1:2:5 비율로 크기 배분",
+            fg_color=palette["card_bg"], text_color=palette["text_main"]
+        )
+        if hasattr(self, "wheel_weights") and self.wheel_weights:
+            self.wheel_weight_entry.insert(0, ", ".join(str(w) for w in self.wheel_weights))
+        self.wheel_weight_entry.pack(side="left", fill="x", expand=True, padx=4)
+
+        weight_apply_btn = ctk.CTkButton(
+            weight_row, text="비율적용", width=52, height=24,
+            font=get_font(10, "bold"),
+            fg_color=palette["accent_orange"],
+            hover_color="#c2410c",
+            text_color="#ffffff",
+            command=self._apply_wheel_weights
+        )
+        weight_apply_btn.pack(side="left", padx=1)
+        attach_tooltip(weight_apply_btn, "예) 항목이 3개면 '1, 2, 5' 입력 시\n첫째 항목 1/8, 둘째 2/8, 셋째 5/8 면적 배분")
+        # ─────────────────────────────────────────────────────────────────
+
         self.wheel_canvas = tk.Canvas(
-            box,
-            width=280,
-            height=280,
-            bg=palette["card_inner_bg"],
-            highlightthickness=0
+            box, width=280, height=280,
+            bg=palette["card_inner_bg"], highlightthickness=0
         )
         self.wheel_canvas.pack(pady=2)
-
         self._draw_wheel(self.wheel_angle)
 
         self.spin_btn = ctk.CTkButton(
-            box,
-            text="🚀 돌려돌려 돌림판!",
-            width=160,
-            height=38,
-            font=get_font(13, "bold"),
-            corner_radius=12,
-            fg_color=palette["accent_orange"],
-            hover_color="#c2410c",
+            box, text="🚀 돌려돌려 돌림판!",
+            width=160, height=38, font=get_font(13, "bold"),
+            corner_radius=12, fg_color=palette["accent_orange"], hover_color="#c2410c",
             command=self._start_spin_wheel
         )
         self.spin_btn.pack(pady=(2, 4))
         attach_tooltip(self.spin_btn, "돌림판을 힘차게 회전!")
 
         self.wheel_result_lbl = ctk.CTkLabel(
-            box,
-            text="돌림판을 돌려 당첨 항목을 뽑아보세요!",
-            font=get_font(11, "bold"),
-            text_color=palette["accent_blue"]
+            box, text="돌림판을 돌려 당첨 항목을 뽑아보세요!",
+            font=get_font(11, "bold"), text_color=palette["accent_blue"]
         )
         self.wheel_result_lbl.pack(pady=(0, 6))
+
+    def _apply_wheel_weights(self):
+        """가중치 파싱 후 돌림판 다시 그리기"""
+        txt = self.wheel_weight_entry.get().strip()
+        n = len(self.wheel_items)
+        if not txt:
+            self.wheel_weights = [1] * n
+        else:
+            parts = [x.strip() for x in txt.split(",") if x.strip()]
+            try:
+                raw = [max(1, int(float(p))) for p in parts]
+            except ValueError:
+                self.wheel_result_lbl.configure(
+                    text="⚠️ 비율은 숫자만 입력하세요. 예) 1, 2, 5",
+                    text_color="#ef4444"
+                )
+                return
+            # 항목 수와 맞게 패딩/잘라내기
+            if len(raw) < n:
+                raw.extend([1] * (n - len(raw)))
+            self.wheel_weights = raw[:n]
+        total = sum(self.wheel_weights)
+        self._draw_wheel(self.wheel_angle)
+        self.wheel_result_lbl.configure(
+            text=f"✅ 비율 적용 완료 — {' : '.join(str(w) for w in self.wheel_weights[:n])} (총 {total}칸)",
+            text_color="#10b981"
+        )
 
     def _load_students_into_wheel(self):
         names = student_manager.get_student_names()
         if names:
             self.wheel_items = [n.split()[-1] if " " in n else n for n in names[:12]]
+            if not hasattr(self, "wheel_weights") or len(self.wheel_weights) != len(self.wheel_items):
+                self.wheel_weights = [1] * len(self.wheel_items)
             self.wheel_entry.delete(0, "end")
             self.wheel_entry.insert(0, ", ".join(self.wheel_items))
             self._draw_wheel(self.wheel_angle)
@@ -745,6 +788,7 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
             items = [x.strip() for x in txt.split(",") if x.strip()]
             if items:
                 self.wheel_items = items
+                self.wheel_weights = [1] * len(items)
                 self._draw_wheel(self.wheel_angle)
                 self.wheel_result_lbl.configure(text=f"{len(self.wheel_items)}개 항목으로 설정되었습니다.")
 
@@ -755,37 +799,39 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
         if n == 0:
             return
 
-        slice_deg = 360.0 / n
-        wheel_colors = ["#ef4444", "#f97316", "#f59e0b", "#10b981", "#06b6d4", "#3b82f6", "#8b5cf6", "#ec4899"]
+        # 가중치 처리 (없으면 균등)
+        if not hasattr(self, "wheel_weights") or len(self.wheel_weights) != n:
+            self.wheel_weights = [1] * n
+        weights = self.wheel_weights
+        total = sum(weights)
 
+        wheel_colors = ["#ef4444", "#f97316", "#f59e0b", "#10b981", "#06b6d4", "#3b82f6", "#8b5cf6", "#ec4899"]
         self.wheel_canvas.create_oval(cx - r - 4, cy - r - 4, cx + r + 4, cy + r + 4, outline="#f59e0b", width=3)
 
+        # 각 항목의 실제 각도는 가중치 비율로 결정
+        cur_start = start_angle
+        self._wheel_slices = []  # (start_deg, extent_deg, label) — 당첨 계산용
         for i, it in enumerate(self.wheel_items):
-            cur_start = start_angle + i * slice_deg
+            extent = 360.0 * weights[i] / total
             col = wheel_colors[i % len(wheel_colors)]
             self.wheel_canvas.create_arc(
                 cx - r, cy - r, cx + r, cy + r,
-                start=cur_start, extent=slice_deg,
+                start=cur_start, extent=extent,
                 fill=col, outline="#ffffff", width=2
             )
-
-            mid_rad = math.radians(cur_start + slice_deg / 2.0)
+            mid_rad = math.radians(cur_start + extent / 2.0)
             tx = cx + (r * 0.65) * math.cos(mid_rad)
             ty = cy - (r * 0.65) * math.sin(mid_rad)
-
             self.wheel_canvas.create_text(
-                tx, ty,
-                text=it[:6],
-                fill="#ffffff",
+                tx, ty, text=it[:6], fill="#ffffff",
                 font=("Malgun Gothic", 9, "bold")
             )
+            self._wheel_slices.append((cur_start % 360, extent, it))
+            cur_start += extent
 
         self.wheel_canvas.create_oval(cx - 18, cy - 18, cx + 18, cy + 18, fill="#0f172a", outline="#f59e0b", width=3)
-
         self.wheel_canvas.create_polygon(
-            cx, cy - r - 8,
-            cx - 10, cy - r + 12,
-            cx + 10, cy - r + 12,
+            cx, cy - r - 8, cx - 10, cy - r + 12, cx + 10, cy - r + 12,
             fill="#fbbf24", outline="#b45309", width=2
         )
 
@@ -808,13 +854,24 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
             else:
                 self.wheel_animating = False
                 self.spin_btn.configure(state="normal")
-                
-                n = len(self.wheel_items)
-                slice_deg = 360.0 / n
-                
+
+                # 가중치 기반 당첨 계산 — 포인터(12시 방향=90도) 기준
                 pointer_angle = (90.0 - self.wheel_angle) % 360.0
-                win_idx = int(pointer_angle // slice_deg) % n
-                winner = self.wheel_items[win_idx]
+                winner = self.wheel_items[0]
+                if hasattr(self, "_wheel_slices"):
+                    for (s, ext, label) in self._wheel_slices:
+                        # 각도 정규화
+                        pa = pointer_angle % 360.0
+                        s_n = s % 360.0
+                        end_n = (s + ext) % 360.0
+                        if end_n > s_n:
+                            if s_n <= pa < end_n:
+                                winner = label
+                                break
+                        else:  # 360도 경계 걸침
+                            if pa >= s_n or pa < end_n:
+                                winner = label
+                                break
 
                 self.wheel_result_lbl.configure(
                     text=f"🎉 당첨 결과: [ {winner} ] !",

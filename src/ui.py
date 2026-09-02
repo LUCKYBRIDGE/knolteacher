@@ -1104,10 +1104,10 @@ class App(ctk.CTk):
         # 급식 메뉴 요약 카드
         cal_str = meal_info.get("calorie", "")
         hdr_box = ctk.CTkFrame(self.meal_container, fg_color=palette["card_inner_bg"], corner_radius=8, border_width=1, border_color=palette["card_border"])
-        hdr_box.pack(fill="x", pady=(0, 6))
+        hdr_box.pack(fill="x", pady=(0, 4))
 
         h_in = ctk.CTkFrame(hdr_box, fg_color="transparent")
-        h_in.pack(fill="x", padx=10, pady=6)
+        h_in.pack(fill="x", padx=10, pady=5)
 
         ctk.CTkLabel(
             h_in,
@@ -1124,28 +1124,30 @@ class App(ctk.CTk):
                 text_color=palette["accent_green"]
             ).pack(side="right")
 
-        # 메뉴 리스트 박스
-        dish_box = ctk.CTkScrollableFrame(self.meal_container, fg_color="transparent")
-        dish_box.pack(fill="both", expand=True)
+        # 메뉴 리스트 - 컴팩트하게 한눈에 전체 표시 (불필요한 내부 스크롤 없음)
+        dishes = meal_info.get("dishes", [])
+        menu_box = ctk.CTkFrame(self.meal_container, fg_color=palette["card_bg"], corner_radius=8, border_width=1, border_color=palette["card_border"])
+        menu_box.pack(fill="both", expand=True)
 
-        for d in meal_info.get("dishes", []):
-            d_card = ctk.CTkFrame(dish_box, fg_color=palette["card_bg"], corner_radius=6, border_width=1, border_color=palette["card_border"])
-            d_card.pack(fill="x", pady=2)
+        for i, d in enumerate(dishes):
+            row_bg = palette["card_inner_bg"] if i % 2 == 0 else palette["card_bg"]
+            row = ctk.CTkFrame(menu_box, fg_color=row_bg, corner_radius=0)
+            row.pack(fill="x")
             ctk.CTkLabel(
-                d_card,
+                row,
                 text=f"• {d}",
-                font=get_font(12, "bold"),
+                font=get_font(11),
                 text_color=palette["text_main"],
                 anchor="w"
-            ).pack(fill="x", padx=8, pady=5)
+            ).pack(fill="x", padx=10, pady=3)
 
         # 하단 알레르기 안내 팁
         ctk.CTkLabel(
             self.meal_container,
             text="* 번호는 알레르기 유발물질 표시입니다.",
-            font=get_font(10),
+            font=get_font(9),
             text_color=palette["text_sub"]
-        ).pack(anchor="w", pady=(4, 0))
+        ).pack(anchor="w", pady=(3, 0))
 
     def _render_today_items(self):
         for w in self.today_items_container.winfo_children():
@@ -1180,12 +1182,12 @@ class App(ctk.CTk):
 
             c_frame = ctk.CTkFrame(
                 self.today_items_container, 
-                corner_radius=8, 
+                corner_radius=6, 
                 fg_color=card_bg, 
                 border_width=2 if is_current else 1, 
                 border_color=card_border
             )
-            c_frame.pack(fill="x", pady=3)
+            c_frame.pack(fill="x", pady=2)
 
             badge_bg = palette["accent_green"] if is_current else (palette["accent_orange"] if is_lunch else palette["sidebar_btn_hover"])
             badge_fg = "#ffffff" if (is_current or is_lunch) else palette["text_main"]
@@ -1194,52 +1196,51 @@ class App(ctk.CTk):
             badge = ctk.CTkLabel(
                 c_frame,
                 text=badge_text,
-                font=get_font(10, "bold"),
+                font=get_font(9, "bold"),
                 fg_color=badge_bg,
                 text_color=badge_fg,
-                corner_radius=6,
-                width=64,
-                height=26
+                corner_radius=5,
+                width=56,
+                height=22
             )
-            badge.pack(side="left", padx=(8, 8), pady=4)
-
-            time_frame = ctk.CTkFrame(c_frame, fg_color="transparent")
-            time_frame.pack(side="left", padx=(0, 8))
+            badge.pack(side="left", padx=(6, 6), pady=3)
 
             ctk.CTkLabel(
-                time_frame,
+                c_frame,
                 text=f"{it['start']}~{it['end']}",
-                font=ctk.CTkFont(family="Consolas", size=11, weight="bold"),
-                text_color=palette["accent_blue"] if not is_lunch else palette["accent_orange"]
-            ).pack(anchor="w")
+                font=ctk.CTkFont(family="Consolas", size=10, weight="bold"),
+                text_color=palette["accent_blue"] if not is_lunch else palette["accent_orange"],
+                width=80,
+                anchor="w"
+            ).pack(side="left")
 
             subj_lbl = ctk.CTkLabel(
                 c_frame,
                 text=it["subject"],
-                font=get_font(13, "bold"),
+                font=get_font(12, "bold"),
                 text_color=palette["text_main"] if not is_lunch else "#c2410c",
                 anchor="w"
             )
-            subj_lbl.pack(side="left", fill="x", expand=True, pady=4)
+            subj_lbl.pack(side="left", fill="x", expand=True, pady=3)
 
             tag = it.get("tag", "담임")
             if tag in ["전담", "외강"]:
                 tag_bg = "#5e5ce6" if tag == "전담" else "#0284c7"
-                ctk.CTkLabel(c_frame, text=f"[{tag}]", font=get_font(10, "bold"), fg_color=tag_bg, text_color="#ffffff", corner_radius=4, width=40, height=20).pack(side="left", padx=4)
+                ctk.CTkLabel(c_frame, text=f"[{tag}]", font=get_font(9, "bold"), fg_color=tag_bg, text_color="#ffffff", corner_radius=4, width=36, height=18).pack(side="left", padx=3)
 
             if not is_lunch:
                 ctk.CTkButton(
                     c_frame,
                     text=f"🔔 {lead_min}분전",
-                    font=get_font(10, "bold"),
+                    font=get_font(9, "bold"),
                     fg_color=palette["sidebar_bg"],
                     hover_color=palette["sidebar_btn_hover"],
                     text_color=palette["text_main"],
-                    corner_radius=6,
-                    width=72,
-                    height=24,
+                    corner_radius=5,
+                    width=66,
+                    height=20,
                     command=lambda item=it: self._schedule_single_class_alarm(item)
-                ).pack(side="right", padx=6, pady=4)
+                ).pack(side="right", padx=5, pady=3)
 
     def _open_mini_widget(self):
         if self.mini_widget and self.mini_widget.winfo_exists():
