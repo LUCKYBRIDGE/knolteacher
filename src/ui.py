@@ -530,7 +530,7 @@ class App(ctk.CTk):
 
         self.title(f"놀티쳐 데스크 (KnolTeacher Desk v{APP_VERSION} - 스마트 교사용 올인원 데스크)")
         self.geometry("960x820")
-        self.minsize(780, 680)
+        self.minsize(680, 560)
         self.resizable(True, True)
 
         self._load_icon()
@@ -866,8 +866,9 @@ class App(ctk.CTk):
             tb_inner,
             text=title_text,
             font=get_font(15, "bold"),
-            text_color=palette["text_main"] if not is_hol else "#f97316"
-        ).pack(side="left")
+            text_color=palette["text_main"] if not is_hol else "#f97316",
+            anchor="w"
+        ).pack(side="left", fill="x", expand=True)
 
         # 우측 상단 유틸리티 박스 (투명도 조절 바 + 미니멀 시스템 자원 칩)
         top_right_box = ctk.CTkFrame(tb_inner, fg_color="transparent")
@@ -929,33 +930,23 @@ class App(ctk.CTk):
             corner_radius=10,
             border_width=1,
             border_color=palette["card_border"],
-            height=38
         )
         pinky_banner.pack(fill="x", pady=(0, 8))
 
         pb_inner = ctk.CTkFrame(pinky_banner, fg_color="transparent")
         pb_inner.pack(fill="x", padx=12, pady=5)
 
-        pb_left = ctk.CTkFrame(pb_inner, fg_color="transparent")
-        pb_left.pack(side="left")
-
         ctk.CTkLabel(
-            pb_left,
-            text="✨ 지식과 놀이의 배움터:",
-            font=get_font(10, "bold"),
-            text_color=palette["text_sub"]
-        ).pack(side="left", padx=(0, 4))
-
-        ctk.CTkLabel(
-            pb_left,
-            text="선생님과 학생이 함께하는 인터랙티브 수업 퀴즈 플랫폼",
+            pb_inner,
+            text="✨ 지식과 놀이의 배움터:  선생님과 학생이 함께하는 인터랙티브 수업 퀴즈 플랫폼",
             font=get_font(10),
-            text_color=palette["text_main"]
-        ).pack(side="left")
+            text_color=palette["text_sub"],
+            anchor="w"
+        ).pack(side="left", fill="x", expand=True)
 
         pinky_btn = ctk.CTkButton(
             pb_inner,
-            text="💡 놀퀴즈 (pinky-ne.com) 바로가기 ↗",
+            text="💡 놀퀴즈 (pinky-ne.com) ↗",
             font=get_font(10, "bold"),
             fg_color=palette["sidebar_btn_hover"],
             hover_color=palette["accent_blue"],
@@ -1001,9 +992,8 @@ class App(ctk.CTk):
         self.today_items_container.pack(fill="both", expand=True, padx=8, pady=(0, 8))
 
         # 우측: 오늘의 급식 식단표 카드
-        right_card = ctk.CTkFrame(content_row, fg_color=palette["card_inner_bg"], corner_radius=12, border_width=1, border_color=palette["card_border"], width=340)
-        right_card.pack(side="right", fill="both", padx=(6, 0))
-        right_card.pack_propagate(False)
+        right_card = ctk.CTkFrame(content_row, fg_color=palette["card_inner_bg"], corner_radius=12, border_width=1, border_color=palette["card_border"])
+        right_card.pack(side="right", fill="both", expand=True, padx=(6, 0))
 
         rc_top = ctk.CTkFrame(right_card, fg_color="transparent")
         rc_top.pack(fill="x", padx=12, pady=(10, 6))
@@ -1036,8 +1026,6 @@ class App(ctk.CTk):
         lb_inner = ctk.CTkFrame(launcher_bar, fg_color="transparent")
         lb_inner.pack(fill="x", padx=8, pady=5)
 
-        ctk.CTkLabel(lb_inner, text="🚀 빠른 도구:", font=get_font(11, "bold"), text_color=palette["text_main"]).pack(side="left", padx=(4, 6))
-
         quick_actions = [
             ("✏️ 판서", self._open_screen_drawing, "어떤 화면 위에서도 펜/형광펜으로 자유롭게 판서"),
             ("🛠️ 퀵바", self._open_floating_quick_toolbar, "모니터 구석에 띄워두는 올웨이즈온 미니 퀵바"),
@@ -1051,9 +1039,18 @@ class App(ctk.CTk):
             ("🌐 사이트", self._open_site_bookmarks, "놀퀴즈, 업무포털 등 교사용 필수 사이트 바로가기")
         ]
 
-        for a_title, a_cmd, a_tip in quick_actions:
+        # 5개씩 2행으로 배치 (좁은 화면에서도 잘리지 않음)
+        row1 = ctk.CTkFrame(lb_inner, fg_color="transparent")
+        row1.pack(fill="x", pady=(0, 2))
+        row2 = ctk.CTkFrame(lb_inner, fg_color="transparent")
+        row2.pack(fill="x")
+
+        ctk.CTkLabel(row1, text="🚀 빠른 도구:", font=get_font(10, "bold"), text_color=palette["text_main"]).pack(side="left", padx=(4, 6))
+
+        for i, (a_title, a_cmd, a_tip) in enumerate(quick_actions):
+            row = row1 if i < 5 else row2
             btn = ctk.CTkButton(
-                lb_inner,
+                row,
                 text=a_title,
                 font=get_font(10, "bold"),
                 height=28,
@@ -1509,7 +1506,7 @@ class App(ctk.CTk):
             c_box.grid(row=r, column=c, padx=4, pady=4, sticky="nsew")
 
             ctk.CTkLabel(c_box, text=t_title, font=get_font(12, "bold"), text_color=palette["text_main"], anchor="w").pack(fill="x", padx=10, pady=(8, 2))
-            ctk.CTkLabel(c_box, text=t_desc, font=get_font(10), text_color=palette["text_sub"], anchor="w", wraplength=190).pack(fill="x", padx=10, pady=(0, 6))
+            ctk.CTkLabel(c_box, text=t_desc, font=get_font(10), text_color=palette["text_sub"], anchor="w", justify="left", wraplength=170).pack(fill="x", padx=10, pady=(0, 6))
 
             ctk.CTkButton(
                 c_box,
@@ -1915,13 +1912,12 @@ class App(ctk.CTk):
                 sc_row,
                 text=name,
                 font=get_font(11, "bold"),
-                width=75,
                 height=28,
                 fg_color=palette["sidebar_btn_hover"],
                 hover_color=palette["accent_blue"],
                 text_color=palette["text_main"],
                 command=lambda m=mode: self._snap_window(m)
-            ).pack(side="left", padx=2)
+            ).pack(side="left", fill="x", expand=True, padx=2)
 
         # 2-1. ✏️ 화면 위 판서 & 교사용 플로팅 퀵 도구 카드
         tools_card = ctk.CTkFrame(scroll, corner_radius=10, fg_color="#1e2230", border_width=1, border_color="#38bdf8")
@@ -2230,23 +2226,26 @@ class App(ctk.CTk):
             command=self._select_excel_file
         ).pack(side="right")
 
-        fc_row2 = ctk.CTkFrame(file_card, fg_color="transparent")
-        fc_row2.pack(fill="x", padx=12, pady=(4, 10))
+        fc_row2a = ctk.CTkFrame(file_card, fg_color="transparent")
+        fc_row2a.pack(fill="x", padx=12, pady=(4, 2))
 
-        ctk.CTkLabel(fc_row2, text="작업 시트:", font=get_font(12, "bold")).pack(side="left", padx=(0, 6))
-        self.sheet_combo = ctk.CTkComboBox(fc_row2, values=["선택 대기"], font=get_font(12), width=160, state="readonly", command=self._on_sheet_selected)
-        self.sheet_combo.pack(side="left", padx=(0, 16))
+        ctk.CTkLabel(fc_row2a, text="작업 시트:", font=get_font(12, "bold")).pack(side="left", padx=(0, 6))
+        self.sheet_combo = ctk.CTkComboBox(fc_row2a, values=["선택 대기"], font=get_font(12), height=30, state="readonly", command=self._on_sheet_selected)
+        self.sheet_combo.pack(side="left", fill="x", expand=True, padx=(0, 6))
 
-        ctk.CTkLabel(fc_row2, text="대상 화면:", font=get_font(12, "bold")).pack(side="left", padx=(0, 6))
+        fc_row2b = ctk.CTkFrame(file_card, fg_color="transparent")
+        fc_row2b.pack(fill="x", padx=12, pady=(0, 10))
+
+        ctk.CTkLabel(fc_row2b, text="대상 화면:", font=get_font(12, "bold")).pack(side="left", padx=(0, 6))
         self.page_type_combo = ctk.CTkComboBox(
-            fc_row2,
+            fc_row2b,
             values=["행동특성 및 종합의견", "교과 학기말 종합의견"],
             font=get_font(12),
-            width=180,
+            height=30,
             state="readonly"
         )
         self.page_type_combo.set("행동특성 및 종합의견")
-        self.page_type_combo.pack(side="left")
+        self.page_type_combo.pack(side="left", fill="x", expand=True)
 
         col_card = ctk.CTkFrame(scroll, corner_radius=10, fg_color="#222a3a", border_width=1, border_color="#374151")
         col_card.pack(fill="x", pady=(0, 8))
