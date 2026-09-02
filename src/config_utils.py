@@ -3,7 +3,7 @@ import sys
 import shutil
 import glob
 
-APP_VERSION = "5.7"
+APP_VERSION = "2.5.0"
 
 def get_config_dir() -> str:
     """
