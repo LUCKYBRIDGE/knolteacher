@@ -51,7 +51,7 @@ class StudentRosterEditDialog(ctk.CTkToplevel):
         # 상단 타이틀
         ctk.CTkLabel(
             container,
-            text="👥 우리 반 학생 명렬표 등록 & 수정",
+            text="👥 우리 반 학생 명단 등록 & 수정",
             font=get_font(13, "bold"),
             text_color=palette["text_main"]
         ).pack(anchor="w", padx=14, pady=(12, 4))
@@ -62,33 +62,48 @@ class StudentRosterEditDialog(ctk.CTkToplevel):
 
         sec_lbl = ctk.CTkLabel(
             sec_box,
-            text="🔒 100% 로컬 단독 보관: 학생 이름은 외부 서버로 절대 전송되지 않으며\n선생님의 PC에만 안전하게 보관되어 연속해서 계속 사용하실 수 있습니다.",
+            text="🔒 100% 로컬 단독 보관: 학생 이름은 외부 서버로 절대 전송되지 않으며\n선생님의 컴퓨터에만 안전하게 보관되어 연속해서 계속 사용하실 수 있습니다.",
             font=get_font(10),
             text_color=palette["accent_green"],
             justify="left"
         )
         sec_lbl.pack(padx=10, pady=6)
 
+        # 사용 안내
+        guide_txt = "• 번호 순서대로 학생 이름을 한 줄에 한 명씩 엔터(Enter)로 입력하세요.\n  (예: 김도윤 [엔터] 김도현 [엔터] 박시우...)\n• 나이스 엑셀이나 한글에서 학생 이름 열을 복사하여 붙여넣으셔도 됩니다."
         ctk.CTkLabel(
             container,
-            text="• 엑셀/한글 명단을 복사하여 아래에 붙여넣으세요 (한 줄에 1명씩 / 예: 1번 김민수 또는 김민수):",
+            text=guide_txt,
             font=get_font(10),
             text_color=palette["text_sub"],
-            justify="left"
-        ).pack(anchor="w", padx=14, pady=(0, 4))
+            justify="left",
+            anchor="w"
+        ).pack(fill="x", padx=14, pady=(0, 6))
 
         # 텍스트 박스
-        self.text_box = ctk.CTkTextbox(container, font=get_font(11), fg_color=palette["card_inner_bg"], text_color=palette["text_main"])
-        self.text_box.pack(fill="both", expand=True, padx=12, pady=(0, 8))
+        self.text_box = ctk.CTkTextbox(container, font=get_font(12), fg_color=palette["card_inner_bg"], text_color=palette["text_main"])
+        self.text_box.pack(fill="both", expand=True, padx=12, pady=(0, 6))
 
-        # 기존 학생 목록 로드
+        # 기존 학생 목록 로드 (순수 이름만 한 줄에 한 명씩 나열)
         existing = student_manager.get_student_list()
         if existing:
-            raw_lines = [f"{s['number']}번 {s['name']}" if s.get('name') else f"{s['number']}번" for s in existing]
+            raw_lines = [s.get('name', f"학생{s['number']}") for s in existing]
             self.text_box.insert("1.0", "\n".join(raw_lines))
         else:
-            sample_lines = [f"{i}번 학생{i}" for i in range(1, 26)]
+            sample_lines = ["김도윤", "김도현", "박시우", "이서연", "최유진", "정민준", "강하은", "윤서준"]
             self.text_box.insert("1.0", "\n".join(sample_lines))
+
+        # 실시간 인원 수 표시 라벨
+        self.count_lbl = ctk.CTkLabel(
+            container,
+            text=f"• 등록 예정 인원: {len(self._get_parsed_lines())}명 (1번부터 차례대로 배정)",
+            font=get_font(10, "bold"),
+            text_color=palette["accent_blue"],
+            anchor="w"
+        )
+        self.count_lbl.pack(fill="x", padx=14, pady=(0, 6))
+
+        self.text_box.bind("<KeyRelease>", lambda e: self._update_count_preview())
 
         # 하단 버튼 바
         btn_bar = ctk.CTkFrame(container, fg_color="transparent")
@@ -96,7 +111,7 @@ class StudentRosterEditDialog(ctk.CTkToplevel):
 
         save_btn = ctk.CTkButton(
             btn_bar,
-            text="💾 학생 명렬표 로컬 저장",
+            text="💾 학생 명단 로컬 저장",
             font=get_font(12, "bold"),
             fg_color=palette["accent_green"],
             hover_color="#059669",
@@ -116,6 +131,19 @@ class StudentRosterEditDialog(ctk.CTkToplevel):
             command=self.destroy
         )
         cancel_btn.pack(side="right", padx=(6, 0))
+
+    def _get_parsed_lines(self):
+        raw = self.text_box.get("1.0", "end").strip()
+        return [line.strip() for line in raw.split("\n") if line.strip()]
+
+    def _update_count_preview(self):
+        lines = self._get_parsed_lines()
+        palette = theme_manager.get_theme()
+        if hasattr(self, "count_lbl") and self.count_lbl.winfo_exists():
+            self.count_lbl.configure(
+                text=f"• 등록 예정 인원: 총 {len(lines)}명 (1번부터 {len(lines)}번까지 자동 순차 부여)",
+                text_color=palette["accent_blue"]
+            )
 
     def _save_roster(self):
         txt = self.text_box.get("1.0", "end").strip()
