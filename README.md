@@ -1,4 +1,4 @@
-# 🍎 티처메이트 (TeacherMate Pro v5.7)
+# 📅 티처메이트 (TeacherMate v5.7)
 
 > **대한민국 선생님들을 위한 스마트 올인원 올웨이즈온(Always-On) 교사용 업무 & 수업 도우미**
 > 

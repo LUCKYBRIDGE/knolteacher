@@ -637,7 +637,7 @@ class App(ctk.CTk):
 
         self.logo_sub_lbl = ctk.CTkLabel(
             logo_frame,
-            text="TeacherMate 교사도우미 Pro",
+            text="TeacherMate 교사도우미",
             font=get_font(10, "bold"),
             text_color=palette["text_sub"]
         )
@@ -3131,7 +3131,7 @@ class App(ctk.CTk):
 
         ctk.CTkLabel(info_card, text="ℹ️ 7. 프로그램 정보 & 저작권", font=get_font(13, "bold"), text_color="#cbd5e1").pack(anchor="w", padx=12, pady=(10, 4))
         info_str = (
-            f"• 프로그램명: 티처메이트 (TeacherMate Pro v{APP_VERSION})\n"
+            f"• 프로그램명: 티처메이트 (TeacherMate v{APP_VERSION})\n"
             "• 개발 및 저작권: Copyright 2026. 교사 서정완. All rights reserved.\n"
             "• 기능: 4세대 나이스 학생번호 기준 안전 자동입력, 전국 17개 교육청 전역 학교 시간표 연동,\n"
             "        화면 전체 판서 & 플로팅 퀵바, 올웨이즈온 미니바/급식 위젯, 수업 알람, PC 전원 예약."
