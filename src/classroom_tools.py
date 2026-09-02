@@ -15,10 +15,10 @@ from src.tooltip import attach_tooltip
 class ClassroomToolsDialog(ctk.CTkToplevel):
     """
     놀티쳐 데스크 교실 활동 도구 모음 (Classroom Interactive Tools)
-    1. ⏱️ 활동 타이머 & 스톱워치
-    2. 🎲 학생 무작위 뽑기 (Random Student Picker)
-    3. 🎡 돌려돌려 돌림판 (Spin the Wheel / Roulette)
-    4. 🪜 짜릿한 사다리타기 (Ghost Leg Ladder Game)
+    - ⏱️ 활동 타이머 & 스톱워치
+    - 🎲 학생 무작위 뽑기 (Random Student Picker)
+    - 🎡 돌려돌려 돌림판 (Spin the Wheel / Roulette)
+    - 🪜 짜릿한 사다리타기 (Ghost Leg Ladder Game)
     """
     _instance = None
 
@@ -35,9 +35,9 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
     def __init__(self, parent=None, initial_tab="timer"):
         super().__init__(parent)
         self.parent = parent
-        self.title("놀티쳐 교실 도구 (타이머 · 뽑기 · 돌림판 · 사다리)")
-        self.geometry("480x580")
-        self.minsize(420, 500)
+        self.title("놀티쳐 교실 도구")
+        self.geometry("490x600")
+        self.minsize(430, 520)
         self.attributes("-topmost", True)
         self.resizable(True, True)
 
@@ -84,14 +84,14 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
         self.container = ctk.CTkFrame(
             self,
             fg_color=palette["card_bg"],
-            corner_radius=14,
-            border_width=2,
-            border_color=palette["accent_blue"]
+            corner_radius=16,
+            border_width=1,
+            border_color=palette["card_border"]
         )
         self.container.pack(fill="both", expand=True, padx=6, pady=6)
 
         # 상단 헤더 (탭 & 제어 버튼)
-        hdr = ctk.CTkFrame(self.container, fg_color=palette["sidebar_bg"], corner_radius=10)
+        hdr = ctk.CTkFrame(self.container, fg_color=palette["sidebar_bg"], corner_radius=12)
         hdr.pack(fill="x", padx=6, pady=(6, 4))
 
         self.tab_map = {
@@ -108,23 +108,22 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
             command=self._on_tab_changed
         )
         
-        # initial_tab 설정
         def_tab = self.tab_map.get(initial_tab, "⏱️ 타이머")
         self.seg_btn.set(def_tab)
-        self.seg_btn.pack(side="left", padx=4, pady=4)
+        self.seg_btn.pack(side="left", padx=6, pady=6)
 
         btn_box = ctk.CTkFrame(hdr, fg_color="transparent")
-        btn_box.pack(side="right", padx=4, pady=4)
+        btn_box.pack(side="right", padx=6, pady=6)
 
         self.pin_btn = ctk.CTkButton(
             btn_box,
             text="📌",
-            width=26,
-            height=26,
+            width=28,
+            height=28,
             font=get_font(11),
             fg_color="#0284c7",
             hover_color="#0369a1",
-            corner_radius=6,
+            corner_radius=8,
             command=self._toggle_pin
         )
         self.pin_btn.pack(side="left", padx=1)
@@ -133,17 +132,17 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
         close_btn = ctk.CTkButton(
             btn_box,
             text="✕",
-            width=26,
-            height=26,
+            width=28,
+            height=28,
             font=get_font(11, "bold"),
             fg_color="#3f1d24",
             hover_color="#dc2626",
             text_color="#fca5a5",
-            corner_radius=6,
+            corner_radius=8,
             command=self.destroy
         )
         close_btn.pack(side="left", padx=1)
-        attach_tooltip(close_btn, "교실 도구 닫기")
+        attach_tooltip(close_btn, "창 닫기")
 
         self.content_frame = ctk.CTkFrame(self.container, fg_color="transparent")
         self.content_frame.pack(fill="both", expand=True, padx=6, pady=4)
@@ -186,23 +185,27 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
             self._render_ladder_view()
 
     # ==========================================
-    # 1. ⏱️ 타이머 뷰
+    # 1. ⏱️ 타이머 뷰 (모던 네온 LED 디자인)
     # ==========================================
     def _render_timer_view(self):
         palette = theme_manager.get_theme()
 
-        box = ctk.CTkFrame(self.content_frame, fg_color=palette["sidebar_bg"], corner_radius=12)
+        box = ctk.CTkFrame(self.content_frame, fg_color=palette["sidebar_bg"], corner_radius=14, border_width=1, border_color=palette["card_border"])
         box.pack(fill="both", expand=True, padx=4, pady=4)
 
+        # 시간 디스플레이 카드
+        disp_card = ctk.CTkFrame(box, fg_color="#090d16", corner_radius=16, border_width=2, border_color="#0284c7")
+        disp_card.pack(fill="x", padx=16, pady=(18, 12))
+
         self.timer_display = ctk.CTkLabel(
-            box,
+            disp_card,
             text=self._format_timer(self.timer_seconds),
-            font=ctk.CTkFont(family="Consolas", size=48, weight="bold"),
+            font=ctk.CTkFont(family="Consolas", size=54, weight="bold"),
             text_color="#38bdf8"
         )
-        self.timer_display.pack(pady=(20, 10))
+        self.timer_display.pack(pady=16)
 
-        # 프리셋 버튼
+        # 프리셋 버튼 바
         p_row = ctk.CTkFrame(box, fg_color="transparent")
         p_row.pack(pady=6)
 
@@ -211,26 +214,28 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
             btn = ctk.CTkButton(
                 p_row,
                 text=txt,
-                width=54,
-                height=30,
+                width=56,
+                height=32,
                 font=get_font(10, "bold"),
-                fg_color="#334155",
-                hover_color="#475569",
+                corner_radius=10,
+                fg_color="#1e293b",
+                hover_color="#334155",
                 command=lambda s=sec: self._add_timer(s)
             )
-            btn.pack(side="left", padx=2)
+            btn.pack(side="left", padx=3)
             attach_tooltip(btn, f"타이머에 {txt} 추가")
 
-        # 제어 버튼
+        # 제어 버튼 바
         ctrl_row = ctk.CTkFrame(box, fg_color="transparent")
         ctrl_row.pack(pady=(12, 16))
 
         self.start_btn = ctk.CTkButton(
             ctrl_row,
             text="▶ 시작",
-            width=90,
-            height=38,
+            width=100,
+            height=40,
             font=get_font(13, "bold"),
+            corner_radius=12,
             fg_color="#10b981",
             hover_color="#059669",
             command=self._toggle_timer
@@ -241,11 +246,12 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
         reset_btn = ctk.CTkButton(
             ctrl_row,
             text="🔄 초기화",
-            width=80,
-            height=38,
+            width=90,
+            height=40,
             font=get_font(12, "bold"),
-            fg_color="#475569",
-            hover_color="#64748b",
+            corner_radius=12,
+            fg_color="#334155",
+            hover_color="#475569",
             command=self._reset_timer
         )
         reset_btn.pack(side="left", padx=4)
@@ -307,41 +313,44 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
     def _render_picker_view(self):
         palette = theme_manager.get_theme()
 
-        box = ctk.CTkFrame(self.content_frame, fg_color=palette["sidebar_bg"], corner_radius=12)
+        box = ctk.CTkFrame(self.content_frame, fg_color=palette["sidebar_bg"], corner_radius=14, border_width=1, border_color=palette["card_border"])
         box.pack(fill="both", expand=True, padx=4, pady=4)
 
-        # 상단 학생 수 설정
         opt_row = ctk.CTkFrame(box, fg_color="transparent")
-        opt_row.pack(fill="x", padx=12, pady=(10, 4))
+        opt_row.pack(fill="x", padx=14, pady=(12, 4))
 
         ctk.CTkLabel(opt_row, text="학급 총 학생 수:", font=get_font(11, "bold"), text_color=palette["text_main"]).pack(side="left")
         
-        self.num_spin = ctk.CTkEntry(opt_row, width=50, height=28, font=get_font(11, "bold"))
+        self.num_spin = ctk.CTkEntry(opt_row, width=54, height=28, font=get_font(11, "bold"), corner_radius=6)
         self.num_spin.insert(0, str(self.max_students))
         self.num_spin.pack(side="left", padx=6)
 
         self.no_dup_var = ctk.BooleanVar(value=True)
         ctk.CTkCheckBox(opt_row, text="중복 제외", variable=self.no_dup_var, font=get_font(11)).pack(side="left", padx=10)
 
-        # 번호 대형 전광판
+        # 번호 대형 전광판 카드
+        card = ctk.CTkFrame(box, fg_color="#090d16", corner_radius=16, border_width=2, border_color="#f59e0b")
+        card.pack(fill="x", padx=16, pady=(10, 10))
+
         self.picker_num_lbl = ctk.CTkLabel(
-            box,
+            card,
             text="?",
-            font=ctk.CTkFont(family="Malgun Gothic", size=72, weight="bold"),
+            font=ctk.CTkFont(family="Malgun Gothic", size=68, weight="bold"),
             text_color="#f59e0b"
         )
-        self.picker_num_lbl.pack(pady=(15, 10))
+        self.picker_num_lbl.pack(pady=14)
 
-        # 추첨 버튼
+        # 추첨 버튼 바
         btn_row = ctk.CTkFrame(box, fg_color="transparent")
         btn_row.pack(pady=4)
 
         self.pick_btn = ctk.CTkButton(
             btn_row,
             text="🎲 번호 뽑기!",
-            width=120,
-            height=38,
+            width=130,
+            height=40,
             font=get_font(13, "bold"),
+            corner_radius=12,
             fg_color="#0284c7",
             hover_color="#0369a1",
             command=self._start_pick
@@ -352,11 +361,12 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
         reset_btn = ctk.CTkButton(
             btn_row,
             text="초기화",
-            width=70,
-            height=38,
+            width=80,
+            height=40,
             font=get_font(11, "bold"),
-            fg_color="#475569",
-            hover_color="#64748b",
+            corner_radius=12,
+            fg_color="#334155",
+            hover_color="#475569",
             command=self._reset_picker
         )
         reset_btn.pack(side="left", padx=4)
@@ -392,7 +402,6 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
         self.roulette_running = True
         self.pick_btn.configure(state="disabled")
 
-        # 롤링 애니메이션
         def _rolling(count=0, max_count=18):
             if count < max_count:
                 temp_pick = random.randint(1, self.max_students)
@@ -418,30 +427,31 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
         self.picked_list_lbl.configure(text="뽑힌 번호: 없음")
 
     # ==========================================
-    # 3. 🎡 돌려돌려 돌림판 뷰
+    # 3. 🎡 돌려돌려 돌림판 뷰 (비비드 룰렛 & 다이아몬드 바늘)
     # ==========================================
     def _render_wheel_view(self):
         palette = theme_manager.get_theme()
 
-        box = ctk.CTkFrame(self.content_frame, fg_color=palette["sidebar_bg"], corner_radius=12)
+        box = ctk.CTkFrame(self.content_frame, fg_color=palette["sidebar_bg"], corner_radius=14, border_width=1, border_color=palette["card_border"])
         box.pack(fill="both", expand=True, padx=4, pady=4)
 
         # 항목 입력 바
         input_row = ctk.CTkFrame(box, fg_color="transparent")
-        input_row.pack(fill="x", padx=10, pady=(8, 4))
+        input_row.pack(fill="x", padx=12, pady=(10, 4))
 
         ctk.CTkLabel(input_row, text="항목 (쉼표구분):", font=get_font(10, "bold"), text_color=palette["text_main"]).pack(side="left")
         
-        self.wheel_entry = ctk.CTkEntry(input_row, height=26, font=get_font(10))
+        self.wheel_entry = ctk.CTkEntry(input_row, height=28, font=get_font(10), corner_radius=6)
         self.wheel_entry.insert(0, ", ".join(self.wheel_items))
         self.wheel_entry.pack(side="left", fill="x", expand=True, padx=6)
 
         set_btn = ctk.CTkButton(
             input_row,
             text="적용",
-            width=46,
-            height=26,
+            width=48,
+            height=28,
             font=get_font(10, "bold"),
+            corner_radius=6,
             fg_color="#334155",
             hover_color="#475569",
             command=self._apply_wheel_items
@@ -452,8 +462,8 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
         # 룰렛 캔버스
         self.wheel_canvas = tk.Canvas(
             box,
-            width=280,
-            height=280,
+            width=290,
+            height=290,
             bg=palette["sidebar_bg"],
             highlightthickness=0
         )
@@ -465,9 +475,10 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
         self.spin_btn = ctk.CTkButton(
             box,
             text="🚀 돌려돌려 돌림판!",
-            width=150,
-            height=38,
+            width=160,
+            height=40,
             font=get_font(13, "bold"),
+            corner_radius=12,
             fg_color="#ea580c",
             hover_color="#c2410c",
             command=self._start_spin_wheel
@@ -481,7 +492,7 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
             font=get_font(11, "bold"),
             text_color="#38bdf8"
         )
-        self.wheel_result_lbl.pack(pady=(0, 6))
+        self.wheel_result_lbl.pack(pady=(0, 8))
 
     def _apply_wheel_items(self):
         txt = self.wheel_entry.get().strip()
@@ -494,13 +505,16 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
 
     def _draw_wheel(self, start_angle: float):
         self.wheel_canvas.delete("all")
-        cx, cy, r = 140, 140, 120
+        cx, cy, r = 145, 145, 125
         n = len(self.wheel_items)
         if n == 0:
             return
 
         slice_deg = 360.0 / n
         wheel_colors = ["#ef4444", "#f97316", "#f59e0b", "#10b981", "#06b6d4", "#3b82f6", "#8b5cf6", "#ec4899"]
+
+        # 외곽 골드 링 테두리
+        self.wheel_canvas.create_oval(cx - r - 4, cy - r - 4, cx + r + 4, cy + r + 4, outline="#f59e0b", width=3)
 
         for i, it in enumerate(self.wheel_items):
             cur_start = start_angle + i * slice_deg
@@ -511,7 +525,6 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
                 fill=col, outline="#ffffff", width=2
             )
 
-            # 텍스트 위치 계산
             mid_rad = math.radians(cur_start + slice_deg / 2.0)
             tx = cx + (r * 0.65) * math.cos(mid_rad)
             ty = cy - (r * 0.65) * math.sin(mid_rad)
@@ -524,11 +537,11 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
             )
 
         # 중앙 허브
-        self.wheel_canvas.create_oval(cx - 18, cy - 18, cx + 18, cy + 18, fill="#0f172a", outline="#ffffff", width=2)
+        self.wheel_canvas.create_oval(cx - 20, cy - 20, cx + 20, cy + 20, fill="#0f172a", outline="#f59e0b", width=3)
 
-        # 상단 가리키는 바늘 (Pointer)
+        # 상단 다이아몬드 바늘
         self.wheel_canvas.create_polygon(
-            cx, cy - r - 8,
+            cx, cy - r - 10,
             cx - 12, cy - r + 14,
             cx + 12, cy - r + 14,
             fill="#fbbf24", outline="#b45309", width=2
@@ -542,8 +555,7 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
         self.spin_btn.configure(state="disabled")
         self.wheel_result_lbl.configure(text="🎡 돌림판이 힘차게 회전하는 중...", text_color="#f59e0b")
 
-        total_spins = random.randint(1080, 1800)  # 3~5바퀴 이상
-        step_speed = 35.0
+        step_speed = 36.0
         decel = 0.982
 
         def _spin_step(speed):
@@ -555,11 +567,9 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
                 self.wheel_animating = False
                 self.spin_btn.configure(state="normal")
                 
-                # 당첨 항목 계산 (바늘은 90도 상단 위치)
                 n = len(self.wheel_items)
                 slice_deg = 360.0 / n
                 
-                # 바늘 각도(90도)에 걸린 조각 인덱스
                 pointer_angle = (90.0 - self.wheel_angle) % 360.0
                 win_idx = int(pointer_angle // slice_deg) % n
                 winner = self.wheel_items[win_idx]
@@ -581,28 +591,26 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
     def _render_ladder_view(self):
         palette = theme_manager.get_theme()
 
-        box = ctk.CTkFrame(self.content_frame, fg_color=palette["sidebar_bg"], corner_radius=12)
+        box = ctk.CTkFrame(self.content_frame, fg_color=palette["sidebar_bg"], corner_radius=14, border_width=1, border_color=palette["card_border"])
         box.pack(fill="both", expand=True, padx=4, pady=4)
 
-        # 플레이어 & 목표 입력 바
         p_row = ctk.CTkFrame(box, fg_color="transparent")
-        p_row.pack(fill="x", padx=10, pady=(6, 2))
+        p_row.pack(fill="x", padx=12, pady=(8, 2))
         ctk.CTkLabel(p_row, text="출발 (위):", font=get_font(10, "bold"), text_color=palette["text_main"]).pack(side="left")
-        self.lad_p_entry = ctk.CTkEntry(p_row, height=24, font=get_font(10))
+        self.lad_p_entry = ctk.CTkEntry(p_row, height=26, font=get_font(10), corner_radius=6)
         self.lad_p_entry.insert(0, ", ".join(self.ladder_players))
         self.lad_p_entry.pack(side="left", fill="x", expand=True, padx=4)
 
         g_row = ctk.CTkFrame(box, fg_color="transparent")
-        g_row.pack(fill="x", padx=10, pady=(2, 4))
+        g_row.pack(fill="x", padx=12, pady=(2, 4))
         ctk.CTkLabel(g_row, text="도착 (아래):", font=get_font(10, "bold"), text_color=palette["text_main"]).pack(side="left")
-        self.lad_g_entry = ctk.CTkEntry(g_row, height=24, font=get_font(10))
+        self.lad_g_entry = ctk.CTkEntry(g_row, height=26, font=get_font(10), corner_radius=6)
         self.lad_g_entry.insert(0, ", ".join(self.ladder_goals))
         self.lad_g_entry.pack(side="left", fill="x", expand=True, padx=4)
 
-        # 사다리 캔버스
         self.lad_canvas = tk.Canvas(
             box,
-            width=380,
+            width=390,
             height=260,
             bg=palette["sidebar_bg"],
             highlightthickness=0
@@ -611,34 +619,35 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
 
         self._generate_and_draw_ladder()
 
-        # 제어 버튼
         btn_row = ctk.CTkFrame(box, fg_color="transparent")
         btn_row.pack(pady=4)
 
         gen_btn = ctk.CTkButton(
             btn_row,
             text="🪜 새 사다리 생성",
-            width=110,
-            height=32,
+            width=120,
+            height=34,
             font=get_font(11, "bold"),
+            corner_radius=10,
             fg_color="#334155",
             hover_color="#475569",
             command=self._generate_and_draw_ladder
         )
-        gen_btn.pack(side="left", padx=3)
+        gen_btn.pack(side="left", padx=4)
         attach_tooltip(gen_btn, "새로운 무작위 사다리 발판 생성")
 
         self.lad_start_btn = ctk.CTkButton(
             btn_row,
             text="▶ 사다리 타기!",
-            width=110,
-            height=32,
+            width=120,
+            height=34,
             font=get_font(11, "bold"),
+            corner_radius=10,
             fg_color="#0284c7",
             hover_color="#0369a1",
             command=self._start_ladder_animation
         )
-        self.lad_start_btn.pack(side="left", padx=3)
+        self.lad_start_btn.pack(side="left", padx=4)
         attach_tooltip(self.lad_start_btn, "모든 참가자의 사다리 결과 애니메이션 시작")
 
         self.lad_result_lbl = ctk.CTkLabel(
@@ -650,7 +659,6 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
         self.lad_result_lbl.pack(pady=(0, 6))
 
     def _generate_and_draw_ladder(self):
-        # 1. 항목 동기화
         p_txt = self.lad_p_entry.get().strip()
         g_txt = self.lad_g_entry.get().strip()
         if p_txt:
@@ -666,8 +674,8 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
 
         self.lad_canvas.delete("all")
 
-        w, h = 380, 260
-        margin_x = 40
+        w, h = 390, 260
+        margin_x = 42
         top_y = 35
         bot_y = 225
         col_gap = (w - margin_x * 2) / (num_col - 1)
@@ -675,16 +683,12 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
         self.ladder_col_x = [margin_x + i * col_gap for i in range(num_col)]
         self.ladder_horiz_lines = []
 
-        # 세로선 그리기 및 라벨 표시
         for i in range(num_col):
             x = self.ladder_col_x[i]
-            self.lad_canvas.create_line(x, top_y, x, bot_y, fill="#64748b", width=3)
-            # 상단 출발 라벨
+            self.lad_canvas.create_line(x, top_y, x, bot_y, fill="#64748b", width=3, capstyle=tk.ROUND)
             self.lad_canvas.create_text(x, top_y - 15, text=self.ladder_players[i][:5], fill="#38bdf8", font=("Malgun Gothic", 10, "bold"))
-            # 하단 도착 라벨
             self.lad_canvas.create_text(x, bot_y + 15, text=self.ladder_goals[i][:5], fill="#f59e0b", font=("Malgun Gothic", 10, "bold"))
 
-        # 무작위 가로선 생성 (사다리 발판)
         levels = 6
         step_h = (bot_y - top_y) / (levels + 1)
 
@@ -694,7 +698,7 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
                 if random.random() > 0.45:
                     x1 = self.ladder_col_x[col]
                     x2 = self.ladder_col_x[col + 1]
-                    self.lad_canvas.create_line(x1, ly, x2, ly, fill="#94a3b8", width=2)
+                    self.lad_canvas.create_line(x1, ly, x2, ly, fill="#94a3b8", width=2, capstyle=tk.ROUND)
                     self.ladder_horiz_lines.append((ly, col, col + 1))
 
     def _start_ladder_animation(self):
@@ -707,8 +711,6 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
 
         num_col = len(self.ladder_col_x)
         results = []
-
-        # 각 플레이어별 경로 추적
         colors = ["#ef4444", "#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899"]
 
         for p_idx in range(num_col):
@@ -717,7 +719,6 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
             bot_y = 225
             path = [(self.ladder_col_x[cur_col], cur_y)]
 
-            # y 정렬된 가로선 순회
             sorted_lines = sorted(self.ladder_horiz_lines, key=lambda x: x[0])
             for ly, c1, c2 in sorted_lines:
                 if ly > cur_y:
@@ -735,11 +736,10 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
             path.append((self.ladder_col_x[cur_col], bot_y))
             results.append((self.ladder_players[p_idx], self.ladder_goals[cur_col]))
 
-            # 경로 하이라이트 선 그리기
             for pt_i in range(len(path) - 1):
                 x1, y1 = path[pt_i]
                 x2, y2 = path[pt_i + 1]
-                self.lad_canvas.create_line(x1, y1, x2, y2, fill=colors[p_idx % len(colors)], width=3)
+                self.lad_canvas.create_line(x1, y1, x2, y2, fill=colors[p_idx % len(colors)], width=3, capstyle=tk.ROUND, joinstyle=tk.ROUND)
 
         res_str = " | ".join([f"{p} ➜ {g}" for p, g in results])
         self.lad_result_lbl.configure(text=f"🎉 결과: {res_str}", text_color="#10b981")

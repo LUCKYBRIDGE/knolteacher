@@ -84,10 +84,10 @@ class FloatingQuickToolbar(tk.Toplevel):
     def _build_expanded_ui(self):
         self.container = ctk.CTkFrame(
             self,
-            fg_color="#0f172a",
-            corner_radius=16,
-            border_width=2,
-            border_color="#38bdf8"
+            fg_color="#090d16",
+            corner_radius=18,
+            border_width=1,
+            border_color="#0284c7"
         )
         self.container.pack(fill="both", expand=True, padx=1, pady=1)
 
@@ -96,11 +96,11 @@ class FloatingQuickToolbar(tk.Toplevel):
             self.container,
             text="⋮⋮",
             font=get_font(13, "bold"),
-            text_color="#94a3b8",
-            width=18,
+            text_color="#64748b",
+            width=16,
             cursor="fleur"
         )
-        self.drag_handle.pack(side="left", padx=(6, 2))
+        self.drag_handle.pack(side="left", padx=(8, 2))
         self.drag_handle.bind("<Button-1>", self._start_drag)
         self.drag_handle.bind("<B1-Motion>", self._on_drag)
         attach_tooltip(self.drag_handle, "드래그하여 퀵 툴바 위치 이동")
@@ -112,9 +112,9 @@ class FloatingQuickToolbar(tk.Toplevel):
             font=get_font(10, "bold"),
             text_color="#38bdf8",
             fg_color="#1e293b",
-            corner_radius=6,
-            width=50,
-            height=26
+            corner_radius=8,
+            width=48,
+            height=28
         )
         self.res_chip.pack(side="left", padx=(0, 4))
         attach_tooltip(self.res_chip, "현재 컴퓨터 CPU 실시간 사용량")
@@ -126,7 +126,7 @@ class FloatingQuickToolbar(tk.Toplevel):
             ("🎲 뽑기", "#10b981", "#059669", self._open_picker, "공정한 학생 발표자 무작위 추첨"),
             ("🎡 돌림판", "#f59e0b", "#d97706", self._open_wheel, "모둠/벌칙/보상 돌려돌려 돌림판"),
             ("🪜 사다리", "#8b5cf6", "#7c3aed", self._open_ladder, "짜릿한 학생/모둠 사다리타기 게임"),
-            ("📅 위젯", "#7c3aed", "#6d28d9", self._open_mini_widget, "바탕화면 올웨이즈온 시간표/급식 위젯"),
+            ("📅 위젯", "#0ea5e9", "#0284c7", self._open_mini_widget, "바탕화면 올웨이즈온 시간표/급식 위젯"),
             ("💻 메인", "#334155", "#475569", self._open_main_app, "놀티쳐 데스크 메인 창 열기")
         ]
 
@@ -137,7 +137,7 @@ class FloatingQuickToolbar(tk.Toplevel):
                 font=get_font(10, "bold"),
                 width=52,
                 height=30,
-                corner_radius=8,
+                corner_radius=10,
                 fg_color=bg_c,
                 hover_color=hov_c,
                 command=cmd
@@ -154,7 +154,7 @@ class FloatingQuickToolbar(tk.Toplevel):
             font=get_font(10),
             width=24,
             height=28,
-            corner_radius=6,
+            corner_radius=8,
             fg_color="#1e293b" if self.is_pinned else "transparent",
             hover_color="#334155",
             command=self._toggle_pin
@@ -168,7 +168,7 @@ class FloatingQuickToolbar(tk.Toplevel):
             font=get_font(12, "bold"),
             width=24,
             height=28,
-            corner_radius=6,
+            corner_radius=8,
             fg_color="#1e293b",
             hover_color="#334155",
             command=self._toggle_collapse
@@ -182,7 +182,7 @@ class FloatingQuickToolbar(tk.Toplevel):
             font=get_font(11, "bold"),
             width=24,
             height=28,
-            corner_radius=6,
+            corner_radius=8,
             fg_color="#3f1d24",
             hover_color="#dc2626",
             text_color="#fca5a5",

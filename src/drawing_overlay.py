@@ -110,23 +110,23 @@ class ScreenDrawingOverlay:
         # macOS 스타일 플로팅 캡슐 프레임
         bg_frame = ctk.CTkFrame(
             self.toolbar,
-            fg_color="#0f172a",
-            corner_radius=18,
-            border_width=2,
-            border_color="#38bdf8"
+            fg_color="#090d16",
+            corner_radius=20,
+            border_width=1,
+            border_color="#0284c7"
         )
-        bg_frame.pack(fill="both", expand=True, padx=2, pady=2)
+        bg_frame.pack(fill="both", expand=True, padx=1, pady=1)
 
         # 드래그 이동 핸들
         drag_handle = ctk.CTkLabel(
             bg_frame,
             text="⋮⋮",
-            font=get_font(14, "bold"),
-            text_color="#94a3b8",
-            width=20,
+            font=get_font(13, "bold"),
+            text_color="#64748b",
+            width=18,
             cursor="fleur"
         )
-        drag_handle.pack(side="left", padx=(8, 4))
+        drag_handle.pack(side="left", padx=(8, 2))
         drag_handle.bind("<Button-1>", self._start_toolbar_drag)
         drag_handle.bind("<B1-Motion>", self._on_toolbar_drag)
         attach_tooltip(drag_handle, "드래그하여 판서 도구함 위치 이동")
@@ -147,19 +147,19 @@ class ScreenDrawingOverlay:
                 text=icon,
                 width=34,
                 height=34,
-                font=get_font(13, "bold"),
+                font=get_font(12, "bold"),
                 fg_color="#0284c7" if t_key == "pen" else "transparent",
                 hover_color="#0369a1",
-                corner_radius=8,
+                corner_radius=10,
                 command=lambda k=t_key: self._select_tool(k)
             )
             btn.pack(side="left", padx=2)
             self.tool_btns[t_key] = btn
             attach_tooltip(btn, f"{desc}")
 
-        ctk.CTkFrame(bg_frame, width=1, height=28, fg_color="#334155").pack(side="left", padx=4)
+        ctk.CTkFrame(bg_frame, width=1, height=26, fg_color="#334155").pack(side="left", padx=4)
 
-        # 2. 색상 팔레트 (빨강, 주황, 노랑, 초록, 파랑, 보라, 흰색, 검정)
+        # 2. 색상 팔레트
         self.color_btns = {}
         colors = [
             ("#ff3b30", "빨간색"),
@@ -175,9 +175,9 @@ class ScreenDrawingOverlay:
             btn = ctk.CTkButton(
                 bg_frame,
                 text="",
-                width=24,
-                height=24,
-                corner_radius=12,
+                width=22,
+                height=22,
+                corner_radius=11,
                 fg_color=c_hex,
                 hover_color=c_hex,
                 border_width=2 if c_hex == self.current_color else 0,
@@ -188,26 +188,26 @@ class ScreenDrawingOverlay:
             self.color_btns[c_hex] = btn
             attach_tooltip(btn, f"펜 색상: {c_name}")
 
-        ctk.CTkFrame(bg_frame, width=1, height=28, fg_color="#334155").pack(side="left", padx=4)
+        ctk.CTkFrame(bg_frame, width=1, height=26, fg_color="#334155").pack(side="left", padx=4)
 
-        # 3. 굵기 조절 (가는선, 보통선, 굵은선)
-        widths = [(3, "가는 펜 (3px)"), (6, "보통 펜 (6px)"), (12, "굵은 펜 (12px)")]
-        for w_val, w_desc in widths:
+        # 3. 굵기 조절 (세련된 점 기호)
+        widths = [(3, "•", "가는 펜 (3px)"), (6, "●", "보통 펜 (6px)"), (12, "⬤", "굵은 펜 (12px)")]
+        for w_val, w_sym, w_desc in widths:
             btn = ctk.CTkButton(
                 bg_frame,
-                text=f"{w_val}p",
+                text=w_sym,
                 width=28,
-                height=26,
-                font=get_font(9, "bold"),
-                corner_radius=6,
-                fg_color="#334155",
-                hover_color="#475569",
+                height=28,
+                font=get_font(12, "bold"),
+                corner_radius=8,
+                fg_color="#1e293b",
+                hover_color="#334155",
                 command=lambda w=w_val: self._select_width(w)
             )
-            btn.pack(side="left", padx=2)
+            btn.pack(side="left", padx=1)
             attach_tooltip(btn, f"펜 굵기: {w_desc}")
 
-        ctk.CTkFrame(bg_frame, width=1, height=28, fg_color="#334155").pack(side="left", padx=4)
+        ctk.CTkFrame(bg_frame, width=1, height=26, fg_color="#334155").pack(side="left", padx=4)
 
         # 4. 액션 버튼 (칠판모드, 실행취소, 전체삭제, 캡처저장, 판서종료)
         self.board_btn = ctk.CTkButton(
@@ -215,10 +215,10 @@ class ScreenDrawingOverlay:
             text="⬛",
             width=32,
             height=32,
-            font=get_font(12),
+            font=get_font(11),
             fg_color="#1e293b",
             hover_color="#334155",
-            corner_radius=8,
+            corner_radius=10,
             command=self._toggle_blackboard
         )
         self.board_btn.pack(side="left", padx=2)
@@ -229,10 +229,10 @@ class ScreenDrawingOverlay:
             text="↩",
             width=32,
             height=32,
-            font=get_font(13, "bold"),
+            font=get_font(12, "bold"),
             fg_color="#334155",
             hover_color="#475569",
-            corner_radius=8,
+            corner_radius=10,
             command=self.undo
         )
         undo_btn.pack(side="left", padx=2)
@@ -243,11 +243,11 @@ class ScreenDrawingOverlay:
             text="🗑️",
             width=32,
             height=32,
-            font=get_font(12),
+            font=get_font(11),
             fg_color="#7f1d1d",
             hover_color="#991b1b",
             text_color="#fca5a5",
-            corner_radius=8,
+            corner_radius=10,
             command=self.clear_all
         )
         clear_btn.pack(side="left", padx=2)
@@ -258,10 +258,10 @@ class ScreenDrawingOverlay:
             text="📸",
             width=32,
             height=32,
-            font=get_font(12),
+            font=get_font(11),
             fg_color="#059669",
             hover_color="#047857",
-            corner_radius=8,
+            corner_radius=10,
             command=self.save_screenshot
         )
         cap_btn.pack(side="left", padx=2)
@@ -270,13 +270,13 @@ class ScreenDrawingOverlay:
         close_btn = ctk.CTkButton(
             bg_frame,
             text="✕ 판서 종료",
-            width=80,
+            width=84,
             height=32,
             font=get_font(11, "bold"),
             fg_color="#dc2626",
             hover_color="#b91c1c",
             text_color="#ffffff",
-            corner_radius=8,
+            corner_radius=10,
             command=self.close
         )
         close_btn.pack(side="left", padx=(4, 6))
