@@ -9,7 +9,7 @@ from typing import Optional, Tuple, Dict, Any, Callable
 
 from src.config_utils import get_config_dir, APP_VERSION
 
-DEFAULT_GITHUB_REPO = "LUCKYBRIDGE/teachermate"
+DEFAULT_GITHUB_REPO = "LUCKYBRIDGE/knol-teacher-desk"
 
 class GitHubUpdater:
     """

@@ -3237,7 +3237,7 @@ class App(ctk.CTk):
             hover_color=palette["accent_blue"],
             text_color=palette["text_main"],
             height=30,
-            command=lambda: webbrowser.open("https://github.com/LUCKYBRIDGE/teachermate")
+            command=lambda: webbrowser.open("https://github.com/LUCKYBRIDGE/knol-teacher-desk")
         ).pack(side="left", padx=(0, 6))
 
         self.update_check_btn = ctk.CTkButton(
@@ -3251,7 +3251,7 @@ class App(ctk.CTk):
         )
         self.update_check_btn.pack(side="left")
 
-        up_info = "• GitHub(LUCKYBRIDGE/teachermate) 릴리스와 연동되어 웹 브라우저 다운로드 없이 앱 내부에서 1초 만에 최신 버전으로 직접 덮어쓰기 업데이트됩니다.\n• 새 버전을 받더라도 선생님께서 설정하신 모든 시간표, 학교, 바로가기, 테마는 영구 보존됩니다."
+        up_info = "• GitHub(LUCKYBRIDGE/knol-teacher-desk) 릴리스와 연동되어 웹 브라우저 다운로드 없이 앱 내부에서 1초 만에 최신 버전으로 직접 덮어쓰기 업데이트됩니다.\n• 새 버전을 받더라도 선생님께서 설정하신 모든 시간표, 학교, 바로가기, 테마는 영구 보존됩니다."
         ctk.CTkLabel(updater_card, text=up_info, font=get_font(10), text_color=palette["text_sub"], justify="left", anchor="w").pack(fill="x", padx=12, pady=(2, 10))
 
         # 8. ℹ️ 프로그램 정보 및 저작권 카드

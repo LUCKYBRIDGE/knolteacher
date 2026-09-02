@@ -7,9 +7,9 @@
 
 <div align="center">
 
-[![최신 버전 다운로드](https://img.shields.io/badge/📥_최신_버전_다운로드-놀티쳐_데스크.exe-0284c7?style=for-the-badge&logo=windows)](https://github.com/LUCKYBRIDGE/teachermate/releases/latest)
-[![GitHub Release](https://img.shields.io/github/v/release/LUCKYBRIDGE/teachermate?color=orange&label=Release&style=for-the-badge)](https://github.com/LUCKYBRIDGE/teachermate/releases)
-[![Platform](https://img.shields.io/badge/Platform-Windows_10_/_11-blue.svg?style=for-the-badge)](https://github.com/LUCKYBRIDGE/teachermate)
+[![최신 버전 다운로드](https://img.shields.io/badge/📥_최신_버전_다운로드-놀티쳐_데스크.exe-0284c7?style=for-the-badge&logo=windows)](https://github.com/LUCKYBRIDGE/knol-teacher-desk/releases/latest)
+[![GitHub Release](https://img.shields.io/github/v/release/LUCKYBRIDGE/knol-teacher-desk?color=orange&label=Release&style=for-the-badge)](https://github.com/LUCKYBRIDGE/knol-teacher-desk/releases)
+[![Platform](https://img.shields.io/badge/Platform-Windows_10_/_11-blue.svg?style=for-the-badge)](https://github.com/LUCKYBRIDGE/knol-teacher-desk)
 
 </div>
 
@@ -18,7 +18,7 @@
 ## 📥 다운로드 및 빠른 시작 (Quick Start)
 
 ### 1️⃣ 다운로드
-👉 **[🚀 최신 버전 놀티쳐 데스크.exe 다운로드하기 (GitHub Releases)](https://github.com/LUCKYBRIDGE/teachermate/releases/latest)**
+👉 **[🚀 최신 버전 놀티쳐 데스크.exe 다운로드하기 (GitHub Releases)](https://github.com/LUCKYBRIDGE/knol-teacher-desk/releases/latest)**
 
 ### 2️⃣ 실행 및 설치
 * 별도의 복잡한 설치 과정이나 Python 설치가 **전혀 필요 없습니다.**
