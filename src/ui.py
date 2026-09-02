@@ -28,6 +28,7 @@ from src.theme_manager import theme_manager, THEMES
 from src.config_utils import APP_VERSION, self_consolidate_and_clean
 from src.github_updater import github_updater
 from src.tooltip import attach_tooltip
+from src.desktop_cleaner import desktop_cleaner
 from src.neis_auto_input import (
     ExcelNeisParser, DataValidator, ValidationResult,
     NeisPageType, PAGE_INFO, NeisScriptGenerator, cdp_bridge
@@ -941,6 +942,7 @@ class App(ctk.CTk):
             ("🎡 돌림판", "#ea580c", "#c2410c", lambda: self._open_classroom_tools("wheel"), "모둠/벌칙/보상 돌려돌려 돌림판"),
             ("🪜 사다리", "#8b5cf6", "#7c3aed", lambda: self._open_classroom_tools("ladder"), "짜릿한 학생/모둠 사다리타기 게임"),
             ("⚾ 핀볼", "#ec4899", "#db2777", lambda: self._open_classroom_tools("pinball"), "아케이드 통통 튀는 핀볼 추첨기"),
+            ("🧹 정리", "#10b981", "#059669", self._organize_desktop_action, "바탕화면 흩어진 파일 1초 자동 분류 정리"),
             ("📌 위젯", "#0ea5e9", "#0284c7", self._open_mini_widget, "바탕화면에 띄워두는 미니 시간표 및 오늘 급식"),
             ("🌐 사이트", "#0284c7", "#0369a1", self._open_site_bookmarks, "놀퀴즈, 업무포털 등 교사용 필수 사이트 바로가기")
         ]
@@ -3086,11 +3088,85 @@ class App(ctk.CTk):
         nk_info = "• 인증키를 비워두셔도 전국 17개 교육청의 모든 학교 및 시간표 조회가 기본 작동합니다.\n• 공식 교육부 Open API 포털(open.neis.go.kr)에서 발급받은 개인 키가 있으시면 입력 후 저장하세요."
         ctk.CTkLabel(neis_key_card, text=nk_info, font=get_font(10), text_color="#94a3b8", justify="left", anchor="w").pack(fill="x", padx=12, pady=(2, 10))
 
-        # 6. 🚀 놀티쳐 데스크 최신 버전 & 1초 스마트 자동 업데이트 카드
+        # 6. 🧹 쾌적한 PC & 바탕화면 스마트 정리 센터 카드
+        cleaner_card = ctk.CTkFrame(scroll, corner_radius=10, fg_color="#182234", border_width=1, border_color="#10b981")
+        cleaner_card.pack(fill="x", pady=(0, 8))
+
+        ctk.CTkLabel(cleaner_card, text="🧹 6. 쾌적한 PC & 바탕화면 스마트 정리 센터", font=get_font(13, "bold"), text_color="#10b981").pack(anchor="w", padx=12, pady=(10, 4))
+        
+        # 1행: 바탕화면 정리 & 되돌리기
+        cl_row1 = ctk.CTkFrame(cleaner_card, fg_color="transparent")
+        cl_row1.pack(fill="x", padx=12, pady=3)
+
+        ctk.CTkButton(
+            cl_row1,
+            text="🧹 바탕화면 1초 자동 분류 정리",
+            font=get_font(11, "bold"),
+            fg_color="#0284c7",
+            hover_color="#0369a1",
+            height=32,
+            command=self._organize_desktop_action
+        ).pack(side="left", padx=(0, 6))
+
+        ctk.CTkButton(
+            cl_row1,
+            text="↩ 직전 정리 되돌리기 (Undo)",
+            font=get_font(11, "bold"),
+            fg_color="#334155",
+            hover_color="#475569",
+            height=32,
+            command=self._undo_desktop_action
+        ).pack(side="left", padx=(0, 6))
+
+        # 2행: 수업용 아이콘 숨기기 & 학급 폴더 생성 & 임시파일 다이어트
+        cl_row2 = ctk.CTkFrame(cleaner_card, fg_color="transparent")
+        cl_row2.pack(fill="x", padx=12, pady=3)
+
+        ctk.CTkButton(
+            cl_row2,
+            text="🙈 수업용 아이콘 숨김/표시 (Zen)",
+            font=get_font(11, "bold"),
+            fg_color="#8b5cf6",
+            hover_color="#7c3aed",
+            height=32,
+            command=self._toggle_desktop_icons_action
+        ).pack(side="left", padx=(0, 6))
+
+        ctk.CTkButton(
+            cl_row2,
+            text="🗂️ 새 학기 학급 폴더 6종 자동생성",
+            font=get_font(11, "bold"),
+            fg_color="#10b981",
+            hover_color="#059669",
+            height=32,
+            command=self._create_class_folder_action
+        ).pack(side="left", padx=(0, 6))
+
+        ctk.CTkButton(
+            cl_row2,
+            text="🗑️ 임시파일(Temp) 청소",
+            font=get_font(11, "bold"),
+            fg_color="#475569",
+            hover_color="#334155",
+            height=32,
+            command=self._clean_temp_files_action
+        ).pack(side="left")
+
+        self.cleaner_status_lbl = ctk.CTkLabel(
+            cleaner_card,
+            text="• 흩어진 문서/사진/동영상/압축파일을 성격별 폴더로 자동 분류하여 교실 TV 및 모니터를 쾌적하게 유지합니다.",
+            font=get_font(10),
+            text_color="#94a3b8",
+            justify="left",
+            anchor="w"
+        )
+        self.cleaner_status_lbl.pack(fill="x", padx=12, pady=(4, 10))
+
+        # 7. 🚀 놀티쳐 데스크 최신 버전 & 1초 스마트 자동 업데이트 카드
         updater_card = ctk.CTkFrame(scroll, corner_radius=10, fg_color="#182234", border_width=1, border_color="#38bdf8")
         updater_card.pack(fill="x", pady=(0, 8))
 
-        ctk.CTkLabel(updater_card, text="🚀 6. 놀티쳐 데스크 최신 버전 & 1초 스마트 자동 업데이트", font=get_font(13, "bold"), text_color="#38bdf8").pack(anchor="w", padx=12, pady=(10, 4))
+        ctk.CTkLabel(updater_card, text="🚀 7. 놀티쳐 데스크 최신 버전 & 1초 스마트 자동 업데이트", font=get_font(13, "bold"), text_color="#38bdf8").pack(anchor="w", padx=12, pady=(10, 4))
 
         up_row = ctk.CTkFrame(updater_card, fg_color="transparent")
         up_row.pack(fill="x", padx=12, pady=4)
@@ -3143,6 +3219,61 @@ class App(ctk.CTk):
             "        화면 전체 판서 & 플로팅 퀵바, 올웨이즈온 미니바/급식 위젯, 수업 알람, PC 전원 예약."
         )
         ctk.CTkLabel(info_card, text=info_str, font=get_font(11), text_color="#cbd5e1", justify="left", anchor="w").pack(fill="x", padx=12, pady=(2, 10))
+
+    def _organize_desktop_action(self):
+        ans = messagebox.askyesno(
+            "바탕화면 자동 분류 정리",
+            "바탕화면에 흩어진 파일들을 [문서·수업자료], [사진·이미지], [동영상], [압축·설치] 폴더로 자동 분류하시겠습니까?\n\n(실행 파일 및 바로가기는 안전하게 제외되며, 원클릭으로 되돌릴 수 있습니다.)"
+        )
+        if ans:
+            ok, msg, count = desktop_cleaner.organize_desktop()
+            if ok:
+                self.cleaner_status_lbl.configure(text=f"✓ {msg}", text_color="#4ade80")
+                messagebox.showinfo("정리 완료", msg)
+            else:
+                self.cleaner_status_lbl.configure(text=f"✗ {msg}", text_color="#f87171")
+                messagebox.showerror("오류", msg)
+
+    def _undo_desktop_action(self):
+        ok, msg, count = desktop_cleaner.undo_organize()
+        if ok:
+            self.cleaner_status_lbl.configure(text=f"✓ {msg}", text_color="#4ade80")
+            messagebox.showinfo("되돌리기 완료", msg)
+        else:
+            self.cleaner_status_lbl.configure(text=f"ℹ {msg}", text_color="#f59e0b")
+            messagebox.showinfo("되돌리기 안내", msg)
+
+    def _toggle_desktop_icons_action(self):
+        ok, is_vis, msg = desktop_cleaner.toggle_desktop_icons()
+        if ok:
+            st_text = "바탕화면 아이콘이 표시 중입니다." if is_vis else "수업 모드: 바탕화면 아이콘이 깔끔하게 숨겨졌습니다."
+            self.cleaner_status_lbl.configure(text=f"✓ {st_text}", text_color="#a78bfa")
+            messagebox.showinfo("수업용 아이콘 제어", msg)
+        else:
+            messagebox.showerror("오류", msg)
+
+    def _create_class_folder_action(self):
+        ans = messagebox.askyesno(
+            "새 학기 표준 폴더 생성",
+            "바탕화면에 새 학기 교사용 표준 폴더 6개\n(학급경영, 수업자료, 평가및나이스, 상담, 공문, 사진영상)를 생성하시겠습니까?"
+        )
+        if ans:
+            ok, msg = desktop_cleaner.create_class_folder_kit()
+            if ok:
+                self.cleaner_status_lbl.configure(text=f"✓ {msg}", text_color="#4ade80")
+                messagebox.showinfo("생성 완료", msg)
+            else:
+                messagebox.showerror("오류", msg)
+
+    def _clean_temp_files_action(self):
+        ans = messagebox.askyesno(
+            "임시파일 청소",
+            "오래된 시스템 임시파일(Temp)을 삭제하여 PC 저장 공간을 확보하시겠습니까?"
+        )
+        if ans:
+            ok, msg, count, freed_mb = desktop_cleaner.clean_temp_and_downloads()
+            self.cleaner_status_lbl.configure(text=f"✓ {msg}", text_color="#4ade80")
+            messagebox.showinfo("청소 완료", msg)
 
     def _check_and_run_github_update(self):
         self.update_check_btn.configure(state="disabled", text="⏳ 확인 중...")
