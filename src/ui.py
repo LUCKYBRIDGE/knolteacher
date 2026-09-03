@@ -722,6 +722,9 @@ class App(ctk.CTk):
         except Exception:
             pass
 
+        # 앱 시작 후 백그라운드 최신 업데이트 자동 감지
+        self.after(3000, self._check_update_quietly_on_startup)
+
         # 정기 반복 알람 & 예약 매니저 앱 연결
         try:
             from src.repeat_schedule_manager import recurring_manager
@@ -906,6 +909,35 @@ class App(ctk.CTk):
         # 2. 우측 메인 컨텐츠 영역
         self.content_area = ctk.CTkFrame(self.root_frame, fg_color="transparent")
         self.content_area.pack(side="right", fill="both", expand=True, padx=14, pady=10)
+
+        # 🌟 우측 상단 글로벌 헤더 바 (뷰 제목 & 🔄 최신 업데이트 받기 버튼)
+        self.top_header_bar = ctk.CTkFrame(self.content_area, fg_color="transparent", height=36)
+        self.top_header_bar.pack(fill="x", pady=(0, 6))
+        self.top_header_bar.pack_propagate(False)
+
+        self.header_title_lbl = ctk.CTkLabel(
+            self.top_header_bar,
+            text="📅 오늘의 일과 & 급식",
+            font=get_font(13, "bold"),
+            text_color=palette["text_main"]
+        )
+        self.header_title_lbl.pack(side="left", padx=2)
+
+        self.update_btn = ctk.CTkButton(
+            self.top_header_bar,
+            text=f"🔄 최신 업데이트 받기 (v{APP_VERSION})",
+            font=get_font(10, "bold"),
+            height=30,
+            corner_radius=8,
+            fg_color=palette["card_inner_bg"],
+            hover_color=palette["sidebar_btn_hover"],
+            text_color=palette["accent_blue"],
+            border_width=1,
+            border_color=palette["card_border"],
+            command=self._check_and_apply_update_interactive
+        )
+        self.update_btn.pack(side="right", padx=2)
+        attach_tooltip(self.update_btn, f"GitHub Releases에서 최신 업데이트를 확인하고 1초 만에 자동 설치합니다 (현재: v{APP_VERSION})")
 
         # 컨텐츠 뷰 컨테이너
         self.views_container = ctk.CTkFrame(self.content_area, fg_color="transparent")
@@ -1103,7 +1135,20 @@ class App(ctk.CTk):
             if k != key and frame.winfo_exists():
                 frame.pack_forget()
 
-        # 2. 목표 뷰 지연 로딩 후 즉시 표시
+        # 2. 헤더 뷰 타이틀 텍스트 동기화
+        view_title_map = {
+            "today": "📅 오늘의 일과 & 급식",
+            "classroom_tools": "🎯 수업 도구 & 스마트 실물화상기",
+            "neis_workspace": "📊 4세대 나이스 & 시간표 워크스페이스",
+            "schedule_hub": "⏰ 스마트 예약 센터 & 전원 관리",
+            "class_management": "🏆 학급 경영 & 모둠 점수판",
+            "smart_desk": "🖥️ 스마트 데스크 & 바탕화면 1초 정리",
+            "pc_settings": "⚙️ 환경 설정 & 시스템 정보"
+        }
+        if hasattr(self, "header_title_lbl") and self.header_title_lbl.winfo_exists():
+            self.header_title_lbl.configure(text=view_title_map.get(key, "놀티쳐 (KnolTeacher)"))
+
+        # 3. 목표 뷰 지연 로딩 후 즉시 표시
         target_frame = self._ensure_view(key)
         target_frame.pack(fill="both", expand=True)
 
@@ -5391,6 +5436,79 @@ class App(ctk.CTk):
     # =========================================================================
     # 하단 스마트 상태 바 & 저작권 표기
     # =========================================================================
+
+    # =========================================================================
+    # 🔄 GitHub Releases 최신 업데이트 확인 및 인앱 자동 설치
+    # =========================================================================
+    def _check_and_apply_update_interactive(self):
+        """우측 상단 버튼 클릭 시 최신 업데이트 조회 및 적용"""
+        if not hasattr(self, "update_btn") or not self.update_btn.winfo_exists():
+            return
+        self.update_btn.configure(text="🔄 확인 중...", state="disabled")
+
+        def _bg():
+            from src.github_updater import github_updater
+            has_update, tag_name, exe_url, notes, html_url = github_updater.check_latest_release()
+            self.after(0, lambda: self._on_update_check_finished(has_update, tag_name, exe_url, notes, html_url))
+
+        threading.Thread(target=_bg, daemon=True).start()
+
+    def _on_update_check_finished(self, has_update, tag_name, exe_url, notes, html_url):
+        self.update_btn.configure(text=f"🔄 최신 업데이트 받기 (v{APP_VERSION})", state="normal")
+
+        if has_update:
+            msg = f"🎉 새로운 놀티쳐 업데이트가 있습니다!\n\n• 현재 버전: v{APP_VERSION}\n• 최신 버전: v{tag_name}\n\n[주요 업데이트 내용]\n{notes[:250]}...\n\n지금 바로 최신 버전으로 자동 업데이트하시겠습니까?"
+            ModernConfirmDialog(
+                self,
+                title="최신 업데이트 발견",
+                message=msg,
+                confirm_text="지금 업데이트 (1초)",
+                cancel_text="나중에",
+                on_confirm=lambda: self._start_download_update(exe_url, tag_name)
+            )
+        else:
+            self._show_simple_alert("최신 버전", f"현재 최신 버전(v{tag_name})을 사용하고 있습니다! 🎉")
+
+    def _start_download_update(self, exe_url, tag_name):
+        from src.github_updater import github_updater, UpdateProgressDialog
+        if not exe_url:
+            self._show_simple_alert("오류", "다운로드할 실행 파일 링크가 없습니다.")
+            return
+
+        prog_dlg = UpdateProgressDialog(self)
+
+        def _on_prog(ratio, txt):
+            self.after(0, lambda: prog_dlg.update_progress(ratio, txt))
+
+        def _on_done(ok, result_msg):
+            def _ui():
+                if not ok:
+                    try: prog_dlg.destroy()
+                    except Exception: pass
+                    self._show_simple_alert("업데이트 실패", result_msg)
+            self.after(0, _ui)
+
+        github_updater.apply_update_in_background(exe_url, on_progress=_on_prog, on_finish=_on_done)
+
+    def _check_update_quietly_on_startup(self):
+        """앱 시작 3초 후 백그라운드에서 조용히 최신 버전 확인"""
+        def _bg():
+            try:
+                from src.github_updater import github_updater
+                has_update, tag_name, exe_url, notes, html_url = github_updater.check_latest_release()
+                if has_update and hasattr(self, "update_btn") and self.update_btn.winfo_exists():
+                    def _ui():
+                        self.update_btn.configure(
+                            text=f"✨ 새 버전 발견! (v{tag_name})",
+                            fg_color="#0284c7",
+                            text_color="#ffffff"
+                        )
+                    self.after(0, _ui)
+            except Exception:
+                pass
+        threading.Thread(target=_bg, daemon=True).start()
+
+
     def _create_bottom_actions(self, parent):
         palette = theme_manager.get_theme()
 

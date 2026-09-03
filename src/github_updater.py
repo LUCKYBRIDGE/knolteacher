@@ -68,13 +68,19 @@ class GitHubUpdater:
                     body = data.get("body", "최신 기능 개선 및 버그 수정이 적용되었습니다.")
                     html_url = data.get("html_url", f"https://github.com/{repo}/releases")
 
-                    # 에셋 중 .exe 파일 다운로드 URL 탐색
+                    # 에셋 중 .exe 파일 다운로드 URL 탐색 (knolteacher.exe / 놀티쳐.exe 우선)
                     exe_download_url = None
                     for asset in data.get("assets", []):
                         aname = asset.get("name", "").lower()
-                        if aname.endswith(".exe"):
+                        if aname in ("knolteacher.exe", "놀티쳐.exe"):
                             exe_download_url = asset.get("browser_download_url")
                             break
+                    if not exe_download_url:
+                        for asset in data.get("assets", []):
+                            aname = asset.get("name", "").lower()
+                            if aname.endswith(".exe"):
+                                exe_download_url = asset.get("browser_download_url")
+                                break
 
                     has_update = self._is_newer_version(tag_name, APP_VERSION)
                     return has_update, tag_name, exe_download_url, body, html_url
@@ -181,3 +187,65 @@ del "%~f0" > nul 2>&1
         th.start()
 
 github_updater = GitHubUpdater()
+
+
+import customtkinter as ctk
+from src.font_config import get_font
+
+class UpdateProgressDialog(ctk.CTkToplevel):
+    """
+    놀티쳐 최신 업데이트 다운로드 및 적용 진행률 모던 다이얼로그
+    """
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.title("놀티쳐 최신 업데이트")
+        self.geometry("460x230")
+        self.resizable(False, False)
+        self.attributes("-topmost", True)
+        self.transient(parent)
+
+        self.update_idletasks()
+        try:
+            px = parent.winfo_x() + (parent.winfo_width() - 460) // 2
+            py = parent.winfo_y() + (parent.winfo_height() - 230) // 2
+            self.geometry(f"+{max(0, px)}+{max(0, py)}")
+        except Exception:
+            pass
+
+        self._build_ui()
+
+    def _build_ui(self):
+        container = ctk.CTkFrame(self, fg_color="#1e293b", corner_radius=12)
+        container.pack(fill="both", expand=True, padx=12, pady=12)
+
+        ctk.CTkLabel(
+            container, text="🔄 놀티쳐 최신 버전 업데이트",
+            font=get_font(13, "bold"), text_color="#ffffff"
+        ).pack(pady=(16, 4))
+
+        self.status_lbl = ctk.CTkLabel(
+            container, text="최신 업데이트 파일 다운로드 준비 중...",
+            font=get_font(10), text_color="#94a3b8"
+        ).pack(pady=(0, 10))
+
+        self.progress_bar = ctk.CTkProgressBar(container, width=380, height=14, corner_radius=7)
+        self.progress_bar.set(0.0)
+        self.progress_bar.pack(pady=6)
+
+        self.detail_lbl = ctk.CTkLabel(
+            container, text="잠시만 기다려주세요...",
+            font=get_font(9), text_color="#64748b"
+        )
+        self.detail_lbl.pack(pady=(4, 8))
+
+        ctk.CTkLabel(
+            container,
+            text="💡 다운로드가 끝나면 이전 버전을 자동으로 교체하고 앱이 즉시 재시작됩니다.",
+            font=get_font(8), text_color="#38bdf8"
+        ).pack(side="bottom", pady=(0, 10))
+
+    def update_progress(self, ratio: float, msg: str):
+        if not self.winfo_exists():
+            return
+        self.progress_bar.set(ratio)
+        self.detail_lbl.configure(text=msg)
