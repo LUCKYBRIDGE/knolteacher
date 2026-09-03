@@ -1,10 +1,12 @@
 """
-놀티쳐 보드 (StudentDisplayWindow) - 반응형 명품 위젯 보드
-1. 하단 도구 바 상시 100% 고정 노출 (절대 안 잘림)
-   - 각 도구(타이머, 추첨, 주사위, 돌림판, 점수판, 판서) 및 허브 카드(시간표, 급식, 알림장)를 위젯 스위치처럼 자유롭게 On/Off
-2. 반응형 폰트 리사이징 (창 크기 및 분할 비율에 맞춰 타이머 05:00, 주사위, 당첨자 글씨가 시원시원하게 자동 확대/축소)
-3. 우측 허브 각 위젯(시간표, 급식, 알림장) 우상단 닫기(✕) 및 하단 바에서 원클릭 다시 켜기
-4. 스플리터 드래그로 좌우 화면 비율 자유 조절
+놀티쳐 보드 (StudentDisplayWindow) - 자유 조절 반응형 위젯 보드
+1. 네이티브 PanedWindow 기반 무한 자유 크기 조절:
+   - 좌우 수평 분할 경계선 드래그로 메인 도구 vs 허브 크기 자유 조절
+   - 우측 허브 내부 수직 분할 경계선 드래그로 시간표, 급식, 알림장 높이 개별 자유 조절
+2. 위젯별 닫기(✕) 및 하단 독에서 원클릭 다시 켜기
+3. 하단 도구 독 접기/펼치기 (▲/▼) 및 수평 스크롤 지원 (좁은 창에서도 도구 절대 안 잘림)
+4. 모든 카드(시간표, 급식, 알림장, 주사위 통계, 추첨 기록) 마우스 휠 스크롤 완벽 지원
+5. 창 크기에 비례하는 폰트 반응형 자동 확대/축소
 """
 import os
 import sys
@@ -33,6 +35,7 @@ THEMES = {
         "card": "#111827",
         "card_inner": "#1f2937",
         "border": "#374151",
+        "sash": "#2563eb",
         "accent": "#38bdf8",
         "accent_hover": "#0284c7",
         "text_main": "#f9fafb",
@@ -44,6 +47,7 @@ THEMES = {
         "card": "#1c3829",
         "card_inner": "#254a37",
         "border": "#2d5a43",
+        "sash": "#22c55e",
         "accent": "#4ade80",
         "accent_hover": "#22c55e",
         "text_main": "#f0fdf4",
@@ -55,6 +59,7 @@ THEMES = {
         "card": "#ffffff",
         "card_inner": "#f1f5f9",
         "border": "#cbd5e1",
+        "sash": "#0284c7",
         "accent": "#0284c7",
         "accent_hover": "#0369a1",
         "text_main": "#0f172a",
@@ -66,6 +71,7 @@ THEMES = {
         "card": "#ffffff",
         "card_inner": "#f7f3ec",
         "border": "#e5e0d8",
+        "sash": "#d97706",
         "accent": "#d97706",
         "accent_hover": "#b45309",
         "text_main": "#292524",
@@ -97,19 +103,21 @@ class StudentDisplayWindow(ctk.CTkToplevel):
 
         self.title("놀티쳐 보드 (Knol Board)")
         self.geometry("1280x840")
-        self.minsize(980, 680)
+        self.minsize(860, 580)
         self.resizable(True, True)
 
         self.theme_key = self.custom_config.get("theme_key", "dark")
         self.is_fullscreen_mode = False
+
+        # 하단 독 접기/펼치기 상태
+        self.is_dock_collapsed = False
 
         self.custom_tabs_file = os.path.join(get_config_dir(), "board_tabs_v2.json")
         self.active_tab_id = "tab_split"
         self.custom_tabs = self._load_custom_tabs()
 
         # 도구 및 허브 위젯 On/Off 상태
-        self.active_tool = "timer"  # timer, picker, dice, wheel, scoreboard, drawing
-        self.stage_split_ratio = 0.65  # 좌측 메인 65% : 우측 35%
+        self.active_tool = "timer"
         self.show_timetable = True
         self.show_meal = True
         self.show_memo = True
@@ -167,7 +175,7 @@ class StudentDisplayWindow(ctk.CTkToplevel):
             print(f"[Tabs Save Error] {e}")
 
     # =========================================================================
-    # UI 전체 레이아웃 (하단 독 우선 pack으로 절대 가려짐 방지!)
+    # UI 전체 레이아웃 (상단 헤더 + 하단 독 + 중앙 자유 조절 PanedWindow)
     # =========================================================================
     def _build_ui(self):
         for w in self.winfo_children():
@@ -176,12 +184,11 @@ class StudentDisplayWindow(ctk.CTkToplevel):
         t = self._t()
         self.configure(fg_color=t["bg"])
 
-        # 1. 상단 스마트 헤더 (높이 48px)
+        # 1. 상단 스마트 헤더 & 탭 바 (높이 48px)
         self.top_bar = ctk.CTkFrame(self, fg_color=t["card"], corner_radius=0, height=48, border_width=1, border_color=t["border"])
         self.top_bar.pack(side="top", fill="x")
         self.top_bar.pack_propagate(False)
 
-        # 로고 & 시계
         l_box = ctk.CTkFrame(self.top_bar, fg_color="transparent")
         l_box.pack(side="left", padx=(14, 8))
 
@@ -229,20 +236,17 @@ class StudentDisplayWindow(ctk.CTkToplevel):
             corner_radius=6, command=self.close
         ).pack(side="left", padx=2)
 
-        # ★ 2. 하단 스마트 도구 바 (높이 54px, side="bottom"으로 우선 pack하여 절대 잘림 방지!)
-        self.bottom_dock = ctk.CTkFrame(self, fg_color=t["card"], corner_radius=0, height=54, border_width=1, border_color=t["border"])
-        self.bottom_dock.pack(side="bottom", fill="x")
-        self.bottom_dock.pack_propagate(False)
-        self._build_bottom_dock()
+        # 2. 하단 스마트 도구 바 (접기/펼치기 가능 & 수평 스크롤 컨테이너)
+        self._build_bottom_dock_container()
 
-        # 3. 중앙 메인 바디 영역 (좌측 도구 스테이지 + 스플리터 + 우측 허브)
+        # 3. 중앙 메인 바디 영역: 네이티브 PanedWindow 자유 분할
         self.body_container = ctk.CTkFrame(self, fg_color="transparent")
-        self.body_container.pack(side="top", fill="both", expand=True, padx=12, pady=(6, 6))
+        self.body_container.pack(side="top", fill="both", expand=True, padx=8, pady=(4, 4))
 
-        self._build_split_layout()
+        self._build_paned_layout()
 
     # =========================================================================
-    # 상단 탭 시스템 (표준 탭 vs 커스텀 탭)
+    # 상단 탭 시스템
     # =========================================================================
     def _render_tabs(self):
         for w in self.tab_row.winfo_children():
@@ -309,24 +313,20 @@ class StudentDisplayWindow(ctk.CTkToplevel):
             self.show_timetable = True
             self.show_meal = True
             self.show_memo = True
-            self.stage_split_ratio = 0.65
         elif tab_id == "tab_tools":
             self.show_timetable = False
             self.show_meal = False
             self.show_memo = False
-            self.stage_split_ratio = 1.0
         elif tab_id == "tab_board":
             self.show_timetable = True
             self.show_meal = True
             self.show_memo = True
-            self.stage_split_ratio = 0.0
         else:
             for ctab in self.custom_tabs:
                 if ctab["id"] == tab_id:
                     self.show_timetable = ctab.get("show_timetable", True)
                     self.show_meal = ctab.get("show_meal", True)
                     self.show_memo = ctab.get("show_memo", True)
-                    self.stage_split_ratio = ctab.get("split_ratio", 0.65)
                     self.active_tool = ctab.get("active_tool", "timer")
                     break
 
@@ -338,7 +338,6 @@ class StudentDisplayWindow(ctk.CTkToplevel):
             new_tab = {
                 "id": f"custom_{random.randint(1000, 9999)}",
                 "name": name.strip(),
-                "split_ratio": 0.65,
                 "show_timetable": True,
                 "show_meal": True,
                 "show_memo": True,
@@ -367,7 +366,6 @@ class StudentDisplayWindow(ctk.CTkToplevel):
     def _save_current_custom_tab_state(self):
         for ctab in self.custom_tabs:
             if ctab["id"] == self.active_tab_id:
-                ctab["split_ratio"] = self.stage_split_ratio
                 ctab["show_timetable"] = self.show_timetable
                 ctab["show_meal"] = self.show_meal
                 ctab["show_memo"] = self.show_memo
@@ -376,71 +374,265 @@ class StudentDisplayWindow(ctk.CTkToplevel):
                 break
 
     # =========================================================================
-    # 분할 레이아웃 & 스플리터
+    # PanedWindow 기반 무한 자유 크기 조절 분할 레이아웃
     # =========================================================================
-    def _build_split_layout(self):
+    def _build_paned_layout(self):
         for w in self.body_container.winfo_children():
             w.destroy()
 
         t = self._t()
         has_hub = (self.show_timetable or self.show_meal or self.show_memo)
+        has_tool = (self.active_tab_id != "tab_board")
 
-        # 1. 좌측 도구 스테이지
-        if self.stage_split_ratio > 0:
-            self.stage_frame = ctk.CTkFrame(self.body_container, fg_color=t["card"], corner_radius=12, border_width=1, border_color=t["border"])
-            if has_hub and self.stage_split_ratio < 1.0:
-                self.stage_frame.pack(side="left", fill="both", expand=True, padx=(0, 3))
-            else:
-                self.stage_frame.pack(fill="both", expand=True)
+        if has_tool and has_hub:
+            # 좌우 수평 PanedWindow (자유로운 좌우 크기 조절)
+            self.h_paned = tk.PanedWindow(
+                self.body_container, orient="horizontal",
+                sashwidth=8, sashrelief="flat", bg=t["bg"], bd=0, opaqueresize=True
+            )
+            self.h_paned.pack(fill="both", expand=True)
+
+            # 좌측 메인 도구 영역
+            self.stage_frame = ctk.CTkFrame(self.h_paned, fg_color=t["card"], corner_radius=12, border_width=1, border_color=t["border"])
+            self.h_paned.add(self.stage_frame, minsize=320)
             self._render_stage_tool()
+
+            # 우측 허브 영역 (상하 수직 PanedWindow: 시간표, 급식, 메모 크기 각각 조절 가능!)
+            self._build_v_paned_hub(self.h_paned)
+
+        elif has_tool:
+            # 도구 집중 모드 (100%)
+            self.stage_frame = ctk.CTkFrame(self.body_container, fg_color=t["card"], corner_radius=12, border_width=1, border_color=t["border"])
+            self.stage_frame.pack(fill="both", expand=True)
+            self._render_stage_tool()
+
+        elif has_hub:
+            # 게시판 전면 모드 (100%)
+            self._build_v_paned_hub(self.body_container)
+
+    def _build_v_paned_hub(self, parent_container):
+        t = self._t()
+        # 수직 PanedWindow (위젯별 상하 높이 자유 조절)
+        self.v_paned = tk.PanedWindow(
+            parent_container, orient="vertical",
+            sashwidth=6, sashrelief="flat", bg=t["bg"], bd=0, opaqueresize=True
+        )
+        if isinstance(parent_container, tk.PanedWindow):
+            parent_container.add(self.v_paned, minsize=260)
         else:
-            self.stage_frame = None
+            self.v_paned.pack(fill="both", expand=True)
 
-        # 2. 스플리터 바
-        if has_hub and self.stage_frame and self.stage_split_ratio < 1.0:
-            splitter = ctk.CTkFrame(self.body_container, width=8, fg_color="transparent", cursor="sb_h_double_arrow")
-            splitter.pack(side="left", fill="y", padx=2)
+        # 1. 시간표 카드
+        if self.show_timetable:
+            tt_box = self._create_timetable_widget(self.v_paned, t)
+            self.v_paned.add(tt_box, minsize=100)
 
-            handle_dot = ctk.CTkFrame(splitter, width=4, height=42, corner_radius=2, fg_color=t["border"])
-            handle_dot.place(relx=0.5, rely=0.5, anchor="center")
+        # 2. 급식 카드
+        if self.show_meal:
+            meal_box = self._create_meal_widget(self.v_paned, t)
+            self.v_paned.add(meal_box, minsize=100)
 
-            splitter.bind("<Button-1>", self._on_splitter_start)
-            splitter.bind("<B1-Motion>", self._on_splitter_drag)
-            splitter.bind("<ButtonRelease-1>", self._on_splitter_end)
+        # 3. 알림장 카드
+        if self.show_memo:
+            memo_box = self._create_memo_widget(self.v_paned, t)
+            self.v_paned.add(memo_box, minsize=80)
 
-        # 3. 우측 교실 정보 허브
-        if has_hub:
-            self.hub_frame = ctk.CTkFrame(self.body_container, fg_color="transparent")
-            if self.stage_frame and self.stage_split_ratio < 1.0:
-                hub_w = int(1200 * (1.0 - self.stage_split_ratio))
-                self.hub_frame.pack(side="right", fill="both", expand=False)
-                self.hub_frame.configure(width=max(280, hub_w))
-            else:
-                self.hub_frame.pack(fill="both", expand=True)
-            self._render_hub_cards()
+    # 1. 시간표 위젯 (완벽 마우스 휠 스크롤 지원)
+    def _create_timetable_widget(self, parent, t):
+        card = ctk.CTkFrame(parent, fg_color=t["card"], corner_radius=10, border_width=1, border_color=t["border"])
+
+        hdr = ctk.CTkFrame(card, fg_color="transparent")
+        hdr.pack(fill="x", padx=10, pady=(8, 2))
+        ctk.CTkLabel(hdr, text="📅 오늘의 시간표", font=get_font(11, "bold"), text_color=t["text_main"]).pack(side="left")
+        ctk.CTkButton(hdr, text="✕", width=20, height=20, font=get_font(9, "bold"), fg_color="transparent", hover_color="#ef4444", text_color=t["text_sub"], command=self._toggle_hide_timetable).pack(side="right")
+
+        scroll = ctk.CTkScrollableFrame(card, fg_color="transparent")
+        scroll.pack(fill="both", expand=True, padx=6, pady=(0, 6))
+
+        _, _, items = timetable_manager.get_today_schedule_items()
+        now_s = datetime.datetime.now().strftime("%H:%M")
+        for it in items:
+            is_cur = (it["start"] <= now_s <= it["end"])
+            r = ctk.CTkFrame(scroll, fg_color=t["accent"] if is_cur else t["card_inner"], corner_radius=6)
+            r.pack(fill="x", pady=2)
+            ctk.CTkLabel(r, text=f"{it['name']} ({it['start']})", font=get_font(9, "bold"), text_color="#ffffff" if is_cur else t["text_sub"]).pack(side="left", padx=6, pady=3)
+            sub = "점심시간" if it.get("is_lunch") else it.get("subject", "")
+            ctk.CTkLabel(r, text=sub, font=get_font(10, "bold"), text_color="#ffffff" if is_cur else t["text_main"]).pack(side="right", padx=6)
+
+        return card
+
+    # 2. 급식 위젯 (완벽 마우스 휠 스크롤 지원)
+    def _create_meal_widget(self, parent, t):
+        card = ctk.CTkFrame(parent, fg_color=t["card"], corner_radius=10, border_width=1, border_color=t["border"])
+
+        hdr = ctk.CTkFrame(card, fg_color="transparent")
+        hdr.pack(fill="x", padx=10, pady=(8, 2))
+        ctk.CTkLabel(hdr, text="🍱 오늘의 급식", font=get_font(11, "bold"), text_color=t["text_main"]).pack(side="left")
+        ctk.CTkButton(hdr, text="✕", width=20, height=20, font=get_font(9, "bold"), fg_color="transparent", hover_color="#ef4444", text_color=t["text_sub"], command=self._toggle_hide_meal).pack(side="right")
+
+        scroll = ctk.CTkScrollableFrame(card, fg_color="transparent")
+        scroll.pack(fill="both", expand=True, padx=6, pady=(0, 6))
+
+        today = datetime.date.today()
+        ok, meal_info, _ = neis_client.get_meal_for_date(today)
+        if not ok or not meal_info.get("dishes"):
+            ctk.CTkLabel(scroll, text="오늘 등록된 급식이 없습니다.", font=get_font(10), text_color=t["text_sub"]).pack(pady=14)
         else:
-            self.hub_frame = None
+            for d in meal_info.get("dishes", []):
+                ctk.CTkLabel(scroll, text=f"• {d}", font=get_font(10), text_color=t["text_main"], anchor="w").pack(fill="x", pady=1, padx=4)
 
-    def _on_splitter_start(self, event):
-        self._splitter_start_x = event.x_root
+        return card
 
-    def _on_splitter_drag(self, event):
-        total_w = self.body_container.winfo_width()
-        if total_w < 400: return
-        dx = event.x_root - self._splitter_start_x
-        self._splitter_start_x = event.x_root
-        cur_stage_w = self.stage_frame.winfo_width()
-        new_w = max(300, min(total_w - 280, cur_stage_w + dx))
-        self.stage_split_ratio = new_w / total_w
-        if self.hub_frame:
-            self.hub_frame.configure(width=max(280, total_w - new_w))
+    # 3. 알림장 위젯 (자유 스크롤 지원)
+    def _create_memo_widget(self, parent, t):
+        card = ctk.CTkFrame(parent, fg_color=t["card"], corner_radius=10, border_width=1, border_color=t["border"])
 
-    def _on_splitter_end(self, event):
+        hdr = ctk.CTkFrame(card, fg_color="transparent")
+        hdr.pack(fill="x", padx=10, pady=(8, 2))
+        ctk.CTkLabel(hdr, text="📝 학급 알림장", font=get_font(11, "bold"), text_color=t["text_main"]).pack(side="left")
+        ctk.CTkButton(hdr, text="✕", width=20, height=20, font=get_font(9, "bold"), fg_color="transparent", hover_color="#ef4444", text_color=t["text_sub"], command=self._toggle_hide_memo).pack(side="right")
+
+        txt = ctk.CTkTextbox(card, font=get_font(10), fg_color=t["card_inner"], text_color=t["text_main"])
+        txt.pack(fill="both", expand=True, padx=6, pady=(0, 6))
+        txt.insert("1.0", "• 1교시: 수학익힘책 42~45쪽\n• 5교시: 체육복 착용\n• 하교 후 손 씻기!\n• 준비물 챙기기")
+
+        return card
+
+    def _toggle_hide_timetable(self):
+        self.show_timetable = False
+        self._build_paned_layout()
+        self._render_dock_buttons()
         self._save_current_custom_tab_state()
-        self._on_stage_resized()
+
+    def _toggle_hide_meal(self):
+        self.show_meal = False
+        self._build_paned_layout()
+        self._render_dock_buttons()
+        self._save_current_custom_tab_state()
+
+    def _toggle_hide_memo(self):
+        self.show_memo = False
+        self._build_paned_layout()
+        self._render_dock_buttons()
+        self._save_current_custom_tab_state()
 
     # =========================================================================
-    # 좌측 메인 도구: 반응형 폰트 리사이징 시스템 (위젯 크기에 비례 확대/축소)
+    # 하단 도구 독: 접기/펼치기 (▲/▼) 및 수평 스크롤 컨테이너 (잘림 0%)
+    # =========================================================================
+    def _build_bottom_dock_container(self):
+        t = self._t()
+        # 하단 독 래퍼
+        self.bottom_dock_wrapper = ctk.CTkFrame(self, fg_color=t["card"], corner_radius=0, border_width=1, border_color=t["border"])
+        self.bottom_dock_wrapper.pack(side="bottom", fill="x")
+
+        # 상단 얇은 접기/펼치기 핸들 바 (높이 18px)
+        handle_bar = ctk.CTkFrame(self.bottom_dock_wrapper, fg_color=t["card_inner"], height=18, corner_radius=0)
+        handle_bar.pack(fill="x")
+        handle_bar.pack_propagate(False)
+
+        self.dock_toggle_btn = ctk.CTkButton(
+            handle_bar,
+            text="▲ 도구 바 펼치기" if self.is_dock_collapsed else "▼ 도구 바 접기",
+            font=get_font(8, "bold"), height=16,
+            fg_color="transparent", hover_color=t["border"], text_color=t["text_sub"],
+            command=self._toggle_dock
+        )
+        self.dock_toggle_btn.pack(side="right", padx=12)
+
+        # 도구 독 본체 프레임
+        self.dock_body = ctk.CTkFrame(self.bottom_dock_wrapper, fg_color="transparent", height=48)
+        if not self.is_dock_collapsed:
+            self.dock_body.pack(fill="x", padx=6, pady=(2, 4))
+            self.dock_body.pack_propagate(False)
+            self._render_dock_buttons()
+
+    def _toggle_dock(self):
+        self.is_dock_collapsed = not self.is_dock_collapsed
+        self.bottom_dock_wrapper.destroy()
+        self._build_bottom_dock_container()
+
+    def _render_dock_buttons(self):
+        for w in self.dock_body.winfo_children():
+            w.destroy()
+
+        t = self._t()
+        # 수평 스크롤 컨테이너: 창이 아무리 좁아도 버튼들이 절대 잘리지 않음!
+        scroll_dock = ctk.CTkScrollableFrame(self.dock_body, orientation="horizontal", height=42, fg_color="transparent")
+        scroll_dock.pack(fill="both", expand=True)
+
+        # 1. 수업 도구 전환 스위치들
+        tools = [
+            ("timer",      "⏱️ 타이머"),
+            ("picker",     "🎯 발표자 추첨"),
+            ("dice",       "🎲 주사위·통계"),
+            ("wheel",      "🎡 돌림판"),
+            ("scoreboard", "🏆 점수판"),
+            ("drawing",    "✏️ 학급 판서"),
+        ]
+        for tkey, tname in tools:
+            is_act = (self.active_tool == tkey and self.active_tab_id != "tab_board")
+            ctk.CTkButton(
+                scroll_dock, text=tname, font=get_font(10, "bold"), height=32,
+                fg_color=t["accent"] if is_act else t["card_inner"],
+                hover_color=t["accent_hover"],
+                text_color="#ffffff" if is_act else t["text_main"],
+                corner_radius=6,
+                command=lambda k=tkey: self._switch_main_tool(k)
+            ).pack(side="left", padx=2)
+
+        ctk.CTkFrame(scroll_dock, width=1, height=22, fg_color=t["border"]).pack(side="left", padx=8)
+
+        # 2. 허브 위젯 On/Off 스위치들
+        ctk.CTkLabel(scroll_dock, text="허브 위젯:", font=get_font(10, "bold"), text_color=t["text_sub"]).pack(side="left", padx=(0, 4))
+
+        ctk.CTkButton(
+            scroll_dock, text="📅 시간표" if self.show_timetable else "+ 시간표", height=30, width=74, font=get_font(9, "bold"),
+            fg_color=t["accent"] if self.show_timetable else t["card_inner"],
+            hover_color=t["accent_hover"], text_color="#ffffff" if self.show_timetable else t["text_sub"],
+            corner_radius=6, command=self._toggle_timetable
+        ).pack(side="left", padx=2)
+
+        ctk.CTkButton(
+            scroll_dock, text="🍱 급식" if self.show_meal else "+ 급식", height=30, width=68, font=get_font(9, "bold"),
+            fg_color=t["accent"] if self.show_meal else t["card_inner"],
+            hover_color=t["accent_hover"], text_color="#ffffff" if self.show_meal else t["text_sub"],
+            corner_radius=6, command=self._toggle_meal
+        ).pack(side="left", padx=2)
+
+        ctk.CTkButton(
+            scroll_dock, text="📝 알림장" if self.show_memo else "+ 알림장", height=30, width=74, font=get_font(9, "bold"),
+            fg_color=t["accent"] if self.show_memo else t["card_inner"],
+            hover_color=t["accent_hover"], text_color="#ffffff" if self.show_memo else t["text_sub"],
+            corner_radius=6, command=self._toggle_memo
+        ).pack(side="left", padx=2)
+
+    def _switch_main_tool(self, tool_key: str):
+        self.active_tool = tool_key
+        if self.active_tab_id == "tab_board":
+            self.active_tab_id = "tab_split"
+        self._build_ui()
+        self._save_current_custom_tab_state()
+
+    def _toggle_timetable(self):
+        self.show_timetable = not self.show_timetable
+        self._build_paned_layout()
+        self._render_dock_buttons()
+        self._save_current_custom_tab_state()
+
+    def _toggle_meal(self):
+        self.show_meal = not self.show_meal
+        self._build_paned_layout()
+        self._render_dock_buttons()
+        self._save_current_custom_tab_state()
+
+    def _toggle_memo(self):
+        self.show_memo = not self.show_memo
+        self._build_paned_layout()
+        self._render_dock_buttons()
+        self._save_current_custom_tab_state()
+
+    # =========================================================================
+    # 메인 도구 렌더링 & 반응형 폰트 자동 리사이징
     # =========================================================================
     def _render_stage_tool(self):
         for w in self.stage_frame.winfo_children():
@@ -465,26 +657,23 @@ class StudentDisplayWindow(ctk.CTkToplevel):
         self.stage_frame.bind("<Configure>", lambda e: self._on_stage_resized())
 
     def _on_stage_resized(self):
-        """창 크기 및 스플리터 비율 변경 시 내부 숫자/글씨 크기 반응형 자동 확대"""
+        """창 크기 및 분할 경계선 변경 시 내부 숫자/글씨 반응형 자동 확대"""
         if not hasattr(self, "stage_frame") or not self.stage_frame or not self.stage_frame.winfo_exists():
             return
         w = self.stage_frame.winfo_width()
         h = self.stage_frame.winfo_height()
         if w < 100 or h < 100: return
 
-        # 1. 타이머 반응형 글씨 크기
         if self.active_tool == "timer" and hasattr(self, "timer_lbl") and self.timer_lbl.winfo_exists():
-            ideal_sz = max(48, min(140, int(min(w * 0.22, h * 0.32))))
+            ideal_sz = max(44, min(140, int(min(w * 0.22, h * 0.32))))
             self.timer_lbl.configure(font=ctk.CTkFont(family="Consolas", size=ideal_sz, weight="bold"))
 
-        # 2. 발표자 추첨 반응형 글씨 크기
         elif self.active_tool == "picker" and hasattr(self, "picker_lbl") and self.picker_lbl.winfo_exists():
-            ideal_sz = max(36, min(100, int(min(w * 0.15, h * 0.25))))
+            ideal_sz = max(34, min(96, int(min(w * 0.15, h * 0.25))))
             self.picker_lbl.configure(font=ctk.CTkFont(family="Malgun Gothic", size=ideal_sz, weight="bold"))
 
-        # 3. 주사위 기호 반응형 크기
         elif self.active_tool == "dice" and hasattr(self, "dice_lbl") and self.dice_lbl.winfo_exists():
-            ideal_sz = max(48, min(110, int(min(w * 0.16, h * 0.26))))
+            ideal_sz = max(44, min(100, int(min(w * 0.16, h * 0.26))))
             self.dice_lbl.configure(font=ctk.CTkFont(family="Segoe UI Symbol", size=ideal_sz))
 
     # 1. 타이머 도구
@@ -493,38 +682,35 @@ class StudentDisplayWindow(ctk.CTkToplevel):
         hdr.pack(fill="x", padx=20, pady=(14, 2))
         ctk.CTkLabel(hdr, text="⏱️ 교실 집중 타이머", font=get_font(15, "bold"), text_color=t["accent"]).pack(side="left")
 
-        # 시간 표시 (반응형 라벨)
         self.timer_lbl = ctk.CTkLabel(
             self.stage_frame,
             text=self._fmt_timer(self.timer_rem_sec),
-            font=ctk.CTkFont(family="Consolas", size=88, weight="bold"),
+            font=ctk.CTkFont(family="Consolas", size=84, weight="bold"),
             text_color=t["accent"]
         )
         self.timer_lbl.pack(expand=True, pady=4)
 
-        # 프리셋 버튼 바
         p_row = ctk.CTkFrame(self.stage_frame, fg_color="transparent")
         p_row.pack(pady=4)
         for s, l in [(60, "1분"), (180, "3분"), (300, "5분"), (600, "10분"), (900, "15분")]:
             ctk.CTkButton(
-                p_row, text=l, width=64, height=32, font=get_font(10, "bold"),
+                p_row, text=l, width=60, height=30, font=get_font(10, "bold"),
                 fg_color=t["card_inner"], hover_color=t["accent"], text_color=t["text_main"],
                 command=lambda sec=s: self._preset_timer(sec)
             ).pack(side="left", padx=3)
 
-        # 제어 바
         c_row = ctk.CTkFrame(self.stage_frame, fg_color="transparent")
-        c_row.pack(pady=(10, 20))
+        c_row.pack(pady=(8, 16))
 
         self.btn_timer_run = ctk.CTkButton(
-            c_row, text="▶ 시작", width=140, height=44, font=get_font(14, "bold"),
+            c_row, text="▶ 시작", width=130, height=40, font=get_font(13, "bold"),
             fg_color=t["accent"], hover_color=t["accent_hover"],
             command=self._toggle_timer
         )
         self.btn_timer_run.pack(side="left", padx=6)
 
         ctk.CTkButton(
-            c_row, text="↺ 리셋", width=90, height=44, font=get_font(12, "bold"),
+            c_row, text="↺ 리셋", width=84, height=40, font=get_font(11, "bold"),
             fg_color=t["card_inner"], hover_color=t["border"], text_color=t["text_main"],
             command=self._reset_timer
         ).pack(side="left", padx=6)
@@ -570,7 +756,7 @@ class StudentDisplayWindow(ctk.CTkToplevel):
         if hasattr(self, "btn_timer_run"):
             self.btn_timer_run.configure(text="▶ 시작", fg_color=self._t()["accent"])
 
-    # 2. 발표자 뽑기 도구
+    # 2. 발표자 뽑기 도구 (스크롤 기록창 완벽 지원)
     def _render_picker_tool(self, t):
         hdr = ctk.CTkFrame(self.stage_frame, fg_color="transparent")
         hdr.pack(fill="x", padx=20, pady=(14, 2))
@@ -591,34 +777,38 @@ class StudentDisplayWindow(ctk.CTkToplevel):
         self.picker_gender_seg.set("전체")
         self.picker_gender_seg.pack(side="left")
 
-        disp_card = ctk.CTkFrame(self.stage_frame, fg_color=t["card_inner"], corner_radius=14, border_width=1, border_color=t["border"])
-        disp_card.pack(fill="both", expand=True, padx=20, pady=8)
+        disp_card = ctk.CTkFrame(self.stage_frame, fg_color=t["card_inner"], corner_radius=12, border_width=1, border_color=t["border"])
+        disp_card.pack(fill="both", expand=True, padx=20, pady=6)
 
         self.picker_lbl = ctk.CTkLabel(
-            disp_card, text="?", font=ctk.CTkFont(family="Malgun Gothic", size=64, weight="bold"),
+            disp_card, text="?", font=ctk.CTkFont(family="Malgun Gothic", size=60, weight="bold"),
             text_color=t["accent"]
         )
         self.picker_lbl.pack(expand=True)
 
         b_row = ctk.CTkFrame(self.stage_frame, fg_color="transparent")
-        b_row.pack(pady=(4, 6))
+        b_row.pack(pady=4)
 
         self.btn_pick = ctk.CTkButton(
-            b_row, text="🎲 추첨하기!", width=150, height=44, font=get_font(13, "bold"),
+            b_row, text="🎲 추첨하기!", width=140, height=40, font=get_font(13, "bold"),
             fg_color=t["accent"], hover_color=t["accent_hover"], command=self._do_pick
         )
         self.btn_pick.pack(side="left", padx=6)
 
         ctk.CTkButton(
-            b_row, text="기록 초기화", width=90, height=44, font=get_font(11, "bold"),
+            b_row, text="기록 초기화", width=84, height=40, font=get_font(11, "bold"),
             fg_color=t["card_inner"], hover_color=t["border"], text_color=t["text_main"],
             command=self._reset_pick_history
         ).pack(side="left", padx=6)
 
+        # 뽑힌 기록 스크롤 영역
+        h_scroll = ctk.CTkScrollableFrame(self.stage_frame, height=46, fg_color="transparent")
+        h_scroll.pack(fill="x", padx=20, pady=(0, 10))
+
         self.pick_hist_lbl = ctk.CTkLabel(
-            self.stage_frame, text="뽑힌 기록: 없음", font=get_font(10), text_color=t["text_sub"], wraplength=500
+            h_scroll, text="뽑힌 기록: 없음", font=get_font(10), text_color=t["text_sub"], wraplength=560
         )
-        self.pick_hist_lbl.pack(pady=(0, 14))
+        self.pick_hist_lbl.pack(anchor="w")
 
     def _do_pick(self):
         if self.picker_running: return
@@ -668,7 +858,7 @@ class StudentDisplayWindow(ctk.CTkToplevel):
         self.picker_lbl.configure(text="?", text_color=self._t()["accent"])
         self.pick_hist_lbl.configure(text="뽑힌 기록: 없음")
 
-    # 3. 주사위 도구
+    # 3. 주사위 도구 (통계 표 스크롤 완벽 지원)
     def _render_dice_tool(self, t):
         hdr = ctk.CTkFrame(self.stage_frame, fg_color="transparent")
         hdr.pack(fill="x", padx=20, pady=(14, 2))
@@ -717,16 +907,16 @@ class StudentDisplayWindow(ctk.CTkToplevel):
         self._render_dice_stats_table()
 
         b_bar = ctk.CTkFrame(self.stage_frame, fg_color="transparent")
-        b_bar.pack(pady=(4, 16))
+        b_bar.pack(pady=(4, 14))
 
         self.btn_roll_dice = ctk.CTkButton(
-            b_bar, text="🎲 주사위 굴리기!", width=160, height=42, font=get_font(13, "bold"),
+            b_bar, text="🎲 주사위 굴리기!", width=150, height=40, font=get_font(13, "bold"),
             fg_color=t["accent"], hover_color=t["accent_hover"], command=self._roll_dice
         )
         self.btn_roll_dice.pack(side="left", padx=6)
 
         ctk.CTkButton(
-            b_bar, text="통계 초기화", width=90, height=42, font=get_font(11, "bold"),
+            b_bar, text="통계 초기화", width=84, height=40, font=get_font(11, "bold"),
             fg_color=t["card_inner"], hover_color="#dc2626", text_color=t["text_main"],
             command=self._reset_dice_stats
         ).pack(side="left", padx=6)
@@ -832,7 +1022,7 @@ class StudentDisplayWindow(ctk.CTkToplevel):
         self.wheel_res_lbl.pack(pady=10)
 
         ctk.CTkButton(
-            self.stage_frame, text="🎡 돌리기!", width=160, height=44, font=get_font(14, "bold"),
+            self.stage_frame, text="🎡 돌리기!", width=150, height=42, font=get_font(13, "bold"),
             fg_color=t["accent"], hover_color=t["accent_hover"], command=self._spin_wheel
         ).pack(pady=(0, 20))
 
@@ -904,177 +1094,8 @@ class StudentDisplayWindow(ctk.CTkToplevel):
         ).pack(pady=20)
 
     # =========================================================================
-    # 우측 허브 카드 (개별 닫기 및 1개/2개/3개 균등 분할)
+    # 유틸리티 (시계, 테마, 전체화면, 닫기)
     # =========================================================================
-    def _render_hub_cards(self):
-        for w in self.hub_frame.winfo_children():
-            w.destroy()
-
-        t = self._t()
-
-        # 1. 시간표 카드
-        if self.show_timetable:
-            tt_card = ctk.CTkFrame(self.hub_frame, fg_color=t["card"], corner_radius=12, border_width=1, border_color=t["border"])
-            tt_card.pack(fill="both", expand=True, pady=(0, 4))
-
-            hdr = ctk.CTkFrame(tt_card, fg_color="transparent")
-            hdr.pack(fill="x", padx=12, pady=(8, 2))
-            ctk.CTkLabel(hdr, text="📅 오늘의 시간표", font=get_font(11, "bold"), text_color=t["text_main"]).pack(side="left")
-            ctk.CTkButton(hdr, text="✕", width=20, height=20, font=get_font(9, "bold"), fg_color="transparent", hover_color="#ef4444", text_color=t["text_sub"], command=self._toggle_hide_timetable).pack(side="right")
-
-            scroll = ctk.CTkScrollableFrame(tt_card, fg_color="transparent")
-            scroll.pack(fill="both", expand=True, padx=8, pady=(0, 6))
-
-            _, _, items = timetable_manager.get_today_schedule_items()
-            now_s = datetime.datetime.now().strftime("%H:%M")
-            for it in items:
-                is_cur = (it["start"] <= now_s <= it["end"])
-                r = ctk.CTkFrame(scroll, fg_color=t["accent"] if is_cur else t["card_inner"], corner_radius=6)
-                r.pack(fill="x", pady=2)
-                ctk.CTkLabel(r, text=f"{it['name']} ({it['start']})", font=get_font(9, "bold"), text_color="#ffffff" if is_cur else t["text_sub"]).pack(side="left", padx=6, pady=3)
-                sub = "점심시간" if it.get("is_lunch") else it.get("subject", "")
-                ctk.CTkLabel(r, text=sub, font=get_font(10, "bold"), text_color="#ffffff" if is_cur else t["text_main"]).pack(side="right", padx=6)
-
-        # 2. 급식 카드
-        if self.show_meal:
-            meal_card = ctk.CTkFrame(self.hub_frame, fg_color=t["card"], corner_radius=12, border_width=1, border_color=t["border"])
-            meal_card.pack(fill="both", expand=True, pady=4)
-
-            hdr = ctk.CTkFrame(meal_card, fg_color="transparent")
-            hdr.pack(fill="x", padx=12, pady=(8, 2))
-            ctk.CTkLabel(hdr, text="🍱 오늘의 급식", font=get_font(11, "bold"), text_color=t["text_main"]).pack(side="left")
-            ctk.CTkButton(hdr, text="✕", width=20, height=20, font=get_font(9, "bold"), fg_color="transparent", hover_color="#ef4444", text_color=t["text_sub"], command=self._toggle_hide_meal).pack(side="right")
-
-            scroll = ctk.CTkScrollableFrame(meal_card, fg_color="transparent")
-            scroll.pack(fill="both", expand=True, padx=8, pady=(0, 6))
-
-            today = datetime.date.today()
-            ok, meal_info, _ = neis_client.get_meal_for_date(today)
-            if not ok or not meal_info.get("dishes"):
-                ctk.CTkLabel(scroll, text="오늘 등록된 급식이 없습니다.", font=get_font(10), text_color=t["text_sub"]).pack(pady=14)
-            else:
-                for d in meal_info.get("dishes", []):
-                    ctk.CTkLabel(scroll, text=f"• {d}", font=get_font(10), text_color=t["text_main"], anchor="w").pack(fill="x", pady=1, padx=4)
-
-        # 3. 알림장 / 메모 카드
-        if self.show_memo:
-            memo_card = ctk.CTkFrame(self.hub_frame, fg_color=t["card"], corner_radius=12, border_width=1, border_color=t["border"])
-            memo_card.pack(fill="both", expand=True, pady=(4, 0))
-
-            hdr = ctk.CTkFrame(memo_card, fg_color="transparent")
-            hdr.pack(fill="x", padx=12, pady=(8, 2))
-            ctk.CTkLabel(hdr, text="📝 학급 알림장", font=get_font(11, "bold"), text_color=t["text_main"]).pack(side="left")
-            ctk.CTkButton(hdr, text="✕", width=20, height=20, font=get_font(9, "bold"), fg_color="transparent", hover_color="#ef4444", text_color=t["text_sub"], command=self._toggle_hide_memo).pack(side="right")
-
-            txt = ctk.CTkTextbox(memo_card, font=get_font(10), fg_color=t["card_inner"], text_color=t["text_main"])
-            txt.pack(fill="both", expand=True, padx=8, pady=(0, 6))
-            txt.insert("1.0", "• 1교시: 수학익힘책 42~45쪽\n• 5교시: 체육복 착용\n• 하교 후 손 씻기!")
-
-    def _toggle_hide_timetable(self):
-        self.show_timetable = False
-        self._build_ui()
-        self._save_current_custom_tab_state()
-
-    def _toggle_hide_meal(self):
-        self.show_meal = False
-        self._build_ui()
-        self._save_current_custom_tab_state()
-
-    def _toggle_hide_memo(self):
-        self.show_memo = False
-        self._build_ui()
-        self._save_current_custom_tab_state()
-
-    # =========================================================================
-    # 하단 스마트 도구 바 (위젯 스위치처럼 자유 On/Off)
-    # =========================================================================
-    def _build_bottom_dock(self):
-        t = self._t()
-        dock = ctk.CTkFrame(self.bottom_dock, fg_color="transparent")
-        dock.pack(fill="both", expand=True, padx=12, pady=6)
-
-        # 좌측 도구 선택 스위치 버튼들
-        tools = [
-            ("timer",      "⏱️ 타이머"),
-            ("picker",     "🎯 발표자 추첨"),
-            ("dice",       "🎲 주사위·통계"),
-            ("wheel",      "🎡 돌림판"),
-            ("scoreboard", "🏆 점수판"),
-            ("drawing",    "✏️ 학급 판서"),
-        ]
-        for tkey, tname in tools:
-            is_act = (self.active_tool == tkey and self.stage_split_ratio > 0)
-            ctk.CTkButton(
-                dock, text=tname, font=get_font(10, "bold"), height=36,
-                fg_color=t["accent"] if is_act else t["card_inner"],
-                hover_color=t["accent_hover"],
-                text_color="#ffffff" if is_act else t["text_main"],
-                corner_radius=8,
-                command=lambda k=tkey: self._switch_main_tool(k)
-            ).pack(side="left", padx=2)
-
-        ctk.CTkFrame(dock, width=1, height=22, fg_color=t["border"]).pack(side="left", padx=8)
-
-        # 우측 교실 정보 허브 위젯 On/Off 스위치들
-        ctk.CTkLabel(dock, text="허브 위젯 On/Off:", font=get_font(10, "bold"), text_color=t["text_sub"]).pack(side="left", padx=(0, 4))
-
-        self.btn_tt = ctk.CTkButton(
-            dock, text="📅 시간표" if self.show_timetable else "+ 시간표", height=32, width=74, font=get_font(9, "bold"),
-            fg_color=t["accent"] if self.show_timetable else t["card_inner"],
-            hover_color=t["accent_hover"], text_color="#ffffff" if self.show_timetable else t["text_sub"],
-            corner_radius=6, command=self._toggle_timetable
-        )
-        self.btn_tt.pack(side="left", padx=2)
-
-        self.btn_meal = ctk.CTkButton(
-            dock, text="🍱 급식" if self.show_meal else "+ 급식", height=32, width=68, font=get_font(9, "bold"),
-            fg_color=t["accent"] if self.show_meal else t["card_inner"],
-            hover_color=t["accent_hover"], text_color="#ffffff" if self.show_meal else t["text_sub"],
-            corner_radius=6, command=self._toggle_meal
-        )
-        self.btn_meal.pack(side="left", padx=2)
-
-        self.btn_memo = ctk.CTkButton(
-            dock, text="📝 알림장" if self.show_memo else "+ 알림장", height=32, width=74, font=get_font(9, "bold"),
-            fg_color=t["accent"] if self.show_memo else t["card_inner"],
-            hover_color=t["accent_hover"], text_color="#ffffff" if self.show_memo else t["text_sub"],
-            corner_radius=6, command=self._toggle_memo
-        )
-        self.btn_memo.pack(side="left", padx=2)
-
-        ctk.CTkButton(
-            dock, text="⚖️ 65:35 균등", height=32, width=80, font=get_font(9, "bold"),
-            fg_color=t["card_inner"], hover_color=t["border"], text_color=t["text_main"],
-            corner_radius=6, command=self._reset_split_ratio
-        ).pack(side="right", padx=2)
-
-    def _switch_main_tool(self, tool_key: str):
-        self.active_tool = tool_key
-        if self.stage_split_ratio == 0:
-            self.stage_split_ratio = 0.65
-        self._build_ui()
-        self._save_current_custom_tab_state()
-
-    def _toggle_timetable(self):
-        self.show_timetable = not self.show_timetable
-        self._build_ui()
-        self._save_current_custom_tab_state()
-
-    def _toggle_meal(self):
-        self.show_meal = not self.show_meal
-        self._build_ui()
-        self._save_current_custom_tab_state()
-
-    def _toggle_memo(self):
-        self.show_memo = not self.show_memo
-        self._build_ui()
-        self._save_current_custom_tab_state()
-
-    def _reset_split_ratio(self):
-        self.stage_split_ratio = 0.65
-        self._build_ui()
-        self._save_current_custom_tab_state()
-
     def _start_clock_loop(self):
         def _tick():
             if self.winfo_exists():
