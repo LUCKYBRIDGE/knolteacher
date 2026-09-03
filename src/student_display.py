@@ -28,6 +28,7 @@ from src.neis_client import neis_client
 from src.config_utils import get_config_dir
 from src.icon_renderer import get_icon
 from src.board_preset_manager import board_preset_manager
+from src.custom_board_dialog import CustomBoardLaunchDialog
 
 # 교실 TV 전용 눈이 편안한 테마 팔레트 (핫핑크 영구 퇴출)
 THEMES = {
@@ -82,16 +83,18 @@ class StudentDisplayWindow(ctk.CTkToplevel):
     CONFIG_FILE = os.path.join(get_config_dir(), "student_board_config.json")
 
     @classmethod
-    def get_instance(cls, parent=None):
+    def get_instance(cls, parent=None, custom_config: dict = None):
         if cls._instance is None or not cls._instance.winfo_exists():
-            cls._instance = cls(parent)
+            cls._instance = cls(parent, custom_config)
         else:
+            if custom_config:
+                cls._instance.apply_custom_config(custom_config)
             cls._instance.deiconify()
             cls._instance.lift()
             cls._instance.focus_force()
         return cls._instance
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, custom_config: dict = None):
         super().__init__(parent)
         self.parent_app = parent
         self.title("놀티쳐 보드 (스마트 교실 스튜디오 대시보드)")
@@ -106,8 +109,9 @@ class StudentDisplayWindow(ctk.CTkToplevel):
         
         # 활성 프리셋 설정 로드
         active_preset_cfg = board_preset_manager.get_active_preset()
-        self.theme_key = active_preset_cfg.get("theme_key", "slate_dark")
-        self.active_tool = active_preset_cfg.get("active_tool", "timer")
+        self.custom_config = custom_config or {}
+        self.theme_key = self.custom_config.get("theme_key") or active_preset_cfg.get("theme_key", "slate_dark")
+        self.active_tool = self.custom_config.get("active_tool") or active_preset_cfg.get("active_tool", "timer")
 
         # 타이머 상태
         self.timer_seconds = 300
@@ -292,21 +296,39 @@ class StudentDisplayWindow(ctk.CTkToplevel):
             corner_radius=6, command=self.close
         ).pack(side="left", padx=2)
 
-        # 2. 메인 바디 (좌측 메인 스테이지 65% + 우측 상시 교실 허브 35%)
+        # 2. 메인 바디: 커스텀 레이아웃 모드 지원 (standard / focus_tool / board_only)
+        layout_mode = self.custom_config.get("layout_mode", "standard")
+
         body = ctk.CTkFrame(self, fg_color="transparent")
         body.pack(fill="both", expand=True, padx=16, pady=(0, 16))
 
-        self.stage_frame = ctk.CTkFrame(
-            body, fg_color=t["card"], corner_radius=12, border_width=1, border_color=t["border"]
-        )
-        self.stage_frame.pack(side="left", fill="both", expand=True, padx=(0, 8))
+        if layout_mode == "focus_tool":
+            # 🎯 수업 도구 집중 풀화면 모드 (우측 허브 완전 숨김)
+            self.stage_frame = ctk.CTkFrame(
+                body, fg_color=t["card"], corner_radius=12, border_width=1, border_color=t["border"]
+            )
+            self.stage_frame.pack(fill="both", expand=True)
+            self.hub_frame = None
+            self._render_active_tool()
+        elif layout_mode == "board_only":
+            # 📋 학급 게시판 전면 모드 (시간표+급식+알림장 3열 대형 카드)
+            self.stage_frame = None
+            self.hub_frame = ctk.CTkFrame(body, fg_color="transparent")
+            self.hub_frame.pack(fill="both", expand=True)
+            self._render_board_only_content(t)
+        else:
+            # ⚖️ 표준 2단 분할 모드 (도구 65% + 교실 허브 35%)
+            self.stage_frame = ctk.CTkFrame(
+                body, fg_color=t["card"], corner_radius=12, border_width=1, border_color=t["border"]
+            )
+            self.stage_frame.pack(side="left", fill="both", expand=True, padx=(0, 8))
 
-        self.hub_frame = ctk.CTkFrame(body, fg_color="transparent", width=400)
-        self.hub_frame.pack(side="right", fill="both", padx=(8, 0))
-        self.hub_frame.pack_propagate(False)
+            self.hub_frame = ctk.CTkFrame(body, fg_color="transparent", width=400)
+            self.hub_frame.pack(side="right", fill="both", padx=(8, 0))
+            self.hub_frame.pack_propagate(False)
 
-        self._render_active_tool()
-        self._render_hub_content()
+            self._render_active_tool()
+            self._render_hub_content()
 
     def _switch_main_tool(self, tool_key: str):
         self.active_tool = tool_key
@@ -678,14 +700,26 @@ class StudentDisplayWindow(ctk.CTkToplevel):
     # 우측 상시 교실 허브 (시간표 + 급식 + 알림장)
     # ══════════════════════════════════════════════════════════════════════════
     def _render_hub_content(self):
+        if not self.hub_frame:
+            return
         for w in self.hub_frame.winfo_children():
             w.destroy()
 
         t = self._t()
+        show_tt = self.custom_config.get("show_timetable", True)
+        show_ml = self.custom_config.get("show_meal", True)
+        show_mm = self.custom_config.get("show_memo", True)
 
-        # 1. 오늘의 수업 시간표 카드
-        tt_card = ctk.CTkFrame(self.hub_frame, fg_color=t["card"], corner_radius=10, border_width=1, border_color=t["border"])
-        tt_card.pack(fill="x", pady=(0, 10))
+        if show_tt:
+            self._build_timetable_card(self.hub_frame, t)
+        if show_ml:
+            self._build_meal_card(self.hub_frame, t)
+        if show_mm:
+            self._build_memo_card(self.hub_frame, t)
+
+    def _build_timetable_card(self, parent, t: dict):
+        tt_card = ctk.CTkFrame(parent, fg_color=t["card"], corner_radius=10, border_width=1, border_color=t["border"])
+        tt_card.pack(fill="both", expand=True, pady=(0, 10))
 
         today = datetime.date.today()
         weekday_str = DAYS_KO[today.weekday()]
@@ -697,27 +731,28 @@ class StudentDisplayWindow(ctk.CTkToplevel):
         ctk.CTkLabel(tt_hdr, text=f"{today.strftime('%m/%d')} ({weekday_str})", font=get_font(10), text_color=t["text_sub"]).pack(side="right")
 
         is_hol, hol_name, items = timetable_manager.get_today_schedule_items()
-        tt_box = ctk.CTkScrollableFrame(tt_card, fg_color="transparent", height=160)
-        tt_box.pack(fill="x", padx=8, pady=(0, 8))
+        tt_box = ctk.CTkScrollableFrame(tt_card, fg_color="transparent", height=150)
+        tt_box.pack(fill="both", expand=True, padx=8, pady=(0, 8))
 
         if not items:
             ctk.CTkLabel(tt_box, text="등록된 수업 시간표가 없습니다.", font=get_font(10), text_color=t["text_sub"]).pack(pady=10)
         else:
-            for itm in items[:6]:
-                p_str = itm.get("period_str", "")
+            for itm in items[:7]:
+                p_str = itm.get("period_str", "") or itm.get("name", "")
                 sub = itm.get("subject", "")
-                t_str = itm.get("time_range", "")
+                t_str = itm.get("start", "")
 
                 row = ctk.CTkFrame(tt_box, fg_color=t["card_inner"], corner_radius=6)
                 row.pack(fill="x", pady=2)
-                ctk.CTkLabel(row, text=p_str, font=get_font(10, "bold"), text_color="#f59e0b", width=40).pack(side="left", padx=6, pady=4)
+                ctk.CTkLabel(row, text=p_str, font=get_font(10, "bold"), text_color="#f59e0b", width=44).pack(side="left", padx=6, pady=4)
                 ctk.CTkLabel(row, text=sub, font=get_font(11, "bold"), text_color=t["text_main"]).pack(side="left", padx=4)
                 ctk.CTkLabel(row, text=t_str, font=ctk.CTkFont(family="Consolas", size=9), text_color=t["text_sub"]).pack(side="right", padx=8)
 
-        # 2. 오늘의 맛있는 급식 식단 카드
-        meal_card = ctk.CTkFrame(self.hub_frame, fg_color=t["card"], corner_radius=10, border_width=1, border_color=t["border"])
-        meal_card.pack(fill="x", pady=(0, 10))
+    def _build_meal_card(self, parent, t: dict):
+        meal_card = ctk.CTkFrame(parent, fg_color=t["card"], corner_radius=10, border_width=1, border_color=t["border"])
+        meal_card.pack(fill="both", expand=True, pady=(0, 10))
 
+        today = datetime.date.today()
         ok, meal_info, msg = neis_client.get_meal_for_date(today)
         school_nm = neis_client.config.get("school_name", "학교 미설정")
 
@@ -728,8 +763,8 @@ class StudentDisplayWindow(ctk.CTkToplevel):
         ctk.CTkLabel(m_hdr, text="  오늘의 급식", image=m_ico, compound="left", font=get_font(12, "bold"), text_color=t["accent"]).pack(side="left")
         ctk.CTkLabel(m_hdr, text=school_nm, font=get_font(9), text_color=t["text_sub"]).pack(side="right")
 
-        m_box = ctk.CTkScrollableFrame(meal_card, fg_color="transparent", height=140)
-        m_box.pack(fill="x", padx=8, pady=(0, 8))
+        m_box = ctk.CTkScrollableFrame(meal_card, fg_color="transparent", height=130)
+        m_box.pack(fill="both", expand=True, padx=8, pady=(0, 8))
 
         dishes = meal_info.get("dishes", []) if (ok and meal_info) else []
         if not dishes:
@@ -740,8 +775,8 @@ class StudentDisplayWindow(ctk.CTkToplevel):
                 row.pack(fill="x", pady=2)
                 ctk.CTkLabel(row, text=f"• {d}", font=get_font(10), text_color=t["text_main"]).pack(anchor="w", padx=8, pady=3)
 
-        # 3. 학급 알림장 메모 카드
-        memo_card = ctk.CTkFrame(self.hub_frame, fg_color=t["card"], corner_radius=10, border_width=1, border_color=t["border"])
+    def _build_memo_card(self, parent, t: dict):
+        memo_card = ctk.CTkFrame(parent, fg_color=t["card"], corner_radius=10, border_width=1, border_color=t["border"])
         memo_card.pack(fill="both", expand=True)
 
         mem_hdr = ctk.CTkFrame(memo_card, fg_color="transparent")
@@ -825,6 +860,44 @@ class StudentDisplayWindow(ctk.CTkToplevel):
 
     def _open_preset_manager_dialog(self):
         BoardPresetDialog(self)
+
+
+    def apply_custom_config(self, cfg: dict):
+        self.custom_config = cfg
+        if cfg.get("theme_key"):
+            self.theme_key = cfg["theme_key"]
+        if cfg.get("active_tool"):
+            self.active_tool = cfg["active_tool"]
+        
+        if cfg.get("compact_size"):
+            self.geometry("960x640")
+        elif not cfg.get("is_fullscreen"):
+            self.geometry("1280x820")
+
+        if cfg.get("is_fullscreen") and not self.is_fullscreen:
+            self._toggle_fullscreen()
+        elif not cfg.get("is_fullscreen") and self.is_fullscreen:
+            self._exit_fullscreen()
+
+        self._build_ui()
+
+    def _render_board_only_content(self, t: dict):
+        row = ctk.CTkFrame(self.hub_frame, fg_color="transparent")
+        row.pack(fill="both", expand=True)
+
+        col1 = ctk.CTkFrame(row, fg_color="transparent")
+        col1.pack(side="left", fill="both", expand=True, padx=4)
+        col2 = ctk.CTkFrame(row, fg_color="transparent")
+        col2.pack(side="left", fill="both", expand=True, padx=4)
+        col3 = ctk.CTkFrame(row, fg_color="transparent")
+        col3.pack(side="left", fill="both", expand=True, padx=4)
+
+        self._build_timetable_card(col1, t)
+        self._build_meal_card(col2, t)
+        self._build_memo_card(col3, t)
+
+    def _open_preset_manager_dialog(self):
+        CustomBoardLaunchDialog(self, self.apply_custom_config)
 
 
 class BoardPresetDialog(ctk.CTkToplevel):
@@ -945,3 +1018,5 @@ class BoardPresetDialog(ctk.CTkToplevel):
         board_preset_manager.save_preset(val, cfg)
         self.board._build_ui()
         self.destroy()
+
+

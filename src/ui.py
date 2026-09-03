@@ -17,6 +17,7 @@ from src.timetable_manager import timetable_manager, DAY_KEYS, DAYS_KO
 from src.mini_widget import MiniTimetableWidget
 from src.mini_ticker import MiniTickerWidget
 from src.student_display import StudentDisplayWindow
+from src.custom_board_dialog import CustomBoardLaunchDialog
 from src.sheet_sync import sheet_sync_manager
 from src.autostart_manager import autostart_manager
 from src.drawing_overlay import ScreenDrawingOverlay
@@ -701,8 +702,24 @@ class App(ctk.CTk):
             text_color="#ffffff",
             command=self._open_student_display
         )
-        self.sidebar_board_btn.pack(fill="x", padx=10, pady=(10, 4))
+        self.sidebar_board_btn.pack(fill="x", padx=10, pady=(10, 2))
         attach_tooltip(self.sidebar_board_btn, "학생용 대형 스크린 놀티쳐 보드를 즉시 실행합니다 (F2)")
+
+        self.sidebar_custom_board_btn = ctk.CTkButton(
+            self.sidebar,
+            text="🛠️  커스텀 보드 띄우기",
+            font=get_font(11, "bold"),
+            height=28,
+            corner_radius=6,
+            fg_color="transparent",
+            hover_color=palette["sidebar_btn_hover"],
+            text_color=palette["accent"],
+            border_width=1,
+            border_color=palette["card_border"],
+            command=self._open_custom_board_dialog
+        )
+        self.sidebar_custom_board_btn.pack(fill="x", padx=10, pady=(0, 6))
+        attach_tooltip(self.sidebar_custom_board_btn, "화면 레이아웃, 도구, 표시 항목을 직접 조합하여 커스텀 보드를 띄웁니다")
 
         # 사이드바 메뉴: 교사용 핵심 탭 (이모지 자간 벌어짐 없는 2D 플랫 벡터 아이콘 장착)
         self.menu_buttons: dict[str, ctk.CTkButton] = {}
@@ -798,6 +815,8 @@ class App(ctk.CTk):
             self.logo_sub_lbl.pack_forget()
             if hasattr(self, "sidebar_board_btn") and self.sidebar_board_btn.winfo_exists():
                 self.sidebar_board_btn.configure(text="📺", width=44)
+            if hasattr(self, "sidebar_custom_board_btn") and self.sidebar_custom_board_btn.winfo_exists():
+                self.sidebar_custom_board_btn.configure(text="🛠️", width=44)
 
             for key, name, ico_name in self.menu_items:
                 btn = self.menu_buttons[key]
@@ -815,6 +834,8 @@ class App(ctk.CTk):
             self.logo_sub_lbl.pack(anchor="w", padx=(32, 0), pady=(2, 0))
             if hasattr(self, "sidebar_board_btn") and self.sidebar_board_btn.winfo_exists():
                 self.sidebar_board_btn.configure(text="📺  놀티쳐 보드 열기", width=190)
+            if hasattr(self, "sidebar_custom_board_btn") and self.sidebar_custom_board_btn.winfo_exists():
+                self.sidebar_custom_board_btn.configure(text="🛠️  커스텀 보드 띄우기", width=190)
 
             for key, name, ico_name in self.menu_items:
                 btn = self.menu_buttons[key]
@@ -4981,3 +5002,10 @@ class App(ctk.CTk):
         sound_manager.stop_all()
         self.destroy()
 
+
+
+    def _open_custom_board_dialog(self):
+        CustomBoardLaunchDialog(self, self._open_student_display_with_config)
+
+    def _open_student_display_with_config(self, config: dict):
+        StudentDisplayWindow.get_instance(self, custom_config=config)
