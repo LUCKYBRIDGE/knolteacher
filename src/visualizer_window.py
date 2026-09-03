@@ -59,8 +59,13 @@ class VisualizerWindow(ctk.CTkToplevel):
         self.flip_horizontal = False    # 좌우 반전
         self.flip_vertical = False      # 상하 반전
         self.doc_mode = False           # 흑백/고대비 문서 모드
+        self.sharp_mode = False         # 소프트웨어 선명화 필터
         self.zoom_level = 1.0           # 1.0x ~ 3.0x
         self.is_fullscreen = False
+
+        # 초점 제어 상태
+        self.is_autofocus = True
+        self.manual_focus_val = 50
 
         # 포토이미지 보관 (GC 방지)
         self._photo_image = None
@@ -137,6 +142,39 @@ class VisualizerWindow(ctk.CTkToplevel):
         )
         self.flip_v_btn.pack(side="left", padx=2)
         attach_tooltip(self.flip_v_btn, "화면 상하 반전 (거꾸로 설치된 카메라용)")
+
+        self._sep(tb_inner)
+
+        # 초점 제어 (자동초점 토글 + 수동초점 슬라이더)
+        self.af_btn = ctk.CTkButton(
+            tb_inner, text="⚡ AF자동", width=70, height=32,
+            font=get_font(10, "bold"), fg_color="#059669", hover_color="#047857",
+            corner_radius=6, command=self._toggle_autofocus
+        )
+        self.af_btn.pack(side="left", padx=2)
+        attach_tooltip(self.af_btn, "카메라 하드웨어 자동초점(AF) 켜기 / 수동초점 전환")
+
+        focus_box = ctk.CTkFrame(tb_inner, fg_color="transparent")
+        focus_box.pack(side="left", padx=2)
+        ctk.CTkLabel(focus_box, text="초점", font=get_font(10), text_color="#94a3b8").pack(side="left", padx=(2, 4))
+
+        self.focus_slider = ctk.CTkSlider(
+            focus_box, from_=0, to=255, number_of_steps=51,
+            width=80, height=16, command=self._on_focus_slider_changed
+        )
+        self.focus_slider.set(50)
+        self.focus_slider.pack(side="left")
+        self.focus_slider.configure(state="disabled")
+        attach_tooltip(self.focus_slider, "수동 초점 미세 조절 슬라이더 (AF 해제 시 사용)")
+
+        # 소프트웨어 선명화
+        self.sharp_btn = ctk.CTkButton(
+            tb_inner, text="✨ 선명화", width=62, height=32,
+            font=get_font(10, "bold"), fg_color="#1e293b", hover_color="#334155",
+            corner_radius=6, command=self._toggle_sharp_mode
+        )
+        self.sharp_btn.pack(side="left", padx=2)
+        attach_tooltip(self.sharp_btn, "학습지/교재 글씨 윤곽선을 또렷하게 선명화")
 
         self._sep(tb_inner)
 
@@ -379,7 +417,13 @@ class VisualizerWindow(ctk.CTkToplevel):
             y0 = (fh - crop_h) // 2
             img_bgr = img_bgr[y0:y0+crop_h, x0:x0+crop_w]
 
-        # 4. 문서 강조 모드 (고대비 흑백)
+        # 4. 소프트웨어 선명화 (샤프닝)
+        if self.sharp_mode:
+            import numpy as np
+            kernel = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]], dtype=np.float32)
+            img_bgr = cv2.filter2D(img_bgr, -1, kernel)
+
+        # 5. 문서 강조 모드 (고대비 흑백)
         if self.doc_mode:
             gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
             # 적응형 대비 향상
@@ -434,6 +478,41 @@ class VisualizerWindow(ctk.CTkToplevel):
         self.flip_vertical = not self.flip_vertical
         self.flip_v_btn.configure(
             fg_color="#0284c7" if self.flip_vertical else "#1e293b"
+        )
+
+    def _toggle_autofocus(self):
+        self.is_autofocus = not self.is_autofocus
+        if self.is_autofocus:
+            self.af_btn.configure(text="⚡ AF자동", fg_color="#059669")
+            self.focus_slider.configure(state="disabled")
+            if self.cap:
+                try:
+                    self.cap.set(cv2.CAP_PROP_AUTOFOCUS, 1)
+                except Exception:
+                    pass
+        else:
+            self.af_btn.configure(text="🎯 수동초점", fg_color="#ea580c")
+            self.focus_slider.configure(state="normal")
+            val = float(self.focus_slider.get())
+            if self.cap:
+                try:
+                    self.cap.set(cv2.CAP_PROP_AUTOFOCUS, 0)
+                    self.cap.set(cv2.CAP_PROP_FOCUS, val)
+                except Exception:
+                    pass
+
+    def _on_focus_slider_changed(self, val):
+        if not self.is_autofocus and self.cap:
+            try:
+                self.cap.set(cv2.CAP_PROP_FOCUS, float(val))
+            except Exception:
+                pass
+
+    def _toggle_sharp_mode(self):
+        self.sharp_mode = not self.sharp_mode
+        self.sharp_btn.configure(
+            fg_color="#0284c7" if self.sharp_mode else "#1e293b",
+            text="✨ 선명ON" if self.sharp_mode else "✨ 선명화"
         )
 
     def _toggle_freeze(self):
