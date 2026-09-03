@@ -28,6 +28,55 @@ class ClassroomBrowserManager:
     def _get_default_presets(self):
         return [
             {
+                "id": "iscream",
+                "name": "아이스크림 초등 (교수학습지원)",
+                "url": "https://www.i-scream.co.kr",
+                "emoji": "🍦",
+                "category": "수업"
+            },
+            {
+                "id": "tselpa",
+                "name": "티셀파 초등 (천재교과서)",
+                "url": "https://elem.tselpa.co.kr",
+                "emoji": "🔵",
+                "category": "수업"
+            },
+            {
+                "id": "douclass",
+                "name": "두클래스 초등 (동아출판)",
+                "url": "https://elem.douclass.com",
+                "emoji": "🟢",
+                "category": "수업"
+            },
+            {
+                "id": "vivasam",
+                "name": "비바쌤 초등 (비상교육)",
+                "url": "https://e.vivasam.com",
+                "emoji": "🟣",
+                "category": "수업"
+            },
+            {
+                "id": "indischool",
+                "name": "인디스쿨 (초등교사 커뮤니티)",
+                "url": "https://www.indischool.com",
+                "emoji": "🏫",
+                "category": "교사"
+            },
+            {
+                "id": "cls_edunet",
+                "name": "e학습터 (학급 학습터)",
+                "url": "https://cls.edunet.net",
+                "emoji": "🏫",
+                "category": "수업"
+            },
+            {
+                "id": "edunet",
+                "name": "에듀넷·티-클리어 (교육 포털)",
+                "url": "https://www.edunet.net",
+                "emoji": "📚",
+                "category": "수업"
+            },
+            {
                 "id": "naver",
                 "name": "네이버 (포털/검색)",
                 "url": "https://www.naver.com",
@@ -40,20 +89,6 @@ class ClassroomBrowserManager:
                 "url": "https://www.google.com",
                 "emoji": "🔍",
                 "category": "포털"
-            },
-            {
-                "id": "edunet",
-                "name": "에듀넷·티-클리어 (교육 포털)",
-                "url": "https://www.edunet.net",
-                "emoji": "📚",
-                "category": "수업"
-            },
-            {
-                "id": "cls_edunet",
-                "name": "e학습터 (학급 학습터)",
-                "url": "https://cls.edunet.net",
-                "emoji": "🏫",
-                "category": "수업"
             },
             {
                 "id": "wiki",

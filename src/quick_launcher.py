@@ -71,6 +71,27 @@ class QuickLauncherManager:
                 "target": "https://www.i-scream.co.kr",
                 "type": "url",
                 "emoji": "🍦"
+            },
+            {
+                "id": "tselpa",
+                "name": "티셀파 초등",
+                "target": "https://elem.tselpa.co.kr",
+                "type": "url",
+                "emoji": "🔵"
+            },
+            {
+                "id": "douclass",
+                "name": "두클래스 초등",
+                "target": "https://elem.douclass.com",
+                "type": "url",
+                "emoji": "🟢"
+            },
+            {
+                "id": "vivasam",
+                "name": "비바쌤 초등",
+                "target": "https://e.vivasam.com",
+                "type": "url",
+                "emoji": "🟣"
             }
         ]
 
