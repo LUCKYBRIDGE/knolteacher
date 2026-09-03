@@ -1474,7 +1474,7 @@ class App(ctk.CTk):
             ctk.CTkLabel(
                 h_in,
                 text=f"🔥 {cal_str}",
-                font=ctk.CTkFont(family="Consolas", size=11, weight="bold"),
+                font=ctk.CTkFont(family="Malgun Gothic", size=11, weight="bold"),
                 text_color=palette["accent"]
             ).pack(side="right")
 
@@ -1564,7 +1564,7 @@ class App(ctk.CTk):
             ctk.CTkLabel(
                 c_frame,
                 text=f"{it['start']} ~ {it['end']}",
-                font=ctk.CTkFont(family="Consolas", size=10, weight="bold"),
+                font=ctk.CTkFont(family="Malgun Gothic", size=10, weight="bold"),
                 text_color=palette["text_muted"],
                 width=88,
                 anchor="w"
@@ -1780,7 +1780,7 @@ class App(ctk.CTk):
             ctk.CTkLabel(pop, text=f"QR 생성 실패:\n{e}", font=get_font(10), text_color="#ef4444").pack(pady=20)
 
         url_short = url if len(url) <= 36 else url[:34] + ".."
-        ctk.CTkLabel(pop, text=url_short, font=ctk.CTkFont(family="Consolas", size=8), text_color=palette["text_sub"]).pack()
+        ctk.CTkLabel(pop, text=url_short, font=ctk.CTkFont(family="Malgun Gothic", size=8), text_color=palette["text_sub"]).pack()
         ctk.CTkButton(pop, text="닫기", font=get_font(10, "bold"), height=28, command=pop.destroy).pack(pady=8)
 
 
@@ -2375,7 +2375,7 @@ class App(ctk.CTk):
                 c_row = ctk.CTkFrame(chip_box, fg_color=palette["card_bg"], corner_radius=6)
                 c_row.pack(fill="x", pady=2)
                 ctk.CTkLabel(c_row, text=f"{itm['name']} {itm['subject']}", font=get_font(10, "bold"), text_color=palette["text_main"]).pack(side="left", padx=8, pady=4)
-                ctk.CTkLabel(c_row, text=itm.get("start", ""), font=ctk.CTkFont(family="Consolas", size=9), text_color=palette["text_sub"]).pack(side="left", padx=4)
+                ctk.CTkLabel(c_row, text=itm.get("start", ""), font=ctk.CTkFont(family="Malgun Gothic", size=9), text_color=palette["text_sub"]).pack(side="left", padx=4)
 
                 ctk.CTkButton(
                     c_row, text="예약", width=46, height=22, font=get_font(9, "bold"),
@@ -2559,11 +2559,31 @@ class App(ctk.CTk):
         if not hasattr(self, "hub_active_list_container") or not self.hub_active_list_container.winfo_exists():
             return
 
-        for w in self.hub_active_list_container.winfo_children():
-            w.destroy()
-
         palette = theme_manager.get_theme()
         schedules = list(self.manager.schedules.values())
+        cur_keys = [itm.get("id") for itm in schedules]
+
+        # 이전 렌더링된 스케줄 키 목록과 동일한 경우 -> 텍스트만 초고속 갱신 (위젯 파괴/생성 0회!)
+        if getattr(self, "_hub_rendered_keys", None) == cur_keys and hasattr(self, "_hub_remain_labels"):
+            for itm in schedules:
+                sid = itm.get("id")
+                if sid in self._hub_remain_labels:
+                    rem_sec = itm.get("remaining_seconds", 0)
+                    h = rem_sec // 3600
+                    m = (rem_sec % 3600) // 60
+                    s = rem_sec % 60
+                    rem_str = f"{h:02d}:{m:02d}:{s:02d}" if h > 0 else f"{m:02d}:{s:02d}"
+                    lbl = self._hub_remain_labels[sid]
+                    if lbl.winfo_exists():
+                        lbl.configure(text=f"남은 시간: {rem_str}")
+            return
+
+        # 스케줄 항목이 변경된 경우에만 전체 재구성
+        self._hub_rendered_keys = cur_keys
+        self._hub_remain_labels = {}
+
+        for w in self.hub_active_list_container.winfo_children():
+            w.destroy()
 
         if not schedules:
             empty_box = ctk.CTkFrame(self.hub_active_list_container, fg_color=palette["card_bg"], corner_radius=8)
@@ -2581,7 +2601,6 @@ class App(ctk.CTk):
             tgt_str = tgt_dt.strftime("%H:%M:%S") if tgt_dt else "--:--"
             rem_sec = itm.get("remaining_seconds", 0)
 
-            # 남은 시간 포맷
             h = rem_sec // 3600
             m = (rem_sec % 3600) // 60
             s = rem_sec % 60
@@ -2613,11 +2632,14 @@ class App(ctk.CTk):
                 if days_str:
                     ctk.CTkLabel(row, text=days_str, font=get_font(9), text_color="#94a3b8").pack(side="left", padx=2)
 
-            ctk.CTkLabel(row, text=f"목표: {tgt_str}", font=ctk.CTkFont(family="Consolas", size=10), text_color=palette["text_sub"]).pack(side="left", padx=8)
+            ctk.CTkLabel(row, text=f"목표: {tgt_str}", font=get_font(10), text_color=palette["text_sub"]).pack(side="left", padx=8)
 
-            ctk.CTkLabel(row, text=f"남은 시간: {rem_str}", font=ctk.CTkFont(family="Consolas", size=11, weight="bold"), text_color="#f59e0b").pack(side="right", padx=(8, 12))
-
+            rem_lbl = ctk.CTkLabel(row, text=f"남은 시간: {rem_str}", font=get_font(11, "bold"), text_color="#f59e0b")
+            rem_lbl.pack(side="right", padx=(8, 12))
             sch_id = itm.get("id")
+            if sch_id:
+                self._hub_remain_labels[sch_id] = rem_lbl
+
             ctk.CTkButton(
                 row, text="취소", width=44, height=22, font=get_font(9, "bold"),
                 fg_color="#dc2626", hover_color="#b91c1c", text_color="#ffffff", corner_radius=4,
@@ -3369,7 +3391,7 @@ class App(ctk.CTk):
             ctk.CTkLabel(
                 row,
                 text=t_str,
-                font=ctk.CTkFont(family="Consolas", size=12, weight="bold"),
+                font=ctk.CTkFont(family="Malgun Gothic", size=12, weight="bold"),
                 text_color="#94a3b8",
                 width=95
             ).pack(side="left", padx=(0, 10))
