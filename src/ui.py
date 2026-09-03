@@ -694,6 +694,7 @@ class App(ctk.CTk):
             ("today", "일과 & 급식", "home"),
             ("classroom_tools", "수업 도구 & 화상기", "timer"),
             ("neis_workspace", "나이스 & 시간표", "flat_timetable"),
+            ("schedule_hub", "스마트 예약 센터", "flat_timer"),
             ("class_management", "학급 경영 & 모둠", "flat_trophy"),
             ("smart_desk", "스마트 데스크 & 정리", "widget"),
             ("pc_settings", "PC 관리 & 설정", "flat_memo")
@@ -901,6 +902,8 @@ class App(ctk.CTk):
             self._build_classroom_tools_tab(f)
         elif key == "neis_workspace":
             self._build_neis_workspace_tab(f)
+        elif key == "schedule_hub":
+            self._build_schedule_hub_tab(f)
         elif key == "class_management":
             self._build_class_management_tab(f)
         elif key == "smart_desk":
@@ -1845,6 +1848,299 @@ class App(ctk.CTk):
     # =========================================================================
     # 뷰 4: ⚙️ PC 관리 & 설정 (컴퓨터 예약/종료 + 화면 분할 + 환경 설정)
     # =========================================================================
+
+
+    # =========================================================================
+    # 뷰: 스마트 예약 센터 (Schedule Hub)
+    # =========================================================================
+    def _build_schedule_hub_tab(self, parent):
+        palette = theme_manager.get_theme()
+        scroll = ctk.CTkScrollableFrame(parent, fg_color="transparent")
+        scroll.pack(fill="both", expand=True, padx=16, pady=16)
+
+        # 1. 상단 안내 헤더 카드
+        hdr_card = ctk.CTkFrame(scroll, fg_color=palette["card_inner_bg"], corner_radius=10, border_width=1, border_color=palette["card_border"])
+        hdr_card.pack(fill="x", pady=(0, 12))
+
+        h_in = ctk.CTkFrame(hdr_card, fg_color="transparent")
+        h_in.pack(fill="x", padx=16, pady=12)
+
+        ctk.CTkLabel(h_in, text="⏰ 스마트 예약 센터", font=get_font(16, "bold"), text_color=palette["accent"]).pack(side="left")
+        ctk.CTkLabel(h_in, text="수업 시작 알람(1분 전 카운트다운) 및 PC 전원(종료/절전/부팅) 예약을 한곳에서 관리합니다.", font=get_font(11), text_color=palette["text_sub"]).pack(side="left", padx=14)
+
+        # 2. 메인 2단 그리드: 좌측(수업 알람 예약) + 우측(PC 전원 예약)
+        grid_row = ctk.CTkFrame(scroll, fg_color="transparent")
+        grid_row.pack(fill="x", pady=(0, 12))
+
+        # ─────────────────────────────────────────────────────────────────────
+        # [좌측] 🔔 수업 준비 알람 & 사전 카운트다운 예약 카드
+        # ─────────────────────────────────────────────────────────────────────
+        alarm_card = ctk.CTkFrame(grid_row, fg_color=palette["card_inner_bg"], corner_radius=10, border_width=1, border_color=palette["card_border"])
+        alarm_card.pack(side="left", fill="both", expand=True, padx=(0, 6))
+
+        ac_hdr = ctk.CTkFrame(alarm_card, fg_color="transparent")
+        ac_hdr.pack(fill="x", padx=14, pady=(12, 6))
+        ctk.CTkLabel(ac_hdr, text="🔔 수업 준비 알람 & 사전 카운트다운", font=get_font(13, "bold"), text_color=palette["text_main"]).pack(side="left")
+
+        # 가변 알람 기준 선택
+        lead_min = timetable_manager.settings.get("alarm_lead_minutes", 5)
+        lead_row = ctk.CTkFrame(alarm_card, fg_color="transparent")
+        lead_row.pack(fill="x", padx=14, pady=4)
+
+        ctk.CTkLabel(lead_row, text="수업 알람 기준:", font=get_font(11, "bold"), text_color=palette["text_sub"]).pack(side="left", padx=(0, 8))
+        self.hub_lead_combo = ctk.CTkComboBox(
+            lead_row,
+            values=["1분 전", "2분 전", "3분 전", "5분 전", "10분 전", "15분 전"],
+            width=90, height=28, font=get_font(11, "bold"), state="readonly",
+            command=self._on_alarm_lead_changed
+        )
+        self.hub_lead_combo.set(f"{lead_min}분 전")
+        self.hub_lead_combo.pack(side="left")
+
+        ctk.CTkLabel(
+            alarm_card,
+            text="* 알람 1분 전(60초 전)에 화면에 카운트다운 플로팅 카드가 떠서\n  0초에 수업 차임벨 종료음이 울립니다.",
+            font=get_font(9), text_color=palette["accent"], justify="left"
+        ).pack(anchor="w", padx=14, pady=(2, 8))
+
+        # 오늘 수업 일괄 알람 버튼
+        self.hub_batch_alarm_btn = ctk.CTkButton(
+            alarm_card,
+            text=f"🔔 오늘 수업 전체 {lead_min}분 전 일괄 예약",
+            font=get_font(12, "bold"), height=36, corner_radius=8,
+            fg_color=palette["accent"], hover_color=palette["accent_hover"],
+            text_color="#ffffff", command=self._batch_schedule_today_classes
+        )
+        self.hub_batch_alarm_btn.pack(fill="x", padx=14, pady=(0, 10))
+
+        # 오늘 교시별 바로 예약 칩
+        ctk.CTkLabel(alarm_card, text="오늘의 교시별 바로 예약:", font=get_font(10, "bold"), text_color=palette["text_sub"]).pack(anchor="w", padx=14, pady=(4, 2))
+        chip_box = ctk.CTkScrollableFrame(alarm_card, fg_color="transparent", height=130)
+        chip_box.pack(fill="x", padx=10, pady=(0, 10))
+
+        _, _, today_items = timetable_manager.get_today_schedule_items()
+        valid_items = [it for it in today_items if not it["is_lunch"] and it.get("start")]
+        if not valid_items:
+            ctk.CTkLabel(chip_box, text="오늘 등록된 수업이 없습니다.", font=get_font(10), text_color=palette["text_sub"]).pack(pady=10)
+        else:
+            for itm in valid_items:
+                c_row = ctk.CTkFrame(chip_box, fg_color=palette["card_bg"], corner_radius=6)
+                c_row.pack(fill="x", pady=2)
+                ctk.CTkLabel(c_row, text=f"{itm['name']} {itm['subject']}", font=get_font(10, "bold"), text_color=palette["text_main"]).pack(side="left", padx=8, pady=4)
+                ctk.CTkLabel(c_row, text=itm.get("start", ""), font=ctk.CTkFont(family="Consolas", size=9), text_color=palette["text_sub"]).pack(side="left", padx=4)
+
+                ctk.CTkButton(
+                    c_row, text="예약", width=46, height=22, font=get_font(9, "bold"),
+                    fg_color=palette["sidebar_btn_hover"], hover_color=palette["accent"],
+                    text_color=palette["text_main"], corner_radius=4,
+                    command=lambda it=itm: self._schedule_single_class_alarm(it)
+                ).pack(side="right", padx=6)
+
+        # ─────────────────────────────────────────────────────────────────────
+        # [우측] ⚡ 컴퓨터 전원 스마트 예약 카드 (종료 / 다시시작 / 절전)
+        # ─────────────────────────────────────────────────────────────────────
+        power_card = ctk.CTkFrame(grid_row, fg_color=palette["card_inner_bg"], corner_radius=10, border_width=1, border_color=palette["card_border"])
+        power_card.pack(side="right", fill="both", expand=True, padx=(6, 0))
+
+        pc_hdr = ctk.CTkFrame(power_card, fg_color="transparent")
+        pc_hdr.pack(fill="x", padx=14, pady=(12, 6))
+        ctk.CTkLabel(pc_hdr, text="⚡ 컴퓨터 전원 스마트 예약", font=get_font(13, "bold"), text_color=palette["text_main"]).pack(side="left")
+
+        # 전원 동작 선택 세그먼트
+        self.hub_power_seg = ctk.CTkSegmentedButton(
+            power_card,
+            values=["💻 자동 종료", "🔄 다시시작", "🌙 절전 모드"],
+            font=get_font(10, "bold"), height=28,
+            selected_color=palette["accent"], selected_hover_color=palette["accent_hover"],
+            unselected_color=palette["sidebar_btn_hover"], text_color=palette["text_main"]
+        )
+        self.hub_power_seg.set("💻 자동 종료")
+        self.hub_power_seg.pack(fill="x", padx=14, pady=(2, 8))
+
+        # 특정 시각 직접 입력
+        t_row = ctk.CTkFrame(power_card, fg_color="transparent")
+        t_row.pack(fill="x", padx=14, pady=2)
+        ctk.CTkLabel(t_row, text="희망 시각(HH:MM):", font=get_font(11, "bold"), text_color=palette["text_sub"]).pack(side="left", padx=(0, 6))
+
+        self.hub_time_entry = ctk.CTkEntry(t_row, width=80, height=28, font=ctk.CTkFont(family="Consolas", size=12, weight="bold"), justify="center")
+        now_dt = datetime.datetime.now()
+        def_t = (now_dt + datetime.timedelta(hours=1)).strftime("%H:%M")
+        self.hub_time_entry.insert(0, def_t)
+        self.hub_time_entry.pack(side="left", padx=(0, 6))
+
+        ctk.CTkButton(
+            t_row, text="지정시각 예약", font=get_font(10, "bold"), height=28, width=80,
+            fg_color="#0284c7", hover_color="#0369a1", text_color="#ffffff", corner_radius=6,
+            command=self._do_hub_schedule_custom_time
+        ).pack(side="left")
+
+        # 퀵 프리셋 버튼들
+        ctk.CTkLabel(power_card, text="빠른 시간 예약:", font=get_font(10, "bold"), text_color=palette["text_sub"]).pack(anchor="w", padx=14, pady=(8, 2))
+        q_row = ctk.CTkFrame(power_card, fg_color="transparent")
+        q_row.pack(fill="x", padx=14, pady=(0, 8))
+
+        presets = [
+            ("10분 후", 600),
+            ("30분 후", 1800),
+            ("1시간 후", 3600),
+            ("퇴근(16:40)", "16:40")
+        ]
+        for p_name, p_val in presets:
+            ctk.CTkButton(
+                q_row, text=p_name, font=get_font(10, "bold"), height=26, corner_radius=6,
+                fg_color=palette["card_bg"], hover_color=palette["accent"], text_color=palette["text_main"],
+                command=lambda v=p_val: self._do_hub_schedule_preset(v)
+            ).pack(side="left", fill="x", expand=True, padx=2)
+
+        # 절전 vs 종료 안내 배너
+        info_banner = ctk.CTkFrame(power_card, fg_color=palette["card_bg"], corner_radius=8, border_width=1, border_color=palette["card_border"])
+        info_banner.pack(fill="x", padx=14, pady=(4, 10))
+        ctk.CTkLabel(
+            info_banner,
+            text="💡 [절전 vs 종료]\n• 절전: 작업 중이던 창과 프로그램이 그대로 유지되어 1초 만에 켜짐.\n• 종료: 전원이 완전히 차단되어 PC 부품 수명 및 보안에 최적.",
+            font=get_font(9), text_color=palette["text_sub"], justify="left"
+        ).pack(fill="x", padx=8, pady=6)
+
+        # ─────────────────────────────────────────────────────────────────────
+        # 3. 📋 현재 실행 중인 실시간 예약 모니터링 카드 (Live Monitor)
+        # ─────────────────────────────────────────────────────────────────────
+        monitor_card = ctk.CTkFrame(scroll, fg_color=palette["card_inner_bg"], corner_radius=10, border_width=1, border_color=palette["card_border"])
+        monitor_card.pack(fill="x", pady=(0, 12))
+
+        m_hdr = ctk.CTkFrame(monitor_card, fg_color="transparent")
+        m_hdr.pack(fill="x", padx=16, pady=(12, 6))
+
+        ctk.CTkLabel(m_hdr, text="📋 현재 활성화된 예약 목록 (실시간 카운트다운)", font=get_font(13, "bold"), text_color=palette["text_main"]).pack(side="left")
+
+        ctk.CTkButton(
+            m_hdr, text="전체 예약 취소", font=get_font(10, "bold"), height=26, width=90,
+            fg_color="#dc2626", hover_color="#b91c1c", text_color="#ffffff", corner_radius=6,
+            command=self._cancel_all_schedules_from_hub
+        ).pack(side="right")
+
+        self.hub_active_list_container = ctk.CTkFrame(monitor_card, fg_color="transparent")
+        self.hub_active_list_container.pack(fill="x", padx=14, pady=(0, 12))
+
+        self._render_hub_active_schedules()
+        self._start_hub_monitor_loop()
+
+    def _start_hub_monitor_loop(self):
+        def _tick():
+            if self.winfo_exists() and getattr(self, "current_view_key", "") == "schedule_hub":
+                self._render_hub_active_schedules()
+                self.after(1000, _tick)
+        self.after(1000, _tick)
+
+    def _render_hub_active_schedules(self):
+        if not hasattr(self, "hub_active_list_container") or not self.hub_active_list_container.winfo_exists():
+            return
+
+        for w in self.hub_active_list_container.winfo_children():
+            w.destroy()
+
+        palette = theme_manager.get_theme()
+        schedules = list(self.manager.schedules.values())
+
+        if not schedules:
+            empty_box = ctk.CTkFrame(self.hub_active_list_container, fg_color=palette["card_bg"], corner_radius=8)
+            empty_box.pack(fill="x", pady=4)
+            ctk.CTkLabel(empty_box, text="현재 진행 중인 예약(수업 알람, 전원 제어)이 없습니다.", font=get_font(11), text_color=palette["text_sub"]).pack(pady=12)
+            return
+
+        for itm in schedules:
+            row = ctk.CTkFrame(self.hub_active_list_container, fg_color=palette["card_bg"], corner_radius=8, border_width=1, border_color=palette["card_border"])
+            row.pack(fill="x", pady=2)
+
+            act_type = itm.get("action_type", "")
+            act_name = self.manager._get_action_name(act_type)
+            tgt_dt = itm.get("target_time")
+            tgt_str = tgt_dt.strftime("%H:%M:%S") if tgt_dt else "--:--"
+            rem_sec = itm.get("remaining_seconds", 0)
+
+            # 남은 시간 포맷
+            h = rem_sec // 3600
+            m = (rem_sec % 3600) // 60
+            s = rem_sec % 60
+            rem_str = f"{h:02d}:{m:02d}:{s:02d}" if h > 0 else f"{m:02d}:{s:02d}"
+
+            badge_col = "#dc2626" if act_type in ("shutdown", "restart") else ("#ea580c" if act_type == "sleep" else "#0284c7")
+            ctk.CTkLabel(row, text=act_name, font=get_font(10, "bold"), fg_color=badge_col, text_color="#ffffff", corner_radius=4, width=54, height=22).pack(side="left", padx=(8, 8), pady=6)
+
+            memo_txt = itm.get("memo", f"{act_name} 예약")
+            ctk.CTkLabel(row, text=memo_txt, font=get_font(11, "bold"), text_color=palette["text_main"]).pack(side="left", padx=4)
+
+            ctk.CTkLabel(row, text=f"목표: {tgt_str}", font=ctk.CTkFont(family="Consolas", size=10), text_color=palette["text_sub"]).pack(side="left", padx=8)
+
+            ctk.CTkLabel(row, text=f"남은 시간: {rem_str}", font=ctk.CTkFont(family="Consolas", size=11, weight="bold"), text_color="#f59e0b").pack(side="right", padx=(8, 12))
+
+            sch_id = itm.get("id")
+            ctk.CTkButton(
+                row, text="취소", width=44, height=22, font=get_font(9, "bold"),
+                fg_color="#dc2626", hover_color="#b91c1c", text_color="#ffffff", corner_radius=4,
+                command=lambda sid=sch_id: self._cancel_single_schedule_from_hub(sid)
+            ).pack(side="right", padx=4)
+
+    def _cancel_single_schedule_from_hub(self, sch_id: str):
+        ok, msg = self.manager.cancel_schedule_by_id(sch_id)
+        self._render_hub_active_schedules()
+        self._show_simple_alert("예약 취소", msg)
+
+    def _cancel_all_schedules_from_hub(self):
+        ok, msg = self.manager.cancel_schedule()
+        self._render_hub_active_schedules()
+        self._show_simple_alert("전체 취소", msg)
+
+    def _do_hub_schedule_custom_time(self):
+        val = self.hub_time_entry.get().strip()
+        try:
+            h, m = map(int, val.split(":"))
+            now = datetime.datetime.now()
+            tgt = datetime.datetime(now.year, now.month, now.day, h, m, 0)
+            if tgt <= now:
+                tgt += datetime.timedelta(days=1)
+            diff = int((tgt - now).total_seconds())
+        except Exception:
+            self._show_simple_alert("오류", "올바른 시각(HH:MM 형식)을 입력해주세요. (예: 16:40)")
+            return
+
+        choice = self.hub_power_seg.get()
+        act_type = "shutdown"
+        if "다시시작" in choice: act_type = "restart"
+        elif "절전" in choice: act_type = "sleep"
+
+        ok, msg = self.manager.schedule_action(act_type, diff, memo=f"{choice} 예약 ({val})")
+        if not ok and "CONFLICT" in msg:
+            if messagebox.askyesno("예약 충돌", "이미 비슷한 시각에 다른 전원 제어 예약이 있습니다.\n기존 예약을 대체하고 새로 등록하시겠습니까?"):
+                self.manager.schedule_action(act_type, diff, memo=f"{choice} 예약 ({val})", force=True)
+                self._show_simple_alert("예약 완료", f"{val}에 {choice}이(가) 등록되었습니다.")
+        elif ok:
+            self._show_simple_alert("예약 완료", msg)
+        self._render_hub_active_schedules()
+
+    def _do_hub_schedule_preset(self, val):
+        now = datetime.datetime.now()
+        if isinstance(val, str) and ":" in val:
+            h, m = map(int, val.split(":"))
+            tgt = datetime.datetime(now.year, now.month, now.day, h, m, 0)
+            if tgt <= now:
+                tgt += datetime.timedelta(days=1)
+            diff = int((tgt - now).total_seconds())
+        else:
+            diff = int(val)
+
+        choice = self.hub_power_seg.get()
+        act_type = "shutdown"
+        if "다시시작" in choice: act_type = "restart"
+        elif "절전" in choice: act_type = "sleep"
+
+        ok, msg = self.manager.schedule_action(act_type, diff, memo=f"{choice} 퀵 예약")
+        if not ok and "CONFLICT" in msg:
+            if messagebox.askyesno("예약 충돌", "이미 비슷한 시각에 다른 전원 제어 예약이 있습니다.\n기존 예약을 대체하고 새로 등록하시겠습니까?"):
+                self.manager.schedule_action(act_type, diff, memo=f"{choice} 퀵 예약", force=True)
+                self._show_simple_alert("예약 완료", f"{choice} 예약이 등록되었습니다.")
+        elif ok:
+            self._show_simple_alert("예약 완료", msg)
+        self._render_hub_active_schedules()
 
     # =========================================================================
     # 뷰: 학급 경영 & 모둠 (Class Management)
