@@ -705,22 +705,6 @@ class App(ctk.CTk):
         self.sidebar_board_btn.pack(fill="x", padx=10, pady=(10, 2))
         attach_tooltip(self.sidebar_board_btn, "놀티쳐 보드 놀티쳐 보드를 즉시 실행합니다 (F2)")
 
-        self.sidebar_custom_board_btn = ctk.CTkButton(
-            self.sidebar,
-            text="🛠️  커스텀 보드 띄우기",
-            font=get_font(11, "bold"),
-            height=28,
-            corner_radius=6,
-            fg_color="transparent",
-            hover_color=palette["sidebar_btn_hover"],
-            text_color=palette["accent"],
-            border_width=1,
-            border_color=palette["card_border"],
-            command=self._open_custom_board_dialog
-        )
-        self.sidebar_custom_board_btn.pack(fill="x", padx=10, pady=(0, 6))
-        attach_tooltip(self.sidebar_custom_board_btn, "화면 레이아웃, 도구, 표시 항목을 직접 조합하여 커스텀 보드를 띄웁니다")
-
         # 사이드바 메뉴: 교사용 핵심 탭 (이모지 자간 벌어짐 없는 2D 플랫 벡터 아이콘 장착)
         self.menu_buttons: dict[str, ctk.CTkButton] = {}
         self.menu_items = [
@@ -1827,25 +1811,13 @@ class App(ctk.CTk):
 
         ctk.CTkButton(
             bh_right, text="📺  놀티쳐 보드 열기  (F2)",
-            font=get_font(14, "bold"), height=46, width=220,
+            font=get_font(14, "bold"), height=42, width=220,
             fg_color="#ffffff",
             hover_color="#dbeafe",
             text_color=palette["accent"],
             corner_radius=10,
             command=self._open_student_display
-        ).pack(pady=(0, 6))
-
-        ctk.CTkButton(
-            bh_right, text="🛠️  커스텀 설정으로 열기",
-            font=get_font(11, "bold"), height=28, width=220,
-            fg_color="transparent",
-            hover_color=palette["accent_hover"],
-            text_color="#ffffff",
-            border_width=1,
-            border_color="#bfdbfe",
-            corner_radius=8,
-            command=self._open_custom_board_dialog
-        ).pack()
+        ).pack(pady=4)
 
         # 3. ✏️ 수업 보조 도구 카드 (보드에서도 실행 가능)
         tools_card = ctk.CTkFrame(scroll, corner_radius=12, fg_color=palette["card_inner_bg"], border_width=1, border_color=palette["card_border"])
