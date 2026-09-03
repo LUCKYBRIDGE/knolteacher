@@ -30,6 +30,7 @@ from src.config_utils import APP_VERSION, self_consolidate_and_clean
 from src.github_updater import github_updater
 from src.tooltip import attach_tooltip
 from src.desktop_cleaner import desktop_cleaner
+from src.scrollable_2d_frame import CTk2DScrollableFrame
 from src.neis_auto_input import (
     ExcelNeisParser, DataValidator, ValidationResult,
     NeisPageType, PAGE_INFO, NeisScriptGenerator, cdp_bridge
@@ -530,8 +531,8 @@ class App(ctk.CTk):
         setup_global_fonts(self)
 
         self.title(f"놀티쳐 (KnolTeacher v{APP_VERSION} - 스마트 교사용 올인원 도구)")
-        self.geometry("960x820")
-        self.minsize(680, 560)
+        self.geometry("980x840")
+        self.minsize(860, 600)
         self.resizable(True, True)
 
         self._load_icon()
@@ -799,6 +800,7 @@ class App(ctk.CTk):
 
         if self.sidebar_collapsed:
             # 사이드바 축소 (너비 64px, 아이콘 모드)
+            self.minsize(700, 580)
             self.sidebar.configure(width=64)
             self.sidebar_toggle_btn.configure(text="▶")
             self.logo_title_lbl.pack_forget()
@@ -812,17 +814,18 @@ class App(ctk.CTk):
             self.theme_selector_box.pack_forget()
         else:
             # 사이드바 확장 (너비 215px, 텍스트 모드)
+            self.minsize(860, 600)
             self.sidebar.configure(width=215)
             self.sidebar_toggle_btn.configure(text="◀")
             self.logo_title_lbl.pack(side="left")
-            self.logo_sub_lbl.pack(anchor="w", padx=(30, 0), pady=(1, 0))
+            self.logo_sub_lbl.pack(anchor="w", padx=(32, 0), pady=(2, 0))
 
             for key, name, ico in self.menu_items:
                 btn = self.menu_buttons[key]
                 btn.configure(text=f"{ico} {name}", anchor="w", font=get_font(13, "bold"))
                 attach_tooltip(btn, name)
 
-            self.theme_selector_box.pack(fill="x", padx=10, pady=(0, 14))
+            self.theme_selector_box.pack(fill="x", padx=10, pady=(0, 16))
 
         # 현재 뷰 버튼 상태 동기화
         self._switch_view(self.current_view_key)
@@ -961,8 +964,9 @@ class App(ctk.CTk):
     # =========================================================================
     def _build_today_tab(self, parent):
         palette = theme_manager.get_theme()
-        scroll = ctk.CTkScrollableFrame(parent, fg_color="transparent")
-        scroll.pack(fill="both", expand=True, padx=6, pady=6)
+        self.today_scroll = CTk2DScrollableFrame(parent, min_content_width=760, fg_color="transparent")
+        self.today_scroll.pack(fill="both", expand=True, padx=6, pady=6)
+        scroll = self.today_scroll.viewport
 
         # 1. 상단 일체형 헤더 (오늘 날짜 + 우측 실시간 PC 자원 칩)
         top_bar = ctk.CTkFrame(scroll, fg_color=palette["header_bg"], corner_radius=12, border_width=1, border_color=palette["header_border"])
@@ -1217,6 +1221,7 @@ class App(ctk.CTk):
 
         self._render_today_items()
         self._refresh_today_meal()
+        self.today_scroll.bind_children_mousewheel()
 
     def _refresh_today_meal(self):
         palette = theme_manager.get_theme()
@@ -1625,8 +1630,9 @@ class App(ctk.CTk):
     # =========================================================================
     def _build_classroom_tools_tab(self, parent):
         palette = theme_manager.get_theme()
-        scroll = ctk.CTkScrollableFrame(parent, fg_color="transparent")
-        scroll.pack(fill="both", expand=True, padx=6, pady=6)
+        self.tools_scroll = CTk2DScrollableFrame(parent, min_content_width=740, fg_color="transparent")
+        self.tools_scroll.pack(fill="both", expand=True, padx=6, pady=6)
+        scroll = self.tools_scroll.viewport
 
         # 1. 👥 우리 반 학생 명렬표 관리 카드 (로컬 단독 보관)
         roster_card = ctk.CTkFrame(scroll, corner_radius=12, fg_color=palette["card_inner_bg"], border_width=1, border_color=palette["card_border"])
@@ -1741,6 +1747,7 @@ class App(ctk.CTk):
         self.tools_site_grid = ctk.CTkFrame(site_card, fg_color="transparent")
         self.tools_site_grid.pack(fill="x", padx=10, pady=(0, 10))
         self._render_tools_site_grid()
+        self.tools_scroll.bind_children_mousewheel()
 
     def _render_tools_site_grid(self):
         if not hasattr(self, "tools_site_grid") or not self.tools_site_grid.winfo_exists():
@@ -1822,8 +1829,10 @@ class App(ctk.CTk):
     # 서브 컴포넌트: 주간 시간표 & 나이스 연동
     # =========================================================================
     def _build_weekly_and_neis_tab(self, parent):
-        scroll = ctk.CTkScrollableFrame(parent, fg_color="transparent")
-        scroll.pack(fill="both", expand=True, padx=6, pady=6)
+        palette = theme_manager.get_theme()
+        self.weekly_scroll = CTk2DScrollableFrame(parent, min_content_width=840, fg_color="transparent")
+        self.weekly_scroll.pack(fill="both", expand=True, padx=6, pady=6)
+        scroll = self.weekly_scroll.viewport
 
         # 1. 나이스 학교 및 학년/반 설정 카드
         cfg_card = ctk.CTkFrame(scroll, corner_radius=10, fg_color="#222a3a", border_width=1, border_color="#38bdf8")
@@ -1991,14 +2000,16 @@ class App(ctk.CTk):
 
         self.last_fetched_neis_list = []
         self._fetch_and_display_neis_timetable()
+        self.weekly_scroll.bind_children_mousewheel()
 
     # =========================================================================
     # 뷰 4: PC 전원 & 도구 설정 통합 (컴퓨터 예약 + 화면 분할 + 테마/설정)
     # =========================================================================
     def _build_tools_and_settings_tab(self, parent):
         palette = theme_manager.get_theme()
-        scroll = ctk.CTkScrollableFrame(parent, fg_color="transparent")
-        scroll.pack(fill="both", expand=True, padx=6, pady=6)
+        self.settings_scroll = CTk2DScrollableFrame(parent, min_content_width=720, fg_color="transparent")
+        self.settings_scroll.pack(fill="both", expand=True, padx=6, pady=6)
+        scroll = self.settings_scroll.viewport
 
         # 1. 컴퓨터 예약/종료 카드
         pc_card = ctk.CTkFrame(scroll, corner_radius=12, fg_color=palette["card_inner_bg"], border_width=1, border_color=palette["card_border"])
