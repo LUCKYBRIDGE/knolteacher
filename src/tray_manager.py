@@ -49,9 +49,9 @@ class TrayManager:
 
         menu = self._build_menu()
         self.tray_icon = pystray.Icon(
-            name="knol_teacher_desk",
+            name="knolteacher",
             icon=icon_img,
-            title="놀티쳐 데스크",
+            title="놀티쳐",
             menu=menu
         )
 
@@ -152,7 +152,7 @@ class TrayManager:
         def _quit_app(icon, item):
             self.app.after(0, self.app._on_closing)
 
-        toggle_label = "✅ 놀티쳐 데스크 숨기기" if is_visible else "📂 놀티쳐 데스크 열기"
+        toggle_label = "✅ 놀티쳐 숨기기" if is_visible else "📂 놀티쳐 열기"
 
         menu = pystray.Menu(
             pystray.MenuItem(toggle_label, _show_or_hide, default=True),

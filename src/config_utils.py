@@ -77,10 +77,10 @@ def self_consolidate_and_clean():
         current_name = os.path.basename(current_exe)
         
         desktop_dir = os.path.join(os.path.expanduser("~"), "Desktop")
-        main_desktop_exe = os.path.join(desktop_dir, "놀티쳐 데스크.exe")
+        main_desktop_exe = os.path.join(desktop_dir, "놀티쳐.exe")
 
-        # 1. 만약 현재 실행 파일이 바탕화면의 '놀티쳐 데스크.exe'가 아닌 복사본(예: 다운로드 폴더나 놀티쳐 데스크 (1).exe)이라면
-        #    바탕화면의 메인 놀티쳐 데스크.exe를 최신 버전인 현재 파일로 덮어쓰기 갱신
+        # 1. 만약 현재 실행 파일이 바탕화면의 '놀티쳐.exe'가 아닌 복사본(예: 다운로드 폴더나 놀티쳐 (1).exe)이라면
+        #    바탕화면의 메인 놀티쳐.exe를 최신 버전인 현재 파일로 덮어쓰기 갱신
         if os.path.abspath(current_exe) != os.path.abspath(main_desktop_exe):
             try:
                 shutil.copy2(current_exe, main_desktop_exe)
@@ -94,15 +94,15 @@ def self_consolidate_and_clean():
             search_dirs.append(current_dir)
 
         patterns = [
-            "놀티쳐 데스크 (*).exe",
-            "놀티쳐데스크 (*).exe",
-            "KnolTeacherDesk (*).exe",
+            "놀티쳐 (*).exe",
+            "놀티쳐 (*).exe",
+            "knolteacher (*).exe",
+            "놀티쳐 데스크*.exe",
+            "KnolTeacherDesk*.exe",
             "놀퀴즈*.exe",
             "티처메이트*.exe",
             "TeacherMate*.exe",
             "TeacherDesk*.exe",
-            "컴퓨터종료*.exe",
-            "컴퓨터예약*.exe"
         ]
 
         for sdir in search_dirs:

@@ -1,5 +1,6 @@
 import os
 import sys
+import shutil
 import subprocess
 
 def build():
@@ -9,7 +10,7 @@ def build():
         except Exception:
             pass
 
-    print("[Build] '놀티쳐 데스크.exe' 빌드를 시작합니다...")
+    print("[Build] '놀티쳐.exe' (knolteacher.exe) 빌드를 시작합니다...")
     
     icon_path = os.path.abspath(os.path.join("assets", "app_icon.ico"))
     if not os.path.exists(icon_path):
@@ -22,7 +23,7 @@ def build():
         "--clean",
         "--onefile",
         "--windowed",
-        "--name=놀티쳐 데스크",
+        "--name=놀티쳐",
         f"--icon={icon_path}",
         f"--add-data=assets{os.pathsep}assets",
         "--collect-all=customtkinter",
@@ -38,10 +39,14 @@ def build():
     result = subprocess.run(cmd)
     
     if result.returncode == 0:
-        exe_path = os.path.abspath(os.path.join("dist", "놀티쳐 데스크.exe"))
+        exe_path = os.path.abspath(os.path.join("dist", "놀티쳐.exe"))
+        eng_exe_path = os.path.abspath(os.path.join("dist", "knolteacher.exe"))
+        if os.path.exists(exe_path):
+            shutil.copy2(exe_path, eng_exe_path)
         print("\n===========================================")
         print("[Success] 빌드가 성공적으로 완료되었습니다!")
         print(f"생성된 실행 파일 경로: {exe_path}")
+        print(f"영문 실행 파일 경로: {eng_exe_path}")
         if os.path.exists(exe_path):
             print(f"파일 크기: {os.path.getsize(exe_path) / (1024*1024):.2f} MB")
         print("===========================================")

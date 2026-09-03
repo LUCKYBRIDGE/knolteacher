@@ -53,21 +53,21 @@ class FloatingQuickToolbar(tk.Toplevel):
 
     def _update_dimensions(self):
         if self.size_mode == "S":
-            self.full_width = 620
+            self.full_width = 670
             self.tb_height = 42
             self.btn_w = 40
             self.btn_h = 32
             self.ico_sz = 18
             self.show_text = False
         elif self.size_mode == "L":
-            self.full_width = 860
+            self.full_width = 920
             self.tb_height = 62
             self.btn_w = 56
             self.btn_h = 46
             self.ico_sz = 24
             self.show_text = True
         else:  # "M"
-            self.full_width = 750
+            self.full_width = 810
             self.tb_height = 52
             self.btn_w = 48
             self.btn_h = 38
@@ -150,14 +150,15 @@ class FloatingQuickToolbar(tk.Toplevel):
 
         # 3. 핵심 수업 도구 단축 버튼들
         tools = [
-            ("drawing",  "판서",   self._open_drawing,         COL_ORANGE, "화면 위 자유 판서 (펜/형광펜/도형)"),
-            ("camera",   "화상기", self._open_visualizer,      COL_ACTIVE, "웹캠/USB 실물화상기 실시간 뷰어"),
-            ("timer",    "타이머", self._open_timer,           COL_MAIN,   "교실 집중 수업 타이머 & 스톱워치"),
-            ("dice",     "뽑기",   self._open_picker,          COL_MAIN,   "공정한 학생 발표자 무작위 추첨"),
-            ("wheel",    "돌림판", self._open_wheel,           COL_MAIN,   "모둠/벌칙/보상 돌려돌려 돌림판"),
-            ("widget",   "학생TV", self._open_student_display, COL_ACTIVE, "교실 TV/전자칠판용 대형 화면"),
-            ("widget",   "위젯",   self._open_mini_widget,     COL_MAIN,   "바탕화면 올웨이즈온 시간표/급식 위젯"),
-            ("home",     "메인",   self._open_main_app,        COL_ACTIVE, "놀티쳐 데스크 메인 창 열기"),
+            ("drawing",  "판서",   self._open_drawing,         COL_ORANGE, "화면 위 판서 (Alt+2)"),
+            ("camera",   "화상기", self._open_visualizer,      COL_ACTIVE, "실물화상기 실시간 뷰어"),
+            ("timer",    "타이머", self._open_timer,           COL_MAIN,   "교실 타이머 (Alt+3)"),
+            ("dice",     "마우스", self._open_mouse_settings,  COL_MAIN,   "수업용 마우스 크기 & 색상 설정"),
+            ("dice",     "뽑기",   self._open_picker,          COL_MAIN,   "공정한 발표자 추첨"),
+            ("wheel",    "돌림판", self._open_wheel,           COL_MAIN,   "돌려돌려 돌림판"),
+            ("widget",   "학생TV", self._open_student_display, COL_ACTIVE, "교실 TV용 학생 화면"),
+            ("widget",   "위젯",   self._open_mini_widget,     COL_MAIN,   "바탕화면 미니 위젯"),
+            ("home",     "메인",   self._open_main_app,        COL_ACTIVE, "놀티쳐 메인 창 열기"),
         ]
 
         for icon_name, label, cmd, icon_col, tip in tools:
@@ -296,6 +297,13 @@ class FloatingQuickToolbar(tk.Toplevel):
 
     def _open_wheel(self):
         ClassroomToolsDialog.get_instance(self.parent, initial_tab="wheel")
+
+    def _open_mouse_settings(self):
+        import subprocess
+        try:
+            subprocess.run("start ms-settings:easeofaccess-mousepointer", shell=True, check=True)
+        except Exception:
+            subprocess.run("main.cpl", shell=True, check=False)
 
     def _open_student_display(self):
         if self.parent and hasattr(self.parent, "_open_student_display"):

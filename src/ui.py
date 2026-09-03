@@ -529,7 +529,7 @@ class App(ctk.CTk):
         
         setup_global_fonts(self)
 
-        self.title(f"놀티쳐 데스크 (KnolTeacher Desk v{APP_VERSION} - 스마트 교사용 올인원 데스크)")
+        self.title(f"놀티쳐 (KnolTeacher v{APP_VERSION} - 스마트 교사용 올인원 도구)")
         self.geometry("960x820")
         self.minsize(680, 560)
         self.resizable(True, True)
@@ -578,6 +578,14 @@ class App(ctk.CTk):
 
         # 창 닫기 버튼(X) = 트레이로 최소화 (완전 종료는 트레이 우클릭 > 종료)
         self.protocol("WM_DELETE_WINDOW", self._minimize_to_tray)
+
+        # 교실 수업 전역 단축키 매니저 (Alt+1 ~ Alt+6) 시작
+        try:
+            from src.hotkey_manager import hotkey_manager
+            hotkey_manager.app = self
+            hotkey_manager.start()
+        except Exception:
+            pass
 
     def _load_icon(self):
         base_dir = getattr(sys, '_MEIPASS', os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -1033,16 +1041,17 @@ class App(ctk.CTk):
         lb_inner.pack(fill="x", padx=8, pady=5)
 
         quick_actions = [
-            ("✏️ 판서", self._open_screen_drawing, "어떤 화면 위에서도 펜/형광펜으로 자유롭게 판서"),
+            ("✏️ 판서", self._open_screen_drawing, "어떤 화면 위에서도 자유롭게 판서 (단축키: Alt+2)"),
             ("📷 화상기", self._open_visualizer, "웹캠/USB 실물화상기 실시간 고화질 스트리밍"),
+            ("⏱️ 타이머", lambda: self._open_classroom_tools("timer"), "수업 및 모둠 활동 타이머 (단축키: Alt+3)"),
+            ("🖱️ 마우스", self._open_mouse_settings, "교실 수업용 마우스 포인터 크기 & 색상 설정 (0.1초 직행)"),
             ("🛠️ 퀵바", self._open_floating_quick_toolbar, "모니터 구석에 띄워두는 올웨이즈온 미니 퀵바"),
-            ("⏱️ 타이머", lambda: self._open_classroom_tools("timer"), "수업 및 모둠 활동 타이머 & 스톱워치"),
             ("🎲 뽑기", lambda: self._open_classroom_tools("picker"), "공정한 학생 발표자 무작위 랜덤 추첨"),
             ("🎡 돌림판", lambda: self._open_classroom_tools("wheel"), "모둠/벌칙/보상 돌려돌려 돌림판"),
             ("🪜 사다리", lambda: self._open_classroom_tools("ladder"), "짜릿한 학생/모둠 사다리타기 게임"),
             ("⚾ 핀볼", lambda: self._open_classroom_tools("pinball"), "아케이드 통통 튀는 핀볼 추첨기"),
-            ("🧹 정리", self._organize_desktop_action, "바탕화면 흩어진 파일 1초 자동 분류 정리"),
             ("📌 위젯", self._open_mini_widget, "바탕화면에 띄워두는 미니 시간표 및 오늘 급식"),
+            ("🧹 정리", self._organize_desktop_action, "바탕화면 흩어진 파일 1초 자동 분류 정리"),
             ("🌐 사이트", self._open_site_bookmarks, "놀퀴즈, 업무포털 등 교사용 필수 사이트 바로가기")
         ]
 
@@ -1276,6 +1285,13 @@ class App(ctk.CTk):
 
     def _open_visualizer(self):
         VisualizerWindow.get_instance(self)
+
+    def _open_mouse_settings(self):
+        import subprocess
+        try:
+            subprocess.run("start ms-settings:easeofaccess-mousepointer", shell=True, check=True)
+        except Exception:
+            subprocess.run("main.cpl", shell=True, check=False)
 
     def _open_floating_quick_toolbar(self):
         FloatingQuickToolbar.get_instance(self)
