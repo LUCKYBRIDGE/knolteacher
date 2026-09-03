@@ -27,6 +27,7 @@ from src.timetable_manager import timetable_manager, DAYS_KO
 from src.neis_client import neis_client
 from src.config_utils import get_config_dir
 from src.icon_renderer import get_icon
+from src.board_preset_manager import board_preset_manager
 
 # 교실 TV 전용 눈이 편안한 테마 팔레트 (핫핑크 영구 퇴출)
 THEMES = {
@@ -102,8 +103,11 @@ class StudentDisplayWindow(ctk.CTkToplevel):
         self._load_icon()
 
         self.is_fullscreen = False
-        self.theme_key = "slate_dark"
-        self.active_tool = "timer"  # timer, picker, dice, wheel, scoreboard, drawing
+        
+        # 활성 프리셋 설정 로드
+        active_preset_cfg = board_preset_manager.get_active_preset()
+        self.theme_key = active_preset_cfg.get("theme_key", "slate_dark")
+        self.active_tool = active_preset_cfg.get("active_tool", "timer")
 
         # 타이머 상태
         self.timer_seconds = 300
@@ -236,13 +240,38 @@ class StudentDisplayWindow(ctk.CTkToplevel):
             btn.pack(side="left", padx=3, fill="x", expand=True)
             self.tool_buttons[key] = (btn, sym_key)
 
-        # [우측] 테마, 전체화면, 닫기 (단정한 미니멀 버튼)
+        # [우측] 프리셋 스위처, 테마, 전체화면, 닫기
         r_box = ctk.CTkFrame(top_bar, fg_color="transparent")
         r_box.pack(side="right", padx=12)
 
+        # 🎛️ 프리셋 프로필 선택 드롭다운
+        preset_names = board_preset_manager.get_preset_names()
+        cur_preset = board_preset_manager.get_active_preset_name()
+        
+        self.preset_combo = ctk.CTkComboBox(
+            r_box,
+            values=preset_names,
+            width=135,
+            height=32,
+            font=get_font(10, "bold"),
+            dropdown_font=get_font(10),
+            state="readonly",
+            command=self._on_preset_changed
+        )
+        self.preset_combo.set(cur_preset)
+        self.preset_combo.pack(side="left", padx=3)
+
+        # ⚙️ 프리셋 관리 다이얼로그 버튼
+        gear_ico = get_icon("settings", t["text_main"], 15)
+        ctk.CTkButton(
+            r_box, text="", image=gear_ico, width=32, height=32,
+            fg_color=t["card_inner"], hover_color=t["border"], text_color=t["text_main"],
+            corner_radius=6, command=self._open_preset_manager_dialog
+        ).pack(side="left", padx=(0, 4))
+
         theme_ico = get_icon("theme", t["text_main"], 16)
         ctk.CTkButton(
-            r_box, text=" 테마", image=theme_ico, compound="left", width=70, height=32, font=get_font(10, "bold"),
+            r_box, text=" 테마", image=theme_ico, compound="left", width=64, height=32, font=get_font(10, "bold"),
             fg_color=t["card_inner"], hover_color=t["border"], text_color=t["text_main"],
             corner_radius=6, command=self._open_theme_picker
         ).pack(side="left", padx=2)
@@ -784,4 +813,135 @@ class StudentDisplayWindow(ctk.CTkToplevel):
 
     def close(self):
         StudentDisplayWindow._instance = None
+        self.destroy()
+
+
+    def _on_preset_changed(self, choice: str):
+        board_preset_manager.set_active_preset(choice)
+        cfg = board_preset_manager.get_active_preset()
+        self.theme_key = cfg.get("theme_key", self.theme_key)
+        self.active_tool = cfg.get("active_tool", self.active_tool)
+        self._build_ui()
+
+    def _open_preset_manager_dialog(self):
+        BoardPresetDialog(self)
+
+
+class BoardPresetDialog(ctk.CTkToplevel):
+    def __init__(self, parent_board):
+        super().__init__(parent_board)
+        self.board = parent_board
+        self.title("놀티쳐 보드 프리셋 프로필 설정")
+        self.geometry("520x460")
+        self.resizable(False, False)
+        self.attributes("-topmost", True)
+        self.transient(parent_board)
+        self.grab_set()
+
+        setup_global_fonts(self)
+        self._build_ui()
+
+    def _build_ui(self):
+        palette = self.board._t()
+        self.configure(fg_color=palette["bg"])
+
+        main_frame = ctk.CTkFrame(self, fg_color=palette["card"], corner_radius=12, border_width=1, border_color=palette["border"])
+        main_frame.pack(fill="both", expand=True, padx=16, pady=16)
+
+        # 상단 타이틀
+        hdr = ctk.CTkFrame(main_frame, fg_color="transparent")
+        hdr.pack(fill="x", padx=16, pady=(16, 8))
+        ctk.CTkLabel(hdr, text="🎛️ 놀티쳐 보드 프리셋 프로필 관리", font=get_font(14, "bold"), text_color=palette["accent"]).pack(side="left")
+
+        ctk.CTkLabel(
+            main_frame,
+            text="수업 스타일에 맞춰 시작 도구와 보드 테마를 프리셋으로 저장하고 빠르게 전환하세요.",
+            font=get_font(10), text_color=palette["text_sub"]
+        ).pack(anchor="w", padx=16, pady=(0, 10))
+
+        # 현재 프리셋 목록
+        list_box = ctk.CTkScrollableFrame(main_frame, fg_color=palette["card_inner"], corner_radius=8, height=180)
+        list_box.pack(fill="x", padx=16, pady=(0, 12))
+
+        cur_active = board_preset_manager.get_active_preset_name()
+        for p_name in board_preset_manager.get_preset_names():
+            cfg = board_preset_manager.data["presets"][p_name]
+            p_row = ctk.CTkFrame(list_box, fg_color=palette["card"] if p_name == cur_active else "transparent", corner_radius=6)
+            p_row.pack(fill="x", pady=2, padx=4)
+
+            badge = " [현재 활성]" if p_name == cur_active else ""
+            tool_ko = {"timer": "타이머", "picker": "추첨", "dice": "주사위", "wheel": "돌림판", "scoreboard": "점수판", "drawing": "판서"}.get(cfg.get("active_tool", ""), cfg.get("active_tool", ""))
+            
+            ctk.CTkLabel(
+                p_row,
+                text=f"• {p_name}{badge}  (시작 도구: {tool_ko})",
+                font=get_font(11, "bold" if p_name == cur_active else "normal"),
+                text_color=palette["accent"] if p_name == cur_active else palette["text_main"]
+            ).pack(side="left", padx=8, pady=6)
+
+            if len(board_preset_manager.get_preset_names()) > 1:
+                ctk.CTkButton(
+                    p_row, text="삭제", width=42, height=22, font=get_font(9, "bold"),
+                    fg_color="#dc2626", hover_color="#b91c1c", text_color="#ffffff", corner_radius=4,
+                    command=lambda n=p_name: self._delete_preset(n)
+                ).pack(side="right", padx=6)
+
+            ctk.CTkButton(
+                p_row, text="적용", width=42, height=22, font=get_font(9, "bold"),
+                fg_color=palette["accent"], hover_color=palette["accent_hover"], text_color="#0f172a" if palette["bg"] != "#f4f1eb" else "#ffffff", corner_radius=4,
+                command=lambda n=p_name: self._apply_preset(n)
+            ).pack(side="right", padx=2)
+
+        # 신규 프리셋 등록 구역
+        new_box = ctk.CTkFrame(main_frame, fg_color=palette["card_inner"], corner_radius=8)
+        new_box.pack(fill="x", padx=16, pady=(0, 12))
+
+        ctk.CTkLabel(new_box, text="➕ 현재 보드 상태를 새 프리셋으로 저장", font=get_font(11, "bold"), text_color=palette["text_main"]).pack(anchor="w", padx=12, pady=(10, 4))
+        
+        in_row = ctk.CTkFrame(new_box, fg_color="transparent")
+        in_row.pack(fill="x", padx=12, pady=(0, 10))
+
+        self.name_entry = ctk.CTkEntry(in_row, placeholder_text="새 프리셋 이름 입력 (예: 수학 수업 모드)", font=get_font(11), height=32)
+        self.name_entry.pack(side="left", fill="x", expand=True, padx=(0, 6))
+
+        ctk.CTkButton(
+            in_row, text="저장", font=get_font(11, "bold"), width=60, height=32,
+            fg_color=palette["accent"], hover_color=palette["accent_hover"], text_color="#0f172a" if palette["bg"] != "#f4f1eb" else "#ffffff", corner_radius=6,
+            command=self._save_current_as_new
+        ).pack(side="right")
+
+        # 하단 닫기
+        ctk.CTkButton(
+            main_frame, text="닫기", font=get_font(11, "bold"), height=34,
+            fg_color=palette["card_inner"], hover_color=palette["border"], text_color=palette["text_main"],
+            corner_radius=6, command=self.destroy
+        ).pack(fill="x", padx=16, pady=(0, 12))
+
+    def _apply_preset(self, name: str):
+        board_preset_manager.set_active_preset(name)
+        cfg = board_preset_manager.get_active_preset()
+        self.board.theme_key = cfg.get("theme_key", self.board.theme_key)
+        self.board.active_tool = cfg.get("active_tool", self.board.active_tool)
+        self.board._build_ui()
+        self.destroy()
+
+    def _delete_preset(self, name: str):
+        if messagebox.askyesno("프리셋 삭제", f"'{name}' 프리셋을 삭제하시겠습니까?"):
+            board_preset_manager.delete_preset(name)
+            self.board._build_ui()
+            self.destroy()
+
+    def _save_current_as_new(self):
+        val = self.name_entry.get().strip()
+        if not val:
+            messagebox.showwarning("입력 필요", "프리셋 이름을 입력해주세요.")
+            return
+        cfg = {
+            "active_tool": self.board.active_tool,
+            "theme_key": self.board.theme_key,
+            "is_fullscreen": self.board.is_fullscreen,
+            "desc": f"사용자 정의 프리셋 ({val})"
+        }
+        board_preset_manager.save_preset(val, cfg)
+        self.board._build_ui()
         self.destroy()

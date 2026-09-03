@@ -584,6 +584,7 @@ class App(ctk.CTk):
 
         # 창 닫기 버튼(X) = 트레이로 최소화 (완전 종료는 트레이 우클릭 > 종료)
         self.protocol("WM_DELETE_WINDOW", self._minimize_to_tray)
+        self.bind("<F2>", lambda e: self._open_student_display())
 
         # 교실 수업 전역 단축키 매니저 (Alt+1 ~ Alt+6) 시작
         try:
@@ -688,7 +689,22 @@ class App(ctk.CTk):
         self.logo_sub_lbl.bind("<Button-1>", lambda e: webbrowser.open("https://pinky-ne.com"))
         attach_tooltip(self.logo_sub_lbl, "놀퀴즈(pinky-ne.com) 플랫폼 바로가기")
 
-        # 사이드바 메뉴: 교사용 6대 핵심 탭 (이모지 자간 벌어짐 없는 2D 플랫 벡터 아이콘 장착)
+        # 🌟 최우선 시그니처 퀵 버튼: 📺 놀티쳐 보드 (학생용 대형 화면)
+        self.sidebar_board_btn = ctk.CTkButton(
+            self.sidebar,
+            text="📺  놀티쳐 보드 열기",
+            font=get_font(13, "bold"),
+            height=40,
+            corner_radius=8,
+            fg_color=palette["accent"],
+            hover_color=palette["accent_hover"],
+            text_color="#ffffff",
+            command=self._open_student_display
+        )
+        self.sidebar_board_btn.pack(fill="x", padx=10, pady=(10, 4))
+        attach_tooltip(self.sidebar_board_btn, "학생용 대형 스크린 놀티쳐 보드를 즉시 실행합니다 (F2)")
+
+        # 사이드바 메뉴: 교사용 핵심 탭 (이모지 자간 벌어짐 없는 2D 플랫 벡터 아이콘 장착)
         self.menu_buttons: dict[str, ctk.CTkButton] = {}
         self.menu_items = [
             ("today", "일과 & 급식", "home"),
@@ -780,6 +796,8 @@ class App(ctk.CTk):
             self.sidebar_toggle_btn.configure(text="▶")
             self.logo_title_lbl.pack_forget()
             self.logo_sub_lbl.pack_forget()
+            if hasattr(self, "sidebar_board_btn") and self.sidebar_board_btn.winfo_exists():
+                self.sidebar_board_btn.configure(text="📺", width=44)
 
             for key, name, ico_name in self.menu_items:
                 btn = self.menu_buttons[key]
@@ -795,6 +813,8 @@ class App(ctk.CTk):
             self.sidebar_toggle_btn.configure(text="◀")
             self.logo_title_lbl.pack(side="left")
             self.logo_sub_lbl.pack(anchor="w", padx=(32, 0), pady=(2, 0))
+            if hasattr(self, "sidebar_board_btn") and self.sidebar_board_btn.winfo_exists():
+                self.sidebar_board_btn.configure(text="📺  놀티쳐 보드 열기", width=190)
 
             for key, name, ico_name in self.menu_items:
                 btn = self.menu_buttons[key]
