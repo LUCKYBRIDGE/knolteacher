@@ -6,6 +6,7 @@ from typing import Optional
 
 from src.font_config import get_font
 from src.timetable_manager import timetable_manager, DAYS_KO, DAY_KEYS
+from src.theme_manager import theme_manager
 from src.tooltip import attach_tooltip
 
 # 초등학교 대표 과목 퀵 프리셋
@@ -42,7 +43,9 @@ class TimetableQuickEditorDialog(ctk.CTkToplevel):
         for w in self.winfo_children():
             w.destroy()
 
-        top_frame = ctk.CTkFrame(self, fg_color="#0284c7", corner_radius=0, height=54)
+        palette = theme_manager.get_theme()
+
+        top_frame = ctk.CTkFrame(self, fg_color=palette["accent"], corner_radius=0, height=54)
         top_frame.pack(fill="x", side="top")
         top_frame.pack_propagate(False)
 
@@ -53,7 +56,7 @@ class TimetableQuickEditorDialog(ctk.CTkToplevel):
 
         ctk.CTkLabel(
             top_frame, text="💡 수정 즉시 놀티쳐 보드와 위젯에 실시간 자동 반영됩니다",
-            font=get_font(10), text_color="#e0f2fe"
+            font=get_font(10), text_color="#fef3c7" if palette["ctk_mode"] == "Light" else "#bae6fd"
         ).pack(side="right", padx=16)
 
         day_bar = ctk.CTkFrame(self, fg_color="transparent", height=42)
@@ -65,6 +68,8 @@ class TimetableQuickEditorDialog(ctk.CTkToplevel):
             values=[day_labels[k] for k in DAY_KEYS],
             font=get_font(11, "bold"),
             height=32,
+            selected_color=palette["accent"],
+            selected_hover_color=palette["accent_hover"],
             command=self._on_day_changed
         )
         self.day_seg.set(day_labels.get(self.current_day_key, "월요일"))
@@ -109,9 +114,10 @@ class TimetableQuickEditorDialog(ctk.CTkToplevel):
             corner_radius=6, command=self.destroy
         ).pack(side="left", padx=12)
 
+        palette = theme_manager.get_theme()
         save_btn = ctk.CTkButton(
             btm_bar, text="💾 저장 및 전체 화면 즉시 반영", width=190, height=34, font=get_font(12, "bold"),
-            fg_color="#ea580c", hover_color="#c2410c", text_color="#ffffff",
+            fg_color=palette["accent"], hover_color=palette["accent_hover"], text_color="#ffffff",
             corner_radius=6, command=self._save_and_sync
         )
         save_btn.pack(side="right", padx=12)
@@ -129,6 +135,7 @@ class TimetableQuickEditorDialog(ctk.CTkToplevel):
         self.entries.clear()
         self.tag_btns.clear()
 
+        palette = theme_manager.get_theme()
         day_data = timetable_manager.weekly_timetable.get(self.current_day_key, [])
         periods = timetable_manager.periods
         lesson_periods = [p for p in periods if not p.get("is_lunch", False)]
@@ -145,13 +152,14 @@ class TimetableQuickEditorDialog(ctk.CTkToplevel):
 
             p_name = p_info.get("name", f"{idx+1}교시")
             time_str = f"{p_info.get('start', '')}~{p_info.get('end', '')}"
-            badge = ctk.CTkFrame(row, fg_color="#0284c7", corner_radius=6, width=64, height=36)
+            badge = ctk.CTkFrame(row, fg_color=palette["accent"], corner_radius=6, width=64, height=36)
             badge.pack(side="left", padx=8, pady=6)
             badge.pack_propagate(False)
 
             ctk.CTkLabel(badge, text=p_name, font=get_font(10, "bold"), text_color="#ffffff").pack(pady=(3, 0))
             if time_str.strip("~"):
-                ctk.CTkLabel(badge, text=time_str, font=get_font(7), text_color="#bae6fd").pack()
+                sub_tc = "#fef3c7" if palette["ctk_mode"] == "Light" else "#bae6fd"
+                ctk.CTkLabel(badge, text=time_str, font=get_font(7), text_color=sub_tc).pack()
 
             ent = ctk.CTkEntry(row, placeholder_text="과목명 입력 (예: 국어)", font=get_font(12, "bold"), height=34)
             ent.pack(side="left", fill="x", expand=True, padx=8)
@@ -165,7 +173,9 @@ class TimetableQuickEditorDialog(ctk.CTkToplevel):
 
             tag_seg = ctk.CTkSegmentedButton(
                 row, values=["담임", "전담", "외강"],
-                font=get_font(9, "bold"), width=130, height=28
+                font=get_font(9, "bold"), width=130, height=28,
+                selected_color=palette["accent"],
+                selected_hover_color=palette["accent_hover"]
             )
             tag_seg.set(cur_tag if cur_tag in ["담임", "전담", "외강"] else "담임")
             tag_seg.pack(side="right", padx=8)

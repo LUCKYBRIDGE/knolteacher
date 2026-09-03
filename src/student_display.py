@@ -1672,9 +1672,12 @@ class StudentDisplayWindow(ctk.CTkToplevel):
             font=get_font(11, "bold"), text_color="#0f172a"
         ).pack(side="left", padx=10)
 
+        from src.theme_manager import theme_manager
+        palette = theme_manager.get_theme()
+
         edit_btn = ctk.CTkButton(
             top_bar, text="✏️ 시간표 수정", width=95, height=28,
-            font=get_font(10, "bold"), fg_color="#0284c7", hover_color="#0369a1",
+            font=get_font(10, "bold"), fg_color=palette["accent"], hover_color=palette["accent_hover"],
             text_color="#ffffff", corner_radius=6,
             command=lambda: open_timetable_quick_editor(self)
         )
@@ -1698,24 +1701,27 @@ class StudentDisplayWindow(ctk.CTkToplevel):
                 is_lunch = it["is_lunch"]
                 is_cur = (it["start"] <= now_str <= it["end"])
 
+                card_bg = "#fef9ee" if is_cur else ("#fbf7f0" if is_lunch else "#ffffff")
+                border_col = palette["accent"] if is_cur else ("#e7dac7" if is_lunch else "#e2e8f0")
+
                 card = ctk.CTkFrame(
                     scroll,
-                    fg_color="#ecfdf5" if is_cur else ("#fff7ed" if is_lunch else "#ffffff"),
+                    fg_color=card_bg,
                     corner_radius=8,
                     border_width=2 if is_cur else 1,
-                    border_color="#10b981" if is_cur else ("#fed7aa" if is_lunch else "#e2e8f0"),
+                    border_color=border_col,
                     cursor="hand2" if not is_lunch else "arrow"
                 )
                 card.pack(fill="x", pady=3)
 
-                # 교시 뱃지
-                b_col = "#10b981" if is_cur else ("#ea580c" if is_lunch else "#0284c7")
+                # 교시 뱃지: 단일 액센트 톤으로 통일
+                b_col = palette["accent"] if is_cur else ("#a8a29e" if is_lunch else "#44403c")
                 badge = ctk.CTkFrame(card, fg_color=b_col, width=54, height=36, corner_radius=6)
                 badge.pack(side="left", padx=8, pady=6)
                 badge.pack_propagate(False)
 
                 ctk.CTkLabel(badge, text=it["name"], font=get_font(10, "bold"), text_color="#ffffff").pack(pady=(2, 0))
-                ctk.CTkLabel(badge, text=f"{it['start']}", font=get_font(7), text_color="#e0f2fe").pack()
+                ctk.CTkLabel(badge, text=f"{it['start']}", font=get_font(7), text_color="#f5efe6").pack()
 
                 # 과목명 & 시간
                 c_box = ctk.CTkFrame(card, fg_color="transparent")
@@ -1724,24 +1730,23 @@ class StudentDisplayWindow(ctk.CTkToplevel):
                 subj_lbl = ctk.CTkLabel(
                     c_box, text=it["subject"],
                     font=get_font(13, "bold"),
-                    text_color="#065f46" if is_cur else ("#9a3412" if is_lunch else "#0f172a"),
+                    text_color="#1c1917",
                     anchor="w"
                 )
                 subj_lbl.pack(anchor="w")
 
                 time_lbl = ctk.CTkLabel(
                     c_box, text=f"{it['start']} ~ {it['end']}",
-                    font=get_font(9), text_color="#64748b", anchor="w"
+                    font=get_font(9), text_color="#78716c", anchor="w"
                 )
                 time_lbl.pack(anchor="w")
 
                 if not is_lunch:
-                    # 태그
+                    # 태그 (소프트 웜 배지)
                     tag = it.get("tag", "담임")
-                    tag_col = "#0284c7" if tag == "담임" else ("#7c3aed" if tag == "전담" else "#059669")
                     ctk.CTkLabel(
                         card, text=tag, font=get_font(9, "bold"), width=34, height=22,
-                        fg_color="#f1f5f9", text_color=tag_col, corner_radius=4
+                        fg_color="#f5efe6", text_color=palette["accent"], corner_radius=4
                     ).pack(side="right", padx=6)
 
                     # 수정 유도 펜 아이콘
