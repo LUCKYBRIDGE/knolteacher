@@ -15,26 +15,29 @@ from src.font_config import setup_global_fonts, get_font
 from src.sound_manager import sound_manager
 from src.theme_manager import theme_manager
 
+from src.monitor_utils import get_monitor_by_index
+
 class ClassCountdownPopup(ctk.CTkToplevel):
     _instance = None
 
     @classmethod
-    def show(cls, lesson_name: str, subject: str, lead_min: int, total_seconds: int = 60, parent=None):
+    def show(cls, lesson_name: str, subject: str, lead_min: int, total_seconds: int = 60, parent=None, monitor_index: int = 0):
         if cls._instance is not None and cls._instance.winfo_exists():
             try:
                 cls._instance.destroy()
             except Exception:
                 pass
-        cls._instance = cls(lesson_name, subject, lead_min, total_seconds, parent)
+        cls._instance = cls(lesson_name, subject, lead_min, total_seconds, parent, monitor_index)
         return cls._instance
 
-    def __init__(self, lesson_name: str, subject: str, lead_min: int, total_seconds: int = 60, parent=None):
+    def __init__(self, lesson_name: str, subject: str, lead_min: int, total_seconds: int = 60, parent=None, monitor_index: int = 0):
         super().__init__(parent)
         self.lesson_name = lesson_name
         self.subject = subject
         self.lead_min = lead_min
         self.remaining_sec = total_seconds
         self.total_seconds = total_seconds
+        self.monitor_index = monitor_index
         self.timer_job = None
 
         setup_global_fonts(self)
@@ -48,9 +51,9 @@ class ClassCountdownPopup(ctk.CTkToplevel):
         self.overrideredirect(True)
 
         w, h = 340, 180
-        sw = self.winfo_screenwidth()
-        x = max(10, sw - w - 24)
-        y = 24
+        m = get_monitor_by_index(self.monitor_index)
+        x = max(m["x"] + 10, m["x"] + m["width"] - w - 28)
+        y = m["y"] + 28
         self.geometry(f"{w}x{h}+{x}+{y}")
 
         self.bind("<ButtonPress-1>", self._start_drag)

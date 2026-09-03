@@ -36,6 +36,123 @@ from src.privacy_dialog import open_privacy_dialog
 from src.schedule_dialog import open_schedule_dialog
 from src.config_utils import get_config_dir
 from src.icon_renderer import get_icon
+from src.monitor_utils import get_system_monitors, get_monitor_by_index
+
+class ClassAlarmCustomDialog(ctk.CTkToplevel):
+    """수업 교시별 개별 알람 분 설정, 타이머 팝업 모니터 선택 및 해제 다이얼로그"""
+    def __init__(self, parent, item, existing_alarm=None, on_saved=None):
+        super().__init__(parent)
+        self.parent = parent
+        self.item = item
+        self.existing_alarm = existing_alarm
+        self.on_saved = on_saved
+        self.result = None
+
+        self.title("수업 알람 & 타이머 설정")
+        self.geometry("420x450")
+        self.resizable(False, False)
+        self.attributes("-topmost", True)
+
+        self._build_ui()
+
+    def _build_ui(self):
+        palette = theme_manager.get_theme()
+        container = ctk.CTkFrame(self, fg_color=palette["card_bg"], corner_radius=14, border_width=1, border_color=palette["card_border"])
+        container.pack(fill="both", expand=True, padx=8, pady=8)
+
+        # 상단 타이틀
+        hdr = ctk.CTkFrame(container, fg_color="transparent")
+        hdr.pack(fill="x", padx=16, pady=(16, 6))
+
+        p_name = self.item.get("name", "")
+        p_sub = self.item.get("subject", "")
+        p_time = self.item.get("start", "")
+        ctk.CTkLabel(
+            hdr, text=f"🔔 [{p_name} {p_sub}] 수업 알람",
+            font=get_font(14, "bold"), text_color=palette["accent"]
+        ).pack(side="left")
+        ctk.CTkLabel(hdr, text=f"시작 시각: {p_time}", font=get_font(11, "bold"), text_color=palette["text_sub"]).pack(side="right")
+
+        # 💡 타이머 플로팅 안내 배너 (사용자 요청 명시)
+        info_card = ctk.CTkFrame(container, fg_color=palette["card_inner_bg"], corner_radius=8, border_width=1, border_color=palette["card_border"])
+        info_card.pack(fill="x", padx=16, pady=(4, 12))
+
+        ctk.CTkLabel(
+            info_card,
+            text="💡 [수업 준비 카운트다운 타이머 안내]\n• 알람 시각 1분(60초) 전에 지정하신 모니터 화면에\n  수업 준비 카운트다운 타이머 플로팅 창이 자동으로 뜹니다.\n• 0초가 되면 교실 차임벨 소리가 울립니다.",
+            font=get_font(10), text_color=palette["text_main"], justify="left"
+        ).pack(padx=10, pady=8, anchor="w")
+
+        # 🖥️ 모니터 1 / 모니터 2 선택
+        ctk.CTkLabel(container, text="🖥️ 타이머 팝업 띄울 모니터 선택:", font=get_font(11, "bold"), text_color=palette["text_main"]).pack(anchor="w", padx=16, pady=(2, 4))
+        monitors = get_system_monitors()
+        m_names = [m["name"] for m in monitors]
+        cur_mon_idx = timetable_manager.settings.get("countdown_monitor_index", 0)
+        if cur_mon_idx >= len(m_names): cur_mon_idx = 0
+
+        self.mon_seg = ctk.CTkSegmentedButton(
+            container, values=m_names, font=get_font(10, "bold"), height=28,
+            command=self._on_monitor_selected
+        )
+        self.mon_seg.set(m_names[cur_mon_idx])
+        self.mon_seg.pack(fill="x", padx=16, pady=(0, 12))
+
+        # ⏰ 알람 시간 (몇 분 전) 변경 및 즉시 예약
+        ctk.CTkLabel(container, text="⏰ 수업 시작 몇 분 전에 알람을 울릴까요?", font=get_font(11, "bold"), text_color=palette["text_main"]).pack(anchor="w", padx=16, pady=(2, 6))
+
+        m_grid = ctk.CTkFrame(container, fg_color="transparent")
+        m_grid.pack(fill="x", padx=16, pady=2)
+
+        minutes_options = [1, 2, 3, 5, 10, 15]
+        for idx, m_val in enumerate(minutes_options):
+            r = idx // 3
+            c = idx % 3
+            btn = ctk.CTkButton(
+                m_grid, text=f"{m_val}분 전", font=get_font(11, "bold"), height=34,
+                fg_color=palette["card_inner_bg"], hover_color=palette["accent"], text_color=palette["text_main"],
+                border_width=1, border_color=palette["card_border"],
+                command=lambda m=m_val: self._set_alarm_minutes(m)
+            )
+            btn.grid(row=r, column=c, padx=3, pady=3, sticky="nsew")
+            m_grid.grid_columnconfigure(c, weight=1)
+
+        # 하단: 예약 해제(취소) 또는 닫기 버튼
+        b_bar = ctk.CTkFrame(container, fg_color="transparent")
+        b_bar.pack(fill="x", padx=16, pady=(16, 12), side="bottom")
+
+        if self.existing_alarm:
+            ctk.CTkButton(
+                b_bar, text="❌ 이 교시 알람 예약 해제 (취소)", font=get_font(11, "bold"), height=36,
+                fg_color="#dc2626", hover_color="#b91c1c", text_color="#ffffff", corner_radius=8,
+                command=self._cancel_alarm
+            ).pack(fill="x", pady=(0, 6))
+
+        ctk.CTkButton(
+            b_bar, text="닫기", font=get_font(10, "bold"), height=28,
+            fg_color="transparent", hover_color=palette["sidebar_btn_hover"], text_color=palette["text_sub"],
+            command=self.destroy
+        ).pack(fill="x")
+
+    def _on_monitor_selected(self, val):
+        monitors = get_system_monitors()
+        for idx, m in enumerate(monitors):
+            if m["name"] == val:
+                timetable_manager.settings["countdown_monitor_index"] = idx
+                timetable_manager.save_settings()
+                break
+
+    def _set_alarm_minutes(self, minutes: int):
+        self.result = ("set", minutes)
+        self.destroy()
+        if self.on_saved:
+            self.on_saved("set", minutes)
+
+    def _cancel_alarm(self):
+        self.result = ("cancel", 0)
+        self.destroy()
+        if self.on_saved:
+            self.on_saved("cancel", 0)
+
 from src.class_countdown_popup import ClassCountdownPopup
 from src.neis_auto_input import (
     ExcelNeisParser, DataValidator, ValidationResult,
@@ -1442,19 +1559,26 @@ class App(ctk.CTk):
                 attach_tooltip(c_frame, f"클릭하여 {it['name']}({it['subject']}) 과목 즉시 수정")
                 lesson_counter += 1
 
+                # 해당 교시의 실시간 알람 예약 상태 확인
+                existing_alarm = self._find_scheduled_alarm_for_item(it)
+                is_sched = (existing_alarm is not None)
+                btn_txt = "🔔 예약됨 (해제)" if is_sched else f"🔔 {lead_min}분 전"
+                btn_fg = palette["accent"] if is_sched else palette["sidebar_bg"]
+                btn_txt_col = "#ffffff" if is_sched else palette["text_sub"]
+
                 ctk.CTkButton(
                     c_frame,
-                    text=f"🔔 {lead_min}분 전",
+                    text=btn_txt,
                     font=get_font(9, "bold"),
-                    fg_color=palette["sidebar_bg"],
-                    hover_color=palette["sidebar_btn_hover"],
-                    text_color=palette["text_sub"],
+                    fg_color=btn_fg,
+                    hover_color=palette["accent_hover"] if is_sched else palette["sidebar_btn_hover"],
+                    text_color=btn_txt_col,
                     border_width=1,
-                    border_color=palette["card_border"],
+                    border_color=palette["accent"] if is_sched else palette["card_border"],
                     corner_radius=6,
-                    width=70,
+                    width=84 if is_sched else 70,
                     height=24,
-                    command=lambda item=it: self._schedule_single_class_alarm(item)
+                    command=lambda item=it, ea=existing_alarm: self._open_single_alarm_editor(item, ea)
                 ).pack(side="right", padx=(0, 8), pady=4)
 
     def _open_smart_dock(self):
@@ -1660,6 +1784,61 @@ class App(ctk.CTk):
             self.mini_ticker = MiniTickerWidget(self.manager, self)
         self.mini_ticker._apply_dock_position(mode)
         self.mini_ticker.lift()
+
+    def _find_scheduled_alarm_for_item(self, item: dict[str, Any]):
+        """현재 예약 목록에서 해당 교시의 알람이 등록되어 있는지 확인"""
+        match_str = f"[{item['name']} {item['subject']}]"
+        for sc in self.manager.schedules:
+            if sc.get("action_type") == "alarm" and match_str in sc.get("memo", ""):
+                return sc
+        return None
+
+    def _open_single_alarm_editor(self, item: dict[str, Any], existing_alarm=None):
+        """교시 알람 분 수 변경 및 개별 해제 다이얼로그 호출"""
+        def _on_action(act, val):
+            if act == "cancel":
+                if existing_alarm:
+                    self.manager.cancel_action(existing_alarm.get("id"))
+                    self._show_simple_alert("알람 해제", f"[{item['name']} {item['subject']}] 알람 예약이 해제되었습니다.")
+                    self._switch_view("today")
+            elif act == "set":
+                self._apply_single_class_alarm(item, val, existing_alarm)
+
+        ClassAlarmCustomDialog(self, item, existing_alarm=existing_alarm, on_saved=_on_action)
+
+    def _apply_single_class_alarm(self, item: dict[str, Any], lead_min: int, existing_alarm=None):
+        """지정한 분 수로 교시 알람 등록 및 카운트다운 타이머 연동"""
+        if existing_alarm:
+            self.manager.cancel_action(existing_alarm.get("id"))
+
+        alarm_dt = timetable_manager.get_next_alarm_time(item, lead_min)
+        if not alarm_dt:
+            self._show_simple_alert("오류", f"올바른 수업 시작 시각을 찾을 수 없습니다 ({item.get('start')}).")
+            return
+
+        now = datetime.datetime.now()
+        seconds_diff = int((alarm_dt - now).total_seconds())
+        if seconds_diff <= 0:
+            self._show_simple_alert("안내", f"이미 지난 교시입니다 ({item['name']} {item['start']}).")
+            return
+
+        memo = f"[{item['name']} {item['subject']}] 수업 시작 {lead_min}분 전입니다!"
+        sound_id = timetable_manager.settings.get("alarm_sound_id", "chime")
+        mon_idx = timetable_manager.settings.get("countdown_monitor_index", 0)
+
+        self.manager.schedule_action("alarm", seconds_diff, memo=memo, sound_id=sound_id)
+        self._play_sound("success")
+        self._show_simple_alert("예약 완료", f"[{item['name']} {item['subject']}] 수업 시작 {lead_min}분 전({alarm_dt.strftime('%H:%M')}) 알람이 등록되었습니다.\n(수업 1분 전 모니터 {mon_idx+1}에 카운트다운 타이머 팝업)")
+
+        # 카운트다운 팝업 연동
+        cd_sec = 60
+        if seconds_diff > cd_sec:
+            pop_delay_ms = (seconds_diff - cd_sec) * 1000
+            self.after(pop_delay_ms, lambda: ClassCountdownPopup.show(item['name'], item['subject'], lead_min, total_seconds=cd_sec, parent=self, monitor_index=mon_idx))
+        elif seconds_diff > 0:
+            ClassCountdownPopup.show(item['name'], item['subject'], lead_min, total_seconds=seconds_diff, parent=self, monitor_index=mon_idx)
+
+        self._switch_view("today")
 
     def _schedule_single_class_alarm(self, item: dict[str, Any]):
         lead_min = timetable_manager.settings.get("alarm_lead_minutes", 5)
