@@ -1,11 +1,11 @@
 """
 놀티쳐 보드 (KnolTeacher Board) - 스마트 클래스룸 스튜디오 대시보드
-- 아이스크림 툴킷의 구식 플로팅 창 및 핫핑크 알약 바에서 100% 탈피한 독창적 Classroom OS
-- 동일한 AI 아트 디렉터가 100% 일관된 스타일로 디자인한 3D 글래스모피즘 아이콘 에셋 시스템
-- 엄격한 3단계 표준 버튼 규격 (KDS Button Hierarchy): 코너 8px 대통합, 표준 높이 및 여백
-- 교실 대형 TV 및 전자칠판에 최적화된 2단 분할 스튜디오 레이아웃
-  - [좌측 65% 메인 스테이지]: 수업 집중 도구 (대형 타이머, 발표자 추첨, 3D 주사위, 돌림판, 점수판, 판서)
-  - [우측 35% 교실 상시 허브]: 오늘의 수업 시간표 + 오늘의 맛있는 급식 + 학급 알림장 메모
+- 과한 3D 그래픽과 무거운 디자인을 완전히 걷어낸 미니멀 플랫(Minimalist Flat) 디자인
+- 애플 SF Symbols / 노션 감성의 단정하고 간결한 2D 라인 심볼 세트 (18x18px)
+- 테마 색상과 완벽하게 동기화되는 쾌적하고 눈이 편안한 소프트 슬레이트 & 칠판 팔레트
+- 2단 분할 스튜디오 레이아웃:
+  - [좌측 65% 메인 스테이지]: 수업 집중 도구 (대형 타이머, 발표자 추첨, 주사위, 돌림판, 점수판, 판서)
+  - [우측 35% 교실 상시 허브]: 오늘의 시간표 + 오늘의 급식 + 학급 알림장 메모
 """
 
 import os
@@ -21,13 +21,12 @@ import webbrowser
 import tkinter as tk
 from tkinter import messagebox
 import customtkinter as ctk
-from PIL import Image
 
 from src.font_config import setup_global_fonts, get_font
 from src.timetable_manager import timetable_manager, DAYS_KO
 from src.neis_client import neis_client
 from src.config_utils import get_config_dir
-from src.tooltip import attach_tooltip
+from src.icon_renderer import get_icon
 
 # 교실 TV 전용 눈이 편안한 테마 팔레트 (핫핑크 영구 퇴출)
 THEMES = {
@@ -123,7 +122,6 @@ class StudentDisplayWindow(ctk.CTkToplevel):
         # 점수판 상태
         self.scores = {"1모둠": 0, "2모둠": 0, "3모둠": 0, "4모둠": 0, "5모둠": 0, "6모둠": 0}
 
-        self._icon_cache = {}
         self._load_config()
 
         self.bind("<F11>", lambda e: self._toggle_fullscreen())
@@ -144,24 +142,6 @@ class StudentDisplayWindow(ctk.CTkToplevel):
                 self.iconbitmap(icon_path)
             except Exception:
                 pass
-
-    def _get_ai_icon(self, key: str, size: int = 22):
-        """동일한 AI 아트 스타일로 생성된 3D 글래스모피즘 아이콘 에셋 로드"""
-        cache_key = (key, size)
-        if cache_key in self._icon_cache:
-            return self._icon_cache[cache_key]
-
-        base_dir = getattr(sys, '_MEIPASS', os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-        icon_path = os.path.join(base_dir, "assets", "board_icons", f"{key}.jpg")
-        if os.path.exists(icon_path):
-            try:
-                im = Image.open(icon_path).resize((size, size), Image.LANCZOS)
-                ctk_img = ctk.CTkImage(light_image=im, dark_image=im, size=(size, size))
-                self._icon_cache[cache_key] = ctk_img
-                return ctk_img
-            except Exception:
-                pass
-        return None
 
     def _load_config(self):
         if os.path.exists(self.CONFIG_FILE):
@@ -190,7 +170,7 @@ class StudentDisplayWindow(ctk.CTkToplevel):
         return THEMES.get(self.theme_key, THEMES["slate_dark"])
 
     # ══════════════════════════════════════════════════════════════════════════
-    # 전체 메인 UI (KDS 표준 레이아웃)
+    # 전체 메인 UI: 단순하고 단정한 미니멀 스튜디오 대시보드
     # ══════════════════════════════════════════════════════════════════════════
     def _build_ui(self):
         for w in self.winfo_children():
@@ -199,8 +179,8 @@ class StudentDisplayWindow(ctk.CTkToplevel):
         t = self._t()
         self.configure(fg_color=t["bg"])
 
-        # 1. 상단 스마트 헤더 바 (높이 56px, 코너 10px 일관성)
-        top_bar = ctk.CTkFrame(self, fg_color=t["card"], corner_radius=10, height=56, border_width=1, border_color=t["border"])
+        # 1. 상단 스마트 헤더 바 (높이 54px, 단정한 1px 보더)
+        top_bar = ctk.CTkFrame(self, fg_color=t["card"], corner_radius=10, height=54, border_width=1, border_color=t["border"])
         top_bar.pack(fill="x", padx=16, pady=(12, 10))
         top_bar.pack_propagate(False)
 
@@ -221,23 +201,25 @@ class StudentDisplayWindow(ctk.CTkToplevel):
         )
         self.clock_lbl.pack(side="left")
 
-        # [중앙] 도구 전환 탭 바 (KDS 표준 버튼 규격: 높이 36px, 코너 8px)
+        # [중앙] 단순화된 미니멀 플랫 라인 도구 전환 바 (18x18px 심볼)
         c_box = ctk.CTkFrame(top_bar, fg_color="transparent")
         c_box.pack(side="left", fill="x", expand=True, padx=10)
 
         tools = [
-            ("timer", "타이머"),
-            ("picker", "발표자 추첨"),
-            ("dice", "주사위"),
-            ("wheel", "돌림판"),
-            ("scoreboard", "점수판"),
-            ("drawing", "학급 판서"),
+            ("timer", "flat_timer", "타이머"),
+            ("picker", "flat_picker", "발표자 추첨"),
+            ("dice", "flat_dice", "주사위"),
+            ("wheel", "flat_wheel", "돌림판"),
+            ("scoreboard", "flat_trophy", "점수판"),
+            ("drawing", "flat_pen", "학급 판서"),
         ]
 
         self.tool_buttons = {}
-        for key, name in tools:
+        for key, sym_key, name in tools:
             is_active = self.active_tool == key
-            ico = self._get_ai_icon(key, 20)
+            ico_col = "#0f172a" if (is_active and t["bg"] != "#f4f1eb") else (t["accent"] if is_active else t["text_sub"])
+            ico = get_icon(sym_key, ico_col, 18)
+
             btn = ctk.CTkButton(
                 c_box,
                 text=f"  {name}",
@@ -247,34 +229,37 @@ class StudentDisplayWindow(ctk.CTkToplevel):
                 fg_color=t["accent"] if is_active else t["card_inner"],
                 hover_color=t["accent_hover"],
                 text_color="#0f172a" if (is_active and t["bg"] != "#f4f1eb") else (t["text_main"]),
-                height=36,
+                height=34,
                 corner_radius=8,
                 command=lambda k=key: self._switch_main_tool(k)
             )
             btn.pack(side="left", padx=3, fill="x", expand=True)
-            self.tool_buttons[key] = btn
+            self.tool_buttons[key] = (btn, sym_key)
 
-        # [우측] 테마, 전체화면, 닫기 (KDS 표준 칩 버튼: 높이 32px, 코너 6px)
+        # [우측] 테마, 전체화면, 닫기 (단정한 미니멀 버튼)
         r_box = ctk.CTkFrame(top_bar, fg_color="transparent")
         r_box.pack(side="right", padx=12)
 
+        theme_ico = get_icon("theme", t["text_main"], 16)
         ctk.CTkButton(
-            r_box, text="테마 변경", width=74, height=32, font=get_font(10, "bold"),
+            r_box, text=" 테마", image=theme_ico, compound="left", width=70, height=32, font=get_font(10, "bold"),
             fg_color=t["card_inner"], hover_color=t["border"], text_color=t["text_main"],
             corner_radius=6, command=self._open_theme_picker
         ).pack(side="left", padx=2)
 
+        fs_ico = get_icon("fullscreen", "#0f172a" if t["bg"] != "#f4f1eb" else "#ffffff", 16)
         self.fs_btn = ctk.CTkButton(
-            r_box, text="전체화면", width=74, height=32, font=get_font(10, "bold"),
+            r_box, text=" 전체화면", image=fs_ico, compound="left", width=80, height=32, font=get_font(10, "bold"),
             fg_color=t["accent"], hover_color=t["accent_hover"],
             text_color="#0f172a" if t["bg"] != "#f4f1eb" else "#ffffff",
             corner_radius=6, command=self._toggle_fullscreen
         )
         self.fs_btn.pack(side="left", padx=2)
 
+        close_ico = get_icon("close", "#ffffff", 14)
         ctk.CTkButton(
-            r_box, text="✕", width=34, height=32, font=get_font(12, "bold"),
-            fg_color="#dc2626", hover_color="#b91c1c", text_color="#ffffff",
+            r_box, text="", image=close_ico, width=32, height=32,
+            fg_color="#dc2626", hover_color="#b91c1c",
             corner_radius=6, command=self.close
         ).pack(side="left", padx=2)
 
@@ -297,9 +282,12 @@ class StudentDisplayWindow(ctk.CTkToplevel):
     def _switch_main_tool(self, tool_key: str):
         self.active_tool = tool_key
         t = self._t()
-        for k, btn in self.tool_buttons.items():
+        for k, (btn, sym_key) in self.tool_buttons.items():
             is_active = k == tool_key
+            ico_col = "#0f172a" if (is_active and t["bg"] != "#f4f1eb") else (t["accent"] if is_active else t["text_sub"])
+            ico = get_icon(sym_key, ico_col, 18)
             btn.configure(
+                image=ico,
                 fg_color=t["accent"] if is_active else t["card_inner"],
                 text_color="#0f172a" if (is_active and t["bg"] != "#f4f1eb") else (t["text_main"])
             )
@@ -328,7 +316,7 @@ class StudentDisplayWindow(ctk.CTkToplevel):
         header = ctk.CTkFrame(self.stage_frame, fg_color="transparent")
         header.pack(fill="x", padx=24, pady=(20, 8))
 
-        ico = self._get_ai_icon("timer", 26)
+        ico = get_icon("flat_timer", t["accent"], 22)
         ctk.CTkLabel(header, text="  수업 집중 타이머", image=ico, compound="left", font=get_font(14, "bold"), text_color=t["accent"]).pack(side="left")
 
         # 타이머 모드 칩
@@ -354,7 +342,7 @@ class StudentDisplayWindow(ctk.CTkToplevel):
         )
         self.stage_timer_lbl.pack(expand=True)
 
-        # 프리셋 칩 (KDS 표준: 높이 32px, 코너 6px)
+        # 프리셋 칩 (단순한 1클릭 칩)
         p_row = ctk.CTkFrame(self.stage_frame, fg_color="transparent")
         p_row.pack(fill="x", padx=24, pady=(0, 12))
         for mins in [1, 3, 5, 10, 15, 20]:
@@ -365,19 +353,20 @@ class StudentDisplayWindow(ctk.CTkToplevel):
                 command=lambda m=mins: self._preset_timer(m * 60)
             ).pack(side="left", fill="x", expand=True, padx=3)
 
-        # 제어 바 (KDS 표준: 대형 실행 버튼 높이 44px, 코너 8px)
         ctrl_bar = ctk.CTkFrame(self.stage_frame, fg_color="transparent")
         ctrl_bar.pack(fill="x", padx=24, pady=(0, 24))
 
+        play_ico = get_icon("play", "#ffffff", 16)
         self.stage_timer_btn = ctk.CTkButton(
-            ctrl_bar, text="수업 타이머 시작", font=get_font(14, "bold"),
+            ctrl_bar, text=" 수업 타이머 시작", image=play_ico, compound="left", font=get_font(14, "bold"),
             fg_color="#10b981", hover_color="#059669", text_color="#ffffff",
             height=44, corner_radius=8, command=self._toggle_timer_run
         )
         self.stage_timer_btn.pack(side="left", fill="x", expand=True, padx=(0, 8))
 
+        reset_ico = get_icon("reset", t["text_main"], 16)
         ctk.CTkButton(
-            ctrl_bar, text="리셋", font=get_font(13, "bold"),
+            ctrl_bar, text=" 리셋", image=reset_ico, compound="left", font=get_font(13, "bold"),
             fg_color=t["card_inner"], hover_color=t["border"], text_color=t["text_main"],
             height=44, width=100, corner_radius=8, command=self._reset_timer
         ).pack(side="right")
@@ -394,10 +383,12 @@ class StudentDisplayWindow(ctk.CTkToplevel):
     def _toggle_timer_run(self):
         self.timer_running = not self.timer_running
         if self.timer_running:
-            self.stage_timer_btn.configure(text="일시정지", fg_color="#f59e0b", hover_color="#d97706")
+            pause_ico = get_icon("pause", "#ffffff", 16)
+            self.stage_timer_btn.configure(text=" 일시정지", image=pause_ico, fg_color="#f59e0b", hover_color="#d97706")
             self._run_timer_tick()
         else:
-            self.stage_timer_btn.configure(text="수업 타이머 시작", fg_color="#10b981", hover_color="#059669")
+            play_ico = get_icon("play", "#ffffff", 16)
+            self.stage_timer_btn.configure(text=" 수업 타이머 시작", image=play_ico, fg_color="#10b981", hover_color="#059669")
             if self.timer_job:
                 self.after_cancel(self.timer_job)
 
@@ -411,7 +402,8 @@ class StudentDisplayWindow(ctk.CTkToplevel):
                 self.timer_seconds -= 1
             else:
                 self.timer_running = False
-                self.stage_timer_btn.configure(text="수업 타이머 시작", fg_color="#10b981")
+                play_ico = get_icon("play", "#ffffff", 16)
+                self.stage_timer_btn.configure(text=" 수업 타이머 시작", image=play_ico, fg_color="#10b981")
                 threading.Thread(target=lambda: winsound.Beep(1200, 800), daemon=True).start()
                 messagebox.showinfo("타이머 종료", "지정된 활동 시간이 종료되었습니다!")
                 return
@@ -424,7 +416,8 @@ class StudentDisplayWindow(ctk.CTkToplevel):
             self.after_cancel(self.timer_job)
         self.timer_seconds = self.timer_total if self.timer_type != "stopwatch" else 0
         if hasattr(self, "stage_timer_btn") and self.stage_timer_btn.winfo_exists():
-            self.stage_timer_btn.configure(text="수업 타이머 시작", fg_color="#10b981")
+            play_ico = get_icon("play", "#ffffff", 16)
+            self.stage_timer_btn.configure(text=" 수업 타이머 시작", image=play_ico, fg_color="#10b981")
         self._update_timer_disp()
 
     def _update_timer_disp(self):
@@ -438,7 +431,7 @@ class StudentDisplayWindow(ctk.CTkToplevel):
         header = ctk.CTkFrame(self.stage_frame, fg_color="transparent")
         header.pack(fill="x", padx=24, pady=(20, 8))
 
-        ico = self._get_ai_icon("picker", 26)
+        ico = get_icon("flat_picker", t["accent"], 22)
         ctk.CTkLabel(header, text="  학생 발표자 랜덤 추첨", image=ico, compound="left", font=get_font(14, "bold"), text_color=t["accent"]).pack(side="left")
 
         disp = ctk.CTkFrame(self.stage_frame, fg_color=t["card_inner"], corner_radius=12, border_width=1, border_color=t["border"])
@@ -501,7 +494,7 @@ class StudentDisplayWindow(ctk.CTkToplevel):
         header = ctk.CTkFrame(self.stage_frame, fg_color="transparent")
         header.pack(fill="x", padx=24, pady=(20, 8))
 
-        ico = self._get_ai_icon("dice", 26)
+        ico = get_icon("flat_dice", t["accent"], 22)
         ctk.CTkLabel(header, text="  대형 3D 주사위", image=ico, compound="left", font=get_font(14, "bold"), text_color=t["accent"]).pack(side="left")
 
         disp = ctk.CTkFrame(self.stage_frame, fg_color=t["card_inner"], corner_radius=12, border_width=1, border_color=t["border"])
@@ -542,7 +535,7 @@ class StudentDisplayWindow(ctk.CTkToplevel):
         header = ctk.CTkFrame(self.stage_frame, fg_color="transparent")
         header.pack(fill="x", padx=24, pady=(20, 8))
 
-        ico = self._get_ai_icon("wheel", 26)
+        ico = get_icon("flat_wheel", t["accent"], 22)
         ctk.CTkLabel(header, text="  모둠 돌림판", image=ico, compound="left", font=get_font(14, "bold"), text_color=t["accent"]).pack(side="left")
 
         disp = ctk.CTkFrame(self.stage_frame, fg_color=t["card_inner"], corner_radius=12, border_width=1, border_color=t["border"])
@@ -580,7 +573,7 @@ class StudentDisplayWindow(ctk.CTkToplevel):
         header = ctk.CTkFrame(self.stage_frame, fg_color="transparent")
         header.pack(fill="x", padx=24, pady=(20, 8))
 
-        ico = self._get_ai_icon("scoreboard", 26)
+        ico = get_icon("flat_trophy", t["accent"], 22)
         ctk.CTkLabel(header, text="  모둠 점수판", image=ico, compound="left", font=get_font(14, "bold"), text_color=t["accent"]).pack(side="left")
 
         grid_box = ctk.CTkFrame(self.stage_frame, fg_color="transparent")
@@ -626,7 +619,7 @@ class StudentDisplayWindow(ctk.CTkToplevel):
         header = ctk.CTkFrame(self.stage_frame, fg_color="transparent")
         header.pack(fill="x", padx=24, pady=(20, 8))
 
-        ico = self._get_ai_icon("drawing", 26)
+        ico = get_icon("flat_pen", t["accent"], 22)
         ctk.CTkLabel(header, text="  학급 판서 & 화면 펜", image=ico, compound="left", font=get_font(14, "bold"), text_color=t["accent"]).pack(side="left")
 
         btn_box = ctk.CTkFrame(self.stage_frame, fg_color="transparent")
@@ -670,7 +663,7 @@ class StudentDisplayWindow(ctk.CTkToplevel):
         tt_hdr = ctk.CTkFrame(tt_card, fg_color="transparent")
         tt_hdr.pack(fill="x", padx=12, pady=(10, 4))
 
-        tt_ico = self._get_ai_icon("timetable", 20)
+        tt_ico = get_icon("flat_timetable", t["accent"], 18)
         ctk.CTkLabel(tt_hdr, text="  오늘의 시간표", image=tt_ico, compound="left", font=get_font(12, "bold"), text_color=t["accent"]).pack(side="left")
         ctk.CTkLabel(tt_hdr, text=f"{today.strftime('%m/%d')} ({weekday_str})", font=get_font(10), text_color=t["text_sub"]).pack(side="right")
 
@@ -702,7 +695,7 @@ class StudentDisplayWindow(ctk.CTkToplevel):
         m_hdr = ctk.CTkFrame(meal_card, fg_color="transparent")
         m_hdr.pack(fill="x", padx=12, pady=(10, 4))
 
-        m_ico = self._get_ai_icon("meal", 20)
+        m_ico = get_icon("flat_meal", t["accent"], 18)
         ctk.CTkLabel(m_hdr, text="  오늘의 급식", image=m_ico, compound="left", font=get_font(12, "bold"), text_color=t["accent"]).pack(side="left")
         ctk.CTkLabel(m_hdr, text=school_nm, font=get_font(9), text_color=t["text_sub"]).pack(side="right")
 
@@ -725,7 +718,7 @@ class StudentDisplayWindow(ctk.CTkToplevel):
         mem_hdr = ctk.CTkFrame(memo_card, fg_color="transparent")
         mem_hdr.pack(fill="x", padx=12, pady=(10, 4))
 
-        memo_ico = self._get_ai_icon("memo", 20)
+        memo_ico = get_icon("flat_memo", t["accent"], 18)
         ctk.CTkLabel(mem_hdr, text="  학급 알림장 메모", image=memo_ico, compound="left", font=get_font(12, "bold"), text_color=t["accent"]).pack(side="left")
 
         txt = ctk.CTkTextbox(memo_card, font=get_font(11), fg_color=t["card_inner"], text_color=t["text_main"], corner_radius=6)
@@ -777,14 +770,14 @@ class StudentDisplayWindow(ctk.CTkToplevel):
         self.is_fullscreen = not self.is_fullscreen
         self.attributes("-fullscreen", self.is_fullscreen)
         if hasattr(self, "fs_btn") and self.fs_btn.winfo_exists():
-            self.fs_btn.configure(text="창 모드" if self.is_fullscreen else "전체화면")
+            self.fs_btn.configure(text=" 창 모드" if self.is_fullscreen else " 전체화면")
 
     def _exit_fullscreen(self):
         if self.is_fullscreen:
             self.is_fullscreen = False
             self.attributes("-fullscreen", False)
             if hasattr(self, "fs_btn") and self.fs_btn.winfo_exists():
-                self.fs_btn.configure(text="전체화면")
+                self.fs_btn.configure(text=" 전체화면")
 
     def _on_timetable_changed(self):
         self._render_hub_content()

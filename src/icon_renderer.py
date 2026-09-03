@@ -582,11 +582,133 @@ def icon_music(color=COL_GREEN, size=24, **kw) -> Image.Image:
     d.polygon([(S*0.34, S*0.24), (S*0.82, S*0.12), (S*0.82, S*0.26), (S*0.34, S*0.38)], fill=_hex(color))
     return _finish_canvas(img, size)
 
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 단순화된 모던 플랫 라인 심볼 (SF Symbols / Notion Minimalist Glyphs)
+# ══════════════════════════════════════════════════════════════════════════════
+
+def icon_flat_timer(color=COL_MAIN, size=24, **kw) -> Image.Image:
+    """단순하고 단정한 원형 스톱워치 라인 심볼"""
+    img, d, S = _make_canvas(size)
+    w = max(1, int(S * 0.08))
+    d.ellipse([S*0.15, S*0.22, S*0.85, S*0.92], outline=_hex(color), width=w)
+    d.line([(S*0.50, S*0.10), (S*0.50, S*0.22)], fill=_hex(color), width=w)
+    d.line([(S*0.42, S*0.10), (S*0.58, S*0.10)], fill=_hex(color), width=w)
+    d.line([(S*0.50, S*0.57), (S*0.50, S*0.35)], fill=_hex(color), width=w)
+    d.line([(S*0.50, S*0.57), (S*0.68, S*0.57)], fill=_hex(color), width=w)
+    d.ellipse([S*0.46, S*0.53, S*0.54, S*0.61], fill=_hex(color))
+    return _finish_canvas(img, size)
+
+def icon_flat_picker(color=COL_MAIN, size=24, **kw) -> Image.Image:
+    """단순하고 단정한 과녁 타깃 라인 심볼"""
+    img, d, S = _make_canvas(size)
+    w = max(1, int(S * 0.08))
+    cx, cy = S*0.50, S*0.50
+    d.ellipse([cx-S*0.38, cy-S*0.38, cx+S*0.38, cy+S*0.38], outline=_hex(color), width=w)
+    d.ellipse([cx-S*0.20, cy-S*0.20, cx+S*0.20, cy+S*0.20], outline=_hex(color), width=w)
+    d.ellipse([cx-S*0.06, cy-S*0.06, cx+S*0.06, cy+S*0.06], fill=_hex(color))
+    return _finish_canvas(img, size)
+
+def icon_flat_dice(color=COL_MAIN, size=24, **kw) -> Image.Image:
+    """단순하고 단정한 주사위 사각 라인 & 도트 심볼"""
+    img, d, S = _make_canvas(size)
+    w = max(1, int(S * 0.08))
+    d.rounded_rectangle([S*0.15, S*0.15, S*0.85, S*0.85], radius=int(S*0.16), outline=_hex(color), width=w)
+    r = S*0.05
+    d.ellipse([S*0.32-r, S*0.32-r, S*0.32+r, S*0.32+r], fill=_hex(color))
+    d.ellipse([S*0.50-r, S*0.50-r, S*0.50+r, S*0.50+r], fill=_hex(color))
+    d.ellipse([S*0.68-r, S*0.68-r, S*0.68+r, S*0.68+r], fill=_hex(color))
+    return _finish_canvas(img, size)
+
+def icon_flat_wheel(color=COL_MAIN, size=24, **kw) -> Image.Image:
+    """단순하고 단정한 6스포크 휠 라인 심볼"""
+    img, d, S = _make_canvas(size)
+    w = max(1, int(S * 0.08))
+    cx, cy = S*0.50, S*0.50
+    d.ellipse([cx-S*0.38, cy-S*0.38, cx+S*0.38, cy+S*0.38], outline=_hex(color), width=w)
+    for angle in [0, 60, 120]:
+        rad = math.radians(angle)
+        dx = math.cos(rad) * S * 0.38
+        dy = math.sin(rad) * S * 0.38
+        d.line([(cx-dx, cy-dy), (cx+dx, cy+dy)], fill=_hex(color), width=w)
+    d.ellipse([cx-S*0.08, cy-S*0.08, cx+S*0.08, cy+S*0.08], fill=_hex(color))
+    return _finish_canvas(img, size)
+
+def icon_flat_trophy(color=COL_MAIN, size=24, **kw) -> Image.Image:
+    """단순하고 단정한 미니멀 트로피 컵 라인 심볼"""
+    img, d, S = _make_canvas(size)
+    w = max(1, int(S * 0.08))
+    d.arc([S*0.28, S*0.14, S*0.72, S*0.58], start=0, end=180, fill=_hex(color), width=w)
+    d.line([(S*0.28, S*0.14), (S*0.72, S*0.14)], fill=_hex(color), width=w)
+    d.arc([S*0.18, S*0.18, S*0.38, S*0.42], start=90, end=270, fill=_hex(color), width=w)
+    d.arc([S*0.62, S*0.18, S*0.82, S*0.42], start=270, end=90, fill=_hex(color), width=w)
+    d.line([(S*0.50, S*0.58), (S*0.50, S*0.74)], fill=_hex(color), width=w)
+    d.line([(S*0.32, S*0.74), (S*0.68, S*0.74)], fill=_hex(color), width=w)
+    d.line([(S*0.26, S*0.82), (S*0.74, S*0.82)], fill=_hex(color), width=w)
+    return _finish_canvas(img, size)
+
+def icon_flat_pen(color=COL_MAIN, size=24, **kw) -> Image.Image:
+    """단순하고 단정한 펜촉 라인 심볼"""
+    img, d, S = _make_canvas(size)
+    w = max(1, int(S * 0.08))
+    d.line([(S*0.30, S*0.70), (S*0.72, S*0.28)], fill=_hex(color), width=w)
+    d.line([(S*0.24, S*0.76), (S*0.66, S*0.34)], fill=_hex(color), width=w)
+    d.line([(S*0.66, S*0.34), (S*0.72, S*0.28)], fill=_hex(color), width=w)
+    d.line([(S*0.24, S*0.76), (S*0.16, S*0.84)], fill=_hex(color), width=w)
+    d.line([(S*0.30, S*0.70), (S*0.16, S*0.84)], fill=_hex(color), width=w)
+    return _finish_canvas(img, size)
+
+def icon_flat_timetable(color=COL_MAIN, size=24, **kw) -> Image.Image:
+    """단순하고 단정한 캘린더 그리드 라인 심볼"""
+    img, d, S = _make_canvas(size)
+    w = max(1, int(S * 0.08))
+    d.rounded_rectangle([S*0.18, S*0.20, S*0.82, S*0.84], radius=int(S*0.10), outline=_hex(color), width=w)
+    d.line([(S*0.18, S*0.38), (S*0.82, S*0.38)], fill=_hex(color), width=w)
+    d.line([(S*0.34, S*0.12), (S*0.34, S*0.24)], fill=_hex(color), width=w)
+    d.line([(S*0.66, S*0.12), (S*0.66, S*0.24)], fill=_hex(color), width=w)
+    d.line([(S*0.50, S*0.48), (S*0.50, S*0.74)], fill=_hex(color), width=w)
+    d.line([(S*0.28, S*0.60), (S*0.72, S*0.60)], fill=_hex(color), width=w)
+    return _finish_canvas(img, size)
+
+def icon_flat_meal(color=COL_MAIN, size=24, **kw) -> Image.Image:
+    """단순하고 단정한 식기(포크 & 스푼) 라인 심볼"""
+    img, d, S = _make_canvas(size)
+    w = max(1, int(S * 0.08))
+    d.line([(S*0.34, S*0.40), (S*0.34, S*0.84)], fill=_hex(color), width=w)
+    d.arc([S*0.24, S*0.26, S*0.44, S*0.46], start=0, end=180, fill=_hex(color), width=w)
+    d.line([(S*0.26, S*0.16), (S*0.26, S*0.32)], fill=_hex(color), width=w)
+    d.line([(S*0.34, S*0.16), (S*0.34, S*0.32)], fill=_hex(color), width=w)
+    d.line([(S*0.42, S*0.16), (S*0.42, S*0.32)], fill=_hex(color), width=w)
+    d.line([(S*0.66, S*0.44), (S*0.66, S*0.84)], fill=_hex(color), width=w)
+    d.ellipse([S*0.56, S*0.16, S*0.76, S*0.44], outline=_hex(color), width=w)
+    return _finish_canvas(img, size)
+
+def icon_flat_memo(color=COL_MAIN, size=24, **kw) -> Image.Image:
+    """단순하고 단정한 체크리스트 클립보드 라인 심볼"""
+    img, d, S = _make_canvas(size)
+    w = max(1, int(S * 0.08))
+    d.rounded_rectangle([S*0.20, S*0.20, S*0.80, S*0.86], radius=int(S*0.08), outline=_hex(color), width=w)
+    d.rounded_rectangle([S*0.38, S*0.12, S*0.62, S*0.24], radius=int(S*0.04), outline=_hex(color), width=w)
+    d.line([(S*0.32, S*0.42), (S*0.68, S*0.42)], fill=_hex(color), width=w)
+    d.line([(S*0.32, S*0.56), (S*0.68, S*0.56)], fill=_hex(color), width=w)
+    d.line([(S*0.32, S*0.70), (S*0.54, S*0.70)], fill=_hex(color), width=w)
+    return _finish_canvas(img, size)
+
 # ══════════════════════════════════════════════════════════════════════════════
 # 아이콘 레지스트리 & 캐시 매니저
 # ══════════════════════════════════════════════════════════════════════════════
 
 ICON_REGISTRY = {
+    "flat_timer":       icon_flat_timer,
+    "flat_picker":      icon_flat_picker,
+    "flat_dice":        icon_flat_dice,
+    "flat_wheel":       icon_flat_wheel,
+    "flat_trophy":      icon_flat_trophy,
+    "flat_pen":         icon_flat_pen,
+    "flat_timetable":   icon_flat_timetable,
+    "flat_meal":        icon_flat_meal,
+    "flat_memo":        icon_flat_memo,
+
     "pen":          icon_pen,
     "highlighter":  icon_highlighter,
     "eraser":       icon_eraser,

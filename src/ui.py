@@ -34,6 +34,7 @@ from src.scrollable_2d_frame import CTk2DScrollableFrame
 from src.privacy_dialog import open_privacy_dialog
 from src.schedule_dialog import open_schedule_dialog
 from src.config_utils import get_config_dir
+from src.icon_renderer import get_icon
 from src.neis_auto_input import (
     ExcelNeisParser, DataValidator, ValidationResult,
     NeisPageType, PAGE_INFO, NeisScriptGenerator, cdp_bridge
@@ -686,32 +687,37 @@ class App(ctk.CTk):
         self.logo_sub_lbl.bind("<Button-1>", lambda e: webbrowser.open("https://pinky-ne.com"))
         attach_tooltip(self.logo_sub_lbl, "놀퀴즈(pinky-ne.com) 플랫폼 바로가기")
 
-        # 사이드바 메뉴 (직관적이고 단순한 4대 핵심 탭)
+        # 사이드바 메뉴: 교사용 6대 핵심 탭 (이모지 자간 벌어짐 없는 2D 플랫 벡터 아이콘 장착)
         self.menu_buttons: dict[str, ctk.CTkButton] = {}
         self.menu_items = [
-            ("today", "오늘의 일과 & 급식", "🌟"),
-            ("classroom_tools", "수업 도구 & 바로가기", "✏️"),
-            ("neis_workspace", "나이스 업무 & 시간표", "📝"),
-            ("pc_settings", "PC 관리 & 설정", "⚙️")
+            ("today", "일과 & 급식", "home"),
+            ("classroom_tools", "수업 도구 & 화상기", "timer"),
+            ("neis_workspace", "나이스 & 시간표", "flat_timetable"),
+            ("class_management", "학급 경영 & 모둠", "flat_trophy"),
+            ("smart_desk", "스마트 데스크 & 정리", "widget"),
+            ("pc_settings", "PC 관리 & 설정", "flat_memo")
         ]
 
         self.sidebar_scroll = ctk.CTkFrame(self.sidebar, fg_color="transparent")
         self.sidebar_scroll.pack(fill="both", expand=True, padx=6, pady=8)
 
-        for key, name, ico in self.menu_items:
+        for key, name, ico_name in self.menu_items:
+            ico = get_icon(ico_name, palette["sidebar_text"], 18)
             btn = ctk.CTkButton(
                 self.sidebar_scroll,
-                text=f"{ico} {name}",
-                font=get_font(13, "bold"),
-                height=42,
-                corner_radius=10,
+                text=f"  {name}",
+                image=ico,
+                compound="left",
+                font=get_font(12, "bold"),
+                height=38,
+                corner_radius=8,
                 anchor="w",
                 fg_color="transparent",
                 hover_color=palette["sidebar_btn_hover"],
                 text_color=palette["sidebar_text"],
                 command=lambda k=key: self._switch_view(k)
             )
-            btn.pack(fill="x", pady=3, padx=2)
+            btn.pack(fill="x", pady=2, padx=2)
             self.menu_buttons[key] = btn
             attach_tooltip(btn, name)
 
@@ -742,43 +748,7 @@ class App(ctk.CTk):
         self.theme_seg_btn.set(th_display_map.get(curr_th, "🌾 베이지"))
         self.theme_seg_btn.pack(fill="x")
 
-        # 사이드바 상시 투명도 조절 바
-        alpha_box = ctk.CTkFrame(self.theme_selector_box, fg_color="transparent")
-        alpha_box.pack(fill="x", pady=(10, 0))
-
-        ab_top = ctk.CTkFrame(alpha_box, fg_color="transparent")
-        ab_top.pack(fill="x")
-
-        ctk.CTkLabel(
-            ab_top,
-            text="👁️ 창 투명도:",
-            font=get_font(10, "bold"),
-            text_color=palette["text_sub"]
-        ).pack(side="left")
-
-        init_alpha = timetable_manager.settings.get("window_alpha", 1.0)
-        self.sidebar_alpha_lbl = ctk.CTkLabel(
-            ab_top,
-            text=f"{int(init_alpha * 100)}%",
-            font=get_font(10, "bold"),
-            text_color=palette["accent"]
-        )
-        self.sidebar_alpha_lbl.pack(side="right")
-
-        self.sidebar_alpha_slider = ctk.CTkSlider(
-            alpha_box,
-            from_=0.4,
-            to=1.0,
-            number_of_steps=60,
-            height=14,
-            progress_color=palette["accent"],
-            button_color=palette["accent"],
-            button_hover_color=palette["accent_hover"],
-            command=self._on_alpha_changed
-        )
-        self.sidebar_alpha_slider.set(init_alpha)
-        self.sidebar_alpha_slider.pack(fill="x", pady=(4, 0))
-        attach_tooltip(self.sidebar_alpha_slider, "창 전체 투명도를 40% ~ 100% 사이로 실시간 조절합니다")
+# 사이드바 투명도 조절 바 제거됨
 
         # 2. 우측 메인 컨텐츠 영역
         self.content_area = ctk.CTkFrame(self.root_frame, fg_color="transparent")
@@ -809,9 +779,10 @@ class App(ctk.CTk):
             self.logo_title_lbl.pack_forget()
             self.logo_sub_lbl.pack_forget()
 
-            for key, name, ico in self.menu_items:
+            for key, name, ico_name in self.menu_items:
                 btn = self.menu_buttons[key]
-                btn.configure(text=ico, anchor="center", font=get_font(15))
+                ico = get_icon(ico_name, palette["sidebar_text"], 20)
+                btn.configure(text="", image=ico, compound="center", anchor="center")
                 attach_tooltip(btn, name)
 
             self.theme_selector_box.pack_forget()
@@ -823,9 +794,10 @@ class App(ctk.CTk):
             self.logo_title_lbl.pack(side="left")
             self.logo_sub_lbl.pack(anchor="w", padx=(32, 0), pady=(2, 0))
 
-            for key, name, ico in self.menu_items:
+            for key, name, ico_name in self.menu_items:
                 btn = self.menu_buttons[key]
-                btn.configure(text=f"{ico} {name}", anchor="w", font=get_font(13, "bold"))
+                ico = get_icon(ico_name, palette["sidebar_text"], 18)
+                btn.configure(text=f"  {name}", image=ico, compound="left", anchor="w", font=get_font(12, "bold"))
                 attach_tooltip(btn, name)
 
             self.theme_selector_box.pack(fill="x", padx=10, pady=(0, 16))
@@ -928,6 +900,10 @@ class App(ctk.CTk):
             self._build_classroom_tools_tab(f)
         elif key == "neis_workspace":
             self._build_neis_workspace_tab(f)
+        elif key == "class_management":
+            self._build_class_management_tab(f)
+        elif key == "smart_desk":
+            self._build_smart_desk_tab(f)
         elif key == "pc_settings":
             self._build_pc_settings_tab(f)
 
@@ -941,13 +917,19 @@ class App(ctk.CTk):
         # 사이드바 버튼 하이라이트 갱신
         for k, btn in self.menu_buttons.items():
             if k == key:
+                ico_name = dict([(m[0], m[2]) for m in self.menu_items]).get(k, "home")
+                ico = get_icon(ico_name, "#ffffff", 18)
                 btn.configure(
+                    image=ico,
                     fg_color=palette["sidebar_btn_active"],
                     text_color="#ffffff",
                     hover_color=palette["accent_hover"]
                 )
             else:
+                ico_name = dict([(m[0], m[2]) for m in self.menu_items]).get(k, "home")
+                ico = get_icon(ico_name, palette["sidebar_text"], 18)
                 btn.configure(
+                    image=ico,
                     fg_color="transparent",
                     text_color=palette["sidebar_text"],
                     hover_color=palette["sidebar_btn_hover"]
@@ -1002,38 +984,7 @@ class App(ctk.CTk):
         top_right_box = ctk.CTkFrame(tb_inner, fg_color="transparent")
         top_right_box.pack(side="right")
 
-        # 상단 상시 투명도 조절 바 (높이 32px 표준화)
-        top_alpha_chip = ctk.CTkFrame(top_right_box, fg_color=palette["sidebar_bg"], corner_radius=8, border_width=1, border_color=palette["card_border"], height=32)
-        top_alpha_chip.pack(side="left", padx=(0, 8))
-        top_alpha_chip.pack_propagate(False)
-
-        tac_inner = ctk.CTkFrame(top_alpha_chip, fg_color="transparent")
-        tac_inner.pack(padx=8, pady=3, fill="both", expand=True)
-
-        init_alpha = timetable_manager.settings.get("window_alpha", 1.0)
-        self.top_alpha_lbl = ctk.CTkLabel(
-            tac_inner,
-            text=f"👁️ 투명도 {int(init_alpha * 100)}%",
-            font=get_font(9, "bold"),
-            text_color=palette["accent"]
-        )
-        self.top_alpha_lbl.pack(side="left", padx=(0, 4))
-
-        self.top_alpha_slider = ctk.CTkSlider(
-            tac_inner,
-            from_=0.4,
-            to=1.0,
-            number_of_steps=60,
-            width=80,
-            height=12,
-            progress_color=palette["accent"],
-            button_color=palette["accent"],
-            button_hover_color=palette["accent_hover"],
-            command=self._on_alpha_changed
-        )
-        self.top_alpha_slider.set(init_alpha)
-        self.top_alpha_slider.pack(side="left")
-        attach_tooltip(top_alpha_chip, "화면 위 다른 창을 보면서 작업할 수 있도록 투명도를 40% ~ 100% 사이로 실시간 조절합니다")
+# 상단 투명도 조절 바 제거됨
 
         # 우측 미니멀 시스템 자원 칩 (CPU / RAM / GPU - 텍스트 잘림 없는 탄력적 너비)
         res_chip_box = ctk.CTkFrame(top_right_box, fg_color=palette["sidebar_bg"], corner_radius=8, border_width=1, border_color=palette["card_border"], height=32)
@@ -1111,9 +1062,14 @@ class App(ctk.CTk):
         ).pack(side="left", padx=(0, 20))
 
         lead_min = timetable_manager.settings.get("alarm_lead_minutes", 5)
-        batch_alarm_btn = ctk.CTkButton(
-            lc_top,
-            text="🔔  일괄 알람",
+        
+        # 가변 수업 알람 조절 컨트롤러
+        alarm_ctrl_box = ctk.CTkFrame(lc_top, fg_color="transparent")
+        alarm_ctrl_box.pack(side="right")
+
+        self.batch_alarm_btn = ctk.CTkButton(
+            alarm_ctrl_box,
+            text=f"🔔  {lead_min}분 전 일괄 알람",
             font=get_font(10, "bold"),
             fg_color=palette["sidebar_bg"],
             hover_color=palette["sidebar_btn_hover"],
@@ -1124,8 +1080,21 @@ class App(ctk.CTk):
             corner_radius=6,
             command=self._batch_schedule_today_classes
         )
-        batch_alarm_btn.pack(side="right")
-        attach_tooltip(batch_alarm_btn, f"오늘 등록된 모든 수업의 시작 {lead_min}분 전 알람을 한 번에 자동 등록합니다.")
+        self.batch_alarm_btn.pack(side="right", padx=(4, 0))
+        attach_tooltip(self.batch_alarm_btn, f"오늘 등록된 모든 수업의 시작 {lead_min}분 전 알람을 한 번에 일괄 등록합니다.")
+
+        self.top_alarm_lead_combo = ctk.CTkComboBox(
+            alarm_ctrl_box,
+            values=["1분 전", "2분 전", "3분 전", "5분 전", "10분 전", "15분 전"],
+            width=84,
+            height=28,
+            font=get_font(10, "bold"),
+            state="readonly",
+            command=self._on_alarm_lead_changed
+        )
+        self.top_alarm_lead_combo.set(f"{lead_min}분 전")
+        self.top_alarm_lead_combo.pack(side="right", padx=(0, 2))
+        attach_tooltip(self.top_alarm_lead_combo, "알람 기준 시간을 자유롭게 변경합니다 (1분, 3분, 5분, 10분 등)")
 
         from src.timetable_quick_editor import open_timetable_quick_editor
         edit_btn = ctk.CTkButton(
@@ -1859,6 +1828,105 @@ class App(ctk.CTk):
     # =========================================================================
     # 뷰 4: ⚙️ PC 관리 & 설정 (컴퓨터 예약/종료 + 화면 분할 + 환경 설정)
     # =========================================================================
+
+    # =========================================================================
+    # 뷰: 학급 경영 & 모둠 (Class Management)
+    # =========================================================================
+    def _build_class_management_tab(self, parent):
+        palette = theme_manager.get_theme()
+        scroll = ctk.CTkScrollableFrame(parent, fg_color="transparent")
+        scroll.pack(fill="both", expand=True, padx=16, pady=16)
+
+        # 1. 헤더 카드
+        hdr_card = ctk.CTkFrame(scroll, fg_color=palette["card_inner_bg"], corner_radius=10, border_width=1, border_color=palette["card_border"])
+        hdr_card.pack(fill="x", pady=(0, 12))
+        
+        h_in = ctk.CTkFrame(hdr_card, fg_color="transparent")
+        h_in.pack(fill="x", padx=16, pady=12)
+        
+        ctk.CTkLabel(h_in, text="🏆 학급 경영 & 모둠 활동 센터", font=get_font(15, "bold"), text_color=palette["text_main"]).pack(side="left")
+        ctk.CTkLabel(h_in, text="학생 자리 배치, 모둠 점수판, 소음 측정, 알림장을 한곳에서 관리합니다.", font=get_font(11), text_color=palette["text_sub"]).pack(side="left", padx=14)
+
+        # 2. 4대 핵심 학급 경영 카드 그리드
+        grid_frame = ctk.CTkFrame(scroll, fg_color="transparent")
+        grid_frame.pack(fill="both", expand=True)
+        grid_frame.grid_columnconfigure(0, weight=1)
+        grid_frame.grid_columnconfigure(1, weight=1)
+
+        cards = [
+            ("🪑 학생 자리 배치 & 모둠 편성", "남녀 짝꿍, 모둠별 자리 배치 시각화 및 랜덤 자리 섞기", "자리 배치표 열기", self._open_student_display),
+            ("🏆 모둠 점수판 & 칭찬 트로피", "모둠별 점수 부여, 실시간 랭킹 순위 및 보상 효과음", "모둠 점수판 열기", self._open_student_display),
+            ("📢 교실 소음 측정기 & 정숙 데시벨", "마이크를 통한 실시간 교실 소음 측정 및 정숙 모드 경고", "소음 측정기 실행", lambda: self._show_simple_alert("소음 측정기", "놀티쳐 보드 상단 도구 메뉴에서 소음측정기를 바로 실행하실 수 있습니다.")),
+            ("📌 학급 알림장 & 과제 메모장", "내일 준비물, 숙제, 가정통신문 안내사항 보드 상시 게시", "알림장 메모 열기", self._open_student_display)
+        ]
+
+        for idx, (title, desc, btn_txt, cmd) in enumerate(cards):
+            r = idx // 2
+            c = idx % 2
+            card = ctk.CTkFrame(grid_frame, fg_color=palette["card_inner_bg"], corner_radius=10, border_width=1, border_color=palette["card_border"])
+            card.grid(row=r, column=c, padx=6, pady=6, sticky="nsew")
+
+            c_in = ctk.CTkFrame(card, fg_color="transparent")
+            c_in.pack(fill="both", expand=True, padx=14, pady=12)
+
+            ctk.CTkLabel(c_in, text=title, font=get_font(13, "bold"), text_color=palette["accent"]).pack(anchor="w")
+            ctk.CTkLabel(c_in, text=desc, font=get_font(10), text_color=palette["text_sub"], wraplength=280, justify="left").pack(anchor="w", pady=(6, 12))
+
+            ctk.CTkButton(
+                c_in, text=btn_txt, font=get_font(11, "bold"), height=32, corner_radius=6,
+                fg_color=palette["accent"], hover_color=palette["accent_hover"],
+                text_color="#ffffff", command=cmd
+            ).pack(anchor="w")
+
+    # =========================================================================
+    # 뷰: 스마트 데스크 & 정리 (Smart Desk)
+    # =========================================================================
+    def _build_smart_desk_tab(self, parent):
+        palette = theme_manager.get_theme()
+        scroll = ctk.CTkScrollableFrame(parent, fg_color="transparent")
+        scroll.pack(fill="both", expand=True, padx=16, pady=16)
+
+        # 1. 헤더 카드
+        hdr_card = ctk.CTkFrame(scroll, fg_color=palette["card_inner_bg"], corner_radius=10, border_width=1, border_color=palette["card_border"])
+        hdr_card.pack(fill="x", pady=(0, 12))
+        
+        h_in = ctk.CTkFrame(hdr_card, fg_color="transparent")
+        h_in.pack(fill="x", padx=16, pady=12)
+        
+        ctk.CTkLabel(h_in, text="🖥️ 스마트 데스크 & 바탕화면 정리 센터", font=get_font(15, "bold"), text_color=palette["text_main"]).pack(side="left")
+        ctk.CTkLabel(h_in, text="복잡한 교사 컴퓨터를 1초 만에 깔끔하게 정돈하고 필수 사이트를 즉시 연결합니다.", font=get_font(11), text_color=palette["text_sub"]).pack(side="left", padx=14)
+
+        # 2. 기능 카드 그리드
+        grid_frame = ctk.CTkFrame(scroll, fg_color="transparent")
+        grid_frame.pack(fill="both", expand=True)
+        grid_frame.grid_columnconfigure(0, weight=1)
+        grid_frame.grid_columnconfigure(1, weight=1)
+
+        cards = [
+            ("🧹 바탕화면 1초 스마트 자동 정리", "어질러진 문서, 이미지, 압축파일을 종류별/날짜별 폴더로 1초 자동 분류", "바탕화면 1초 정리 실행", self._organize_desktop_action),
+            ("↩️ 바탕화면 정리 직전 상태 되돌리기", "방금 자동 정리한 파일들을 원래 위치로 100% 안전 복원", "정리 되돌리기 실행", self._undo_desktop_action),
+            ("🌐 교사용 필수 교육 사이트 모음", "나이스 업무포털, K-에듀파인, pinky-ne.com 놀퀴즈 등 원클릭 접속", "교육 사이트 모음 열기", self._open_site_bookmarks),
+            ("📌 미니 시간표 위젯 & 스마트 플로팅바", "바탕화면에 상시 띄워두고 수업 일정과 도구를 바로 쓰는 미니바", "미니 위젯 띄우기", self._open_mini_widget)
+        ]
+
+        for idx, (title, desc, btn_txt, cmd) in enumerate(cards):
+            r = idx // 2
+            c = idx % 2
+            card = ctk.CTkFrame(grid_frame, fg_color=palette["card_inner_bg"], corner_radius=10, border_width=1, border_color=palette["card_border"])
+            card.grid(row=r, column=c, padx=6, pady=6, sticky="nsew")
+
+            c_in = ctk.CTkFrame(card, fg_color="transparent")
+            c_in.pack(fill="both", expand=True, padx=14, pady=12)
+
+            ctk.CTkLabel(c_in, text=title, font=get_font(13, "bold"), text_color=palette["accent_green"]).pack(anchor="w")
+            ctk.CTkLabel(c_in, text=desc, font=get_font(10), text_color=palette["text_sub"], wraplength=280, justify="left").pack(anchor="w", pady=(6, 12))
+
+            ctk.CTkButton(
+                c_in, text=btn_txt, font=get_font(11, "bold"), height=32, corner_radius=6,
+                fg_color=palette["accent_green"], hover_color="#059669",
+                text_color="#ffffff", command=cmd
+            ).pack(anchor="w")
+
     def _build_pc_settings_tab(self, parent):
         self._build_tools_and_settings_tab(parent)
 
@@ -3956,13 +4024,20 @@ class App(ctk.CTk):
         self._set_mini_ticker_dock(key)
 
     def _on_alarm_lead_changed(self, choice: str):
-        mins = 5
-        if "3분" in choice: mins = 3
-        elif "5분" in choice: mins = 5
-        elif "10분" in choice: mins = 10
-        elif "15분" in choice: mins = 15
+        import re
+        m = re.search(r'(\d+)', choice)
+        mins = int(m.group(1)) if m else 5
         timetable_manager.save_settings({"alarm_lead_minutes": mins})
-        self._show_simple_alert("설정 완료", f"수업 시작 {mins}분 전 알람으로 설정되었습니다.")
+        
+        if hasattr(self, "batch_alarm_btn") and self.batch_alarm_btn.winfo_exists():
+            self.batch_alarm_btn.configure(text=f"🔔  {mins}분 전 일괄 알람")
+        if hasattr(self, "alarm_lead_combo") and self.alarm_lead_combo.winfo_exists():
+            self.alarm_lead_combo.set(f"{mins}분 전")
+        if hasattr(self, "top_alarm_lead_combo") and self.top_alarm_lead_combo.winfo_exists():
+            self.top_alarm_lead_combo.set(f"{mins}분 전")
+        
+        if hasattr(self, "_render_today_items"):
+            self._render_today_items()
 
     def _on_settings_sound_changed(self, choice: str):
         sid = self.settings_sound_map.get(choice, "chime")
