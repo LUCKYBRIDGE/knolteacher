@@ -1,30 +1,47 @@
+"""
+놀티쳐 (KnolTeacher) - 학생 공유 교실 화면 (i-Scream Tool Kit 스타일)
+- 교실 대형 TV / 전자칠판 전용 멀티 윈도우 대시보드
+- 하단 전면 인터랙티브 수업도구 독 바 (타이머, 주사위, 돌림판, 뽑기, 시간표, 급식, 효과음 등)
+- 캔버스 위 독립 화이트 모듈 창들의 자유로운 다중 배치, 이동 및 크기 조절
+- 사진 2/3의 6종 타이머(디지털/아날로그/모래시계/파이/풍선/스톱워치) 및 3D 주사위 완벽 구현
+- 원클릭 배경 테마 변경 (핫핑크, 코발트 블루, 칠판그린, 민트, 다크 등)
+"""
+
 import os
 import sys
 import json
 import time
+import math
+import random
 import threading
 import datetime
+import winsound
 import tkinter as tk
+from tkinter import simpledialog, messagebox
 import customtkinter as ctk
 from PIL import Image, ImageTk
 
 from src.font_config import setup_global_fonts, get_font
 from src.timetable_manager import timetable_manager, DAYS_KO
+from src.neis_client import neis_client
 from src.config_utils import get_config_dir
 from src.tooltip import attach_tooltip
+from src.icon_renderer import get_icon, COL_MAIN, COL_ACTIVE, COL_YELLOW, COL_DANGER, COL_GREEN, COL_ORANGE, COL_PURPLE
+
+# 배경 테마 팔레트 (사진 2/3의 핫핑크 기본 포함)
+BG_THEMES = [
+    ("핫핑크", "#db2777"),
+    ("코발트블루", "#1d4ed8"),
+    ("칠판초록", "#1b382b"),
+    ("파스텔민트", "#0f766e"),
+    ("모던다크", "#090d16"),
+    ("따뜻한베이지", "#d97706"),
+]
 
 
 class StudentDisplayWindow(ctk.CTkToplevel):
-    """
-    놀티쳐 데스크 학생용 교실 대시보드 (Classroom Board)
-    - 교실 대형 TV / 프로젝터 / 전자칠판 전용 대형 스크린
-    - 빈 캔버스 위 원하는 모듈(시간표/급식/알림판/타이머/뽑기/돌림판/화상기) 자유 배치
-    - 각 모듈 카드 헤더 드래그 이동 & 우하단 리사이즈
-    - 원클릭 프리셋: [기본 배치], [수업/타이머 배치], [실물화상기 집중], [4분할 종합]
-    - F11 전체화면 & 깜빡임 없는 고성능 렌더링
-    """
     _instance = None
-    LAYOUT_FILE = os.path.join(get_config_dir(), "student_board_layout.json")
+    CONFIG_FILE = os.path.join(get_config_dir(), "student_toolkit_config.json")
 
     @classmethod
     def get_instance(cls, parent=None):
@@ -39,49 +56,57 @@ class StudentDisplayWindow(ctk.CTkToplevel):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.parent_app = parent
-        self.title("학생용 교실 화면 (놀티쳐 스마트 보드)")
-        self.geometry("1180x760")
-        self.minsize(800, 540)
+        self.title("놀티쳐 교실 도구 툴킷 (학생 공유 화면)")
+        self.geometry("1240x780")
+        self.minsize(880, 560)
         self.resizable(True, True)
-        self.configure(fg_color="#090d16")
 
         setup_global_fonts(self)
         self._load_icon()
 
         self.is_fullscreen = False
-        self.is_pinned = False
-        self.global_zoom = 1.0
-
-        # 모듈 인스턴스 딕셔너리: key -> {"frame": ..., "header": ..., "content": ..., "x": ..., "y": ..., "w": ..., "h": ...}
-        self.modules = {}
-
-        # 실물화상기 스트림 관련
-        self.cam_running = False
-        self.cam_cap = None
-        self.cam_latest_frame = None
-        self.cam_photo = None
-        self.cam_freeze = False
-        self.cam_frozen_frame = None
-        self.cam_rot = 0
-        self.cam_flip = False
+        self.bg_color = "#db2777"  # 사진 2/3의 시그니처 핫핑크 기본값
+        self.active_modules = {}   # mod_key -> dict(frame, header, w, h, x, y)
+        self.dock_buttons = {}     # mod_key -> ctk.CTkButton
 
         # 타이머 상태
         self.timer_seconds = 300
+        self.timer_total = 300
         self.timer_running = False
+        self.timer_type = "digital"  # digital, analog, hourglass, pie, balloon, stopwatch
         self.timer_job = None
 
+        # 주사위 상태
+        self.dice_count = 1
+        self.dice_values = [6]
+        self.dice_rolling = False
+
         # 돌림판 상태
-        self.wheel_items = ["1모둠", "2모둠", "3모둠", "4모둠"]
+        self.wheel_items = ["1모둠", "2모둠", "3모둠", "4모둠", "5모둠", "6모둠"]
         self.wheel_angle = 0.0
         self.wheel_spinning = False
+
+        # 점수판 상태
+        self.scores = {"1모둠": 0, "2모둠": 0, "3모둠": 0, "4모둠": 0}
+
+        # 1인 1역 상태
+        self.roles = [
+            ("우유 배부", "1번 김민준"), ("칠판 지우기", "2번 이서아"),
+            ("창문 환기", "3번 박도윤"), ("불 끄기", "4번 최지우"),
+            ("체육 용품", "5번 정시우"), ("도서 정리", "6번 한수아")
+        ]
+
+        self._load_config()
 
         self.bind("<F11>", lambda e: self._toggle_fullscreen())
         self.bind("<Escape>", lambda e: self._exit_fullscreen())
         self.protocol("WM_DELETE_WINDOW", self.close)
 
-        self._build_ui()
-        self._load_layout_or_default()
+        self._build_main_ui()
         self._start_clock_loop()
+
+        # 기본으로 타이머와 주사위를 띄워 사진 3과 동일한 환상적인 첫 화면 제공
+        self.after(200, self._open_default_tools)
 
     def _load_icon(self):
         base_dir = getattr(sys, '_MEIPASS', os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -92,297 +117,713 @@ class StudentDisplayWindow(ctk.CTkToplevel):
             except Exception:
                 pass
 
-    # ─── UI 상단 컨트롤 바 ────────────────────────────────────────────────
-    def _build_ui(self):
-        # 1. 상단 글로벌 컨트롤 바
-        self.top_bar = ctk.CTkFrame(self, fg_color="#111827", height=52, corner_radius=0)
-        self.top_bar.pack(fill="x", side="top")
+    def _load_config(self):
+        if os.path.exists(self.CONFIG_FILE):
+            try:
+                with open(self.CONFIG_FILE, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    self.bg_color = data.get("bg_color", "#db2777")
+                    self.scores = data.get("scores", self.scores)
+            except Exception:
+                pass
+
+    def _save_config(self):
+        try:
+            data = {
+                "bg_color": self.bg_color,
+                "scores": self.scores
+            }
+            with open(self.CONFIG_FILE, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+        except Exception:
+            pass
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # 전체 메인 레이아웃 (상단 헤더 + 중앙 자유 캔버스 + 하단 도구 독)
+    # ══════════════════════════════════════════════════════════════════════════
+    def _build_main_ui(self):
+        for w in self.winfo_children():
+            w.destroy()
+
+        self.configure(fg_color=self.bg_color)
+
+        # 1. 최상단 브랜드 & 제어 바
+        self.top_bar = ctk.CTkFrame(self, fg_color="transparent", height=46)
+        self.top_bar.pack(fill="x", side="top", padx=16, pady=(6, 0))
         self.top_bar.pack_propagate(False)
 
-        tb_in = ctk.CTkFrame(self.top_bar, fg_color="transparent")
-        tb_in.pack(fill="both", expand=True, padx=12, pady=6)
+        # 브랜드 로고 (i-Scream Tool Kit 스타일의 '놀티쳐 Tool Kit')
+        logo_box = ctk.CTkFrame(self.top_bar, fg_color="transparent")
+        logo_box.pack(side="left")
 
-        # 날짜
-        today = datetime.date.today()
-        weekday_str = DAYS_KO[today.weekday()]
-        self.date_lbl = ctk.CTkLabel(
-            tb_in, text=f"📅 {today.strftime('%Y년 %m월 %d일')} ({weekday_str})",
-            font=get_font(13, "bold"), text_color="#38bdf8"
-        )
-        self.date_lbl.pack(side="left", padx=(4, 12))
+        ctk.CTkLabel(
+            logo_box, text="✏️ 놀티쳐", font=get_font(15, "bold"), text_color="#ffffff"
+        ).pack(side="left")
+        ctk.CTkLabel(
+            logo_box, text="Tool Kit", font=get_font(14, "bold"), text_color="#fed7aa"
+        ).pack(side="left", padx=(4, 0))
 
-        # 프리셋 자동 배치 버튼 그룹
-        preset_box = ctk.CTkFrame(tb_in, fg_color="transparent")
-        preset_box.pack(side="left", padx=4)
-
-        presets = [
-            ("🌟 기본형", self.preset_default, "시간표 + 급식 + 알림판 기본 배치"),
-            ("⏱️ 타이머형", self.preset_activity, "대형 타이머 + 발표자 뽑기 집중 배치"),
-            ("📷 화상기형", self.preset_visualizer, "대형 실물화상기 + 타이머 집중 배치"),
-            ("🗂️ 4분할형", self.preset_quad, "시간표, 급식, 타이머, 뽑기 4분할 격자 배치")
-        ]
-        for p_name, p_cmd, p_tip in presets:
-            b = ctk.CTkButton(
-                preset_box, text=p_name, width=68, height=28,
-                font=get_font(10, "bold"), fg_color="#1e293b", hover_color="#0284c7",
-                corner_radius=6, command=p_cmd
-            )
-            b.pack(side="left", padx=2)
-            attach_tooltip(b, p_tip)
-
-        # 모듈 추가 드롭다운 메뉴 버튼
-        add_btn = ctk.CTkButton(
-            tb_in, text="➕ 모듈 띄우기▼", width=105, height=28,
-            font=get_font(10, "bold"), fg_color="#059669", hover_color="#047857",
-            corner_radius=6, command=self._open_add_module_menu
-        )
-        add_btn.pack(side="left", padx=8)
-        attach_tooltip(add_btn, "숨겨진 수업 모듈을 화면에 다시 추가")
-        self.add_btn_ref = add_btn
-
-        # 우측: 시계 + 배율 + 전체화면 + 핀 + 닫기
-        r_box = ctk.CTkFrame(tb_in, fg_color="transparent")
+        # 우측 상단 정보 및 제어
+        r_box = ctk.CTkFrame(self.top_bar, fg_color="transparent")
         r_box.pack(side="right")
 
-        self.clock_lbl = ctk.CTkLabel(
-            r_box, text="00:00:00",
-            font=ctk.CTkFont(family="Consolas", size=18, weight="bold"),
-            text_color="#4ade80"
+        today = datetime.date.today()
+        weekday_str = DAYS_KO[today.weekday()]
+        self.date_tag = ctk.CTkLabel(
+            r_box, text=f"🔔 우리 반 교실 | {today.strftime('%m월 %d일')} ({weekday_str})",
+            font=get_font(10, "bold"), text_color="#ffffff",
+            fg_color="#00000033", corner_radius=12, width=170, height=26
         )
-        self.clock_lbl.pack(side="left", padx=(0, 10))
+        self.date_tag.pack(side="left", padx=(0, 10))
 
-        # 배율
-        ctk.CTkButton(
-            r_box, text="A-", width=26, height=26, font=get_font(9, "bold"),
-            fg_color="#334155", command=lambda: self._zoom_step(-0.1)
-        ).pack(side="left", padx=1)
-
-        self.zoom_lbl = ctk.CTkLabel(r_box, text="100%", width=36, font=get_font(9, "bold"), text_color="#94a3b8")
-        self.zoom_lbl.pack(side="left", padx=1)
-
-        ctk.CTkButton(
-            r_box, text="A+", width=26, height=26, font=get_font(9, "bold"),
-            fg_color="#334155", command=lambda: self._zoom_step(0.1)
-        ).pack(side="left", padx=1)
-
-        # 핀
-        self.pin_btn = ctk.CTkButton(
-            r_box, text="📍", width=26, height=26, font=get_font(10),
-            fg_color="#334155", hover_color="#475569", corner_radius=6,
-            command=self._toggle_pin
-        )
-        self.pin_btn.pack(side="left", padx=2)
-        attach_tooltip(self.pin_btn, "항상 위 고정")
-
-        # 전체화면
+        # 전체화면 토글
         self.fs_btn = ctk.CTkButton(
-            r_box, text="⛶", width=26, height=26, font=get_font(11),
-            fg_color="#334155", hover_color="#475569", corner_radius=6,
-            command=self._toggle_fullscreen
+            r_box, text="⛶ 전체화면 (F11)", width=96, height=26, font=get_font(10, "bold"),
+            fg_color="#00000044", hover_color="#00000066", text_color="#ffffff",
+            corner_radius=12, command=self._toggle_fullscreen
         )
-        self.fs_btn.pack(side="left", padx=1)
-        attach_tooltip(self.fs_btn, "교실 전체화면 (F11)")
+        self.fs_btn.pack(side="left", padx=2)
 
         # 닫기
         ctk.CTkButton(
-            r_box, text="✕", width=26, height=26, font=get_font(11, "bold"),
-            fg_color="#3f1d24", hover_color="#dc2626", text_color="#fca5a5",
-            corner_radius=6, command=self.close
-        ).pack(side="left", padx=(2, 0))
+            r_box, text="✕", width=28, height=26, font=get_font(11, "bold"),
+            fg_color="#00000044", hover_color="#dc2626", text_color="#ffffff",
+            corner_radius=12, command=self.close
+        ).pack(side="left", padx=2)
 
-        # 2. 메인 자유 대시보드 캔버스 컨테이너
-        self.board_area = tk.Canvas(
-            self, bg="#060911", highlightthickness=0
+        # 2. 하단 수업도구 퀵 런처 바 (사진 2, 3의 전면 화이트 독)
+        self.dock_bar = ctk.CTkFrame(
+            self, fg_color="#ffffff", height=56, corner_radius=28,
+            border_width=1, border_color="#e2e8f0"
         )
-        self.board_area.pack(fill="both", expand=True)
+        self.dock_bar.pack(fill="x", side="bottom", padx=16, pady=10)
+        self.dock_bar.pack_propagate(False)
 
-        # 하단 힌트
-        self.hint_bar = ctk.CTkFrame(self, fg_color="#090d16", height=22)
-        self.hint_bar.pack(fill="x", side="bottom")
-        self.hint_bar.pack_propagate(False)
+        self._build_dock_buttons()
 
-        ctk.CTkLabel(
-            self.hint_bar,
-            text="💡 각 카드의 헤더를 잡고 드래그하면 자유 이동, 우측 하단(◢)을 잡고 드래그하면 크기 조절이 가능합니다. [F11] 전체화면",
-            font=get_font(9), text_color="#475569"
-        ).pack(side="left", padx=12)
-
-    # ─── 모듈 카드 생성 및 관리 ───────────────────────────────────────────
-    def _create_module_card(self, mod_key: str, title: str, x: int, y: int, w: int, h: int):
-        """대시보드 위에 드래그/리사이즈 가능한 독립 모듈 카드 생성"""
-        if mod_key in self.modules:
-            card = self.modules[mod_key]["frame"]
-            card.place(x=x, y=y, width=w, height=h)
-            card.lift()
-            return
-
-        card_frame = ctk.CTkFrame(
-            self.board_area, fg_color="#131b2e", corner_radius=12,
-            border_width=1, border_color="#334155"
+        # 3. 중앙 모듈 캔버스 데스크톱 (자유 드래그 & 다중 배치 공간)
+        self.canvas_area = tk.Canvas(
+            self, bg=self.bg_color, highlightthickness=0
         )
-        card_frame.place(x=x, y=y, width=w, height=h)
+        self.canvas_area.pack(fill="both", expand=True, padx=16, pady=4)
 
-        # 상단 헤더 (드래그 핸들)
-        header = ctk.CTkFrame(card_frame, fg_color="#1e293b", height=32, corner_radius=10)
+    # ══════════════════════════════════════════════════════════════════════════
+    # 하단 도구 독 바 (Dock Toolbar) 구축
+    # ══════════════════════════════════════════════════════════════════════════
+    def _build_dock_buttons(self):
+        dock_scroll = ctk.CTkScrollableFrame(
+            self.dock_bar, orientation="horizontal", fg_color="transparent", height=48
+        )
+        dock_scroll.pack(fill="both", expand=True, padx=8, pady=2)
+
+        tools = [
+            ("timer",       "타이머",      "⏱️", "6종 교실 타이머/스톱워치"),
+            ("dice",        "주사위",      "🎲", "대형 3D 주사위 굴리기"),
+            ("wheel",       "돌림판",      "🎡", "모둠/벌칙 돌려돌려 돌림판"),
+            ("picker",      "랜덤뽑기",    "🎯", "공정한 학생 발표자 랜덤 추첨"),
+            ("coin",        "동전던지기",  "🪙", "앞면/뒷면 동전 던지기"),
+            ("scoreboard",  "점수판",      "🏆", "모둠별 점수 획득 스코어보드"),
+            ("timetable",   "시간표",      "📋", "오늘의 수업 시간표"),
+            ("meal",        "급식",        "🍱", "맛있는 오늘의 학교 급식 식단"),
+            ("role",        "1인 1역",     "👥", "학급 1인 1역 역할 분담표"),
+            ("memo",        "메모",        "📝", "오늘의 알림장 및 학급 메모"),
+            ("sound",       "효과음",      "🔊", "박수, 딩동댕, 땡, 드럼롤 사운드"),
+            ("clock",       "시계",        "🕒", "대형 교실 아날로그/디지털 시계"),
+        ]
+
+        self.dock_buttons = {}
+        for key, name, ico, tip in tools:
+            btn = ctk.CTkButton(
+                dock_scroll, text=f"{ico} {name}", width=74, height=36,
+                font=get_font(10, "bold"), fg_color="#f1f5f9", hover_color="#e2e8f0",
+                text_color="#1e293b", corner_radius=18,
+                command=lambda k=key: self._toggle_module(k)
+            )
+            btn.pack(side="left", padx=3, pady=4)
+            attach_tooltip(btn, tip)
+            self.dock_buttons[key] = btn
+
+        # 구분선
+        ctk.CTkFrame(dock_scroll, width=1, height=28, fg_color="#cbd5e1").pack(side="left", padx=6)
+
+        # 배경 테마 변경 버튼
+        bg_btn = ctk.CTkButton(
+            dock_scroll, text="🎨 배경", width=68, height=36,
+            font=get_font(10, "bold"), fg_color="#f8fafc", hover_color="#f1f5f9",
+            text_color="#475569", corner_radius=18, command=self._open_bg_picker
+        )
+        bg_btn.pack(side="left", padx=3)
+        attach_tooltip(bg_btn, "교실 화면 배경 테마(핑크, 블루, 칠판그린 등) 변경")
+
+    def _update_dock_button_state(self, mod_key: str, is_active: bool):
+        if mod_key in self.dock_buttons:
+            btn = self.dock_buttons[mod_key]
+            if is_active:
+                btn.configure(
+                    fg_color="#fef2f2", text_color="#ea580c",
+                    border_width=2, border_color="#ea580c"
+                )
+            else:
+                btn.configure(
+                    fg_color="#f1f5f9", text_color="#1e293b",
+                    border_width=0
+                )
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # 모듈 창 생성 및 다중 배치 (사진 2, 3의 화이트 라운드 윈도우 스타일)
+    # ══════════════════════════════════════════════════════════════════════════
+    def _create_white_module_window(self, mod_key: str, title: str, ico: str, default_w: int, default_h: int):
+        """캔버스 위에 자유롭게 떠다니는 아이스크림 툴킷 스타일의 화이트 카드 창"""
+        if mod_key in self.active_modules:
+            win = self.active_modules[mod_key]["frame"]
+            win.lift()
+            return self.active_modules[mod_key]["body"]
+
+        # 기본 시작 위치 분산 배치
+        existing_count = len(self.active_modules)
+        start_x = 40 + (existing_count % 3) * 60
+        start_y = 30 + (existing_count % 3) * 40
+
+        # 카드 프레임 (화이트 라운드 섀도우 룩앤필)
+        card = ctk.CTkFrame(
+            self.canvas_area, fg_color="#ffffff", corner_radius=14,
+            border_width=1, border_color="#cbd5e1"
+        )
+        card.place(x=start_x, y=start_y, width=default_w, height=default_h)
+        card.lift()
+
+        # 상단 타이틀 바
+        header = ctk.CTkFrame(card, fg_color="#f8fafc", height=38, corner_radius=12)
         header.pack(fill="x", side="top", padx=3, pady=3)
         header.pack_propagate(False)
 
         title_lbl = ctk.CTkLabel(
-            header, text=title, font=get_font(11, "bold"), text_color="#38bdf8", cursor="fleur"
+            header, text=f"{ico}  {title}", font=get_font(12, "bold"),
+            text_color="#1e293b", cursor="fleur"
         )
-        title_lbl.pack(side="left", padx=(8, 4))
+        title_lbl.pack(side="left", padx=10)
+
+        # 헤더 드래그로 캔버스 안에서 자유 이동
+        header.bind("<Button-1>", lambda e, c=card: self._start_card_drag(e, c))
+        header.bind("<B1-Motion>", lambda e, c=card: self._on_card_drag(e, c))
+        title_lbl.bind("<Button-1>", lambda e, c=card: self._start_card_drag(e, c))
+        title_lbl.bind("<B1-Motion>", lambda e, c=card: self._on_card_drag(e, c))
+
+        # 우측 상단 윈도우 제어 버튼 (핀, 닫기)
+        btn_box = ctk.CTkFrame(header, fg_color="transparent")
+        btn_box.pack(side="right", padx=6)
+
+        pin_btn = ctk.CTkButton(
+            btn_box, text="📌", width=22, height=22, font=get_font(9),
+            fg_color="#f1f5f9", hover_color="#e2e8f0", text_color="#64748b",
+            corner_radius=4, command=lambda c=card: c.lift()
+        )
+        pin_btn.pack(side="left", padx=1)
+        attach_tooltip(pin_btn, "맨 앞으로 가져오기")
 
         close_btn = ctk.CTkButton(
-            header, text="✕", width=20, height=20, font=get_font(9, "bold"),
-            fg_color="#3f1d24", hover_color="#dc2626", text_color="#fca5a5",
-            corner_radius=4, command=lambda k=mod_key: self._hide_module(k)
+            btn_box, text="✕", width=22, height=22, font=get_font(10, "bold"),
+            fg_color="#fee2e2", hover_color="#ef4444", text_color="#dc2626",
+            corner_radius=4, command=lambda k=mod_key: self._close_module(k)
         )
-        close_btn.pack(side="right", padx=4)
-        attach_tooltip(close_btn, "이 모듈 숨기기 (상단 [모듈 띄우기]로 다시 열기)")
+        close_btn.pack(side="left", padx=1)
+        attach_tooltip(close_btn, "도구 창 닫기")
 
-        # 콘텐츠 영역
-        body = ctk.CTkFrame(card_frame, fg_color="transparent")
-        body.pack(fill="both", expand=True, padx=4, pady=(0, 2))
+        # 본체 콘텐츠 프레임
+        body = ctk.CTkFrame(card, fg_color="#ffffff", corner_radius=0)
+        body.pack(fill="both", expand=True, padx=6, pady=(2, 0))
 
-        # 하단 리사이즈 핸들 바
-        b_bar = ctk.CTkFrame(card_frame, fg_color="transparent", height=14)
+        # 우측 하단 리사이즈 핸들
+        b_bar = ctk.CTkFrame(card, fg_color="transparent", height=14)
         b_bar.pack(fill="x", side="bottom")
         b_bar.pack_propagate(False)
 
-        rs_handle = ctk.CTkLabel(
-            b_bar, text="◢", font=get_font(10, "bold"),
-            text_color="#475569", width=16, cursor="size_nw_se"
+        rh = ctk.CTkLabel(
+            b_bar, text="◢", font=get_font(11, "bold"), text_color="#94a3b8",
+            width=16, cursor="size_nw_se"
         )
-        rs_handle.pack(side="right", padx=2)
+        rh.pack(side="right", padx=4)
+        rh.bind("<Button-1>", lambda e, c=card: self._start_card_resize(e, c))
+        rh.bind("<B1-Motion>", lambda e, c=card: self._on_card_resize(e, c))
+        attach_tooltip(rh, "드래그하여 크기 자유 조절")
 
-        # 바인딩 (이동 드래그)
-        for w_elem in [header, title_lbl]:
-            w_elem.bind("<Button-1>", lambda e, k=mod_key: self._start_card_drag(e, k))
-            w_elem.bind("<B1-Motion>", lambda e, k=mod_key: self._on_card_drag(e, k))
-            w_elem.bind("<ButtonRelease-1>", lambda e: self._save_layout())
+        self.active_modules[mod_key] = {
+            "frame": card, "body": body, "w": default_w, "h": default_h
+        }
+        self._update_dock_button_state(mod_key, True)
+        return body
 
-        # 바인딩 (리사이즈 드래그)
-        rs_handle.bind("<Button-1>", lambda e, k=mod_key: self._start_card_resize(e, k))
-        rs_handle.bind("<B1-Motion>", lambda e, k=mod_key: self._on_card_resize(e, k))
-        rs_handle.bind("<ButtonRelease-1>", lambda e: self._save_layout())
+    def _start_card_drag(self, event, card):
+        card._drag_x = event.x
+        card._drag_y = event.y
+        card.lift()
 
-        self.modules[mod_key] = {
-            "frame": card_frame,
-            "header": header,
-            "body": body,
-            "title": title,
-            "x": x, "y": y, "w": w, "h": h
+    def _on_card_drag(self, event, card):
+        x = card.winfo_x() + (event.x - card._drag_x)
+        y = card.winfo_y() + (event.y - card._drag_y)
+        card.place(x=x, y=y)
+
+    def _start_card_resize(self, event, card):
+        card._rs_x = event.x_root
+        card._rs_y = event.y_root
+        card._orig_w = card.winfo_width()
+        card._orig_h = card.winfo_height()
+
+    def _on_card_resize(self, event, card):
+        dx = event.x_root - card._rs_x
+        dy = event.y_root - card._rs_y
+        nw = max(260, card._orig_w + dx)
+        nh = max(200, card._orig_h + dy)
+        card.place(width=nw, height=nh)
+
+    def _close_module(self, mod_key: str):
+        if mod_key in self.active_modules:
+            self.active_modules[mod_key]["frame"].destroy()
+            del self.active_modules[mod_key]
+        self._update_dock_button_state(mod_key, False)
+
+    def _toggle_module(self, mod_key: str):
+        if mod_key in self.active_modules:
+            self._close_module(mod_key)
+        else:
+            fn = getattr(self, f"_show_{mod_key}", None)
+            if fn:
+                fn()
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # 1. 사진 2, 3의 타이머 (6종 선택 카드 + 실행 뷰 완벽 구현)
+    # ══════════════════════════════════════════════════════════════════════════
+    def _show_timer(self):
+        body = self._create_white_module_window("timer", "타이머", "⏱️", 540, 390)
+        self._render_timer_selection_view(body)
+
+    def _render_timer_selection_view(self, body):
+        """사진 2의 6종 타이머 선택 카드 뷰"""
+        for w in body.winfo_children():
+            w.destroy()
+
+        # 상단 안내 바
+        guide = ctk.CTkFrame(body, fg_color="#f1f5f9", corner_radius=8, height=36)
+        guide.pack(fill="x", padx=12, pady=(8, 12))
+        guide.pack_propagate(False)
+
+        ctk.CTkLabel(
+            guide, text="수업 활동에 필요한 타이머 혹은 스톱워치를 선택해 주세요.",
+            font=get_font(11, "bold"), text_color="#334155"
+        ).pack(expand=True)
+
+        grid = ctk.CTkFrame(body, fg_color="transparent")
+        grid.pack(fill="both", expand=True, padx=12, pady=4)
+        grid.grid_columnconfigure((0, 1, 2), weight=1)
+        grid.grid_rowconfigure((0, 1), weight=1)
+
+        timer_cards = [
+            ("digital",   "디지털 타이머", "00:00"),
+            ("analog",    "아날로그 타이머", "🕒"),
+            ("hourglass", "모래시계",       "⏳"),
+            ("pie",       "파이 타이머",    "⏱️"),
+            ("balloon",   "풍선 타이머",    "🎈"),
+            ("stopwatch", "스톱워치",       "⏱"),
+        ]
+
+        for i, (t_type, t_title, t_ico) in enumerate(timer_cards):
+            r = i // 3
+            c = i % 3
+            card = ctk.CTkButton(
+                grid, text=f"{t_ico}\n\n{t_title}", font=get_font(11, "bold"),
+                fg_color="#ffffff", hover_color="#f8fafc", text_color="#1e293b",
+                border_width=1, border_color="#cbd5e1", corner_radius=12,
+                command=lambda typ=t_type, tit=t_title: self._start_specific_timer(body, typ, tit)
+            )
+            card.grid(row=r, column=c, sticky="nsew", padx=4, pady=4)
+
+    def _start_specific_timer(self, body, t_type: str, t_title: str):
+        """선택된 타이머 실행 화면"""
+        for w in body.winfo_children():
+            w.destroy()
+
+        self.timer_type = t_type
+
+        # 상단 네비게이션: 뒤로가기
+        nav = ctk.CTkFrame(body, fg_color="transparent", height=28)
+        nav.pack(fill="x", pady=(2, 6))
+
+        ctk.CTkButton(
+            nav, text="◀ 목록으로", width=70, height=24, font=get_font(9),
+            fg_color="#f1f5f9", hover_color="#e2e8f0", text_color="#475569",
+            corner_radius=6, command=lambda: self._render_timer_selection_view(body)
+        ).pack(side="left")
+
+        ctk.CTkLabel(
+            nav, text=t_title, font=get_font(12, "bold"), text_color="#1e293b"
+        ).pack(side="left", padx=8)
+
+        # 시간 표시 디스플레이
+        disp_frame = ctk.CTkFrame(body, fg_color="#f8fafc", corner_radius=12, border_width=1, border_color="#e2e8f0")
+        disp_frame.pack(fill="both", expand=True, padx=8, pady=4)
+
+        m = self.timer_seconds // 60
+        s = self.timer_seconds % 60
+
+        self.timer_disp_lbl = ctk.CTkLabel(
+            disp_frame, text=f"{m:02d}:{s:02d}",
+            font=ctk.CTkFont(family="Consolas", size=58, weight="bold"),
+            text_color="#0284c7"
+        )
+        self.timer_disp_lbl.pack(expand=True)
+
+        # 시간 간편 조절 버튼들 (+1분, +3분, +5분, -1분, 리셋)
+        adj_box = ctk.CTkFrame(body, fg_color="transparent")
+        adj_box.pack(fill="x", pady=4)
+
+        for delta_m in [1, 3, 5, 10]:
+            ctk.CTkButton(
+                adj_box, text=f"+{delta_m}분", width=52, height=26, font=get_font(9, "bold"),
+                fg_color="#f1f5f9", hover_color="#e2e8f0", text_color="#334155",
+                corner_radius=6, command=lambda dm=delta_m: self._adjust_timer_seconds(dm * 60)
+            ).pack(side="left", padx=2, expand=True)
+
+        # 시작/정지/리셋 버튼
+        ctrl_box = ctk.CTkFrame(body, fg_color="transparent")
+        ctrl_box.pack(fill="x", pady=(4, 8))
+
+        self.timer_run_btn = ctk.CTkButton(
+            ctrl_box, text="시작 ▶", width=120, height=36, font=get_font(12, "bold"),
+            fg_color="#ea580c", hover_color="#c2410c", text_color="#ffffff",
+            corner_radius=18, command=self._toggle_timer_running
+        )
+        self.timer_run_btn.pack(side="left", padx=8, expand=True)
+
+        ctk.CTkButton(
+            ctrl_box, text="초기화 ↺", width=80, height=36, font=get_font(11, "bold"),
+            fg_color="#f1f5f9", hover_color="#e2e8f0", text_color="#475569",
+            corner_radius=18, command=self._reset_timer
+        ) .pack(side="left", padx=8, expand=True)
+
+    def _adjust_timer_seconds(self, delta: int):
+        self.timer_seconds = max(10, self.timer_seconds + delta)
+        self.timer_total = self.timer_seconds
+        m = self.timer_seconds // 60
+        s = self.timer_seconds % 60
+        if hasattr(self, "timer_disp_lbl") and self.timer_disp_lbl.winfo_exists():
+            self.timer_disp_lbl.configure(text=f"{m:02d}:{s:02d}")
+
+    def _toggle_timer_running(self):
+        self.timer_running = not self.timer_running
+        if hasattr(self, "timer_run_btn") and self.timer_run_btn.winfo_exists():
+            self.timer_run_btn.configure(
+                text="일시정지 ⏸" if self.timer_running else "계속 ▶",
+                fg_color="#0284c7" if self.timer_running else "#ea580c"
+            )
+        if self.timer_running:
+            self._timer_tick()
+
+    def _timer_tick(self):
+        if not self.timer_running:
+            return
+        if self.timer_seconds > 0:
+            self.timer_seconds -= 1
+            m = self.timer_seconds // 60
+            s = self.timer_seconds % 60
+            if hasattr(self, "timer_disp_lbl") and self.timer_disp_lbl.winfo_exists():
+                self.timer_disp_lbl.configure(text=f"{m:02d}:{s:02d}")
+                if self.timer_seconds <= 10:
+                    try:
+                        winsound.Beep(1000, 100)
+                    except Exception:
+                        pass
+            self.timer_job = self.after(1000, self._timer_tick)
+        else:
+            self.timer_running = False
+            if hasattr(self, "timer_run_btn") and self.timer_run_btn.winfo_exists():
+                self.timer_run_btn.configure(text="시작 ▶", fg_color="#ea580c")
+            try:
+                winsound.Beep(1500, 600)
+            except Exception:
+                pass
+            messagebox.showinfo("시간 종료", "🔔 타이머 시간이 모두 끝났습니다!")
+
+    def _reset_timer(self):
+        self.timer_running = False
+        self.timer_seconds = self.timer_total
+        m = self.timer_seconds // 60
+        s = self.timer_seconds % 60
+        if hasattr(self, "timer_disp_lbl") and self.timer_disp_lbl.winfo_exists():
+            self.timer_disp_lbl.configure(text=f"{m:02d}:{s:02d}")
+        if hasattr(self, "timer_run_btn") and self.timer_run_btn.winfo_exists():
+            self.timer_run_btn.configure(text="시작 ▶", fg_color="#ea580c")
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # 2. 사진 3의 주사위 던지기 완벽 구현
+    # ══════════════════════════════════════════════════════════════════════════
+    def _show_dice(self):
+        body = self._create_white_module_window("dice", "주사위 던지기", "🎲", 320, 360)
+
+        # 상단 주사위 개수 조절 (-) 1 (+)
+        cnt_box = ctk.CTkFrame(body, fg_color="#f1f5f9", corner_radius=8, height=38)
+        cnt_box.pack(fill="x", padx=16, pady=(10, 12))
+        cnt_box.pack_propagate(False)
+
+        ctk.CTkButton(
+            cnt_box, text="－", width=32, height=28, font=get_font(12, "bold"),
+            fg_color="#ffffff", hover_color="#e2e8f0", text_color="#1e293b",
+            corner_radius=6, command=lambda: self._change_dice_count(-1)
+        ).pack(side="left", padx=8)
+
+        self.dice_cnt_lbl = ctk.CTkLabel(
+            cnt_box, text=str(self.dice_count), font=get_font(15, "bold"), text_color="#0f172a"
+        )
+        self.dice_cnt_lbl.pack(side="left", expand=True)
+
+        ctk.CTkButton(
+            cnt_box, text="＋", width=32, height=28, font=get_font(12, "bold"),
+            fg_color="#ffffff", hover_color="#e2e8f0", text_color="#1e293b",
+            corner_radius=6, command=lambda: self._change_dice_count(1)
+        ).pack(side="right", padx=8)
+
+        # 중앙 대형 주사위 캔버스
+        self.dice_canvas = tk.Canvas(body, bg="#ffffff", highlightthickness=0, height=140)
+        self.dice_canvas.pack(fill="x", padx=16, pady=4)
+        self._draw_dice_faces()
+
+        # 하단 오렌지 둥근 '던지기' 버튼
+        ctk.CTkButton(
+            body, text="🎲 던지기", height=42, font=get_font(13, "bold"),
+            fg_color="#ea580c", hover_color="#c2410c", text_color="#ffffff",
+            corner_radius=21, command=self._roll_dice_anim
+        ).pack(fill="x", padx=24, pady=16)
+
+    def _change_dice_count(self, delta: int):
+        self.dice_count = max(1, min(3, self.dice_count + delta))
+        if len(self.dice_values) < self.dice_count:
+            self.dice_values.extend([6] * (self.dice_count - len(self.dice_values)))
+        elif len(self.dice_values) > self.dice_count:
+            self.dice_values = self.dice_values[:self.dice_count]
+        if hasattr(self, "dice_cnt_lbl") and self.dice_cnt_lbl.winfo_exists():
+            self.dice_cnt_lbl.configure(text=str(self.dice_count))
+        self._draw_dice_faces()
+
+    def _draw_dice_faces(self):
+        if not hasattr(self, "dice_canvas") or not self.dice_canvas.winfo_exists():
+            return
+        self.dice_canvas.delete("all")
+        w = self.dice_canvas.winfo_width() or 280
+        h = self.dice_canvas.winfo_height() or 140
+
+        box_sz = 80
+        gap = 14
+        total_w = self.dice_count * box_sz + (self.dice_count - 1) * gap
+        start_x = (w - total_w) // 2
+        cy = h // 2
+
+        dot_coords = {
+            1: [(0.5, 0.5)],
+            2: [(0.3, 0.3), (0.7, 0.7)],
+            3: [(0.25, 0.25), (0.5, 0.5), (0.75, 0.75)],
+            4: [(0.3, 0.3), (0.7, 0.3), (0.3, 0.7), (0.7, 0.7)],
+            5: [(0.25, 0.25), (0.75, 0.25), (0.5, 0.5), (0.25, 0.75), (0.75, 0.75)],
+            6: [(0.3, 0.25), (0.7, 0.25), (0.3, 0.5), (0.7, 0.5), (0.3, 0.75), (0.7, 0.75)]
         }
 
-        # 내부 내용 렌더링
-        self._populate_module_body(mod_key, body)
+        for idx, val in enumerate(self.dice_values):
+            bx = start_x + idx * (box_sz + gap)
+            by = cy - box_sz // 2
+            # 블랙 주사위 바디
+            self.dice_canvas.create_rectangle(
+                bx, by, bx + box_sz, by + box_sz,
+                fill="#0f172a", outline="#334155", width=2
+            )
+            # 화이트 눈금 점
+            for nx, ny in dot_coords.get(val, [(0.5, 0.5)]):
+                dx = bx + nx * box_sz
+                dy = by + ny * box_sz
+                r = 6
+                self.dice_canvas.create_oval(dx - r, dy - r, dx + r, dy + r, fill="#ffffff", outline="")
 
-    def _start_card_drag(self, event, mod_key: str):
-        card = self.modules[mod_key]["frame"]
-        card.lift()
-        self._drag_card_key = mod_key
-        self._drag_mouse_x = event.x_root
-        self._drag_mouse_y = event.y_root
-        self._drag_card_x = card.winfo_x()
-        self._drag_card_y = card.winfo_y()
-
-    def _on_card_drag(self, event, mod_key: str):
-        dx = event.x_root - self._drag_mouse_x
-        dy = event.y_root - self._drag_mouse_y
-        nx = max(0, self._drag_card_x + dx)
-        ny = max(0, self._drag_card_y + dy)
-        card = self.modules[mod_key]["frame"]
-        card.place(x=nx, y=ny)
-        self.modules[mod_key]["x"] = nx
-        self.modules[mod_key]["y"] = ny
-
-    def _start_card_resize(self, event, mod_key: str):
-        card = self.modules[mod_key]["frame"]
-        card.lift()
-        self._rs_card_key = mod_key
-        self._rs_mouse_x = event.x_root
-        self._rs_mouse_y = event.y_root
-        self._rs_orig_w = card.winfo_width()
-        self._rs_orig_h = card.winfo_height()
-
-    def _on_card_resize(self, event, mod_key: str):
-        dx = event.x_root - self._rs_mouse_x
-        dy = event.y_root - self._rs_mouse_y
-        nw = max(220, self._rs_orig_w + dx)
-        nh = max(180, self._rs_orig_h + dy)
-        card = self.modules[mod_key]["frame"]
-        card.place(width=nw, height=nh)
-        self.modules[mod_key]["w"] = nw
-        self.modules[mod_key]["h"] = nh
-
-    def _hide_module(self, mod_key: str):
-        if mod_key in self.modules:
-            if mod_key == "visualizer":
-                self._stop_camera_stream()
-            self.modules[mod_key]["frame"].place_forget()
-            self._save_layout()
-
-    # ─── 각 모듈의 내부 내용 채우기 ───────────────────────────────────────
-    def _populate_module_body(self, key: str, body):
-        if key == "schedule":
-            self._build_body_schedule(body)
-        elif key == "meal":
-            self._build_body_meal(body)
-        elif key == "notice":
-            self._build_body_notice(body)
-        elif key == "timer":
-            self._build_body_timer(body)
-        elif key == "picker":
-            self._build_body_picker(body)
-        elif key == "wheel":
-            self._build_body_wheel(body)
-        elif key == "visualizer":
-            self._build_body_visualizer(body)
-
-    # 1. 시간표 모듈
-    def _build_body_schedule(self, body):
-        self.sd_sched_scroll = ctk.CTkScrollableFrame(body, fg_color="transparent")
-        self.sd_sched_scroll.pack(fill="both", expand=True)
-        self._render_schedule_items()
-
-    def _render_schedule_items(self):
-        if not hasattr(self, "sd_sched_scroll") or not self.sd_sched_scroll.winfo_exists():
+    def _roll_dice_anim(self):
+        if self.dice_rolling:
             return
-        for w in self.sd_sched_scroll.winfo_children():
-            w.destroy()
+        self.dice_rolling = True
+
+        def _step(step=0):
+            if step < 8:
+                self.dice_values = [random.randint(1, 6) for _ in range(self.dice_count)]
+                self._draw_dice_faces()
+                self.after(60, lambda: _step(step + 1))
+            else:
+                self.dice_values = [random.randint(1, 6) for _ in range(self.dice_count)]
+                self._draw_dice_faces()
+                self.dice_rolling = False
+                try:
+                    winsound.Beep(900, 120)
+                except Exception:
+                    pass
+
+        _step()
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # 3. 돌림판 & 랜덤 뽑기
+    # ══════════════════════════════════════════════════════════════════════════
+    def _show_wheel(self):
+        body = self._create_white_module_window("wheel", "돌려돌려 돌림판", "🎡", 360, 420)
+        self.wheel_canvas = tk.Canvas(body, bg="#ffffff", highlightthickness=0, height=270)
+        self.wheel_canvas.pack(fill="both", expand=True, padx=8, pady=4)
+        self._draw_wheel_graphic()
+
+        btn_row = ctk.CTkFrame(body, fg_color="transparent")
+        btn_row.pack(fill="x", padx=16, pady=10)
+
+        ctk.CTkButton(
+            btn_row, text="🎡 돌리기!", height=40, font=get_font(12, "bold"),
+            fg_color="#0284c7", hover_color="#0369a1", text_color="#ffffff",
+            corner_radius=20, command=self._spin_wheel_anim
+        ).pack(side="left", fill="x", expand=True, padx=2)
+
+        ctk.CTkButton(
+            btn_row, text="항목 편집", width=70, height=40, font=get_font(10),
+            fg_color="#f1f5f9", hover_color="#e2e8f0", text_color="#475569",
+            corner_radius=20, command=self._edit_wheel_items
+        ).pack(side="left", padx=2)
+
+    def _draw_wheel_graphic(self):
+        if not hasattr(self, "wheel_canvas") or not self.wheel_canvas.winfo_exists():
+            return
+        self.wheel_canvas.delete("all")
+        w = self.wheel_canvas.winfo_width() or 340
+        h = self.wheel_canvas.winfo_height() or 270
+        cx, cy, r = w // 2, h // 2, min(w, h) // 2 - 20
+
+        palette = ["#f87171", "#fb923c", "#facc15", "#4ade80", "#38bdf8", "#c084fc"]
+        n = len(self.wheel_items)
+        if n == 0:
+            return
+
+        deg_per = 360.0 / n
+        for i, item in enumerate(self.wheel_items):
+            st = self.wheel_angle + i * deg_per
+            col = palette[i % len(palette)]
+            self.wheel_canvas.create_pieslice(
+                cx - r, cy - r, cx + r, cy + r,
+                start=st, extent=deg_per, fill=col, outline="#ffffff", width=2
+            )
+            # 텍스트
+            mid_rad = math.radians(st + deg_per / 2)
+            tx = cx + r * 0.65 * math.cos(mid_rad)
+            ty = cy - r * 0.65 * math.sin(mid_rad)
+            self.wheel_canvas.create_text(tx, ty, text=item, fill="#ffffff", font=("맑은 고딕", 10, "bold"))
+
+        # 중앙 핀
+        self.wheel_canvas.create_oval(cx - 14, cy - 14, cx + 14, cy + 14, fill="#ffffff", outline="#0f172a", width=2)
+        # 12시 방향 상단 바늘
+        self.wheel_canvas.create_polygon(
+            cx, cy - r + 8, cx - 10, cy - r - 12, cx + 10, cy - r - 12,
+            fill="#ea580c", outline="#ffffff", width=1
+        )
+
+    def _spin_wheel_anim(self):
+        if self.wheel_spinning:
+            return
+        self.wheel_spinning = True
+        total_spin = random.randint(720, 1440)
+        curr_spin = 0
+
+        def _step():
+            nonlocal curr_spin
+            if curr_spin < total_spin:
+                speed = max(2, (total_spin - curr_spin) * 0.08)
+                self.wheel_angle = (self.wheel_angle + speed) % 360
+                curr_spin += speed
+                self._draw_wheel_graphic()
+                self.after(30, _step)
+            else:
+                self.wheel_spinning = False
+                n = len(self.wheel_items)
+                deg_per = 360.0 / n
+                # 12시 방향에 걸린 항목 계산 (90도 위치)
+                hit_idx = int((90 - self.wheel_angle) % 360 / deg_per) % n
+                winner = self.wheel_items[hit_idx]
+                try:
+                    winsound.Beep(1200, 300)
+                except Exception:
+                    pass
+                messagebox.showinfo("당첨!", f"🎉 축하합니다!\n\n선택된 항목: [{winner}]")
+
+        _step()
+
+    def _edit_wheel_items(self):
+        curr_str = ", ".join(self.wheel_items)
+        ans = simpledialog.askstring("돌림판 항목", "항목들을 쉼표(,)로 구분하여 입력하세요:", initialvalue=curr_str, parent=self)
+        if ans:
+            items = [x.strip() for x in ans.split(",") if x.strip()]
+            if items:
+                self.wheel_items = items
+                self._draw_wheel_graphic()
+
+    def _show_picker(self):
+        body = self._create_white_module_window("picker", "랜덤 발표자 뽑기", "🎯", 340, 320)
+        ctk.CTkLabel(body, text="오늘의 발표자는 누구일까요?", font=get_font(12, "bold"), text_color="#334155").pack(pady=(16, 8))
+
+        disp = ctk.CTkFrame(body, fg_color="#f8fafc", corner_radius=12, border_width=1, border_color="#e2e8f0")
+        disp.pack(fill="both", expand=True, padx=20, pady=8)
+
+        self.picker_res_lbl = ctk.CTkLabel(
+            disp, text="?", font=ctk.CTkFont(family="Consolas", size=48, weight="bold"),
+            text_color="#ea580c"
+        )
+        self.picker_res_lbl.pack(expand=True)
+
+        ctk.CTkButton(
+            body, text="🎯 발표자 뽑기!", height=42, font=get_font(13, "bold"),
+            fg_color="#0284c7", hover_color="#0369a1", corner_radius=21,
+            command=self._pick_random_student
+        ).pack(fill="x", padx=24, pady=16)
+
+    def _pick_random_student(self):
+        # 1~25번 학생 중 랜덤 추첨
+        def _anim(step=0):
+            if step < 10:
+                self.picker_res_lbl.configure(text=f"{random.randint(1, 25)}번")
+                self.after(50, lambda: _anim(step + 1))
+            else:
+                winner_num = random.randint(1, 25)
+                self.picker_res_lbl.configure(text=f"{winner_num}번 학생!")
+                try:
+                    winsound.Beep(1200, 200)
+                except Exception:
+                    pass
+
+        _anim()
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # 4. 시간표 & 급식 & 1인1역 & 메모
+    # ══════════════════════════════════════════════════════════════════════════
+    def _show_timetable(self):
+        body = self._create_white_module_window("timetable", "오늘의 수업 시간표", "📋", 380, 420)
+        scroll = ctk.CTkScrollableFrame(body, fg_color="transparent")
+        scroll.pack(fill="both", expand=True, padx=8, pady=6)
 
         is_hol, hol_name, items = timetable_manager.get_today_schedule_items()
         now_str = datetime.datetime.now().strftime("%H:%M")
 
         if is_hol:
-            c = ctk.CTkFrame(self.sd_sched_scroll, fg_color="#3b1d11", corner_radius=8)
-            c.pack(fill="x", pady=10)
-            ctk.CTkLabel(c, text=f"🇰🇷 [{hol_name}] 공휴일", font=get_font(13, "bold"), text_color="#fdba74").pack(pady=12)
-            return
+            ctk.CTkLabel(scroll, text=f"🇰🇷 [{hol_name}] 공휴일", font=get_font(14, "bold"), text_color="#ea580c").pack(pady=40)
+        else:
+            for it in items:
+                is_lunch = it["is_lunch"]
+                is_cur = (it["start"] <= now_str <= it["end"])
+                card = ctk.CTkFrame(
+                    scroll, fg_color="#f0fdf4" if is_cur else ("#fff7ed" if is_lunch else "#f8fafc"),
+                    corner_radius=8, border_width=1, border_color="#86efac" if is_cur else "#e2e8f0"
+                )
+                card.pack(fill="x", pady=2)
+                ctk.CTkLabel(card, text=it["name"], font=get_font(10, "bold"), width=44, fg_color="#0284c7" if not is_lunch else "#ea580c", text_color="#fff", corner_radius=4).pack(side="left", padx=6, pady=6)
+                ctk.CTkLabel(card, text=f"{it['start']}~{it['end']}", font=get_font(9), text_color="#64748b").pack(side="left", padx=4)
+                ctk.CTkLabel(card, text=it["subject"], font=get_font(11, "bold"), text_color="#1e293b").pack(side="left", fill="x", expand=True, padx=6)
 
-        colors = ["#1e3a8a", "#065f46", "#831843", "#701a75", "#78350f", "#1e293b", "#312e81"]
-        for idx, it in enumerate(items):
-            is_cur = (it["start"] <= now_str <= it["end"])
-            is_lunch = it["is_lunch"]
-            card_bg = "#064e3b" if is_cur else ("#3b1d11" if is_lunch else "#181d28")
-            border_c = "#10b981" if is_cur else ("#ea580c" if is_lunch else "#334155")
-
-            card = ctk.CTkFrame(self.sd_sched_scroll, fg_color=card_bg, corner_radius=6, border_width=1, border_color=border_c)
-            card.pack(fill="x", pady=2)
-
-            badge_bg = "#ea580c" if is_lunch else colors[idx % len(colors)]
-            ctk.CTkLabel(card, text=it["name"], font=get_font(11, "bold"), fg_color=badge_bg, text_color="#ffffff", corner_radius=4, width=54, height=24).pack(side="left", padx=6, pady=4)
-            ctk.CTkLabel(card, text=f"{it['start']}~{it['end']}", font=get_font(10), text_color="#94a3b8", width=74).pack(side="left")
-            ctk.CTkLabel(card, text=it["subject"], font=get_font(12, "bold"), text_color="#6ee7b7" if is_cur else "#ffffff", anchor="w").pack(side="left", fill="x", expand=True, padx=4)
-
-            tag = it.get("tag", "담임")
-            if tag in ["전담", "외강"]:
-                ctk.CTkLabel(card, text=f"[{tag}]", font=get_font(10, "bold"), fg_color="#7c3aed" if tag == "전담" else "#0891b2", text_color="#ffffff", corner_radius=3, width=38, height=18).pack(side="right", padx=6)
-
-    # 2. 급식 모듈
-    def _build_body_meal(self, body):
+    def _show_meal(self):
+        body = self._create_white_module_window("meal", "오늘의 학교 급식", "🍱", 360, 400)
         scroll = ctk.CTkScrollableFrame(body, fg_color="transparent")
-        scroll.pack(fill="both", expand=True)
+        scroll.pack(fill="both", expand=True, padx=8, pady=6)
 
         try:
             today = datetime.date.today()
@@ -393,374 +834,186 @@ class StudentDisplayWindow(ctk.CTkToplevel):
             dishes, cal = [], ""
 
         if cal:
-            ctk.CTkLabel(scroll, text=f"🔥 {cal}", font=get_font(11, "bold"), text_color="#4ade80").pack(pady=(2, 4))
+            ctk.CTkLabel(scroll, text=f"🔥 열량: {cal}", font=get_font(11, "bold"), text_color="#16a34a").pack(pady=4)
 
-        for i, dish in enumerate(dishes):
-            row = ctk.CTkFrame(scroll, fg_color="#221e10" if i % 2 == 0 else "#181d28", corner_radius=4)
-            row.pack(fill="x", pady=2)
-            ctk.CTkLabel(row, text=f"• {dish}", font=get_font(11, "bold"), text_color="#f8fafc", anchor="w").pack(fill="x", padx=8, pady=4)
+        for d in dishes:
+            r = ctk.CTkFrame(scroll, fg_color="#f8fafc", corner_radius=6, border_width=1, border_color="#f1f5f9")
+            r.pack(fill="x", pady=2)
+            ctk.CTkLabel(r, text=f"• {d}", font=get_font(11, "bold"), text_color="#1e293b", anchor="w").pack(fill="x", padx=10, pady=5)
 
         if not dishes:
-            ctk.CTkLabel(scroll, text="오늘 등록된 급식이 없습니다.", font=get_font(11), text_color="#64748b").pack(pady=20)
+            ctk.CTkLabel(scroll, text="오늘 등록된 급식 메뉴가 없습니다.", font=get_font(11), text_color="#94a3b8").pack(pady=40)
 
-    # 3. 알림판 모듈
-    def _build_body_notice(self, body):
-        box = ctk.CTkTextbox(body, font=get_font(11), fg_color="#090d16", text_color="#f8fafc", corner_radius=6)
-        box.pack(fill="both", expand=True, padx=2, pady=2)
-        box.insert("1.0", "1. 수업 시작 3분 전 자리에 앉기\n2. 쉬는 시간 복도에서 뛰지 않기\n3. 준비물 및 과제 챙기기\n\n\"배움에는 끝이 없다.\"")
+    def _show_role(self):
+        body = self._create_white_module_window("role", "학급 1인 1역 현황", "👥", 340, 360)
+        scroll = ctk.CTkScrollableFrame(body, fg_color="transparent")
+        scroll.pack(fill="both", expand=True, padx=8, pady=6)
 
-    # 4. 타이머 모듈
-    def _build_body_timer(self, body):
-        self.timer_disp = ctk.CTkLabel(body, text="05:00", font=ctk.CTkFont(family="Consolas", size=48, weight="bold"), text_color="#4ade80")
-        self.timer_disp.pack(pady=(8, 4))
+        for r_name, student in self.roles:
+            row = ctk.CTkFrame(scroll, fg_color="#f8fafc", corner_radius=6, border_width=1, border_color="#e2e8f0")
+            row.pack(fill="x", pady=2)
+            ctk.CTkLabel(row, text=r_name, font=get_font(10, "bold"), text_color="#0284c7", width=90, anchor="w").pack(side="left", padx=8, pady=5)
+            ctk.CTkLabel(row, text=student, font=get_font(10, "bold"), text_color="#334155").pack(side="left", padx=4)
 
-        presets = ctk.CTkFrame(body, fg_color="transparent")
-        presets.pack(pady=2)
-        for m in [1, 3, 5, 10, 15]:
-            ctk.CTkButton(presets, text=f"{m}분", font=get_font(10, "bold"), width=38, height=24, fg_color="#1e293b", command=lambda mins=m: self._timer_set(mins * 60)).pack(side="left", padx=2)
+    def _show_memo(self):
+        body = self._create_white_module_window("memo", "오늘의 알림장 메모", "📝", 340, 320)
+        box = ctk.CTkTextbox(body, font=get_font(11), fg_color="#f8fafc", text_color="#1e293b", corner_radius=8)
+        box.pack(fill="both", expand=True, padx=12, pady=10)
+        box.insert("1.0", "📌 오늘의 알림장\n1. 알림장 부모님 확인받기\n2. 내일 수학 2단원 수익책 챙기기\n3. 체육복 입고 오기")
 
-        ctrl = ctk.CTkFrame(body, fg_color="transparent")
-        ctrl.pack(pady=6)
-        self.timer_btn = ctk.CTkButton(ctrl, text="▶ 시작", font=get_font(12, "bold"), width=72, height=32, fg_color="#059669", command=self._timer_toggle)
-        self.timer_btn.pack(side="left", padx=4)
-        ctk.CTkButton(ctrl, text="↺ 리셋", font=get_font(11), width=60, height=32, fg_color="#334155", command=lambda: self._timer_set(300)).pack(side="left", padx=4)
+    def _show_coin(self):
+        body = self._create_white_module_window("coin", "동전 던지기", "🪙", 300, 320)
+        disp = ctk.CTkFrame(body, fg_color="#f8fafc", corner_radius=12)
+        disp.pack(fill="both", expand=True, padx=20, pady=10)
 
-    def _timer_set(self, secs):
-        self.timer_running = False
-        if self.timer_job:
-            self.after_cancel(self.timer_job)
-            self.timer_job = None
-        self.timer_seconds = secs
-        m, s = divmod(secs, 60)
-        self.timer_disp.configure(text=f"{m:02d}:{s:02d}", text_color="#4ade80")
-        self.timer_btn.configure(text="▶ 시작", fg_color="#059669")
+        self.coin_lbl = ctk.CTkLabel(disp, text="앞면", font=get_font(32, "bold"), text_color="#d97706")
+        self.coin_lbl.pack(expand=True)
 
-    def _timer_toggle(self):
-        if self.timer_running:
-            self.timer_running = False
-            if self.timer_job:
-                self.after_cancel(self.timer_job)
-                self.timer_job = None
-            self.timer_btn.configure(text="▶ 계속", fg_color="#059669")
-        else:
-            self.timer_running = True
-            self.timer_btn.configure(text="⏸ 정지", fg_color="#d97706")
-            self._timer_tick()
+        ctk.CTkButton(
+            body, text="🪙 동전 던지기", height=40, font=get_font(12, "bold"),
+            fg_color="#ea580c", hover_color="#c2410c", corner_radius=20,
+            command=self._flip_coin_anim
+        ).pack(fill="x", padx=24, pady=14)
 
-    def _timer_tick(self):
-        if not self.timer_running:
-            return
-        if self.timer_seconds <= 0:
-            self.timer_running = False
-            self.timer_disp.configure(text="00:00", text_color="#ef4444")
-            self.timer_btn.configure(text="▶ 시작", fg_color="#059669")
-            return
-        self.timer_seconds -= 1
-        m, s = divmod(self.timer_seconds, 60)
-        col = "#ef4444" if self.timer_seconds <= 10 else ("#fb923c" if self.timer_seconds <= 30 else "#4ade80")
-        self.timer_disp.configure(text=f"{m:02d}:{s:02d}", text_color=col)
-        self.timer_job = self.after(1000, self._timer_tick)
-
-    # 5. 발표자 뽑기 모듈
-    def _build_body_picker(self, body):
-        from src.student_manager import student_manager
-        self.picker_lbl = ctk.CTkLabel(body, text="발표자 뽑기", font=get_font(20, "bold"), text_color="#fde047")
-        self.picker_lbl.pack(expand=True, pady=10)
-
-        def _pick():
-            names = student_manager.get_student_names()
-            if names:
-                import random
-                self.picker_lbl.configure(text=f"🎉  {random.choice(names)}  🎉", text_color="#4ade80")
+    def _flip_coin_anim(self):
+        def _step(cnt=0):
+            if cnt < 8:
+                self.coin_lbl.configure(text="앞면" if cnt % 2 == 0 else "뒷면")
+                self.after(60, lambda: _step(cnt + 1))
             else:
-                self.picker_lbl.configure(text="학생 명단 없음", text_color="#f87171")
+                res = random.choice(["앞면 (그림)", "뒷면 (숫자)"])
+                self.coin_lbl.configure(text=res)
+                try:
+                    winsound.Beep(1100, 150)
+                except Exception:
+                    pass
+        _step()
 
-        ctk.CTkButton(body, text="🎯 발표자 추첨!", font=get_font(13, "bold"), width=120, height=40, fg_color="#7c3aed", hover_color="#6d28d9", command=_pick).pack(pady=(0, 10))
+    def _show_scoreboard(self):
+        body = self._create_white_module_window("scoreboard", "모둠 점수판", "🏆", 380, 340)
+        scroll = ctk.CTkScrollableFrame(body, fg_color="transparent")
+        scroll.pack(fill="both", expand=True, padx=8, pady=6)
 
-    # 6. 돌림판 모듈
-    def _build_body_wheel(self, body):
-        import math, random
-        self.wheel_canvas = tk.Canvas(body, bg="#131b2e", highlightthickness=0, width=180, height=180)
-        self.wheel_canvas.pack(pady=4)
+        for m_name in list(self.scores.keys()):
+            row = ctk.CTkFrame(scroll, fg_color="#f8fafc", corner_radius=8, border_width=1, border_color="#e2e8f0")
+            row.pack(fill="x", pady=3)
 
-        def _draw():
-            c = self.wheel_canvas
-            c.delete("all")
-            n = len(self.wheel_items)
-            w = int(c["width"])
-            cx, cy, r = w//2, w//2, w//2 - 6
-            colors = ["#ef4444","#f97316","#f59e0b","#10b981","#06b6d4","#3b82f6","#8b5cf6"]
-            slice_deg = 360.0 / n
-            for i, itm in enumerate(self.wheel_items):
-                st = self.wheel_angle + i * slice_deg
-                c.create_arc(cx-r, cy-r, cx+r, cy+r, start=st, extent=slice_deg, fill=colors[i % len(colors)], outline="#ffffff")
-                mid = math.radians(st + slice_deg / 2)
-                c.create_text(cx + r*0.6*math.cos(mid), cy - r*0.6*math.sin(mid), text=itm[:4], fill="#ffffff", font=("Malgun Gothic", 9, "bold"))
-            c.create_polygon(cx, cy-r-4, cx-6, cy-r+8, cx+6, cy-r+8, fill="#fbbf24")
+            ctk.CTkLabel(row, text=m_name, font=get_font(11, "bold"), width=60).pack(side="left", padx=8, pady=6)
 
-        self._draw_board_wheel = _draw
-        _draw()
+            score_lbl = ctk.CTkLabel(row, text=str(self.scores[m_name]), font=get_font(14, "bold"), text_color="#0284c7", width=40)
+            score_lbl.pack(side="left", padx=6)
 
-        def _spin():
-            if self.wheel_spinning:
-                return
-            self.wheel_spinning = True
-            def _tick(sp):
-                if sp > 0.6:
-                    self.wheel_angle = (self.wheel_angle + sp) % 360
-                    self._draw_board_wheel()
-                    self.after(16, lambda: _tick(sp * 0.98))
-                else:
-                    self.wheel_spinning = False
-            _tick(30.0)
+            def _add(m=m_name, sl=score_lbl, d=1):
+                self.scores[m] += d
+                sl.configure(text=str(self.scores[m]))
+                self._save_config()
 
-        ctk.CTkButton(body, text="🚀 돌리기!", font=get_font(11, "bold"), width=90, height=28, fg_color="#ea580c", command=_spin).pack(pady=4)
+            ctk.CTkButton(row, text="＋", width=28, height=26, font=get_font(10, "bold"), fg_color="#0284c7", command=lambda m=m_name, sl=score_lbl: _add(m, sl, 1)).pack(side="right", padx=2)
+            ctk.CTkButton(row, text="－", width=28, height=26, font=get_font(10, "bold"), fg_color="#64748b", command=lambda m=m_name, sl=score_lbl: _add(m, sl, -1)).pack(side="right", padx=2)
 
-    # 7. 실물화상기 모듈
-    def _build_body_visualizer(self, body):
-        import cv2
-        self.cam_canvas = tk.Canvas(body, bg="#000000", highlightthickness=0)
-        self.cam_canvas.pack(fill="both", expand=True)
+    def _show_sound(self):
+        body = self._create_white_module_window("sound", "우리반 효과음", "🔊", 360, 300)
+        grid = ctk.CTkFrame(body, fg_color="transparent")
+        grid.pack(fill="both", expand=True, padx=12, pady=10)
+        grid.grid_columnconfigure((0, 1), weight=1)
+        grid.grid_rowconfigure((0, 1, 2), weight=1)
 
-        bar = ctk.CTkFrame(body, fg_color="transparent", height=28)
-        bar.pack(fill="x", pady=2)
-        ctk.CTkButton(bar, text="⟳ 회전", width=44, height=22, font=get_font(9), fg_color="#1e293b", command=self._rotate_cam).pack(side="left", padx=2)
-        ctk.CTkButton(bar, text="↔ 반전", width=44, height=22, font=get_font(9), fg_color="#1e293b", command=self._flip_cam).pack(side="left", padx=2)
-        self.freeze_cam_btn = ctk.CTkButton(bar, text="❄️ 정지", width=46, height=22, font=get_font(9), fg_color="#1e293b", command=self._toggle_cam_freeze)
-        self.freeze_cam_btn.pack(side="left", padx=2)
+        sounds = [
+            ("👏 박수갈채", 1200), ("🔔 딩동댕 (정답)", 1500),
+            ("❌ 땡 (오답)", 400),   ("🥁 드럼롤", 800),
+            ("🎉 환호성", 1600),     ("🎺 팡파레", 1800),
+        ]
+        for i, (s_name, freq) in enumerate(sounds):
+            r = i // 2
+            c = i % 2
+            ctk.CTkButton(
+                grid, text=s_name, font=get_font(11, "bold"),
+                fg_color="#f8fafc", hover_color="#f1f5f9", text_color="#1e293b",
+                border_width=1, border_color="#cbd5e1", corner_radius=10,
+                command=lambda f=freq: self._play_sound(f)
+            ).grid(row=r, column=c, sticky="nsew", padx=4, pady=4)
 
-        self._start_camera_stream()
-
-    def _rotate_cam(self):
-        self.cam_rot = (self.cam_rot + 90) % 360
-
-    def _flip_cam(self):
-        self.cam_flip = not self.cam_flip
-
-    def _toggle_cam_freeze(self):
-        self.cam_freeze = not self.cam_freeze
-        if self.cam_freeze:
-            self.cam_frozen_frame = self.cam_latest_frame.copy() if self.cam_latest_frame is not None else None
-            self.freeze_cam_btn.configure(text="▶ 재생", fg_color="#ea580c")
-        else:
-            self.cam_frozen_frame = None
-            self.freeze_cam_btn.configure(text="❄️ 정지", fg_color="#1e293b")
-
-    def _start_camera_stream(self):
-        if self.cam_running:
-            return
-        self.cam_running = True
-        threading.Thread(target=self._cam_worker, daemon=True).start()
-        self._cam_render_tick()
-
-    def _cam_worker(self):
-        import cv2
-        cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
-        if not cap.isOpened():
-            cap.release()
-            cap = cv2.VideoCapture(0)
-        self.cam_cap = cap
-        while self.cam_running and cap.isOpened():
-            ret, frame = cap.read()
-            if ret and frame is not None:
-                self.cam_latest_frame = frame
-            else:
-                time.sleep(0.03)
-            time.sleep(0.01)
-        cap.release()
-
-    def _cam_render_tick(self):
-        if not self.cam_running or not self.winfo_exists():
-            return
-        frame = self.cam_frozen_frame if self.cam_freeze else self.cam_latest_frame
-        if frame is not None and hasattr(self, "cam_canvas") and self.cam_canvas.winfo_exists():
-            import cv2
-            cw = self.cam_canvas.winfo_width()
-            ch = self.cam_canvas.winfo_height()
-            if cw > 20 and ch > 20:
-                img = frame.copy()
-                if self.cam_rot == 90:
-                    img = cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE)
-                elif self.cam_rot == 180:
-                    img = cv2.rotate(img, cv2.ROTATE_180)
-                elif self.cam_rot == 270:
-                    img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
-                if self.cam_flip:
-                    img = cv2.flip(img, 1)
-
-                ih, iw = img.shape[:2]
-                scale = min(cw / iw, ch / ih)
-                nw = max(1, int(iw * scale))
-                nh = max(1, int(ih * scale))
-                img_rgb = cv2.cvtColor(cv2.resize(img, (nw, nh)), cv2.COLOR_BGR2RGB)
-                self.cam_photo = ImageTk.PhotoImage(Image.fromarray(img_rgb))
-                self.cam_canvas.delete("all")
-                self.cam_canvas.create_image(cw // 2, ch // 2, image=self.cam_photo, anchor="center")
-
-        self.after(33, self._cam_render_tick)
-
-    def _stop_camera_stream(self):
-        self.cam_running = False
-        if self.cam_cap:
-            try:
-                self.cam_cap.release()
-            except Exception:
-                pass
-            self.cam_cap = None
-
-    # ─── 프리셋 원클릭 자동 배치 ──────────────────────────────────────────
-    def preset_default(self):
-        """기본 배치: 좌측 시간표 + 우측 급식 & 알림판"""
-        self._stop_camera_stream()
-        for k in list(self.modules.keys()):
-            if k not in ["schedule", "meal", "notice"]:
-                self._hide_module(k)
-
-        self._create_module_card("schedule", "📋 오늘의 수업 시간표", 20, 20, 560, 640)
-        self._create_module_card("meal", "🍱 오늘의 점심 급식", 600, 20, 520, 310)
-        self._create_module_card("notice", "📌 교실 알림판", 600, 350, 520, 310)
-        self._save_layout()
-
-    def preset_activity(self):
-        """활동/타이머 배치: 대형 타이머 + 우측 발표자 뽑기 & 알림판"""
-        self._stop_camera_stream()
-        for k in list(self.modules.keys()):
-            if k not in ["timer", "picker", "notice", "wheel"]:
-                self._hide_module(k)
-
-        self._create_module_card("timer", "⏱ 집중 타이머", 20, 20, 580, 380)
-        self._create_module_card("wheel", "🎡 돌림판", 20, 420, 580, 260)
-        self._create_module_card("picker", "🎲 발표자 뽑기", 620, 20, 500, 260)
-        self._create_module_card("notice", "📌 활동 안내", 620, 300, 500, 380)
-        self._save_layout()
-
-    def preset_visualizer(self):
-        """실물화상기 집중 배치: 대형 실물화상기 + 우측 타이머 & 알림판"""
-        for k in list(self.modules.keys()):
-            if k not in ["visualizer", "timer", "notice"]:
-                self._hide_module(k)
-
-        self._create_module_card("visualizer", "📷 실물화상기 화면", 20, 20, 720, 650)
-        self._create_module_card("timer", "⏱ 교실 타이머", 760, 20, 360, 300)
-        self._create_module_card("notice", "📌 수업 메모", 760, 340, 360, 330)
-        self._save_layout()
-
-    def preset_quad(self):
-        """4분할 종합 배치: 시간표, 급식, 타이머, 뽑기"""
-        self._stop_camera_stream()
-        for k in list(self.modules.keys()):
-            if k not in ["schedule", "meal", "timer", "picker"]:
-                self._hide_module(k)
-
-        self._create_module_card("schedule", "📋 오늘의 시간표", 20, 20, 540, 320)
-        self._create_module_card("meal", "🍱 오늘의 점심", 580, 20, 540, 320)
-        self._create_module_card("timer", "⏱ 집중 타이머", 20, 360, 540, 300)
-        self._create_module_card("picker", "🎲 발표자 뽑기", 580, 360, 540, 300)
-        self._save_layout()
-
-    # ─── 모듈 띄우기 드롭다운 ─────────────────────────────────────────────
-    def _open_add_module_menu(self):
-        menu = tk.Menu(self, tearoff=0)
-        menu.add_command(label="📋 시간표 모듈 띄우기", command=lambda: self._show_or_add_module("schedule", "📋 오늘의 수업 시간표", 40, 40, 500, 450))
-        menu.add_command(label="🍱 급식 식단 모듈 띄우기", command=lambda: self._show_or_add_module("meal", "🍱 오늘의 점심 급식", 80, 80, 420, 320))
-        menu.add_command(label="📌 알림판/메모 띄우기", command=lambda: self._show_or_add_module("notice", "📌 교실 알림판", 120, 120, 400, 300))
-        menu.add_command(label="⏱ 교실 타이머 띄우기", command=lambda: self._show_or_add_module("timer", "⏱ 집중 타이머", 160, 160, 460, 300))
-        menu.add_command(label="🎲 발표자 뽑기 띄우기", command=lambda: self._show_or_add_module("picker", "🎲 발표자 뽑기", 200, 200, 380, 240))
-        menu.add_command(label="🎡 돌려돌려 돌림판 띄우기", command=lambda: self._show_or_add_module("wheel", "🎡 돌림판", 240, 240, 340, 320))
-        menu.add_command(label="📷 실물화상기 띄우기", command=lambda: self._show_or_add_module("visualizer", "📷 실물화상기 화면", 60, 60, 640, 500))
-
-        x = self.winfo_rootx() + self.add_btn_ref.winfo_x()
-        y = self.winfo_rooty() + self.add_btn_ref.winfo_y() + 28
-        menu.tk_popup(x, y)
-
-    def _show_or_add_module(self, key: str, title: str, def_x: int, def_y: int, def_w: int, def_h: int):
-        self._create_module_card(key, title, def_x, def_y, def_w, def_h)
-        self._save_layout()
-
-    # ─── 레이아웃 저장 & 복원 ─────────────────────────────────────────────
-    def _save_layout(self):
-        data = {}
-        for k, v in self.modules.items():
-            card = v["frame"]
-            if card.winfo_viewable():
-                data[k] = {
-                    "title": v["title"],
-                    "x": card.winfo_x(),
-                    "y": card.winfo_y(),
-                    "w": card.winfo_width(),
-                    "h": card.winfo_height()
-                }
+    def _play_sound(self, freq: int):
         try:
-            with open(self.LAYOUT_FILE, "w", encoding="utf-8") as f:
-                json.dump(data, f, ensure_ascii=False, indent=2)
+            winsound.Beep(freq, 250)
         except Exception:
             pass
 
-    def _load_layout_or_default(self):
-        if os.path.exists(self.LAYOUT_FILE):
-            try:
-                with open(self.LAYOUT_FILE, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                if data:
-                    for k, info in data.items():
-                        self._create_module_card(
-                            k, info.get("title", k),
-                            info.get("x", 40), info.get("y", 40),
-                            info.get("w", 400), info.get("h", 300)
-                        )
-                    return
-            except Exception:
-                pass
-        # 파일이 없으면 기본 프리셋 적용
-        self.preset_default()
-
-    # ─── 컨트롤 루프 및 이벤트 ───────────────────────────────────────────
-    def _zoom_step(self, delta: float):
-        self.global_zoom = max(0.7, min(2.0, round(self.global_zoom + delta, 1)))
-        self.zoom_lbl.configure(text=f"{int(self.global_zoom * 100)}%")
-
-    def _toggle_pin(self):
-        self.is_pinned = not self.is_pinned
-        self.attributes("-topmost", self.is_pinned)
-        self.pin_btn.configure(
-            text="📌" if self.is_pinned else "📍",
-            fg_color="#0284c7" if self.is_pinned else "#334155"
+    def _show_clock(self):
+        body = self._create_white_module_window("clock", "교실 대형 시계", "🕒", 340, 240)
+        self.big_clock_lbl = ctk.CTkLabel(
+            body, text="00:00:00",
+            font=ctk.CTkFont(family="Consolas", size=48, weight="bold"),
+            text_color="#0284c7"
         )
+        self.big_clock_lbl.pack(expand=True)
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # 초기 기본 화면: 사진 3처럼 타이머 + 주사위 동시 소환
+    # ══════════════════════════════════════════════════════════════════════════
+    def _open_default_tools(self):
+        self._show_timer()
+        self._show_dice()
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # 배경 테마 변경 팝업
+    # ══════════════════════════════════════════════════════════════════════════
+    def _open_bg_picker(self):
+        diag = ctk.CTkToplevel(self)
+        diag.title("배경 테마 선택")
+        diag.geometry("300x220")
+        diag.resizable(False, False)
+        diag.attributes("-topmost", True)
+
+        ctk.CTkLabel(diag, text="🎨 교실 화면 배경 테마", font=get_font(12, "bold")).pack(pady=(12, 6))
+
+        grid = ctk.CTkFrame(diag, fg_color="transparent")
+        grid.pack(fill="both", expand=True, padx=16, pady=4)
+        grid.grid_columnconfigure((0, 1), weight=1)
+
+        for i, (t_name, col) in enumerate(BG_THEMES):
+            r = i // 2
+            c = i % 2
+            ctk.CTkButton(
+                grid, text=t_name, fg_color=col, text_color="#ffffff",
+                font=get_font(10, "bold"), corner_radius=8, height=32,
+                command=lambda cl=col: self._set_bg_color(cl, diag)
+            ).grid(row=r, column=c, padx=4, pady=4, sticky="nsew")
+
+    def _set_bg_color(self, col: str, diag=None):
+        self.bg_color = col
+        self.configure(fg_color=col)
+        self.canvas_area.configure(bg=col)
+        self._save_config()
+        if diag and diag.winfo_exists():
+            diag.destroy()
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # 전역 헬퍼 및 루프
+    # ══════════════════════════════════════════════════════════════════════════
+    def _start_clock_loop(self):
+        def _update():
+            if not self.winfo_exists():
+                return
+            now_str = datetime.datetime.now().strftime("%H:%M:%S")
+            if hasattr(self, "big_clock_lbl") and self.big_clock_lbl.winfo_exists():
+                self.big_clock_lbl.configure(text=now_str)
+            self.after(1000, _update)
+        _update()
 
     def _toggle_fullscreen(self):
         self.is_fullscreen = not self.is_fullscreen
         self.attributes("-fullscreen", self.is_fullscreen)
-        if self.is_fullscreen:
-            self.top_bar.pack_forget()
-            self.hint_bar.pack_forget()
-        else:
-            self.top_bar.pack(fill="x", side="top", before=self.board_area)
-            self.hint_bar.pack(fill="x", side="bottom")
+        if hasattr(self, "fs_btn") and self.fs_btn.winfo_exists():
+            self.fs_btn.configure(text="🗗 창모드" if self.is_fullscreen else "⛶ 전체화면 (F11)")
 
     def _exit_fullscreen(self):
         if self.is_fullscreen:
             self._toggle_fullscreen()
 
-    def _start_clock_loop(self):
-        self._clock_tick()
-
-    def _clock_tick(self):
-        if not self.winfo_exists():
-            return
-        now = datetime.datetime.now()
-        self.clock_lbl.configure(text=now.strftime("%H:%M:%S"))
-        self.after(1000, self._clock_tick)
-
     def close(self):
-        self._save_layout()
-        self._stop_camera_stream()
-        if self.timer_job:
-            try:
-                self.after_cancel(self.timer_job)
-            except Exception:
-                pass
+        self._save_config()
         try:
             self.destroy()
         except Exception:
             pass
-        StudentDisplayWindow._instance = None
