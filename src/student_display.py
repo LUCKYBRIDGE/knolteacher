@@ -56,7 +56,7 @@ class StudentDisplayWindow(ctk.CTkToplevel):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.parent_app = parent
-        self.title("놀티쳐 교실 도구 툴킷 (학생 공유 화면)")
+        self.title("놀티쳐 보드 (교실 공유 화면)")
         self.geometry("1240x780")
         self.minsize(880, 560)
         self.resizable(True, True)
@@ -160,26 +160,53 @@ class StudentDisplayWindow(ctk.CTkToplevel):
             logo_box, text="✏️ 놀티쳐", font=get_font(15, "bold"), text_color="#ffffff"
         ).pack(side="left")
         ctk.CTkLabel(
-            logo_box, text="Tool Kit", font=get_font(14, "bold"), text_color="#fed7aa"
+            logo_box, text="보드", font=get_font(15, "bold"), text_color="#fed7aa"
         ).pack(side="left", padx=(4, 0))
 
-        # 우측 상단 정보 및 제어
+        # 우측 상단 정보 및 교실 커스텀 제어 바
         r_box = ctk.CTkFrame(self.top_bar, fg_color="transparent")
         r_box.pack(side="right")
 
         today = datetime.date.today()
         weekday_str = DAYS_KO[today.weekday()]
         self.date_tag = ctk.CTkLabel(
-            r_box, text=f"🔔 우리 반 교실 | {today.strftime('%m월 %d일')} ({weekday_str})",
+            r_box, text=f"🔔 우리 반 교실 보드 | {today.strftime('%m월 %d일')} ({weekday_str})",
             font=get_font(10, "bold"), text_color="#ffffff",
-            fg_color="#00000033", corner_radius=12, width=170, height=26
+            fg_color="#1e293b", corner_radius=12, width=180, height=26
         )
-        self.date_tag.pack(side="left", padx=(0, 10))
+        self.date_tag.pack(side="left", padx=(0, 6))
+
+        # 배경 테마 변경
+        bg_btn = ctk.CTkButton(
+            r_box, text="🎨 배경 테마", width=80, height=26, font=get_font(10, "bold"),
+            fg_color="#1e293b", hover_color="#334155", text_color="#ffffff",
+            corner_radius=12, command=self._open_bg_picker
+        )
+        bg_btn.pack(side="left", padx=2)
+        attach_tooltip(bg_btn, "교실 화면 배경 테마(핑크, 블루, 칠판그린, 다크 등) 변경")
+
+        # 화면 정리 (모든 위젯 일괄 닫기)
+        clear_btn = ctk.CTkButton(
+            r_box, text="🧹 화면 정리", width=74, height=26, font=get_font(10, "bold"),
+            fg_color="#1e293b", hover_color="#334155", text_color="#ffffff",
+            corner_radius=12, command=self._clear_all_modules
+        )
+        clear_btn.pack(side="left", padx=2)
+        attach_tooltip(clear_btn, "캔버스에 열려 있는 모든 도구 창 정리")
+
+        # 기본 도구 소환
+        reset_btn = ctk.CTkButton(
+            r_box, text="🔄 기본 배치", width=74, height=26, font=get_font(10, "bold"),
+            fg_color="#1e293b", hover_color="#334155", text_color="#ffffff",
+            corner_radius=12, command=self._open_default_tools
+        )
+        reset_btn.pack(side="left", padx=2)
+        attach_tooltip(reset_btn, "타이머와 주사위 등 기본 수업 도구 즉시 소환")
 
         # 전체화면 토글
         self.fs_btn = ctk.CTkButton(
             r_box, text="⛶ 전체화면 (F11)", width=96, height=26, font=get_font(10, "bold"),
-            fg_color="#00000044", hover_color="#00000066", text_color="#ffffff",
+            fg_color="#0284c7", hover_color="#0369a1", text_color="#ffffff",
             corner_radius=12, command=self._toggle_fullscreen
         )
         self.fs_btn.pack(side="left", padx=2)
@@ -187,7 +214,7 @@ class StudentDisplayWindow(ctk.CTkToplevel):
         # 닫기
         ctk.CTkButton(
             r_box, text="✕", width=28, height=26, font=get_font(11, "bold"),
-            fg_color="#00000044", hover_color="#dc2626", text_color="#ffffff",
+            fg_color="#dc2626", hover_color="#b91c1c", text_color="#ffffff",
             corner_radius=12, command=self.close
         ).pack(side="left", padx=2)
 
@@ -325,10 +352,12 @@ class StudentDisplayWindow(ctk.CTkToplevel):
 
         # 카드 프레임 (화이트 라운드 섀도우 룩앤필)
         card = ctk.CTkFrame(
-            self.canvas_area, fg_color="#ffffff", corner_radius=14,
+            self.canvas_area, width=default_w, height=default_h,
+            fg_color="#ffffff", corner_radius=14,
             border_width=1, border_color="#cbd5e1"
         )
-        card.place(x=start_x, y=start_y, width=default_w, height=default_h)
+        card.pack_propagate(False)
+        card.place(x=start_x, y=start_y)
         card.lift()
 
         # 상단 타이틀 바
@@ -413,13 +442,19 @@ class StudentDisplayWindow(ctk.CTkToplevel):
         dy = event.y_root - card._rs_y
         nw = max(260, card._orig_w + dx)
         nh = max(200, card._orig_h + dy)
-        card.place(width=nw, height=nh)
+        card.configure(width=nw, height=nh)
 
     def _close_module(self, mod_key: str):
         if mod_key in self.active_modules:
             self.active_modules[mod_key]["frame"].destroy()
             del self.active_modules[mod_key]
         self._update_dock_button_state(mod_key, False)
+
+    def _clear_all_modules(self):
+        """캔버스에 열려 있는 모든 도구 창 일괄 정리"""
+        keys = list(self.active_modules.keys())
+        for k in keys:
+            self._close_module(k)
 
     def _toggle_module(self, mod_key: str):
         if mod_key in self.active_modules:
@@ -428,6 +463,66 @@ class StudentDisplayWindow(ctk.CTkToplevel):
             fn = getattr(self, f"_show_{mod_key}", None)
             if fn:
                 fn()
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # 사진 3, 4와 100% 동일한 우측 세로 플로팅 판서 도구 바 (Vertical Pen Bar)
+    # ══════════════════════════════════════════════════════════════════════════
+    def _build_vertical_floating_bar(self):
+        """교실 화면 우측에 상시 떠 있는 세로 플로팅 판서 바"""
+        if hasattr(self, "v_floating_bar") and self.v_floating_bar.winfo_exists():
+            return
+
+        self.v_floating_bar = ctk.CTkFrame(
+            self.canvas_area, fg_color="#ffffff", width=46, height=290,
+            corner_radius=23, border_width=1, border_color="#cbd5e1"
+        )
+        self.v_floating_bar.pack_propagate(False)
+
+        # 우측 상단 고정 위치 (드래그 가능)
+        cw = self.canvas_area.winfo_width() or 1200
+        vx = max(200, cw - 66)
+        vy = 30
+        self.v_floating_bar.place(x=vx, y=vy)
+        self.v_floating_bar.lift()
+
+        from src.icon_renderer import get_icon, COL_MAIN, COL_DANGER
+
+        v_tools = [
+            ("eye",        "눈(숨기기)",  lambda: self._toggle_canvas_drawing_visibility(), COL_MAIN),
+            ("pencil",     "연필(판서)",  lambda: self._show_drawing(),                     COL_MAIN),
+            ("pointer",    "선택(V)",     lambda: self._show_drawing(),                     COL_MAIN),
+            ("eraser_box", "지우개(E)",   lambda: self._show_drawing(),                     COL_MAIN),
+            ("undo",       "취소",        lambda: self._show_drawing(),                     COL_MAIN),
+            ("trash",      "삭제",        lambda: self._show_drawing(),                     COL_DANGER),
+        ]
+
+        # 상단 닫기/숨기기 버튼
+        c_btn = ctk.CTkButton(
+            self.v_floating_bar, text="✕", width=34, height=34, font=get_font(10, "bold"),
+            fg_color="transparent", hover_color="#fee2e2", text_color="#94a3b8",
+            corner_radius=17, command=lambda: self.v_floating_bar.place_forget()
+        )
+        c_btn.pack(side="top", pady=(6, 2))
+        attach_tooltip(c_btn, "판서 툴바 닫기")
+
+        for ico_name, tip_text, cmd, col in v_tools:
+            b = ctk.CTkButton(
+                self.v_floating_bar, text="",
+                image=get_icon(ico_name, col, 18),
+                width=34, height=34,
+                fg_color="transparent", hover_color="#e0f2fe",
+                corner_radius=17, command=cmd
+            )
+            b.pack(side="top", pady=2)
+            attach_tooltip(b, tip_text)
+
+        # 드래그 이동
+        self.v_floating_bar.bind("<Button-1>", lambda e: self._start_card_drag(e, self.v_floating_bar))
+        self.v_floating_bar.bind("<B1-Motion>", lambda e: self._on_card_drag(e, self.v_floating_bar))
+
+    def _toggle_canvas_drawing_visibility(self):
+        """판서 레이어 숨기기/보이기 토글"""
+        pass
 
     # ══════════════════════════════════════════════════════════════════════════
     # 1. 사진 2, 3의 타이머 (6종 선택 카드 + 실행 뷰 완벽 구현)
@@ -1477,6 +1572,7 @@ class StudentDisplayWindow(ctk.CTkToplevel):
     # 초기 기본 화면: 사진 3처럼 타이머 + 주사위 동시 소환
     # ══════════════════════════════════════════════════════════════════════════
     def _open_default_tools(self):
+        self._build_vertical_floating_bar()
         self._show_timer()
         self._show_dice()
 

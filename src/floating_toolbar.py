@@ -159,7 +159,7 @@ class FloatingQuickToolbar(tk.Toplevel):
             ("mouse",   "마우스",   self._open_mouse_settings,  COL_MAIN,   "수업용 마우스 크기 & 색상 설정"),
             ("dice",    "뽑기",     self._open_picker,          COL_PURPLE, "공정한 발표자 추첨"),
             ("wheel",   "돌림판",   self._open_wheel,           COL_MAIN,   "돌려돌려 돌림판"),
-            ("screen",  "학생TV",   self._open_student_display, COL_ACTIVE, "교실 TV용 학생 화면"),
+            ("screen",  "보드",     self._open_student_display, COL_ACTIVE, "놀티쳐 보드 (교실 TV 공유 화면)"),
             ("widget",  "위젯",     self._open_mini_widget,     COL_MAIN,   "바탕화면 미니 위젯"),
             ("home",    "메인",     self._open_main_app,        COL_ACTIVE, "놀티쳐 메인 창 열기"),
         ]
