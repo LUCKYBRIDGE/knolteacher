@@ -53,21 +53,21 @@ class FloatingQuickToolbar(tk.Toplevel):
 
     def _update_dimensions(self):
         if self.size_mode == "S":
-            self.full_width = 670
+            self.full_width = 720
             self.tb_height = 42
             self.btn_w = 40
             self.btn_h = 32
             self.ico_sz = 18
             self.show_text = False
         elif self.size_mode == "L":
-            self.full_width = 920
+            self.full_width = 990
             self.tb_height = 62
             self.btn_w = 56
             self.btn_h = 46
             self.ico_sz = 24
             self.show_text = True
         else:  # "M"
-            self.full_width = 810
+            self.full_width = 870
             self.tb_height = 52
             self.btn_w = 48
             self.btn_h = 38
@@ -151,15 +151,16 @@ class FloatingQuickToolbar(tk.Toplevel):
         # 3. 핵심 수업 도구 단축 버튼들
         from src.icon_renderer import COL_PURPLE
         tools = [
-            ("pen",     "판서",   self._open_drawing,         COL_ORANGE, "화면 위 판서 (Alt+2)"),
-            ("camera",  "화상기", self._open_visualizer,      COL_ACTIVE, "실물화상기 실시간 뷰어"),
-            ("timer",   "타이머", self._open_timer,           COL_MAIN,   "교실 타이머 (Alt+3)"),
-            ("mouse",   "마우스", self._open_mouse_settings,  COL_MAIN,   "수업용 마우스 크기 & 색상 설정"),
-            ("dice",    "뽑기",   self._open_picker,          COL_PURPLE, "공정한 발표자 추첨"),
-            ("wheel",   "돌림판", self._open_wheel,           COL_MAIN,   "돌려돌려 돌림판"),
-            ("screen",  "학생TV", self._open_student_display, COL_ACTIVE, "교실 TV용 학생 화면"),
-            ("widget",  "위젯",   self._open_mini_widget,     COL_MAIN,   "바탕화면 미니 위젯"),
-            ("home",    "메인",   self._open_main_app,        COL_ACTIVE, "놀티쳐 메인 창 열기"),
+            ("pen",     "판서",     self._open_drawing,         COL_ORANGE, "화면 위 판서 (Alt+2)"),
+            ("camera",  "화상기",   self._open_visualizer,      COL_ACTIVE, "실물화상기 실시간 뷰어"),
+            ("timer",   "타이머",   self._open_timer,           COL_MAIN,   "교실 타이머 (Alt+3)"),
+            ("rocket",  "바로가기", self._open_quick_launcher,  COL_ACTIVE, "자주 쓰는 프로그램 / 바로가기 빠른 실행 (➕ 등록)"),
+            ("mouse",   "마우스",   self._open_mouse_settings,  COL_MAIN,   "수업용 마우스 크기 & 색상 설정"),
+            ("dice",    "뽑기",     self._open_picker,          COL_PURPLE, "공정한 발표자 추첨"),
+            ("wheel",   "돌림판",   self._open_wheel,           COL_MAIN,   "돌려돌려 돌림판"),
+            ("screen",  "학생TV",   self._open_student_display, COL_ACTIVE, "교실 TV용 학생 화면"),
+            ("widget",  "위젯",     self._open_mini_widget,     COL_MAIN,   "바탕화면 미니 위젯"),
+            ("home",    "메인",     self._open_main_app,        COL_ACTIVE, "놀티쳐 메인 창 열기"),
         ]
 
         for icon_name, label, cmd, icon_col, tip in tools:
@@ -320,9 +321,152 @@ class FloatingQuickToolbar(tk.Toplevel):
             self.parent.lift()
             self.parent.focus_force()
 
+    def _open_quick_launcher(self):
+        """자주 쓰는 프로그램 및 바로가기 빠른 실행 팝업 열기"""
+        QuickLauncherPopup.get_instance(self)
+
     def close(self):
         try:
             self.destroy()
         except Exception:
             pass
         FloatingQuickToolbar._instance = None
+
+
+class QuickLauncherPopup(ctk.CTkToplevel):
+    """
+    플로팅 바와 연동되는 '자주 쓰는 프로그램 / 바로가기 빠른 실행' 독 팝업
+    """
+    _instance = None
+
+    @classmethod
+    def get_instance(cls, parent=None):
+        if cls._instance is None or not cls._instance.winfo_exists():
+            cls._instance = cls(parent)
+        else:
+            cls._instance.deiconify()
+            cls._instance.lift()
+            cls._instance.focus_force()
+        return cls._instance
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.toolbar = parent
+        self.title("자주 쓰는 프로그램 바로가기")
+        self.attributes("-topmost", True)
+        self.overrideredirect(True)
+
+        from src.quick_launcher import quick_launcher
+        self.ql = quick_launcher
+
+        w = 340
+        h = 360
+
+        # 플로팅 바 아래에 자동 스냅 위치 잡기
+        if self.toolbar and self.toolbar.winfo_exists():
+            tx = self.toolbar.winfo_rootx()
+            ty = self.toolbar.winfo_rooty()
+            th = self.toolbar.winfo_height()
+            px = max(10, min(self.winfo_screenwidth() - w - 10, tx + 80))
+            py = ty + th + 8
+        else:
+            px = (self.winfo_screenwidth() - w) // 2
+            py = (self.winfo_screenheight() - h) // 2
+
+        self.geometry(f"{w}x{h}+{px}+{py}")
+        self._build_ui()
+
+    def _build_ui(self):
+        for w in self.winfo_children():
+            w.destroy()
+
+        card = ctk.CTkFrame(
+            self, fg_color="#0f172a", corner_radius=16,
+            border_width=2, border_color="#0284c7"
+        )
+        card.pack(fill="both", expand=True, padx=2, pady=2)
+
+        # 상단 타이틀 바
+        header = ctk.CTkFrame(card, fg_color="#1e293b", height=38, corner_radius=12)
+        header.pack(fill="x", side="top", padx=4, pady=4)
+        header.pack_propagate(False)
+
+        ctk.CTkLabel(
+            header, text="🚀 자주 쓰는 앱 / 바로가기",
+            font=get_font(11, "bold"), text_color="#38bdf8"
+        ).pack(side="left", padx=10)
+
+        # 닫기
+        ctk.CTkButton(
+            header, text="✕", width=22, height=22, font=get_font(10, "bold"),
+            fg_color="#3f1d24", hover_color="#dc2626", text_color="#fca5a5",
+            corner_radius=6, command=self.destroy
+        ).pack(side="right", padx=6)
+
+        # 바로가기 추가 버튼
+        add_btn = ctk.CTkButton(
+            header, text="➕ 추가", width=52, height=24, font=get_font(10, "bold"),
+            fg_color="#059669", hover_color="#047857", text_color="#ffffff",
+            corner_radius=6, command=self._on_add_click
+        )
+        add_btn.pack(side="right", padx=2)
+        attach_tooltip(add_btn, "새 프로그램(.exe), 문서(.hwp, .pdf), 웹사이트 추가")
+
+        # 본문 리스트 (스크롤)
+        scroll = ctk.CTkScrollableFrame(card, fg_color="transparent")
+        scroll.pack(fill="both", expand=True, padx=6, pady=4)
+
+        shortcuts = self.ql.get_shortcuts()
+        if not shortcuts:
+            ctk.CTkLabel(
+                scroll, text="등록된 바로가기가 없습니다.\n상단의 [➕ 추가] 버튼을 눌러보세요!",
+                font=get_font(11), text_color="#64748b"
+            ).pack(pady=40)
+        else:
+            for item in shortcuts:
+                s_id = item.get("id")
+                s_name = item.get("name")
+                s_target = item.get("target")
+                s_emoji = item.get("emoji", "🚀")
+
+                row = ctk.CTkFrame(scroll, fg_color="#1e293b", corner_radius=8, border_width=1, border_color="#334155")
+                row.pack(fill="x", pady=2)
+
+                # 클릭 시 실행되는 메인 버튼 영역
+                btn = ctk.CTkButton(
+                    row, text=f"{s_emoji}  {s_name}",
+                    font=get_font(11, "bold"), fg_color="transparent",
+                    hover_color="#0284c7", text_color="#f8fafc",
+                    anchor="w", height=34,
+                    command=lambda t=s_target: self._launch(t)
+                )
+                btn.pack(side="left", fill="x", expand=True, padx=(4, 0))
+                attach_tooltip(btn, f"클릭하여 실행\n경로: {s_target}")
+
+                # 삭제 버튼 (✕)
+                del_btn = ctk.CTkButton(
+                    row, text="✕", width=22, height=22, font=get_font(9),
+                    fg_color="transparent", hover_color="#dc2626", text_color="#64748b",
+                    corner_radius=4, command=lambda sid=s_id: self._remove(sid)
+                )
+                del_btn.pack(side="right", padx=4)
+                attach_tooltip(del_btn, "이 바로가기 삭제")
+
+        # 하단 도움말 바
+        b_bar = ctk.CTkFrame(card, fg_color="transparent", height=22)
+        b_bar.pack(fill="x", side="bottom", pady=2)
+        ctk.CTkLabel(
+            b_bar, text="💡 내 컴퓨터의 모든 파일 및 웹링크 등록 가능",
+            font=get_font(8), text_color="#475569"
+        ).pack(expand=True)
+
+    def _launch(self, target: str):
+        self.ql.launch(target)
+
+    def _remove(self, shortcut_id: str):
+        self.ql.remove_shortcut(shortcut_id)
+        self._build_ui()
+
+    def _on_add_click(self):
+        self.ql.open_add_dialog(parent=self, on_success=self._build_ui)
+

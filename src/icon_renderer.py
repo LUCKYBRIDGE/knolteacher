@@ -558,6 +558,20 @@ def icon_eye(color="#000000", size=24, **kw) -> Image.Image:
     d.ellipse([S*0.38, S*0.38, S*0.62, S*0.62], fill=_hex(color))
     return _finish_canvas(img, size)
 
+def icon_rocket(color=COL_ACTIVE, size=24, **kw) -> Image.Image:
+    """🚀 우주선 로켓: 빠른 실행 / 바로가기 아이콘"""
+    img, d, S = _make_canvas(size)
+    pts = [
+        (S*0.75, S*0.15), (S*0.82, S*0.35), (S*0.55, S*0.65),
+        (S*0.35, S*0.82), (S*0.15, S*0.75), (S*0.35, S*0.45)
+    ]
+    d.polygon(pts, fill=_hex("#38bdf8"), outline=_hex("#0284c7"), width=int(S*0.04))
+    d.ellipse([S*0.48, S*0.38, S*0.62, S*0.52], fill=_hex("#ffffff"), outline=_hex("#0284c7"), width=int(S*0.03))
+    d.polygon([(S*0.25, S*0.55), (S*0.12, S*0.65), (S*0.20, S*0.75)], fill=_hex("#f97316"))
+    d.polygon([(S*0.55, S*0.25), (S*0.65, S*0.12), (S*0.75, S*0.20)], fill=_hex("#f97316"))
+    d.polygon([(S*0.20, S*0.80), (S*0.08, S*0.92), (S*0.28, S*0.88)], fill=_hex("#ef4444"))
+    return _finish_canvas(img, size)
+
 # ══════════════════════════════════════════════════════════════════════════════
 # 아이콘 레지스트리 & 캐시 매니저
 # ══════════════════════════════════════════════════════════════════════════════
@@ -606,6 +620,7 @@ ICON_REGISTRY = {
     "pointer":          icon_pointer,
     "eraser_box":       icon_eraser_box,
     "eye":              icon_eye,
+    "rocket":           icon_rocket,
 }
 
 _CTK_CACHE = {}

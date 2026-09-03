@@ -267,15 +267,33 @@ class MiniTimetableWidget(ctk.CTkToplevel):
         next_btn.pack(side="left", padx=1)
         attach_tooltip(next_btn, "다음 달로 이동")
 
-        # 뷰 모드 전환 (월간 달력 ↔ 오늘 시간표/급식)
-        self.view_btn = ctk.CTkButton(
-            right_box, text="📋 시간표" if self.view_mode == "month" else "📅 달력",
-            width=58, height=22, font=get_font(9, "bold"),
-            fg_color="#1e3a5f", hover_color="#2563eb", text_color="#93c5fd",
-            corner_radius=4, command=self._toggle_view_mode
+        # 뷰 모드 전환 (달력 ↔ 시간표 ↔ 바로가기)
+        self.cal_btn = ctk.CTkButton(
+            right_box, text="📅 달력", width=48, height=22, font=get_font(9, "bold"),
+            fg_color="#0284c7" if self.view_mode == "month" else "#1f4b66",
+            hover_color="#0369a1", text_color="#ffffff",
+            corner_radius=4, command=lambda: self._set_view_mode("month")
         )
-        self.view_btn.pack(side="left", padx=3)
-        attach_tooltip(self.view_btn, "월간 글래스 달력 ↔ 오늘 시간표/급식 모드 전환")
+        self.cal_btn.pack(side="left", padx=1)
+        attach_tooltip(self.cal_btn, "월간 글래스 달력")
+
+        self.tt_btn = ctk.CTkButton(
+            right_box, text="📋 시간표", width=52, height=22, font=get_font(9, "bold"),
+            fg_color="#0284c7" if self.view_mode == "today" else "#1f4b66",
+            hover_color="#0369a1", text_color="#ffffff",
+            corner_radius=4, command=lambda: self._set_view_mode("today")
+        )
+        self.tt_btn.pack(side="left", padx=1)
+        attach_tooltip(self.tt_btn, "오늘 시간표 & 급식 식단")
+
+        self.sc_btn = ctk.CTkButton(
+            right_box, text="🚀 바로가기", width=58, height=22, font=get_font(9, "bold"),
+            fg_color="#059669" if self.view_mode == "shortcuts" else "#1f4b66",
+            hover_color="#047857", text_color="#ffffff",
+            corner_radius=4, command=lambda: self._set_view_mode("shortcuts")
+        )
+        self.sc_btn.pack(side="left", padx=2)
+        attach_tooltip(self.sc_btn, "자주 쓰는 프로그램 / 웹사이트 빠른 실행")
 
         # 투명도 설정 버튼
         opt_btn = ctk.CTkButton(
@@ -304,14 +322,16 @@ class MiniTimetableWidget(ctk.CTkToplevel):
         close_btn.pack(side="left", padx=(1, 2))
         attach_tooltip(close_btn, "위젯 닫기")
 
-        # ── 2. 메인 콘텐츠 영역 (월간 캘린더 그리드 or 오늘 시간표 카드) ──
+        # ── 2. 메인 콘텐츠 영역 (월간 캘린더 or 오늘 시간표 or 바로가기) ──
         self.main_content = ctk.CTkFrame(self.container, fg_color="transparent")
         self.main_content.pack(fill="both", expand=True, padx=4, pady=2)
 
         if self.view_mode == "month":
             self._render_month_calendar()
-        else:
+        elif self.view_mode == "today":
             self._render_today_view()
+        elif self.view_mode == "shortcuts":
+            self._render_shortcuts_view()
 
         # ── 3. 최하단 얇은 리사이즈 그립 바 ──
         btm_bar = ctk.CTkFrame(self.container, fg_color="transparent", height=14)
@@ -603,11 +623,96 @@ class MiniTimetableWidget(ctk.CTkToplevel):
         if self.view_mode == "month":
             self._render_month_calendar()
 
-    def _toggle_view_mode(self):
-        self.view_mode = "today" if self.view_mode == "month" else "month"
-        self.view_btn.configure(text="📋 시간표" if self.view_mode == "month" else "📅 달력")
+    def _set_view_mode(self, mode: str):
+        self.view_mode = mode
         self._build_ui()
         self._save_config()
+
+    def _render_shortcuts_view(self):
+        """바탕화면 글래스 위젯 안의 자주 쓰는 프로그램/바로가기 그리드 뷰"""
+        from src.quick_launcher import quick_launcher
+
+        for w in self.main_content.winfo_children():
+            w.destroy()
+
+        # 상단 제어 바
+        top_ctrl = ctk.CTkFrame(self.main_content, fg_color="transparent", height=32)
+        top_ctrl.pack(fill="x", padx=12, pady=(6, 4))
+        top_ctrl.pack_propagate(False)
+
+        ctk.CTkLabel(
+            top_ctrl, text="🚀 바탕화면 자주 쓰는 프로그램 및 바로가기",
+            font=get_font(12, "bold"), text_color="#38bdf8"
+        ).pack(side="left")
+
+        add_btn = ctk.CTkButton(
+            top_ctrl, text="➕ 프로그램/바로가기 추가", height=26,
+            font=get_font(10, "bold"), fg_color="#059669", hover_color="#047857",
+            corner_radius=6, command=lambda: quick_launcher.open_add_dialog(parent=self, on_success=self._render_shortcuts_view)
+        )
+        add_btn.pack(side="right")
+        attach_tooltip(add_btn, "내 컴퓨터의 프로그램(.exe), 문서(.hwp, .pdf), 웹사이트 등록")
+
+        # 스크롤 그리드
+        scroll = ctk.CTkScrollableFrame(self.main_content, fg_color="transparent")
+        scroll.pack(fill="both", expand=True, padx=8, pady=4)
+        scroll.grid_columnconfigure((0, 1, 2), weight=1)
+
+        shortcuts = quick_launcher.get_shortcuts()
+        if not shortcuts:
+            ctk.CTkLabel(
+                scroll, text="등록된 바로가기가 없습니다.\n우측 상단의 [➕ 프로그램/바로가기 추가] 버튼을 눌러 등록해보세요!",
+                font=get_font(12), text_color="#64748b"
+            ).grid(row=0, column=0, columnspan=3, pady=60)
+            return
+
+        for idx, item in enumerate(shortcuts):
+            r = idx // 3
+            c = idx % 3
+            s_id = item.get("id")
+            s_name = item.get("name")
+            s_target = item.get("target")
+            s_emoji = item.get("emoji", "🚀")
+
+            card = ctk.CTkFrame(
+                scroll, fg_color="#102a3c", corner_radius=10,
+                border_width=1, border_color="#1b4660", height=66
+            )
+            card.grid(row=r, column=c, sticky="nsew", padx=6, pady=6)
+            card.pack_propagate(False)
+
+            # 좌측 이모지
+            ctk.CTkLabel(
+                card, text=s_emoji, font=get_font(20), width=38
+            ).pack(side="left", padx=(8, 2))
+
+            # 중간 텍스트 (이름 + 경로)
+            mid = ctk.CTkFrame(card, fg_color="transparent")
+            mid.pack(side="left", fill="both", expand=True, pady=6)
+
+            title_btn = ctk.CTkButton(
+                mid, text=s_name, font=get_font(11, "bold"),
+                anchor="w", fg_color="transparent", hover_color="#16384e",
+                text_color="#f8fafc", height=24,
+                command=lambda t=s_target: quick_launcher.launch(t)
+            )
+            title_btn.pack(fill="x")
+            attach_tooltip(title_btn, f"클릭하여 실행\n경로: {s_target}")
+
+            disp_sub = s_target if len(s_target) < 28 else (s_target[:12] + "..." + s_target[-12:])
+            ctk.CTkLabel(
+                mid, text=disp_sub, font=get_font(8), text_color="#64748b", anchor="w"
+            ).pack(fill="x")
+
+            # 우측 삭제 버튼
+            del_btn = ctk.CTkButton(
+                card, text="✕", width=20, height=20, font=get_font(9),
+                fg_color="transparent", hover_color="#dc2626", text_color="#64748b",
+                corner_radius=4,
+                command=lambda sid=s_id: (quick_launcher.remove_shortcut(sid), self._render_shortcuts_view())
+            )
+            del_btn.pack(side="right", padx=6)
+            attach_tooltip(del_btn, "이 바로가기 삭제")
 
     def _toggle_pin(self):
         self.is_pinned = not self.is_pinned

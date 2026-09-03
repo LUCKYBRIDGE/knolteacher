@@ -238,6 +238,7 @@ class StudentDisplayWindow(ctk.CTkToplevel):
             ("noise",       "소음\n측정기", "📢", "조용한 교실 만들기 데시벨 미터"),
             ("clock",       "시계",       "🕒", "대형 교실 아날로그/디지털 시계"),
             ("drawing",     "색연필",     "✏️", "화면 위 자유 판서 및 색연필 도구"),
+            ("launcher",    "바로\n가기", "🚀", "자주 쓰는 수업 프로그램 및 웹사이트 빠른 실행 (➕ 등록)"),
         ]
 
         self.dock_buttons = {}
@@ -1081,6 +1082,72 @@ class StudentDisplayWindow(ctk.CTkToplevel):
         self.noise_progress = ctk.CTkProgressBar(body, height=14, corner_radius=7)
         self.noise_progress.pack(fill="x", padx=24, pady=12)
         self.noise_progress.set(0.3)
+
+    def _show_launcher(self):
+        """자주 쓰는 수업 프로그램 및 웹사이트 바로가기 모듈"""
+        from src.quick_launcher import quick_launcher
+        body = self._create_white_module_window("launcher", "자주 쓰는 프로그램 / 바로가기", "🚀", 440, 380)
+
+        # 상단 제어 바
+        top_ctrl = ctk.CTkFrame(body, fg_color="transparent", height=32)
+        top_ctrl.pack(fill="x", padx=12, pady=(6, 4))
+        top_ctrl.pack_propagate(False)
+
+        ctk.CTkLabel(
+            top_ctrl, text="수업용 프로그램 및 교과 사이트",
+            font=get_font(11, "bold"), text_color="#0284c7"
+        ).pack(side="left")
+
+        def _refresh():
+            self._close_module("launcher")
+            self._show_launcher()
+
+        add_btn = ctk.CTkButton(
+            top_ctrl, text="➕ 추가", height=24, width=54,
+            font=get_font(10, "bold"), fg_color="#059669", hover_color="#047857",
+            corner_radius=6, command=lambda: quick_launcher.open_add_dialog(parent=self, on_success=_refresh)
+        )
+        add_btn.pack(side="right")
+        attach_tooltip(add_btn, "새 프로그램(.exe), 문서(.hwp, .pdf), 웹사이트 등록")
+
+        scroll = ctk.CTkScrollableFrame(body, fg_color="transparent")
+        scroll.pack(fill="both", expand=True, padx=8, pady=4)
+
+        shortcuts = quick_launcher.get_shortcuts()
+        if not shortcuts:
+            ctk.CTkLabel(
+                scroll, text="등록된 바로가기가 없습니다.\n상단의 [➕ 추가] 버튼을 눌러보세요!",
+                font=get_font(11), text_color="#94a3b8"
+            ).pack(pady=40)
+            return
+
+        for item in shortcuts:
+            s_id = item.get("id")
+            s_name = item.get("name")
+            s_target = item.get("target")
+            s_emoji = item.get("emoji", "🚀")
+
+            row = ctk.CTkFrame(scroll, fg_color="#f8fafc", corner_radius=8, border_width=1, border_color="#e2e8f0")
+            row.pack(fill="x", pady=3)
+
+            btn = ctk.CTkButton(
+                row, text=f"{s_emoji}  {s_name}",
+                font=get_font(11, "bold"), fg_color="transparent",
+                hover_color="#e0f2fe", text_color="#1e293b",
+                anchor="w", height=36,
+                command=lambda t=s_target: quick_launcher.launch(t)
+            )
+            btn.pack(side="left", fill="x", expand=True, padx=(4, 0))
+            attach_tooltip(btn, f"클릭하여 실행\n경로: {s_target}")
+
+            del_btn = ctk.CTkButton(
+                row, text="✕", width=22, height=22, font=get_font(9),
+                fg_color="transparent", hover_color="#fee2e2", text_color="#94a3b8",
+                corner_radius=4,
+                command=lambda sid=s_id: (quick_launcher.remove_shortcut(sid), _refresh())
+            )
+            del_btn.pack(side="right", padx=6)
+            attach_tooltip(del_btn, "이 바로가기 삭제")
 
     # ══════════════════════════════════════════════════════════════════════════
     # 초기 기본 화면: 사진 3처럼 타이머 + 주사위 동시 소환
