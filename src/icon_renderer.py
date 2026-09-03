@@ -424,11 +424,138 @@ def icon_ladder(color=COL_MAIN, size=24, **kw) -> Image.Image:
 def icon_pinball(color=COL_MAIN, size=24, **kw) -> Image.Image:
     """⚾ 핀볼: 튕겨나가는 볼과 범퍼 핀들"""
     img, d, S = _make_canvas(size)
-    # 핀 3개
     for px, py in [(S*0.30, S*0.30), (S*0.70, S*0.30), (S*0.50, S*0.60)]:
         d.ellipse([px-S*0.08, py-S*0.08, px+S*0.08, py+S*0.08], fill=_hex("#38bdf8"))
-    # 통통 튀는 구슬 (볼)
     d.ellipse([S*0.42, S*0.72, S*0.58, S*0.88], fill=_hex("#fde047"), outline=_hex("#ca8a04"), width=int(S*0.03))
+    return _finish_canvas(img, size)
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 사진 1의 6종 타이머 전용 라인아트 아이콘
+# ══════════════════════════════════════════════════════════════════════════
+
+def icon_timer_digital(color="#000000", size=36, **kw) -> Image.Image:
+    """사진 1: 반원 아치 + 00:00 전자 숫자판"""
+    img, d, S = _make_canvas(size)
+    d.arc([S*0.14, S*0.14, S*0.86, S*0.86], start=180, end=360, fill=_hex(color), width=int(S*0.06))
+    d.ellipse([S*0.11, S*0.47, S*0.17, S*0.53], fill=_hex(color))
+    # 00:00
+    d.rounded_rectangle([S*0.18, S*0.38, S*0.34, S*0.74], radius=int(S*0.03), outline=_hex(color), width=int(S*0.06))
+    d.rounded_rectangle([S*0.37, S*0.38, S*0.53, S*0.74], radius=int(S*0.03), outline=_hex(color), width=int(S*0.06))
+    d.ellipse([S*0.55, S*0.48, S*0.58, S*0.51], fill=_hex(color))
+    d.ellipse([S*0.55, S*0.61, S*0.58, S*0.64], fill=_hex(color))
+    d.rounded_rectangle([S*0.60, S*0.38, S*0.76, S*0.74], radius=int(S*0.03), outline=_hex(color), width=int(S*0.06))
+    d.rounded_rectangle([S*0.79, S*0.38, S*0.95, S*0.74], radius=int(S*0.03), outline=_hex(color), width=int(S*0.06))
+    return _finish_canvas(img, size)
+
+def icon_timer_analog(color="#000000", size=36, **kw) -> Image.Image:
+    """사진 1: 원형 시계 + 12시 바늘 + 중앙 원"""
+    img, d, S = _make_canvas(size)
+    cx, cy, r = S*0.50, S*0.50, S*0.38
+    d.ellipse([cx-r, cy-r, cx+r, cy+r], outline=_hex(color), width=int(S*0.06))
+    d.ellipse([cx-r+S*0.04, cy-r+S*0.04, cx+r-S*0.04, cy+r-S*0.04], outline=_hex(color), width=int(S*0.03))
+    d.line([(cx, cy-r+S*0.04), (cx, cy-r+S*0.10)], fill=_hex(color), width=int(S*0.05))
+    d.line([(cx, cy+r-S*0.10), (cx, cy+r-S*0.04)], fill=_hex(color), width=int(S*0.05))
+    d.line([(cx-r+S*0.04, cy), (cx-r+S*0.10, cy)], fill=_hex(color), width=int(S*0.05))
+    d.line([(cx+r-S*0.10, cy), (cx+r-S*0.04, cy)], fill=_hex(color), width=int(S*0.05))
+    d.line([(cx, cy), (cx, cy-r+S*0.12)], fill=_hex(color), width=int(S*0.06))
+    d.polygon([(cx, cy-r+S*0.08), (cx-S*0.05, cy-r+S*0.15), (cx+S*0.05, cy-r+S*0.15)], fill=_hex(color))
+    d.ellipse([cx-S*0.06, cy-S*0.06, cx+S*0.06, cy+S*0.06], outline=_hex(color), width=int(S*0.05))
+    return _finish_canvas(img, size)
+
+def icon_timer_hourglass(color="#000000", size=36, **kw) -> Image.Image:
+    """사진 1: 상하 대칭 잘록한 모래시계 + 받침대"""
+    img, d, S = _make_canvas(size)
+    d.line([(S*0.22, S*0.18), (S*0.78, S*0.18)], fill=_hex(color), width=int(S*0.06))
+    d.line([(S*0.22, S*0.82), (S*0.78, S*0.82)], fill=_hex(color), width=int(S*0.06))
+    pts = [
+        (S*0.26, S*0.18), (S*0.26, S*0.34), (S*0.46, S*0.50),
+        (S*0.26, S*0.66), (S*0.26, S*0.82), (S*0.74, S*0.82),
+        (S*0.74, S*0.66), (S*0.54, S*0.50), (S*0.74, S*0.34), (S*0.74, S*0.18)
+    ]
+    d.polygon(pts, outline=_hex(color), width=int(S*0.06))
+    d.line([(S*0.34, S*0.30), (S*0.66, S*0.30)], fill=_hex(color), width=int(S*0.04))
+    d.line([(S*0.32, S*0.74), (S*0.68, S*0.74)], fill=_hex(color), width=int(S*0.04))
+    return _finish_canvas(img, size)
+
+def icon_timer_pie(color="#000000", size=36, **kw) -> Image.Image:
+    """사진 1: 파이 타이머 (부채꼴 음영)"""
+    img, d, S = _make_canvas(size)
+    cx, cy, r = S*0.50, S*0.50, S*0.38
+    for a in range(0, 360, 30):
+        rad = math.radians(a)
+        x1 = cx + (r - S*0.08) * math.cos(rad)
+        y1 = cy + (r - S*0.08) * math.sin(rad)
+        x2 = cx + r * math.cos(rad)
+        y2 = cy + r * math.sin(rad)
+        d.line([(x1, y1), (x2, y2)], fill=_hex(color), width=int(S*0.04))
+    d.ellipse([cx-r, cy-r, cx+r, cy+r], outline=_hex(color), width=int(S*0.06))
+    d.pieslice([cx-r+S*0.05, cy-r+S*0.05, cx+r-S*0.05, cy+r-S*0.05], start=270, end=330, fill=_hex("#cbd5e1"), outline=_hex(color), width=int(S*0.05))
+    d.ellipse([cx-S*0.06, cy-S*0.06, cx+S*0.06, cy+S*0.06], outline=_hex(color), width=int(S*0.05))
+    return _finish_canvas(img, size)
+
+def icon_timer_balloon(color="#000000", size=36, **kw) -> Image.Image:
+    """사진 1: 풍선 타이머"""
+    img, d, S = _make_canvas(size)
+    d.ellipse([S*0.22, S*0.14, S*0.78, S*0.74], outline=_hex(color), width=int(S*0.06))
+    d.polygon([(S*0.44, S*0.78), (S*0.56, S*0.78), (S*0.50, S*0.72)], outline=_hex(color), width=int(S*0.05))
+    d.line([(S*0.50, S*0.78), (S*0.50, S*0.92)], fill=_hex(color), width=int(S*0.05))
+    d.arc([S*0.28, S*0.20, S*0.72, S*0.68], start=200, end=250, fill=_hex(color), width=int(S*0.05))
+    return _finish_canvas(img, size)
+
+def icon_timer_stopwatch(color="#000000", size=36, **kw) -> Image.Image:
+    """사진 1: 스톱워치"""
+    img, d, S = _make_canvas(size)
+    cx, cy, r = S*0.50, S*0.56, S*0.34
+    d.line([(cx-S*0.08, S*0.12), (cx+S*0.08, S*0.12)], fill=_hex(color), width=int(S*0.06))
+    d.line([(cx, S*0.12), (cx, S*0.22)], fill=_hex(color), width=int(S*0.05))
+    d.line([(cx-S*0.24, S*0.24), (cx-S*0.16, S*0.30)], fill=_hex(color), width=int(S*0.06))
+    d.line([(cx+S*0.24, S*0.24), (cx+S*0.16, S*0.30)], fill=_hex(color), width=int(S*0.06))
+    d.ellipse([cx-r, cy-r, cx+r, cy+r], outline=_hex(color), width=int(S*0.06))
+    for a in range(0, 360, 45):
+        rad = math.radians(a)
+        px = cx + (r - S*0.08) * math.cos(rad)
+        py = cy + (r - S*0.08) * math.sin(rad)
+        d.ellipse([px-S*0.02, py-S*0.02, px+S*0.02, py+S*0.02], fill=_hex(color))
+    d.line([(cx, cy), (cx, cy-r+S*0.08)], fill=_hex(color), width=int(S*0.05))
+    d.ellipse([cx-S*0.04, cy-S*0.04, cx+S*0.04, cy+S*0.04], fill=_hex(color))
+    return _finish_canvas(img, size)
+
+def icon_pencil(color="#000000", size=24, **kw) -> Image.Image:
+    """사진 3, 4: 색연필/연필"""
+    img, d, S = _make_canvas(size)
+    pts = [(S*0.22, S*0.74), (S*0.28, S*0.80), (S*0.80, S*0.28), (S*0.74, S*0.22)]
+    d.polygon(pts, outline=_hex(color), width=int(S*0.07))
+    d.polygon([(S*0.22, S*0.74), (S*0.28, S*0.80), (S*0.14, S*0.86)], fill=_hex(color))
+    d.line([(S*0.68, S*0.28), (S*0.74, S*0.34)], fill=_hex(color), width=int(S*0.06))
+    return _finish_canvas(img, size)
+
+def icon_pointer(color="#000000", size=24, **kw) -> Image.Image:
+    """사진 3, 4: 마우스 포인터 화살표 (선택(V))"""
+    img, d, S = _make_canvas(size)
+    d.line([(S*0.24, S*0.38), (S*0.14, S*0.38)], fill=_hex(color), width=int(S*0.06))
+    d.line([(S*0.28, S*0.30), (S*0.18, S*0.20)], fill=_hex(color), width=int(S*0.06))
+    d.line([(S*0.38, S*0.26), (S*0.38, S*0.14)], fill=_hex(color), width=int(S*0.06))
+    pts = [
+        (S*0.42, S*0.32), (S*0.84, S*0.52), (S*0.64, S*0.60),
+        (S*0.76, S*0.86), (S*0.64, S*0.92), (S*0.52, S*0.66), (S*0.36, S*0.74)
+    ]
+    d.polygon(pts, outline=_hex(color), width=int(S*0.06))
+    return _finish_canvas(img, size)
+
+def icon_eraser_box(color="#000000", size=24, **kw) -> Image.Image:
+    """사진 3, 4: 지우개 박스"""
+    img, d, S = _make_canvas(size)
+    d.polygon([(S*0.20, S*0.68), (S*0.54, S*0.34), (S*0.84, S*0.64), (S*0.50, S*0.88)], outline=_hex(color), width=int(S*0.07))
+    d.line([(S*0.38, S*0.50), (S*0.68, S*0.80)], fill=_hex(color), width=int(S*0.06))
+    d.line([(S*0.20, S*0.88), (S*0.70, S*0.88)], fill=_hex(color), width=int(S*0.06))
+    return _finish_canvas(img, size)
+
+def icon_eye(color="#000000", size=24, **kw) -> Image.Image:
+    """사진 3, 4: 눈 모양"""
+    img, d, S = _make_canvas(size)
+    d.arc([S*0.14, S*0.28, S*0.86, S*0.72], start=0, end=180, fill=_hex(color), width=int(S*0.07))
+    d.arc([S*0.14, S*0.28, S*0.86, S*0.72], start=180, end=360, fill=_hex(color), width=int(S*0.07))
+    d.ellipse([S*0.38, S*0.38, S*0.62, S*0.62], fill=_hex(color))
     return _finish_canvas(img, size)
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -464,7 +591,21 @@ ICON_REGISTRY = {
     "drag":         icon_drag,
     "ladder":       icon_ladder,
     "pinball":      icon_pinball,
-    "drawing":      icon_pen,  # 펜과 연동
+    "drawing":      icon_pen,
+
+    # 사진 1의 6종 전용 타이머 라인아트 아이콘
+    "timer_digital":    icon_timer_digital,
+    "timer_analog":     icon_timer_analog,
+    "timer_hourglass":  icon_timer_hourglass,
+    "timer_pie":        icon_timer_pie,
+    "timer_balloon":    icon_timer_balloon,
+    "timer_stopwatch":  icon_timer_stopwatch,
+
+    # 사진 3, 4의 플로팅 툴바 전용 아이콘
+    "pencil":           icon_pencil,
+    "pointer":          icon_pointer,
+    "eraser_box":       icon_eraser_box,
+    "eye":              icon_eye,
 }
 
 _CTK_CACHE = {}
