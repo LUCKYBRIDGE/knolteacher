@@ -1,0 +1,18 @@
+# ─── 놀티쳐 (KnolTeacher) 핵심 의존성 목록 ───
+# 다른 컴퓨터에서 개발 환경을 구축할 때:
+# pip install -r requirements.txt
+
+customtkinter>=6.0.0
+pillow>=10.0.0
+opencv-python>=4.8.0
+numpy>=1.24.0
+pystray>=0.19.5
+korean_lunar_calendar>=0.4.0
+pywebview>=5.0.0
+bottle>=0.13.0
+psutil>=5.9.0
+openpyxl>=3.1.0
+pyinstaller>=6.0.0
+yt-dlp>=2024.0.0
+darkdetect>=0.8.0
+pywin32-ctypes>=0.2.0
