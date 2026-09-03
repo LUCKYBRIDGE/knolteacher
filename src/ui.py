@@ -703,7 +703,7 @@ class App(ctk.CTk):
             command=self._open_student_display
         )
         self.sidebar_board_btn.pack(fill="x", padx=10, pady=(10, 2))
-        attach_tooltip(self.sidebar_board_btn, "학생용 대형 스크린 놀티쳐 보드를 즉시 실행합니다 (F2)")
+        attach_tooltip(self.sidebar_board_btn, "놀티쳐 보드 놀티쳐 보드를 즉시 실행합니다 (F2)")
 
         self.sidebar_custom_board_btn = ctk.CTkButton(
             self.sidebar,
@@ -1211,7 +1211,7 @@ class App(ctk.CTk):
             ("wheel",   launcher_icon_col, "돌림판", lambda: self._open_classroom_tools("wheel"), "모둠/벌칙/보상 돌려돌려 돌림판"),
             ("ladder",  launcher_icon_col, "사다리", lambda: self._open_classroom_tools("ladder"), "짜릿한 학생/모둠 사다리타기 게임"),
             ("pinball", launcher_icon_col, "핀볼",   lambda: self._open_classroom_tools("pinball"), "아케이드 통통 튀는 핀볼 추첨기"),
-            ("screen",  launcher_icon_col, "보드",   self._open_student_display, "교실 TV/전자칠판용 대형 놀티쳐 보드"),
+            ("screen",  launcher_icon_col, "놀티쳐 보드", self._open_student_display, "교실 TV/전자칠판용 학생용 대형 올인원 스마트 보드 (F2)"),
             ("widget",  launcher_icon_col, "스마트 독",   self._open_mini_widget, "바탕화면에 띄워두는 미니 시간표 위젯"),
             ("broom",   launcher_icon_col, "정리",   self._organize_desktop_action, "바탕화면 흩어진 파일 1초 자동 분류 정리"),
             ("globe",   launcher_icon_col, "사이트", self._open_site_bookmarks, "놀퀴즈, 업무포털 등 교사용 필수 사이트 바로가기")
@@ -1566,6 +1566,69 @@ class App(ctk.CTk):
 
     def _open_site_bookmarks(self):
         SiteBookmarksDialog(self, on_changed_callback=self._render_quick_sites_bar)
+    def _on_hub_repeat_changed(self, choice: str):
+        """반복 주기 세그먼트 변경 시 요일 선택기 표시/숨김"""
+        if not hasattr(self, "hub_day_selector_frame"):
+            return
+        if choice == "특정 요일":
+            self.hub_day_selector_frame.pack(fill="x", padx=14, pady=(0, 6))
+        else:
+            self.hub_day_selector_frame.pack_forget()
+
+    def _get_hub_repeat_info(self):
+        """현재 반복 주기 설정 읽기 → (repeat_type: str, repeat_days: list[int])"""
+        repeat_type = "오늘 1회성"
+        repeat_days = []
+        if hasattr(self, "hub_repeat_seg"):
+            repeat_type = self.hub_repeat_seg.get()
+        if repeat_type == "특정 요일" and hasattr(self, "_hub_day_vars"):
+            day_map = {"mon": 0, "tue": 1, "wed": 2, "thu": 3, "fri": 4}
+            repeat_days = [v for k, v in day_map.items() if self._hub_day_vars.get(k, None) and self._hub_day_vars[k].get()]
+        elif repeat_type == "매일 반복":
+            repeat_days = [0, 1, 2, 3, 4, 5, 6]
+        return repeat_type, repeat_days
+
+    def _show_site_qr(self, url: str, title: str):
+        """사이트 URL의 QR 이미지를 팝업으로 표시"""
+        try:
+            import qrcode
+            import io
+            from PIL import Image as PILImage, ImageTk
+        except ImportError:
+            # qrcode 라이브러리 없으면 안내 팝업
+            self._show_simple_alert("QR 코드", f"QR 코드 기능을 사용하려면 'qrcode[pil]' 패키지가 필요합니다.\npip install qrcode[pil]")
+            return
+
+        palette = theme_manager.get_theme()
+        pop = ctk.CTkToplevel(self)
+        pop.title(f"QR 코드: {title}")
+        pop.geometry("280x340")
+        pop.resizable(False, False)
+        pop.attributes("-topmost", True)
+        pop.configure(fg_color=palette["card"])
+
+        ctk.CTkLabel(pop, text=f"📲 {title}", font=get_font(12, "bold"), text_color=palette["accent"]).pack(pady=(14, 4))
+        ctk.CTkLabel(pop, text="카메라로 스캔하세요", font=get_font(9), text_color=palette["text_sub"]).pack()
+
+        try:
+            qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_L, box_size=6, border=2)
+            qr.add_data(url)
+            qr.make(fit=True)
+            img = qr.make_image(fill_color="black", back_color="white")
+            img = img.resize((220, 220), PILImage.LANCZOS)
+            tk_img = ImageTk.PhotoImage(img)
+
+            lbl = ctk.CTkLabel(pop, text="", image=tk_img)
+            lbl.image = tk_img
+            lbl.pack(pady=8)
+        except Exception as e:
+            ctk.CTkLabel(pop, text=f"QR 생성 실패:\n{e}", font=get_font(10), text_color="#ef4444").pack(pady=20)
+
+        url_short = url if len(url) <= 36 else url[:34] + ".."
+        ctk.CTkLabel(pop, text=url_short, font=ctk.CTkFont(family="Consolas", size=8), text_color=palette["text_sub"]).pack()
+        ctk.CTkButton(pop, text="닫기", font=get_font(10, "bold"), height=28, command=pop.destroy).pack(pady=8)
+
+
 
     def _on_system_metrics_updated(self, metrics: dict[str, Any]):
         try:
@@ -1739,16 +1802,68 @@ class App(ctk.CTk):
         sec_info = f"• 현재 등록된 학생: 총 {stu_cnt}명 | 발표자 뽑기(🎲)에서 [👦 학생 이름 모드] 또는 [🔢 번호 전용 모드]를 선택하여 사용하실 수 있습니다.\n• 🔒 100% 로컬 영구 보관: 학생 개인정보는 외부 서버로 절대 전송되지 않으며 선생님 PC에만 안전하게 저장됩니다."
         ctk.CTkLabel(roster_card, text=sec_info, font=get_font(10), text_color=palette["text_sub"], justify="left", anchor="w").pack(fill="x", padx=14, pady=(0, 12))
 
-        # 2. ✏️ 교실 수업 진행 도구 6종 카드
+        # 2. 📺 놀티쳐 보드 히어로 카드 (핵심 메인 기능 최상단 분리)
+        board_hero = ctk.CTkFrame(scroll, corner_radius=14, fg_color=palette["accent"], border_width=0)
+        board_hero.pack(fill="x", pady=(0, 12))
+
+        bh_inner = ctk.CTkFrame(board_hero, fg_color="transparent")
+        bh_inner.pack(fill="x", padx=18, pady=14)
+
+        bh_left = ctk.CTkFrame(bh_inner, fg_color="transparent")
+        bh_left.pack(side="left", fill="both", expand=True)
+
+        ctk.CTkLabel(
+            bh_left, text="📺 놀티쳐 보드 (Knol Board)",
+            font=get_font(17, "bold"), text_color="#ffffff", anchor="w"
+        ).pack(fill="x")
+        ctk.CTkLabel(
+            bh_left,
+            text="교실 TV·전자칠판에 켜두는 학생용 대형 올인원 스마트 보드\n타이머·추첨·점수판·판서 등 수업 도구를 보드 위에서 바로 실행합니다",
+            font=get_font(10), text_color="#dbeafe", anchor="w", justify="left"
+        ).pack(fill="x", pady=(4, 0))
+
+        bh_right = ctk.CTkFrame(bh_inner, fg_color="transparent")
+        bh_right.pack(side="right")
+
+        ctk.CTkButton(
+            bh_right, text="📺  놀티쳐 보드 열기  (F2)",
+            font=get_font(14, "bold"), height=46, width=220,
+            fg_color="#ffffff",
+            hover_color="#dbeafe",
+            text_color=palette["accent"],
+            corner_radius=10,
+            command=self._open_student_display
+        ).pack(pady=(0, 6))
+
+        ctk.CTkButton(
+            bh_right, text="🛠️  커스텀 설정으로 열기",
+            font=get_font(11, "bold"), height=28, width=220,
+            fg_color="transparent",
+            hover_color=palette["accent_hover"],
+            text_color="#ffffff",
+            border_width=1,
+            border_color="#bfdbfe",
+            corner_radius=8,
+            command=self._open_custom_board_dialog
+        ).pack()
+
+        # 3. ✏️ 수업 보조 도구 카드 (보드에서도 실행 가능)
         tools_card = ctk.CTkFrame(scroll, corner_radius=12, fg_color=palette["card_inner_bg"], border_width=1, border_color=palette["card_border"])
         tools_card.pack(fill="x", pady=(0, 10))
 
+        tc_hdr = ctk.CTkFrame(tools_card, fg_color="transparent")
+        tc_hdr.pack(fill="x", padx=14, pady=(12, 2))
         ctk.CTkLabel(
-            tools_card,
+            tc_hdr,
             text="✏️ 교실 수업 진행 도구 (원클릭 실행)",
             font=get_font(13, "bold"),
             text_color=palette["text_main"]
-        ).pack(anchor="w", padx=14, pady=(12, 6))
+        ).pack(side="left")
+        ctk.CTkLabel(
+            tc_hdr,
+            text="↑ 놀티쳐 보드 위에서도 동일하게 실행 가능",
+            font=get_font(9), text_color=palette["accent"]
+        ).pack(side="right")
 
         t_grid = ctk.CTkFrame(tools_card, fg_color="transparent")
         t_grid.pack(fill="x", padx=10, pady=(0, 10))
@@ -1756,16 +1871,15 @@ class App(ctk.CTk):
             t_grid.grid_columnconfigure(col_idx, weight=1)
 
         tool_items = [
-            ("✏️ 화면 위 자유 판서", "모니터 위 모든 웹/앱 위에 펜으로 직접 판서 및 밑줄", self._open_screen_drawing),
-            ("📷 스마트 실물화상기", "웹캠/USB 화상기 90°회전, 반전, 정지, 문서강조, 전체화면", self._open_visualizer),
-            ("🛠️ 스마트 플로팅 퀵바", "모니터 구석에 띄워두고 도구를 1초 만에 실행하는 미니바", self._open_floating_quick_toolbar),
+            ("✏️ 화면 위 자유 판서", "모니터 위 모든 앱 위에 펜으로 직접 판서 및 밑줄", self._open_screen_drawing),
+            ("📷 스마트 실물화상기", "웹캠/USB 화상기 90°회전, 반전, 문서강조, 전체화면", self._open_visualizer),
             ("⏱️ 교실 활동 타이머", "1분/3분/5분 모둠 활동 카운트다운 및 알람음", lambda: self._open_classroom_tools("timer")),
             ("🎲 발표자 랜덤 뽑기", "학급 학생 이름/번호 롤링 추첨 (중복 제외)", lambda: self._open_classroom_tools("picker")),
             ("🎡 돌려돌려 돌림판", "모둠, 발표자, 벌칙, 보상 돌려돌려 돌림판", lambda: self._open_classroom_tools("wheel")),
             ("🪜 짜릿한 사다리타기", "학생/모둠 사다리타기 게임", lambda: self._open_classroom_tools("ladder")),
             ("⚾ 아케이드 핀볼", "통통 튀는 물리 바운스 핀볼 추첨기", lambda: self._open_classroom_tools("pinball")),
-            ("📌 바탕화면 미니 시간표", "모서리 드래그 크기 조절 & 상단 핀 고정 미니 위젯", self._open_mini_widget),
-            ("📺 학생용 대형 스크린", "교실 TV/전자칠판용 대형 시간표 및 알림판", self._open_student_display)
+            ("🖥️ 스마트 플로팅 독", "화면 상단 슬림바: 현재 교시+남은 시간+도구 원클릭", self._open_mini_widget),
+            ("🖱️ 마우스 설정", "교실 수업용 마우스 크기/색상 설정", self._open_mouse_settings),
         ]
 
         for idx, (t_title, t_desc, t_cmd) in enumerate(tool_items):
@@ -1846,15 +1960,31 @@ class App(ctk.CTk):
             ctk.CTkLabel(top_r, text=item.get("icon", "🌐"), font=get_font(13)).pack(side="left", padx=(0, 4))
             ctk.CTkLabel(top_r, text=item.get("title", ""), font=get_font(11, "bold"), text_color="#f8fafc", anchor="w").pack(side="left", fill="x", expand=True)
 
+            btn_row = ctk.CTkFrame(s_box, fg_color="transparent")
+            btn_row.pack(fill="x", padx=8, pady=(0, 6))
+
             ctk.CTkButton(
-                s_box,
+                btn_row,
                 text="열기",
                 font=get_font(10, "bold"),
                 height=22,
                 fg_color=item.get("color", "#0284c7"),
                 hover_color="#0369a1",
                 command=lambda u=item["url"]: site_bookmark_manager.open_site(u)
-            ).pack(fill="x", padx=8, pady=(0, 6))
+            ).pack(side="left", fill="x", expand=True, padx=(0, 2))
+
+            ctk.CTkButton(
+                btn_row,
+                text="QR",
+                font=get_font(9, "bold"),
+                height=22,
+                width=34,
+                fg_color="#374151",
+                hover_color="#4b5563",
+                text_color="#ffffff",
+                corner_radius=4,
+                command=lambda u=item["url"], t=item.get("title", ""): self._show_site_qr(u, t)
+            ).pack(side="left")
 
     # =========================================================================
     # 뷰 3: 📝 나이스 업무 & 시간표 통합 (주간 시간표 + 나이스 엑셀 입력 서브탭)
@@ -1948,6 +2078,44 @@ class App(ctk.CTk):
             text="* 알람 1분 전(60초 전)에 화면에 카운트다운 플로팅 카드가 떠서\n  0초에 수업 차임벨 종료음이 울립니다.",
             font=get_font(9), text_color=palette["accent"], justify="left"
         ).pack(anchor="w", padx=14, pady=(2, 8))
+
+        # 반복 주기 설정 UI
+        repeat_row = ctk.CTkFrame(alarm_card, fg_color="transparent")
+        repeat_row.pack(fill="x", padx=14, pady=(2, 6))
+
+        ctk.CTkLabel(repeat_row, text="반복 주기:", font=get_font(11, "bold"), text_color=palette["text_sub"]).pack(side="left", padx=(0, 8))
+
+        self.hub_repeat_seg = ctk.CTkSegmentedButton(
+            repeat_row,
+            values=["오늘 1회성", "매일 반복", "특정 요일"],
+            font=get_font(10, "bold"),
+            height=28,
+            selected_color=palette["accent"],
+            selected_hover_color=palette["accent_hover"],
+            unselected_color=palette["sidebar_btn_hover"],
+            text_color=palette["text_main"],
+            command=self._on_hub_repeat_changed
+        )
+        self.hub_repeat_seg.set("오늘 1회성")
+        self.hub_repeat_seg.pack(side="left", padx=(0, 8))
+
+        # 특정 요일 선택 체크박스 (초기 숨김)
+        self.hub_day_selector_frame = ctk.CTkFrame(alarm_card, fg_color=palette["card_bg"], corner_radius=8, border_width=1, border_color=palette["card_border"])
+        day_inner = ctk.CTkFrame(self.hub_day_selector_frame, fg_color="transparent")
+        day_inner.pack(fill="x", padx=10, pady=6)
+        ctk.CTkLabel(day_inner, text="반복할 요일 선택:", font=get_font(10, "bold"), text_color=palette["text_sub"]).pack(side="left", padx=(0, 6))
+
+        self._hub_day_vars = {}
+        for day_ko, day_key in [("월", "mon"), ("화", "tue"), ("수", "wed"), ("목", "thu"), ("금", "fri")]:
+            var = ctk.BooleanVar(value=True)
+            self._hub_day_vars[day_key] = var
+            ctk.CTkCheckBox(
+                day_inner, text=day_ko, variable=var,
+                font=get_font(11, "bold"), text_color=palette["text_main"],
+                width=44, checkbox_width=16, checkbox_height=16,
+                fg_color=palette["accent"], hover_color=palette["accent_hover"]
+            ).pack(side="left", padx=3)
+        # 초기 숨김
 
         # 오늘 수업 일괄 알람 버튼
         self.hub_batch_alarm_btn = ctk.CTkButton(
@@ -2114,6 +2282,26 @@ class App(ctk.CTk):
 
             memo_txt = itm.get("memo", f"{act_name} 예약")
             ctk.CTkLabel(row, text=memo_txt, font=get_font(11, "bold"), text_color=palette["text_main"]).pack(side="left", padx=4)
+
+            # 반복 주기 배지
+            repeat_type = itm.get("repeat_type", "오늘 1회성")
+            repeat_colors = {
+                "오늘 1회성": "#374151",
+                "매일 반복": "#0369a1",
+                "특정 요일": "#7c3aed"
+            }
+            r_col = repeat_colors.get(repeat_type, "#374151")
+            ctk.CTkLabel(
+                row, text=repeat_type, font=get_font(9, "bold"),
+                fg_color=r_col, text_color="#ffffff",
+                corner_radius=4, width=62, height=20
+            ).pack(side="left", padx=2)
+
+            # 특정 요일 반복이면 요일 목록도 표시
+            if repeat_type == "특정 요일":
+                days_str = itm.get("repeat_days_str", "")
+                if days_str:
+                    ctk.CTkLabel(row, text=days_str, font=get_font(9), text_color="#94a3b8").pack(side="left", padx=2)
 
             ctk.CTkLabel(row, text=f"목표: {tgt_str}", font=ctk.CTkFont(family="Consolas", size=10), text_color=palette["text_sub"]).pack(side="left", padx=8)
 

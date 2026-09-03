@@ -102,7 +102,9 @@ class SchedulerManager:
         target_datetime: Optional[datetime.datetime] = None,
         memo: str = "",
         sound_id: str = "chime",
-        force: bool = False
+        force: bool = False,
+        repeat_type: str = "오늘 1회성",
+        repeat_days: list = None
     ) -> Tuple[bool, str]:
         """
         새로운 예약 등록 (상대 초 또는 절대 일시 지원, 다중 예약 완벽 지원)
@@ -157,6 +159,8 @@ class SchedulerManager:
                 pass
 
         with self._lock:
+            _repeat_days = repeat_days if repeat_days is not None else []
+            _days_str = "".join(["월화수목금토일"[d] for d in _repeat_days]) if _repeat_days else ""
             self.schedules[sch_id] = {
                 "id": sch_id,
                 "action_type": action_type,
@@ -165,7 +169,9 @@ class SchedulerManager:
                 "remaining_seconds": seconds,
                 "memo": memo.strip() or f"컴퓨터 {action_name} 예약",
                 "sound_id": sound_id,
-                "repeat_type": "오늘 1회성",
+                "repeat_type": repeat_type,
+                "repeat_days": _repeat_days,
+                "repeat_days_str": _days_str,
                 "created_at": now
             }
             self._sync_primary_state()
@@ -291,6 +297,53 @@ class SchedulerManager:
                 )
             except Exception:
                 pass
+
+        # 반복 예약: 실행 후 다음 예약 자동 재등록
+        repeat_type = itm.get("repeat_type", "오늘 1회성")
+        repeat_days = itm.get("repeat_days", [])
+
+        if act == "alarm" and repeat_type in ("매일 반복", "특정 요일"):
+            self._requeue_repeat_alarm(itm, repeat_type, repeat_days)
+
+    def _requeue_repeat_alarm(self, itm: dict, repeat_type: str, repeat_days: list):
+        """반복 알람: 다음 반복 일시를 계산하여 자동 재등록"""
+        now = datetime.datetime.now()
+        orig_time = itm["target_time"]
+        # 다음 날 같은 시각으로 (하루씩 전진)
+        next_target = orig_time + datetime.timedelta(days=1)
+        # 특정 요일 반복이면 해당 요일 중 가장 가까운 다음 날 찾기
+        if repeat_type == "특정 요일" and repeat_days:
+            # 오늘부터 최대 7일 내에서 repeat_days 중 해당 요일 찾기
+            found = False
+            for offset in range(1, 8):
+                candidate = now + datetime.timedelta(days=offset)
+                weekday = candidate.weekday()  # 0=월 ~ 6=일
+                if weekday in repeat_days:
+                    next_target = candidate.replace(
+                        hour=orig_time.hour, minute=orig_time.minute, second=orig_time.second, microsecond=0
+                    )
+                    found = True
+                    break
+            if not found:
+                return
+        elif repeat_type == "매일 반복":
+            next_target = orig_time + datetime.timedelta(days=1)
+
+        if next_target <= now:
+            next_target += datetime.timedelta(days=1)
+
+        new_seconds = int((next_target - now).total_seconds())
+        if new_seconds <= 0:
+            return
+
+        self.schedule_action(
+            itm["action_type"],
+            seconds=new_seconds,
+            memo=itm["memo"],
+            sound_id=itm["sound_id"],
+            repeat_type=repeat_type,
+            repeat_days=repeat_days
+        )
 
     def _register_windows_wake_task(self, target_time: datetime.datetime) -> Tuple[bool, str]:
         """Windows 작업 스케줄러에 절전 해제 타이머(WakeToRun) 작업 등록"""
