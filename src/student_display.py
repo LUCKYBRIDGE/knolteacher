@@ -78,6 +78,259 @@ THEMES = {
 }
 
 
+class BoardDrawingCanvasWidget(ctk.CTkFrame):
+    """
+    놀티쳐 보드 전용 인터랙티브 미니 칠판 / 화이트보드 판서 위젯
+    - 초록 칠판 / 흰색 화이트보드 모드 원클릭 전환
+    - 자유 손글씨 펜, 형광펜, 지우개, 텍스트 글상자(T) 입력
+    - 다양한 분필/마커 색상 및 굵기 조절
+    - 실행 취소(Undo) 및 캔버스 전체 지우기 지원
+    """
+    def __init__(self, parent_area, parent_window, theme_dict):
+        super().__init__(parent_area, fg_color="transparent")
+        self.pack(fill="both", expand=True)
+        self.parent_window = parent_window
+        self.t = theme_dict
+
+        # 판서 상태
+        self.board_mode = "green"  # green (초록 칠판) or white (화이트보드)
+        self.current_tool = "pen"  # pen, highlighter, eraser, text
+        self.current_color = "#ffffff"  # 초록 칠판 기본 흰색 분필
+        self.current_width = 4
+        self.history = []
+        self.current_stroke = []
+        self.last_x = 0
+        self.last_y = 0
+        self.active_text_entry = None
+
+        self._build_toolbar()
+        self._build_canvas()
+
+    def _build_toolbar(self):
+        tb = ctk.CTkFrame(self, fg_color=self.t["card_inner"], height=34, corner_radius=6)
+        tb.pack(fill="x", padx=2, pady=(0, 4))
+        tb.pack_propagate(False)
+
+        # 1. 칠판 / 화이트보드 전환 토글
+        self.mode_btn = ctk.CTkButton(
+            tb, text="🏫 초록칠판", width=74, height=24, font=get_font(9, "bold"),
+            fg_color="#15803d", hover_color="#166534", text_color="#ffffff",
+            corner_radius=4, command=self._toggle_board_mode
+        )
+        self.mode_btn.pack(side="left", padx=3)
+
+        # 구분선
+        ctk.CTkFrame(tb, width=1, height=18, fg_color=self.t["border"]).pack(side="left", padx=4)
+
+        # 2. 도구 선택 (펜, 형광펜, 텍스트, 지우개)
+        self.tool_btns = {}
+        tools = [("pen", "✏️ 펜"), ("highlighter", "🖍️ 형광"), ("text", "🔤 텍스트"), ("eraser", "🧹 지우개")]
+        for t_key, t_label in tools:
+            is_act = (t_key == self.current_tool)
+            btn = ctk.CTkButton(
+                tb, text=t_label, width=54, height=24, font=get_font(9, "bold"),
+                fg_color=self.t["accent"] if is_act else "transparent",
+                hover_color=self.t["card"],
+                text_color="#ffffff" if is_act else self.t["text_main"],
+                corner_radius=4, command=lambda k=t_key: self._select_tool(k)
+            )
+            btn.pack(side="left", padx=1)
+            self.tool_btns[t_key] = btn
+
+        # 구분선
+        ctk.CTkFrame(tb, width=1, height=18, fg_color=self.t["border"]).pack(side="left", padx=4)
+
+        # 3. 색상 팔레트
+        self.color_box = ctk.CTkFrame(tb, fg_color="transparent")
+        self.color_box.pack(side="left", padx=2)
+        self._refresh_palette()
+
+        # 구분선
+        ctk.CTkFrame(tb, width=1, height=18, fg_color=self.t["border"]).pack(side="left", padx=4)
+
+        # 4. 굵기 조절
+        for w_val, w_txt in [(3, "가는"), (6, "보통"), (12, "굵은")]:
+            ctk.CTkButton(
+                tb, text=w_txt, width=32, height=22, font=get_font(8),
+                fg_color=self.t["card"], hover_color=self.t["border"],
+                text_color=self.t["text_sub"], corner_radius=4,
+                command=lambda w=w_val: self._select_width(w)
+            ).pack(side="left", padx=1)
+
+        # 5. 우측: 실행 취소 & 전체 지우기
+        ctk.CTkButton(
+            tb, text="전체지우기", width=64, height=24, font=get_font(9, "bold"),
+            fg_color="#dc2626", hover_color="#b91c1c", text_color="#ffffff",
+            corner_radius=4, command=self._clear_all
+        ).pack(side="right", padx=3)
+
+        ctk.CTkButton(
+            tb, text="↩ 취소", width=46, height=24, font=get_font(9, "bold"),
+            fg_color=self.t["card"], hover_color=self.t["border"],
+            text_color=self.t["text_main"], corner_radius=4,
+            command=self._undo
+        ).pack(side="right", padx=1)
+
+    def _refresh_palette(self):
+        for w in self.color_box.winfo_children():
+            w.destroy()
+
+        if self.board_mode == "green":
+            colors = ["#ffffff", "#fef08a", "#f87171", "#38bdf8", "#4ade80", "#fb923c"]
+        else:
+            colors = ["#0f172a", "#ef4444", "#0284c7", "#16a34a", "#d97706", "#7c3aed"]
+
+        for c in colors:
+            ctk.CTkButton(
+                self.color_box, text="", width=18, height=18, corner_radius=9,
+                fg_color=c, hover_color=c, border_width=2 if c == self.current_color else 0,
+                border_color="#ffffff" if self.board_mode == "green" else "#000000",
+                command=lambda col=c: self._select_color(col)
+            ).pack(side="left", padx=1)
+
+    def _build_canvas(self):
+        bg_col = "#14291e" if self.board_mode == "green" else "#ffffff"
+        self.canvas = tk.Canvas(self, bg=bg_col, highlightthickness=0, cursor="pencil")
+        self.canvas.pack(fill="both", expand=True, padx=2, pady=2)
+
+        self.canvas.bind("<Button-1>", self._on_canvas_click)
+        self.canvas.bind("<B1-Motion>", self._on_canvas_move)
+        self.canvas.bind("<ButtonRelease-1>", self._on_canvas_up)
+
+    def _toggle_board_mode(self):
+        if self.board_mode == "green":
+            self.board_mode = "white"
+            self.mode_btn.configure(text="📋 화이트보드", fg_color="#0284c7", hover_color="#0369a1")
+            self.canvas.configure(bg="#ffffff")
+            self.current_color = "#0f172a"
+        else:
+            self.board_mode = "green"
+            self.mode_btn.configure(text="🏫 초록칠판", fg_color="#15803d", hover_color="#166534")
+            self.canvas.configure(bg="#14291e")
+            self.current_color = "#ffffff"
+        self._refresh_palette()
+
+    def _select_tool(self, key: str):
+        self.current_tool = key
+        for k, btn in self.tool_btns.items():
+            is_act = (k == key)
+            btn.configure(
+                fg_color=self.t["accent"] if is_act else "transparent",
+                text_color="#ffffff" if is_act else self.t["text_main"]
+            )
+        cursor_map = {"pen": "pencil", "highlighter": "crosshair", "eraser": "dotbox", "text": "xterm"}
+        self.canvas.configure(cursor=cursor_map.get(key, "arrow"))
+
+    def _select_color(self, col: str):
+        self.current_color = col
+        self._refresh_palette()
+
+    def _select_width(self, w: int):
+        self.current_width = w
+
+    def _on_canvas_click(self, event):
+        if self.active_text_entry:
+            self._finalize_text()
+
+        self.last_x = event.x
+        self.last_y = event.y
+        self.current_stroke = []
+
+        if self.current_tool == "text":
+            self._start_text_input(event.x, event.y)
+        elif self.current_tool == "eraser":
+            self._erase_at(event.x, event.y)
+
+    def _on_canvas_move(self, event):
+        if self.current_tool == "pen":
+            line_id = self.canvas.create_line(
+                self.last_x, self.last_y, event.x, event.y,
+                fill=self.current_color, width=self.current_width,
+                capstyle=tk.ROUND, joinstyle=tk.ROUND, smooth=True
+            )
+            self.current_stroke.append(line_id)
+            self.last_x = event.x
+            self.last_y = event.y
+        elif self.current_tool == "highlighter":
+            line_id = self.canvas.create_line(
+                self.last_x, self.last_y, event.x, event.y,
+                fill=self.current_color, width=self.current_width * 3,
+                capstyle=tk.ROUND, joinstyle=tk.ROUND, stipple="gray50", smooth=True
+            )
+            self.current_stroke.append(line_id)
+            self.last_x = event.x
+            self.last_y = event.y
+        elif self.current_tool == "eraser":
+            self._erase_at(event.x, event.y)
+
+    def _on_canvas_up(self, event):
+        if self.current_stroke:
+            self.history.append(("stroke", self.current_stroke))
+            self.current_stroke = []
+
+    def _erase_at(self, x, y):
+        r = self.current_width * 3 + 10
+        items = self.canvas.find_overlapping(x - r, y - r, x + r, y + r)
+        for itm in items:
+            self.canvas.delete(itm)
+
+    def _start_text_input(self, x, y):
+        f_sz = max(14, self.current_width * 4)
+        entry_bg = "#0f172a" if self.board_mode == "green" else "#f1f5f9"
+        txt_w = tk.Entry(
+            self.canvas, font=("Malgun Gothic", f_sz, "bold"),
+            fg=self.current_color, bg=entry_bg, insertbackground=self.current_color,
+            relief="solid", bd=1
+        )
+        win_id = self.canvas.create_window(x, y, window=txt_w, anchor="nw")
+        txt_w.focus_set()
+
+        self.active_text_entry = {
+            "entry": txt_w, "win_id": win_id, "x": x, "y": y, "font_size": f_sz, "color": self.current_color
+        }
+
+        txt_w.bind("<Return>", lambda e: self._finalize_text())
+        txt_w.bind("<Escape>", lambda e: self._cancel_text())
+
+    def _finalize_text(self):
+        if not self.active_text_entry:
+            return
+        info = self.active_text_entry
+        txt = info["entry"].get().strip()
+        self.canvas.delete(info["win_id"])
+        info["entry"].destroy()
+        self.active_text_entry = None
+
+        if txt:
+            t_id = self.canvas.create_text(
+                info["x"], info["y"], text=txt,
+                font=("Malgun Gothic", info["font_size"], "bold"),
+                fill=info["color"], anchor="nw"
+            )
+            self.history.append(("single", t_id))
+
+    def _cancel_text(self):
+        if self.active_text_entry:
+            self.canvas.delete(self.active_text_entry["win_id"])
+            self.active_text_entry["entry"].destroy()
+            self.active_text_entry = None
+
+    def _undo(self):
+        if not self.history:
+            return
+        act_type, itms = self.history.pop()
+        if act_type == "stroke":
+            for i in itms:
+                self.canvas.delete(i)
+        elif act_type == "single":
+            self.canvas.delete(itms)
+
+    def _clear_all(self):
+        self.canvas.delete("all")
+        self.history.clear()
+
+
+
 class BoardWidgetWindow(ctk.CTkFrame):
     """
     놀티쳐 보드 작업대(Desktop) 위의 고성능 플로팅 윈도우
@@ -305,10 +558,19 @@ class StudentDisplayWindow(ctk.CTkToplevel):
 
     def _load_icon(self):
         base_dir = getattr(sys, '_MEIPASS', os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-        icon_path = os.path.join(base_dir, "assets", "app_icon.ico")
+        # 놀티쳐 보드는 일반 메인 창과 작업표시줄에서 뚜렷이 구분되도록 산뜻한 블루톤 전용 아이콘 적용
+        board_icon = os.path.join(base_dir, "assets", "board_icon.ico")
+        app_icon = os.path.join(base_dir, "assets", "app_icon.ico")
+        icon_path = board_icon if os.path.exists(board_icon) else app_icon
         if os.path.exists(icon_path):
-            try: self.iconbitmap(icon_path)
-            except Exception: pass
+            try:
+                self.iconbitmap(icon_path)
+                # Windows 작업표시줄 개별 분리 아이콘 ID 설정
+                if sys.platform == "win32":
+                    import ctypes
+                    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("knolteacher.student.board.v1")
+            except Exception:
+                pass
 
     def _t(self) -> dict:
         return THEMES.get(self.theme_key, THEMES["dark"])
@@ -406,7 +668,7 @@ class StudentDisplayWindow(ctk.CTkToplevel):
         ("dice",       "🎲 주사위·통계", 540, 380),
         ("wheel",      "🎡 돌림판",     400, 320),
         ("scoreboard", "🏆 점수판",     520, 340),
-        ("drawing",    "✏️ 학급 판서",   440, 260),
+        ("drawing",    "✏️ 칠판·판서",   560, 400),
         ("timetable",  "📅 시간표",     320, 360),
         ("meal",       "🍱 급식",       320, 360),
         ("memo",       "📝 알림장",     320, 320),
@@ -1140,14 +1402,9 @@ class StudentDisplayWindow(ctk.CTkToplevel):
             ctk.CTkButton(b_row, text="+1", width=36, height=22, font=get_font(8, "bold"), command=lambda g=grp: _chg(g, 1)).pack(side="left", padx=1)
             ctk.CTkButton(b_row, text="-1", width=36, height=22, font=get_font(8, "bold"), fg_color="#334155", command=lambda g=grp: _chg(g, -1)).pack(side="left", padx=1)
 
-    # 6. 판서 도구 위젯
+    # 6. 보드 전용 인터랙티브 판서 위젯 (칠판 / 화이트보드 / 텍스트 입력)
     def _build_drawing_content(self, win, p, t):
-        ctk.CTkLabel(p, text="✏️", font=ctk.CTkFont(size=48)).pack(pady=(16, 4))
-        ctk.CTkLabel(p, text="화면 전체 위에서 자유 판서 및\n자, 삼각자, 각도기, 모눈종이 지원", font=get_font(10), text_color=t["text_sub"]).pack(pady=4)
-        ctk.CTkButton(
-            p, text="✏️ 화면 판서 시작 (Alt+2)", font=get_font(11, "bold"), height=36,
-            fg_color=t["accent"], command=lambda: ScreenDrawingOverlay.get_instance(self).show()
-        ).pack(pady=10)
+        BoardDrawingCanvasWidget(p, win, t)
 
     # 7. 시간표 위젯 (완벽 마우스 휠 스크롤)
     def _build_timetable_content(self, win, p, t):
