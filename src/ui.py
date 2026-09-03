@@ -33,6 +33,7 @@ from src.desktop_cleaner import desktop_cleaner
 from src.scrollable_2d_frame import CTk2DScrollableFrame
 from src.privacy_dialog import open_privacy_dialog
 from src.schedule_dialog import open_schedule_dialog
+from src.config_utils import get_config_dir
 from src.neis_auto_input import (
     ExcelNeisParser, DataValidator, ValidationResult,
     NeisPageType, PAGE_INFO, NeisScriptGenerator, cdp_bridge
@@ -3759,11 +3760,47 @@ class App(ctk.CTk):
         up_info = "• GitHub(LUCKYBRIDGE/knol-teacher-desk) 릴리스와 연동되어 웹 브라우저 다운로드 없이 앱 내부에서 1초 만에 최신 버전으로 직접 덮어쓰기 업데이트됩니다.\n• 새 버전을 받더라도 선생님께서 설정하신 모든 시간표, 학교, 바로가기, 테마는 영구 보존됩니다."
         ctk.CTkLabel(updater_card, text=up_info, font=get_font(10), text_color=palette["text_sub"], justify="left", anchor="w").pack(fill="x", padx=12, pady=(2, 10))
 
-        # 8. ℹ️ 프로그램 정보 & 저작권
+        # 8. 📁 로컬 데이터 보관 & 다른 PC 이전(백업) 안내
+        data_card = ctk.CTkFrame(scroll, corner_radius=10, fg_color=palette["card_inner_bg"], border_width=1, border_color=palette["card_border"])
+        data_card.pack(fill="x", pady=(0, 8))
+
+        ctk.CTkLabel(data_card, text="📁 8. 로컬 데이터 보관 & 다른 PC 이전(백업) 안내", font=get_font(13, "bold"), text_color=palette["accent"]).pack(anchor="w", padx=12, pady=(10, 4))
+
+        cfg_dir = get_config_dir()
+        d_row1 = ctk.CTkFrame(data_card, fg_color="transparent")
+        d_row1.pack(fill="x", padx=12, pady=(2, 4))
+
+        ctk.CTkLabel(d_row1, text="• 실제 데이터 저장 폴더:", font=get_font(11, "bold"), text_color=palette["text_main"]).pack(side="left", padx=(0, 6))
+
+        path_box = ctk.CTkEntry(d_row1, font=ctk.CTkFont(family="Consolas", size=10), height=26)
+        path_box.insert(0, cfg_dir)
+        path_box.configure(state="readonly")
+        path_box.pack(side="left", fill="x", expand=True, padx=(0, 8))
+
+        ctk.CTkButton(
+            d_row1,
+            text="📂 저장 폴더 열기",
+            font=get_font(10, "bold"),
+            fg_color=palette["accent"],
+            hover_color=palette["accent_hover"],
+            text_color="#ffffff",
+            height=26,
+            command=self._open_data_folder
+        ).pack(side="right")
+
+        d_info = (
+            "• 100% 캐시 정리 안전: 본 폴더는 윈도우 사용자 영구 프로필 루트에 위치하므로, "
+            "알약/V3/고클린/윈도우 디스크 정리 등 PC 최적화 도구를 실행해도 절대 삭제되지 않습니다.\n"
+            "• 다른 컴퓨터에서 그대로 쓰고 싶을 때: 위 폴더를 USB에 복사하여 새 컴퓨터의 사용자 폴더(C:\\Users\\선생님계정\\)에 그대로 붙여넣으시면, "
+            "선생님께서 입력하신 시간표·나이스 학교 설정·학생 명렬표·사이트 북마크가 1초 만에 100% 완벽 복원됩니다."
+        )
+        ctk.CTkLabel(data_card, text=d_info, font=get_font(10), text_color=palette["text_sub"], justify="left", anchor="w").pack(fill="x", padx=12, pady=(2, 10))
+
+        # 9. ℹ️ 프로그램 정보 & 저작권
         info_card = ctk.CTkFrame(scroll, corner_radius=10, fg_color=palette["card_inner_bg"], border_width=1, border_color=palette["card_border"])
         info_card.pack(fill="x", pady=(0, 6))
 
-        ctk.CTkLabel(info_card, text="ℹ️ 8. 프로그램 정보 & 저작권", font=get_font(13, "bold"), text_color=palette["text_main"]).pack(anchor="w", padx=12, pady=(10, 4))
+        ctk.CTkLabel(info_card, text="ℹ️ 9. 프로그램 정보 & 저작권", font=get_font(13, "bold"), text_color=palette["text_main"]).pack(anchor="w", padx=12, pady=(10, 4))
         info_str = (
             f"• 프로그램명: 놀티쳐 (KnolTeacher v{APP_VERSION})\n"
             "• 개발 및 저작권: Copyright 2026. 교사 서정완. All rights reserved.\n"
@@ -3795,6 +3832,22 @@ class App(ctk.CTk):
         else:
             self.cleaner_status_lbl.configure(text=f"ℹ {msg}", text_color="#f59e0b")
             messagebox.showinfo("되돌리기 안내", msg)
+
+    def _open_data_folder(self):
+        import os, subprocess
+        from tkinter import messagebox
+        from src.config_utils import get_config_dir
+        cfg_dir = get_config_dir()
+        if os.path.exists(cfg_dir):
+            try:
+                if os.name == "nt":
+                    os.startfile(cfg_dir)
+                else:
+                    subprocess.run(["xdg-open", cfg_dir])
+            except Exception:
+                messagebox.showinfo("데이터 저장 폴더", f"실제 저장 폴더 경로:\n{cfg_dir}")
+        else:
+            messagebox.showinfo("데이터 저장 폴더", f"실제 저장 폴더 경로:\n{cfg_dir}")
 
     def _toggle_desktop_icons_action(self):
         ok, is_vis, msg = desktop_cleaner.toggle_desktop_icons()

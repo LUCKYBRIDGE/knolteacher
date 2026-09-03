@@ -79,17 +79,47 @@ class PrivacyPolicyDialog(ctk.CTkToplevel):
         )
         ctk.CTkLabel(sec2, text=sec2_text, font=get_font(9), text_color=palette['text_sub'], justify='left', wraplength=480).pack(anchor='w', padx=12, pady=(0, 10))
 
-        sec3 = ctk.CTkFrame(scroll, fg_color=palette['card_inner_bg'], corner_radius=8, border_width=1, border_color=palette['card_border'])
+        # 3. 데이터 저장 위치 및 다른 PC 이전(백업) 방법
+        sec3 = ctk.CTkFrame(scroll, fg_color=palette['card_bg'], corner_radius=8, border_width=1, border_color=palette['card_border'])
         sec3.pack(fill='x', pady=(0, 8))
-        ctk.CTkLabel(sec3, text='3. 소프트웨어 개발 및 제작자 안내', font=get_font(11, 'bold'), text_color=palette['text_main']).pack(anchor='w', padx=12, pady=(10, 4))
+        ctk.CTkLabel(sec3, text='3. 📁 데이터 저장 위치 및 다른 PC 이전(백업) 방법', font=get_font(11, 'bold'), text_color=palette['text_main']).pack(anchor='w', padx=12, pady=(10, 4))
+
+        from src.config_utils import get_config_dir
+        cfg_dir = get_config_dir()
         sec3_text = (
+            f'• 실제 저장 경로: {cfg_dir}\n'
+            '• 캐시 정리 안전 보장: 본 경로는 윈도우 사용자 영구 프로필 루트에 위치하므로, '
+            '알약, V3, 고클린, 윈도우 디스크 정리 등 PC 최적화 도구를 실행해도 임시 파일(캐시)로 분류되지 않아 절대 삭제되지 않습니다.\n'
+            '• 다른 컴퓨터로 데이터 이전 방법: 교실 컴퓨터를 교체하거나 다른 PC에서 기존 데이터를 그대로 쓰고 싶으실 경우, '
+            '위 폴더를 USB에 그대로 복사하여 새 컴퓨터의 사용자 폴더(C:\\Users\\선생님계정\\)에 붙여넣으시면 '
+            '모든 시간표, 나이스 설정, 학생 명렬표, 북마크가 1초 만에 100% 완벽 복원됩니다.'
+        )
+        ctk.CTkLabel(sec3, text=sec3_text, font=get_font(9), text_color=palette['text_sub'], justify='left', wraplength=480).pack(anchor='w', padx=12, pady=(0, 8))
+
+        ctk.CTkButton(
+            sec3,
+            text='📂 데이터 저장 폴더 바로 열기',
+            font=get_font(10, 'bold'),
+            fg_color=palette['sidebar_btn_hover'],
+            hover_color=palette['accent_hover'],
+            text_color=palette['text_main'],
+            height=28,
+            corner_radius=6,
+            command=self._open_config_folder
+        ).pack(anchor='w', padx=12, pady=(0, 10))
+
+        # 4. 소프트웨어 개발 및 제작자 안내
+        sec4 = ctk.CTkFrame(scroll, fg_color=palette['card_inner_bg'], corner_radius=8, border_width=1, border_color=palette['card_border'])
+        sec4.pack(fill='x', pady=(0, 8))
+        ctk.CTkLabel(sec4, text='4. 소프트웨어 개발 및 제작자 안내', font=get_font(11, 'bold'), text_color=palette['text_main']).pack(anchor='w', padx=12, pady=(10, 4))
+        sec4_text = (
             '• 개발자 / 저작권자: 교사 서정완 (Copyright 2026. All rights reserved.)\n'
             '• 공식 문의 및 피드백 이메일: lucky20220528@gmail.com\n'
             '• 기능 개선 제안, 버그 제보, 학교 현장 도입 문의 등 소중한 의견을 언제든지 환영합니다.'
         )
-        ctk.CTkLabel(sec3, text=sec3_text, font=get_font(9), text_color=palette['text_sub'], justify='left', wraplength=480).pack(anchor='w', padx=12, pady=(0, 10))
+        ctk.CTkLabel(sec4, text=sec4_text, font=get_font(9), text_color=palette['text_sub'], justify='left', wraplength=480).pack(anchor='w', padx=12, pady=(0, 10))
 
-        mail_bar = ctk.CTkFrame(sec3, fg_color='transparent')
+        mail_bar = ctk.CTkFrame(sec4, fg_color='transparent')
         mail_bar.pack(fill='x', padx=12, pady=(0, 10))
 
         ctk.CTkButton(
@@ -145,6 +175,21 @@ class PrivacyPolicyDialog(ctk.CTkToplevel):
             messagebox.showinfo('복사 완료', '제작자 공식 이메일 주소(lucky20220528@gmail.com)가 클립보드에 복사되었습니다.')
         except Exception:
             pass
+
+    def _open_config_folder(self):
+        import os, subprocess
+        from src.config_utils import get_config_dir
+        cfg_dir = get_config_dir()
+        if os.path.exists(cfg_dir):
+            try:
+                if os.name == 'nt':
+                    os.startfile(cfg_dir)
+                else:
+                    subprocess.run(['xdg-open', cfg_dir])
+            except Exception as e:
+                messagebox.showinfo('안내', f'데이터 폴더 경로:\n{cfg_dir}')
+        else:
+            messagebox.showinfo('안내', f'데이터 폴더 경로:\n{cfg_dir}')
 
 def open_privacy_dialog(parent=None):
     return PrivacyPolicyDialog(parent)
