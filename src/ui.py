@@ -1034,26 +1034,25 @@ class App(ctk.CTk):
         self.top_alpha_slider.pack(side="left")
         attach_tooltip(top_alpha_chip, "화면 위 다른 창을 보면서 작업할 수 있도록 투명도를 40% ~ 100% 사이로 실시간 조절합니다")
 
-        # 우측 미니멀 시스템 자원 칩 (CPU / RAM / GPU - 높이 32px 표준화 및 정돈된 간격)
+        # 우측 미니멀 시스템 자원 칩 (CPU / RAM / GPU - 텍스트 잘림 없는 탄력적 너비)
         res_chip_box = ctk.CTkFrame(top_right_box, fg_color=palette["sidebar_bg"], corner_radius=8, border_width=1, border_color=palette["card_border"], height=32)
         res_chip_box.pack(side="left")
-        res_chip_box.pack_propagate(False)
 
         chip_inner = ctk.CTkFrame(res_chip_box, fg_color="transparent")
-        chip_inner.pack(padx=8, pady=3, fill="both", expand=True)
+        chip_inner.pack(padx=(10, 14), pady=3, fill="both", expand=True)
 
         self.cpu_label = ctk.CTkLabel(chip_inner, text="💻 CPU --%", font=get_font(10, "bold"), text_color=palette["text_sub"])
         self.cpu_label.pack(side="left", padx=4)
 
-        ctk.CTkFrame(chip_inner, width=1, height=14, fg_color=palette["card_border"]).pack(side="left", padx=3)
+        ctk.CTkFrame(chip_inner, width=1, height=14, fg_color=palette["card_border"]).pack(side="left", padx=4)
 
         self.ram_label = ctk.CTkLabel(chip_inner, text="🧠 RAM --%", font=get_font(10, "bold"), text_color=palette["text_sub"])
         self.ram_label.pack(side="left", padx=4)
 
-        ctk.CTkFrame(chip_inner, width=1, height=14, fg_color=palette["card_border"]).pack(side="left", padx=3)
+        ctk.CTkFrame(chip_inner, width=1, height=14, fg_color=palette["card_border"]).pack(side="left", padx=4)
 
         self.gpu_label = ctk.CTkLabel(chip_inner, text="🎮 GPU --%", font=get_font(10, "bold"), text_color=palette["text_sub"])
-        self.gpu_label.pack(side="left", padx=4)
+        self.gpu_label.pack(side="left", padx=(4, 4))
 
         # 1.5. 💡 놀퀴즈 (pinky-ne.com) 소프트 베젤 스마트 연결 유도 배너
         pinky_banner = ctk.CTkFrame(
@@ -2119,80 +2118,150 @@ class App(ctk.CTk):
         act_seg.set(inv_act_map.get(self.pc_action.get(), "종료"))
         act_seg.pack(side="left", fill="x", expand=True, padx=(0, 8))
 
-        # 1-2. 시간 선택 행 (동작 선택과 완벽히 일치하는 버튼 배치)
-        pc_row2 = ctk.CTkFrame(pc_card, fg_color="transparent")
-        pc_row2.pack(fill="x", padx=14, pady=(6, 12))
+        # 1-2. 시간 선택 행 (빠른 프리셋 + 수동 시간 자유 입력 지원)
+        time_container = ctk.CTkFrame(pc_card, fg_color="transparent")
+        time_container.pack(fill="x", padx=14, pady=(6, 12))
+
+        # 상단 서브 행: 방식 전환 세그먼트 + 전체 취소 버튼
+        tc_top = ctk.CTkFrame(time_container, fg_color="transparent")
+        tc_top.pack(fill="x", pady=(0, 6))
 
         ctk.CTkLabel(
-            pc_row2,
-            text="시간 예약:",
+            tc_top,
+            text="예약 방식:",
             font=get_font(11, "bold"),
             text_color=palette["text_main"],
             width=70,
             anchor="w"
         ).pack(side="left")
 
-        time_btn_box = ctk.CTkFrame(pc_row2, fg_color="transparent")
-        time_btn_box.pack(side="left", fill="x", expand=True, padx=(0, 8))
+        def _on_time_mode_toggle(choice):
+            if "프리셋" in choice:
+                custom_box.pack_forget()
+                preset_box.pack(fill="x")
+            else:
+                preset_box.pack_forget()
+                custom_box.pack(fill="x")
+
+        time_mode_seg = ctk.CTkSegmentedButton(
+            tc_top,
+            values=["⚡ 빠른 프리셋 (추천)", "⏰ 수동 시간 직접 입력"],
+            font=get_font(10, "bold"),
+            selected_color=palette["accent"],
+            selected_hover_color=palette["accent_hover"],
+            unselected_color=palette["sidebar_btn_hover"],
+            unselected_hover_color=palette["sidebar_bg"],
+            text_color="#ffffff",
+            command=_on_time_mode_toggle
+        )
+        time_mode_seg.set("⚡ 빠른 프리셋 (추천)")
+        time_mode_seg.pack(side="left", padx=(0, 8))
+
+        cancel_all_btn = ctk.CTkButton(
+            tc_top,
+            text="🛑 전체 예약 취소",
+            font=get_font(10, "bold"),
+            fg_color="#3f1d24",
+            hover_color="#dc2626",
+            text_color="#fca5a5",
+            width=95,
+            height=28,
+            corner_radius=6,
+            command=self._cancel_schedule
+        )
+        cancel_all_btn.pack(side="right")
+
+        # 1-2-A. 빠른 프리셋 박스
+        preset_box = ctk.CTkFrame(time_container, fg_color="transparent")
+        preset_box.pack(fill="x")
+
         for col_idx in range(4):
-            time_btn_box.grid_columnconfigure(col_idx, weight=1)
+            preset_box.grid_columnconfigure(col_idx, weight=1)
 
         presets = [(30, "30분 뒤"), (60, "1시간 뒤"), (90, "1.5시간 뒤"), (120, "2시간 뒤")]
         for idx, (m, lbl) in enumerate(presets):
             btn = ctk.CTkButton(
-                time_btn_box,
+                preset_box,
                 text=lbl,
                 font=get_font(11, "bold"),
                 height=30,
                 corner_radius=8,
                 fg_color=palette["sidebar_btn_hover"],
-                hover_color=palette["accent_blue"],
+                hover_color=palette["accent_hover"],
                 text_color=palette["text_main"],
                 command=lambda mins=m: self._quick_schedule_pc(mins)
             )
             btn.grid(row=0, column=idx, padx=2, sticky="nsew")
 
-        cancel_btn = ctk.CTkButton(
-            pc_row2,
-            text="🛑 예약 취소",
+        # 1-2-B. 수동 시간 직접 입력 박스 (자유로운 시간/분 입력)
+        custom_box = ctk.CTkFrame(time_container, fg_color=palette["card_bg"], corner_radius=8, border_width=1, border_color=palette["card_border"])
+        # 기본 상태는 숨김 (프리셋이 우선 표시)
+
+        cb_in = ctk.CTkFrame(custom_box, fg_color="transparent")
+        cb_in.pack(fill="x", padx=10, pady=8)
+
+        ctk.CTkLabel(cb_in, text="⏳ 실행 시각:", font=get_font(11, "bold"), text_color=palette["text_main"]).pack(side="left", padx=(0, 6))
+
+        self.custom_hour_entry = ctk.CTkEntry(cb_in, width=44, height=28, font=get_font(11, "bold"), justify="center")
+        self.custom_hour_entry.insert(0, "1")
+        self.custom_hour_entry.pack(side="left")
+        ctk.CTkLabel(cb_in, text="시간", font=get_font(11), text_color=palette["text_main"]).pack(side="left", padx=(4, 8))
+
+        self.custom_min_entry = ctk.CTkEntry(cb_in, width=44, height=28, font=get_font(11, "bold"), justify="center")
+        self.custom_min_entry.insert(0, "30")
+        self.custom_min_entry.pack(side="left")
+        ctk.CTkLabel(cb_in, text="분 뒤 실행", font=get_font(11), text_color=palette["text_main"]).pack(side="left", padx=(4, 12))
+
+        self.custom_memo_entry = ctk.CTkEntry(cb_in, placeholder_text="예약 메모 (선택)", width=140, height=28, font=get_font(10))
+        self.custom_memo_entry.pack(side="left", fill="x", expand=True, padx=(0, 8))
+
+        ctk.CTkButton(
+            cb_in,
+            text="➕ 예약 등록",
             font=get_font(11, "bold"),
-            fg_color="#3f1d24",
-            hover_color="#dc2626",
-            text_color="#fca5a5",
-            width=85,
-            height=30,
-            corner_radius=8,
-            command=self._cancel_schedule
-        )
-        cancel_btn.pack(side="right")
+            fg_color=palette["accent"],
+            hover_color=palette["accent_hover"],
+            text_color="#ffffff",
+            width=90,
+            height=28,
+            corner_radius=6,
+            command=self._on_custom_time_schedule_submit
+        ).pack(side="right")
 
         # 2. 화면 분할 & 위젯 도구
         screen_card = ctk.CTkFrame(scroll, corner_radius=12, fg_color=palette["card_inner_bg"], border_width=1, border_color=palette["card_border"])
         screen_card.pack(fill="x", pady=(0, 10))
 
-        ctk.CTkLabel(screen_card, text="🖥️ 화면 분할 최적화 & 미니 도크 위치", font=get_font(13, "bold"), text_color=palette["accent_green"]).pack(anchor="w", padx=14, pady=(10, 6))
+        ctk.CTkLabel(screen_card, text="🖥️ 화면 분할 최적화 & 창 위치 스냅", font=get_font(13, "bold"), text_color=palette["accent"]).pack(anchor="w", padx=14, pady=(10, 6))
 
         sc_row = ctk.CTkFrame(screen_card, fg_color="transparent")
         sc_row.pack(fill="x", padx=14, pady=(2, 10))
 
-        snap_presets = [
-            ("좌측 반", "left_half"),
-            ("우측 반", "right_half"),
-            ("좌측 1/3", "left_third"),
-            ("중앙 표준", "center_opt"),
-            ("전체 화면", "maximize")
-        ]
-        for name, mode in snap_presets:
-            ctk.CTkButton(
-                sc_row,
-                text=name,
-                font=get_font(11, "bold"),
-                height=28,
-                fg_color=palette["sidebar_btn_hover"],
-                hover_color=palette["accent_blue"],
-                text_color=palette["text_main"],
-                command=lambda m=mode: self._snap_window(m)
-            ).pack(side="left", fill="x", expand=True, padx=2)
+        snap_map = {
+            "좌측 반": "left_half",
+            "우측 반": "right_half",
+            "좌측 1/3": "left_third",
+            "중앙 표준": "center_opt",
+            "전체 화면": "maximize"
+        }
+
+        def _on_snap_select(choice: str):
+            mode = snap_map.get(choice, "center_opt")
+            self._snap_window(mode)
+
+        self.snap_seg_btn = ctk.CTkSegmentedButton(
+            sc_row,
+            values=["좌측 반", "우측 반", "좌측 1/3", "중앙 표준", "전체 화면"],
+            font=get_font(11, "bold"),
+            selected_color=palette["accent"],
+            selected_hover_color=palette["accent_hover"],
+            unselected_color=palette["sidebar_btn_hover"],
+            unselected_hover_color=palette["sidebar_bg"],
+            text_color="#ffffff",
+            command=_on_snap_select
+        )
+        self.snap_seg_btn.set("중앙 표준")
+        self.snap_seg_btn.pack(fill="x", expand=True)
 
         # 2-1. ✏️ 화면 위 판서 & 교사용 플로팅 퀵 도구 카드
         tools_card = ctk.CTkFrame(scroll, corner_radius=10, fg_color="#1e2230", border_width=1, border_color="#38bdf8")
@@ -3936,6 +4005,54 @@ class App(ctk.CTk):
             command=lambda: self._confirm_immediate_action("sleep")
         ).pack(fill="x", padx=12, pady=(5, 14))
 
+    def _execute_schedule_with_conflict_check(
+        self,
+        action_type: str,
+        seconds: int = 0,
+        target_dt: Optional[datetime.datetime] = None,
+        memo: str = ""
+    ):
+        ok, msg = self.manager.schedule_action(
+            action_type=action_type,
+            seconds=seconds,
+            target_datetime=target_dt,
+            memo=memo
+        )
+        if not ok and msg.startswith("CONFLICT:"):
+            parts = msg.split(":")
+            c_id = parts[1]
+            c_name = parts[2]
+            c_time = parts[3]
+            act_name = SchedulerManager._get_action_name(action_type)
+
+            from tkinter import messagebox
+            ans = messagebox.askyesno(
+                "⚠️ 예약 일정 충돌 감지",
+                f"이미 [{c_time}]에 [{c_name}] 예약이 등록되어 있습니다.\n\n"
+                f"새로 등록하려는 [{act_name}] 작업과 동시에 실행할 수 없습니다.\n\n"
+                f"기존 충돌 예약을 취소하고 새로운 [{act_name}] 예약으로 교체하시겠습니까?"
+            )
+            if ans:
+                self.manager.cancel_schedule_by_id(c_id)
+                ok2, msg2 = self.manager.schedule_action(
+                    action_type=action_type,
+                    seconds=seconds,
+                    target_datetime=target_dt,
+                    memo=memo,
+                    force=True
+                )
+                if ok2:
+                    self._play_sound("success")
+                    messagebox.showinfo("예약 교체 완료", msg2)
+            return
+
+        from tkinter import messagebox
+        if ok:
+            self._play_sound("success")
+            messagebox.showinfo("예약 등록 완료", msg)
+        else:
+            messagebox.showwarning("예약 알림", msg)
+
     def _quick_schedule_pc(self, mins: int):
         action_type = self.pc_action.get()
         action_name = SchedulerManager._get_action_name(action_type)
@@ -3952,11 +4069,71 @@ class App(ctk.CTk):
         self.wait_window(dialog)
 
         if dialog.result:
-            self.manager.schedule_action(action_type=action_type, seconds=target_sec)
-            self._play_sound("success")
+            self._execute_schedule_with_conflict_check(action_type=action_type, seconds=target_sec)
+
+    def _on_custom_time_schedule_submit(self):
+        from tkinter import messagebox
+        try:
+            h_text = self.custom_hour_entry.get().strip() or "0"
+            m_text = self.custom_min_entry.get().strip() or "0"
+            h = int(h_text)
+            m = int(m_text)
+            total_sec = (h * 3600) + (m * 60)
+            if total_sec <= 0:
+                messagebox.showwarning("입력 오류", "예약 시간은 최소 1분 이상이어야 합니다.")
+                return
+
+            action_type = self.pc_action.get()
+            memo = self.custom_memo_entry.get().strip()
+            self._execute_schedule_with_conflict_check(action_type=action_type, seconds=total_sec, memo=memo)
+        except ValueError:
+            messagebox.showerror("입력 오류", "시간과 분은 숫자만 입력해주세요.")
+
+    def _snap_window(self, mode: str):
+        """화면 분할 최적화 및 창 위치 스냅 실제 작동 로직"""
+        try:
+            if self.state() == "zoomed":
+                self.state("normal")
+                self.update_idletasks()
+
+            screen_w = self.winfo_screenwidth()
+            screen_h = self.winfo_screenheight()
+            work_h = screen_h - 48  # 작업표시줄 높이 보정
+
+            if mode == "left_half":
+                w = screen_w // 2
+                h = work_h
+                x = 0
+                y = 0
+            elif mode == "right_half":
+                w = screen_w // 2
+                h = work_h
+                x = screen_w // 2
+                y = 0
+            elif mode == "left_third":
+                w = max(860, screen_w // 3)
+                h = work_h
+                x = 0
+                y = 0
+            elif mode == "center_opt":
+                w = min(1180, screen_w - 40)
+                h = min(840, work_h - 20)
+                x = (screen_w - w) // 2
+                y = (work_h - h) // 2
+            elif mode == "maximize":
+                self.state("zoomed")
+                return
+            else:
+                return
+
+            self.geometry(f"{w}x{h}+{x}+{y}")
+            self.lift()
+            self.focus_force()
+        except Exception as e:
+            print(f"[UI] Error snapping window: {e}")
 
     def _cancel_schedule(self):
-        if not self.manager.is_scheduled:
+        if not self.manager.is_scheduled and not self.manager.schedules:
             self._show_simple_alert("안내", "현재 진행 중인 예약이 없습니다.")
             return
         self._confirm_cancel_schedule()
