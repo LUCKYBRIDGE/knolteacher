@@ -70,7 +70,7 @@ class StudentRosterEditDialog(ctk.CTkToplevel):
         sec_lbl.pack(padx=10, pady=6)
 
         # 사용 안내
-        guide_txt = "• 번호 순서대로 학생 이름을 한 줄에 한 명씩 엔터(Enter)로 입력하세요.\n  (예: 김도윤 [엔터] 김도현 [엔터] 박시우...)\n• 나이스 엑셀이나 한글에서 학생 이름 열을 복사하여 붙여넣으셔도 됩니다."
+        guide_txt = "• 학생 이름을 한 줄에 한 명씩 입력하세요. 성별(남/여)도 함께 지정 가능합니다.\n  (예: 1 김도윤 남 [엔터] 2 이서연 여 [엔터] 3 박시우...)\n• 나이스 엑셀이나 한글에서 학생 명단을 복사하여 그대로 붙여넣으셔도 됩니다."
         ctk.CTkLabel(
             container,
             text=guide_txt,
@@ -84,13 +84,20 @@ class StudentRosterEditDialog(ctk.CTkToplevel):
         self.text_box = ctk.CTkTextbox(container, font=get_font(12), fg_color=palette["card_inner_bg"], text_color=palette["text_main"])
         self.text_box.pack(fill="both", expand=True, padx=12, pady=(0, 6))
 
-        # 기존 학생 목록 로드 (순수 이름만 한 줄에 한 명씩 나열)
+        # 기존 학생 목록 로드 (이름 및 성별 포함)
         existing = student_manager.get_student_list()
         if existing:
-            raw_lines = [s.get('name', f"학생{s['number']}") for s in existing]
+            raw_lines = []
+            for s in existing:
+                nm = s.get('name', f"학생{s['number']}")
+                gen = s.get('gender', '')
+                if gen:
+                    raw_lines.append(f"{nm} {gen}")
+                else:
+                    raw_lines.append(nm)
             self.text_box.insert("1.0", "\n".join(raw_lines))
         else:
-            sample_lines = ["김도윤", "김도현", "박시우", "이서연", "최유진", "정민준", "강하은", "윤서준"]
+            sample_lines = ["김도윤 남", "이서연 여", "박시우 남", "최유진 여", "정민준 남", "강하은 여", "윤서준 남", "이지우 여"]
             self.text_box.insert("1.0", "\n".join(sample_lines))
 
         # 실시간 인원 수 표시 라벨
@@ -138,10 +145,15 @@ class StudentRosterEditDialog(ctk.CTkToplevel):
 
     def _update_count_preview(self):
         lines = self._get_parsed_lines()
+        male_c = sum(1 for l in lines if "남" in l)
+        female_c = sum(1 for l in lines if "여" in l)
         palette = theme_manager.get_theme()
         if hasattr(self, "count_lbl") and self.count_lbl.winfo_exists():
+            extra = ""
+            if male_c > 0 or female_c > 0:
+                extra = f" (👦남: {male_c}명, 👧여: {female_c}명)"
             self.count_lbl.configure(
-                text=f"• 등록 예정 인원: 총 {len(lines)}명 (1번부터 {len(lines)}번까지 자동 순차 부여)",
+                text=f"• 등록 예정 인원: 총 {len(lines)}명{extra} (자동 순차 번호 부여)",
                 text_color=palette["accent_blue"]
             )
 
@@ -508,20 +520,30 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
         roster_btn.pack(side="right")
         attach_tooltip(roster_btn, "우리 반 학생 이름 명렬표를 1초 만에 등록 및 수정 (로컬 영구 저장)")
 
-        # 옵션 바 (총 인원 수 / 중복 제외)
+        # 옵션 바 (성별 필터 / 총 인원 수 / 중복 제외)
         opt_row = ctk.CTkFrame(box, fg_color="transparent")
         opt_row.pack(fill="x", padx=14, pady=(4, 4))
 
-        ctk.CTkLabel(opt_row, text="추첨 대상 인원:", font=get_font(11, "bold"), text_color=palette["text_main"]).pack(side="left")
-        
+        ctk.CTkLabel(opt_row, text="성별:", font=get_font(11, "bold"), text_color=palette["text_main"]).pack(side="left")
+        self.picker_gender_seg = ctk.CTkSegmentedButton(
+            opt_row,
+            values=["전체", "👦남학생", "👧여학생"],
+            font=get_font(10, "bold"),
+            height=26,
+            command=self._on_picker_gender_changed
+        )
+        self.picker_gender_seg.set("전체")
+        self.picker_gender_seg.pack(side="left", padx=(4, 10))
+
+        ctk.CTkLabel(opt_row, text="인원:", font=get_font(11, "bold"), text_color=palette["text_main"]).pack(side="left")
         cur_cnt = student_manager.get_count()
-        self.num_spin = ctk.CTkEntry(opt_row, width=54, height=28, font=get_font(11, "bold"), fg_color=palette["card_bg"], text_color=palette["text_main"])
+        self.num_spin = ctk.CTkEntry(opt_row, width=50, height=26, font=get_font(11, "bold"), fg_color=palette["card_bg"], text_color=palette["text_main"])
         self.num_spin.insert(0, str(cur_cnt))
-        self.num_spin.pack(side="left", padx=6)
+        self.num_spin.pack(side="left", padx=4)
 
         self.no_dup_var = ctk.BooleanVar(value=True)
-        chk = ctk.CTkCheckBox(opt_row, text="중복 제외", variable=self.no_dup_var, font=get_font(11), text_color=palette["text_main"])
-        chk.pack(side="left", padx=10)
+        chk = ctk.CTkCheckBox(opt_row, text="중복 제외", variable=self.no_dup_var, font=get_font(10), text_color=palette["text_main"])
+        chk.pack(side="left", padx=6)
 
         # 번호/이름 대형 전광판 카드
         card = ctk.CTkFrame(box, fg_color="#090d16", corner_radius=16, border_width=2, border_color="#f59e0b")
@@ -601,12 +623,21 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
             self.num_spin.insert(0, str(cur_cnt))
         self._reset_picker()
 
+    def _on_picker_gender_changed(self, choice: str):
+        self._reset_picker()
+
     def _start_pick(self):
         if self.picker_running:
             return
 
         is_name_mode = (self.picker_mode == "name")
-        students = student_manager.get_student_list()
+        selected_gender = "전체"
+        if hasattr(self, "picker_gender_seg"):
+            raw_g = self.picker_gender_seg.get()
+            if "남" in raw_g: selected_gender = "남"
+            elif "여" in raw_g: selected_gender = "여"
+
+        students = student_manager.get_student_list(selected_gender if selected_gender != "전체" else None)
 
         try:
             target_count = max(1, int(self.num_spin.get()))
@@ -614,7 +645,15 @@ class ClassroomToolsDialog(ctk.CTkToplevel):
             target_count = len(students) if (students and is_name_mode) else 25
 
         if is_name_mode and students:
-            candidates = [f"{s['number']}번 {s['name']}" if s.get('name') else f"{s['number']}번" for s in students[:target_count]]
+            candidates = []
+            for s in students[:target_count]:
+                nm = s.get('name', '')
+                gen = s.get('gender', '')
+                gen_tag = f" 👦" if gen == "남" else (f" 👧" if gen == "여" else "")
+                if nm:
+                    candidates.append(f"{s['number']}번 {nm}{gen_tag}")
+                else:
+                    candidates.append(f"{s['number']}번{gen_tag}")
         else:
             candidates = [f"{i}번" for i in range(1, target_count + 1)]
 

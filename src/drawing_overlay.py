@@ -162,7 +162,14 @@ class ScreenDrawingOverlay:
         bg_frame = ctk.CTkFrame(self.toolbar, fg_color="#090d16", corner_radius=20, border_width=1, border_color="#0284c7")
         bg_frame.pack(fill="both", expand=True, padx=1, pady=1)
 
-        from src.icon_renderer import get_icon, COL_MAIN, COL_ACTIVE, COL_DANGER, COL_GREEN, COL_ORANGE, COL_YELLOW
+        from src.icon_renderer import get_icon
+        from src.geometry_tools import GridManager, RulerTool, TriangleTool, ProtractorTool
+        COL_MAIN = "#94a3b8"
+        COL_ACTIVE = "#38bdf8"
+        COL_DANGER = "#f87171"
+        COL_GREEN = "#4ade80"
+        COL_ORANGE = "#fb923c"
+        COL_YELLOW = "#facc15"
         ICO = 22
 
         # 드래그 핸들
@@ -252,6 +259,41 @@ class ScreenDrawingOverlay:
         )
         self.board_btn.pack(side="left", padx=2)
         attach_tooltip(self.board_btn, "배경 전환: 화면(F1) ↔ 화이트보드(F2) ↔ 칠판(F3)")
+
+        _sep()
+
+        # 기하 측정 도구 (모눈종이, 자, 삼각자, 각도기)
+        self.grid_btn = ctk.CTkButton(
+            bg_frame, text="🔲 모눈", font=get_font(9, "bold"),
+            width=48, height=30, fg_color="#1e293b", hover_color="#0284c7",
+            corner_radius=8, command=self._toggle_grid
+        )
+        self.grid_btn.pack(side="left", padx=1)
+        attach_tooltip(self.grid_btn, "모눈종이(격자선) 켜기 / 끄기")
+
+        ruler_btn = ctk.CTkButton(
+            bg_frame, text="📏 자", font=get_font(9, "bold"),
+            width=44, height=30, fg_color="#1e293b", hover_color="#0284c7",
+            corner_radius=8, command=self._spawn_ruler
+        )
+        ruler_btn.pack(side="left", padx=1)
+        attach_tooltip(ruler_btn, "반투명 25cm 정밀 눈금자 꺼내기 (드래그 이동 / 초록원 회전 / ✕ 삭제)")
+
+        tri_btn = ctk.CTkButton(
+            bg_frame, text="📐 삼각자", font=get_font(9, "bold"),
+            width=54, height=30, fg_color="#1e293b", hover_color="#0284c7",
+            corner_radius=8, command=self._spawn_triangle
+        )
+        tri_btn.pack(side="left", padx=1)
+        attach_tooltip(tri_btn, "반투명 직각 삼각자 꺼내기 (드래그 이동 / 회전 / ✕ 삭제)")
+
+        prot_btn = ctk.CTkButton(
+            bg_frame, text="🧭 각도기", font=get_font(9, "bold"),
+            width=54, height=30, fg_color="#1e293b", hover_color="#0284c7",
+            corner_radius=8, command=self._spawn_protractor
+        )
+        prot_btn.pack(side="left", padx=1)
+        attach_tooltip(prot_btn, "반투명 180도 각도기 꺼내기 (드래그 이동 / 회전 / ✕ 삭제)")
 
         _sep()
 
@@ -771,3 +813,37 @@ class ScreenDrawingOverlay:
                 pass
         self.root = None
         self.canvas = None
+
+    def _toggle_grid(self):
+        if not self.grid_mgr:
+            return
+        is_on = self.grid_mgr.toggle(self.bg_mode)
+        if hasattr(self, "grid_btn") and self.grid_btn.winfo_exists():
+            self.grid_btn.configure(
+                fg_color="#0284c7" if is_on else "#1e293b",
+                text="🔲 모눈ON" if is_on else "🔲 모눈"
+            )
+
+    def _spawn_ruler(self):
+        if not self.canvas:
+            return
+        w = self.canvas.winfo_width() or 1000
+        h = self.canvas.winfo_height() or 600
+        ruler = RulerTool(self.canvas, x=w // 2 - 100, y=h // 2 - 50)
+        self.geometry_tools.append(ruler)
+
+    def _spawn_triangle(self):
+        if not self.canvas:
+            return
+        w = self.canvas.winfo_width() or 1000
+        h = self.canvas.winfo_height() or 600
+        tri = TriangleTool(self.canvas, x=w // 2, y=h // 2)
+        self.geometry_tools.append(tri)
+
+    def _spawn_protractor(self):
+        if not self.canvas:
+            return
+        w = self.canvas.winfo_width() or 1000
+        h = self.canvas.winfo_height() or 600
+        prot = ProtractorTool(self.canvas, x=w // 2 + 100, y=h // 2 + 50)
+        self.geometry_tools.append(prot)

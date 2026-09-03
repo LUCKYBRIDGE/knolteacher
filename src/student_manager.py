@@ -1,14 +1,15 @@
 import os
 import json
-from typing import List, Dict, Any, Tuple
+import re
+from typing import List, Dict, Any, Tuple, Optional
 from src.config_utils import get_config_dir
 
 class StudentRosterManager:
     """
     놀티쳐 데스크 - 학급 학생 명렬표 관리자 (Student Roster Manager)
-    - 학생 번호 및 이름 로컬 영구 저장 (~/.knol_teacher_desk/student_roster.json)
+    - 학생 번호, 이름, 성별(남/여) 로컬 영구 저장 (~/.knol_teacher_desk/student_roster.json)
     - 🔒 100% 로컬 단독 보관: 외부 서버 전송 일절 없음
-    - 번호 모드 / 이름 모드 추첨 지원
+    - 번호 모드 / 이름 모드 / 성별 필터(남학생/여학생) 추첨 지원
     """
     _instance = None
 
@@ -28,10 +29,13 @@ class StudentRosterManager:
             try:
                 with open(self.config_file, "r", encoding="utf-8") as f:
                     data = json.load(f)
-                    return data.get("students", [])
+                    raw_list = data.get("students", [])
+                    for s in raw_list:
+                        if "gender" not in s:
+                            s["gender"] = ""
+                    return raw_list
             except Exception:
                 pass
-        # 기본 25명 샘플
         return []
 
     def _load_preference(self) -> bool:
@@ -60,15 +64,22 @@ class StudentRosterManager:
 
     def import_from_text(self, text: str) -> int:
         """
-        한 줄에 한 명씩 적힌 텍스트(또는 '1번 김민수', '김민수' 등)로부터 학생 명단 파싱
+        한 줄에 한 명씩 적힌 텍스트(또는 '1번 김민수 남', '1 김민수(여)', '김민수 남' 등)로부터 학생 명단 파싱
         """
         lines = [line.strip() for line in text.strip().split("\n") if line.strip()]
         new_students = []
 
         for idx, line in enumerate(lines, start=1):
+            gender = ""
+            if re.search(r"[\(\[\s]남[\)\]\s]*$", line):
+                gender = "남"
+                line = re.sub(r"[\(\[\s]남[\)\]\s]*$", "", line).strip()
+            elif re.search(r"[\(\[\s]여[\)\]\s]*$", line):
+                gender = "여"
+                line = re.sub(r"[\(\[\s]여[\)\]\s]*$", "", line).strip()
+
             parts = line.split()
             if len(parts) >= 2 and (parts[0].isdigit() or parts[0].endswith("번")):
-                # 예: "1 김민수" 또는 "1번 김민수"
                 num_str = parts[0].replace("번", "")
                 try:
                     num = int(num_str)
@@ -79,22 +90,55 @@ class StudentRosterManager:
                 num = idx
                 name = line
 
-            new_students.append({"number": num, "name": name})
+            if name.endswith(" 남") or name.endswith("(남)"):
+                gender = "남"
+                name = name[:-2].strip() if name.endswith(" 남") else name[:-3].strip()
+            elif name.endswith(" 여") or name.endswith("(여)"):
+                gender = "여"
+                name = name[:-2].strip() if name.endswith(" 여") else name[:-3].strip()
 
-        # 번호순 정렬
+            new_students.append({"number": num, "name": name, "gender": gender})
+
         new_students.sort(key=lambda x: x["number"])
         self.save_roster(new_students, self.use_names_in_picker)
         return len(new_students)
 
-    def get_student_list(self) -> List[Dict[str, Any]]:
-        return self.students
+    def get_student_list(self, gender: Optional[str] = None) -> List[Dict[str, Any]]:
+        if not gender or gender == "전체":
+            return self.students
+        return [s for s in self.students if s.get("gender") == gender]
 
-    def get_student_names(self) -> List[str]:
-        if not self.students:
-            return [f"{i}번" for i in range(1, 26)]
-        return [f"{s['number']}번 {s['name']}" if s.get('name') else f"{s['number']}번" for s in self.students]
+    def get_student_names(self, gender: Optional[str] = None) -> List[str]:
+        target = self.get_student_list(gender)
+        if not target:
+            if not self.students:
+                return [f"{i}번" for i in range(1, 26)]
+            return []
+        res = []
+        for s in target:
+            num = s['number']
+            nm = s.get('name', '')
+            gen = s.get('gender', '')
+            g_mark = f" ({gen})" if gen else ""
+            if nm:
+                res.append(f"{num}번 {nm}{g_mark}")
+            else:
+                res.append(f"{num}번{g_mark}")
+        return res
 
-    def get_count(self) -> int:
-        return len(self.students) if self.students else 25
+    def get_count(self, gender: Optional[str] = None) -> int:
+        target = self.get_student_list(gender)
+        return len(target) if target else (25 if not self.students else 0)
+
+    def get_gender_stats(self) -> Dict[str, int]:
+        male_cnt = sum(1 for s in self.students if s.get("gender") == "남")
+        female_cnt = sum(1 for s in self.students if s.get("gender") == "여")
+        none_cnt = len(self.students) - male_cnt - female_cnt
+        return {
+            "total": len(self.students),
+            "male": male_cnt,
+            "female": female_cnt,
+            "none": none_cnt
+        }
 
 student_manager = StudentRosterManager.get_instance()
