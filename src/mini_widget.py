@@ -1,27 +1,65 @@
 import os
 import sys
 import json
+import calendar
 import datetime
 import tkinter as tk
+from tkinter import simpledialog, messagebox
 import customtkinter as ctk
+
 from src.font_config import setup_global_fonts, get_font
 from src.timetable_manager import timetable_manager, DAYS_KO
 from src.neis_client import neis_client
-from src.theme_manager import theme_manager
 from src.config_utils import get_config_dir
 from src.tooltip import attach_tooltip
+from src.icon_renderer import get_icon, COL_MAIN, COL_ACTIVE, COL_YELLOW, COL_DANGER, COL_GREEN
+
+try:
+    from korean_lunar_calendar import KoreanLunarCalendar
+    _lunar_calc = KoreanLunarCalendar()
+except Exception:
+    _lunar_calc = None
+
+# 한국 주요 24절기 및 공휴일 매핑 (연도별/월별/일별)
+SOLAR_TERMS = {
+    # 2026년
+    (2026, 1, 1): "신정", (2026, 1, 5): "소한", (2026, 1, 20): "대한",
+    (2026, 2, 4): "입춘", (2026, 2, 16): "설날연휴", (2026, 2, 17): "설날", (2026, 2, 18): "우수",
+    (2026, 3, 1): "삼일절", (2026, 3, 5): "경칩", (2026, 3, 20): "춘분",
+    (2026, 4, 5): "청명/식목일", (2026, 4, 20): "곡우",
+    (2026, 5, 5): "어린이날", (2026, 5, 6): "입하", (2026, 5, 21): "소만", (2026, 5, 24): "부처님오신날",
+    (2026, 6, 5): "망종", (2026, 6, 6): "현충일", (2026, 6, 21): "하지",
+    (2026, 7, 7): "소서", (2026, 7, 17): "제헌절", (2026, 7, 23): "대서",
+    (2026, 8, 7): "입추", (2026, 8, 15): "광복절", (2026, 8, 23): "처서",
+    (2026, 9, 7): "백로", (2026, 9, 23): "추분", (2026, 9, 24): "추석연휴", (2026, 9, 25): "추석", (2026, 9, 26): "추석연휴",
+    (2026, 10, 3): "개천절", (2026, 10, 8): "한로", (2026, 10, 9): "한글날", (2026, 10, 23): "상강",
+    (2026, 11, 7): "입동", (2026, 11, 22): "소설",
+    (2026, 12, 7): "대설", (2026, 12, 21): "동지", (2026, 12, 25): "성탄절",
+}
+
+def get_lunar_str(year: int, month: int, day: int) -> str:
+    """한국 음력 날짜 문자열 반환 (예: (음)7.22)"""
+    if _lunar_calc:
+        try:
+            _lunar_calc.setSolarDate(year, month, day)
+            return f"(음){_lunar_calc.lunarMonth}.{_lunar_calc.lunarDay}"
+        except Exception:
+            pass
+    return ""
 
 
 class MiniTimetableWidget(ctk.CTkToplevel):
     """
-    놀티쳐 데스크 바탕화면 올웨이즈온 스마트 위젯
-    - 상시 바탕화면에 상주하며 시간표/급식/알림메모 한눈에 확인
-    - 손쉬운 원클릭 크기 프리셋 (소/중/대) 및 A-/A+ 배율 조절
-    - 우측 하단 모서리 드래그 크기 리사이징 완비
-    - 투명도 조절, 상시 상주 핀 고정, 설정 자동 저장/복원
+    놀티쳐 바탕화면 일체형 스마트 글래스 캘린더 & 시간표 위젯
+    - 웹/앱들보다 상위 레이어에 뜨지 않고 바탕화면에 착 달라붙는 Desktop Layer
+    - 배경화면의 아름다운 이미지와 자연스럽게 어우러지는 반투명 글래스모피즘
+    - 오늘 날짜 네온 골드 테두리 하이라이트
+    - 음력 날짜 및 24절기 표기
+    - 셀별 일정/메모 더블클릭 작성 및 시간표 연동
     """
     _instance = None
     CONFIG_FILE = os.path.join(get_config_dir(), "widget_config.json")
+    EVENTS_FILE = os.path.join(get_config_dir(), "widget_calendar_events.json")
 
     @classmethod
     def get_instance(cls, parent=None):
@@ -29,37 +67,40 @@ class MiniTimetableWidget(ctk.CTkToplevel):
             cls._instance = cls(parent)
         else:
             cls._instance.deiconify()
-            cls._instance.lift()
-            cls._instance.focus_force()
+            cls._instance._send_to_desktop_bottom()
         return cls._instance
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.parent = parent
-        self.title("놀티쳐 바탕화면 위젯")
-        self.minsize(240, 280)
+        self.title("놀티쳐 바탕화면 달력 위젯")
+        self.minsize(460, 320)
         self.resizable(True, True)
 
         setup_global_fonts(self)
         self._load_icon()
 
-        # 설정 기본값
-        self.width = 330
-        self.height = 460
-        self.opacity = 0.95
-        self.is_pinned = True
-        self.current_tab = "timetable"  # timetable | meal | memo
-        self.zoom = 1.0
+        # 기본 설정값 (넓고 시원한 월간 글래스 캘린더 형태)
+        self.width = 920
+        self.height = 580
+        self.opacity = 0.85
+        self.is_pinned = False  # 웹/앱보다 위에 있지 않고 바탕화면 레이어에 상주!
+        self.view_mode = "month"  # month (글래스 캘린더) | today (오늘 시간표/급식 카드)
+
+        today = datetime.date.today()
+        self.curr_year = today.year
+        self.curr_month = today.month
 
         self._load_config()
+        self._load_events()
 
         # 위치 및 크기 복원
         sw = self.winfo_screenwidth()
-        sh = self.winfo_screenheight()
-        pos_x = getattr(self, "pos_x", max(10, sw - self.width - 30))
-        pos_y = getattr(self, "pos_y", 80)
+        pos_x = getattr(self, "pos_x", max(30, (sw - self.width) // 2))
+        pos_y = getattr(self, "pos_y", 60)
         self.geometry(f"{self.width}x{self.height}+{pos_x}+{pos_y}")
 
+        # 바탕화면 레이어 (Topmost가 아니며 최하단 레이어에 위치)
         self.attributes("-topmost", self.is_pinned)
         try:
             self.attributes("-alpha", self.opacity)
@@ -70,8 +111,13 @@ class MiniTimetableWidget(ctk.CTkToplevel):
         self._drag_start_y = 0
 
         self.protocol("WM_DELETE_WINDOW", self.close)
+        self.bind("<FocusOut>", lambda e: self._send_to_desktop_bottom())
+
         self._build_ui()
-        self._refresh_content()
+        self._send_to_desktop_bottom()
+
+        # 주기적으로 바탕화면 최하단 레이어 유지 (다른 앱들이 열리면 그 뒤로 자연스럽게 배치)
+        self._keep_bottom_timer()
 
     def _load_icon(self):
         base_dir = getattr(sys, '_MEIPASS', os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -82,19 +128,43 @@ class MiniTimetableWidget(ctk.CTkToplevel):
             except Exception:
                 pass
 
+    def _send_to_desktop_bottom(self):
+        """웹/앱들보다 상위 레이어에 뜨지 않고 바탕화면 최하단 레이어로 밀착시킴"""
+        if self.is_pinned:
+            return
+        try:
+            import ctypes
+            hwnd = ctypes.windll.user32.GetParent(self.winfo_id())
+            if not hwnd:
+                hwnd = self.winfo_id()
+            # HWND_BOTTOM = 1, SWP_NOSIZE = 1, SWP_NOMOVE = 2, SWP_NOACTIVATE = 0x0010
+            ctypes.windll.user32.SetWindowPos(hwnd, 1, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0010)
+            self.lower()
+        except Exception:
+            try:
+                self.lower()
+            except Exception:
+                pass
+
+    def _keep_bottom_timer(self):
+        """1초 주기로 백그라운드에서 바탕화면 하단 레이어 유지"""
+        if not self.is_pinned and self.winfo_exists():
+            self._send_to_desktop_bottom()
+        if self.winfo_exists():
+            self.after(2000, self._keep_bottom_timer)
+
     def _load_config(self):
         if os.path.exists(self.CONFIG_FILE):
             try:
                 with open(self.CONFIG_FILE, "r", encoding="utf-8") as f:
                     data = json.load(f)
-                    self.width = data.get("width", 330)
-                    self.height = data.get("height", 460)
+                    self.width = data.get("width", 920)
+                    self.height = data.get("height", 580)
                     self.pos_x = data.get("x", 100)
-                    self.pos_y = data.get("y", 100)
-                    self.opacity = data.get("opacity", 0.95)
-                    self.is_pinned = data.get("is_pinned", True)
-                    self.current_tab = data.get("current_tab", "timetable")
-                    self.zoom = data.get("zoom", 1.0)
+                    self.pos_y = data.get("y", 60)
+                    self.opacity = data.get("opacity", 0.85)
+                    self.is_pinned = data.get("is_pinned", False)
+                    self.view_mode = data.get("view_mode", "month")
             except Exception:
                 pass
 
@@ -107,102 +177,155 @@ class MiniTimetableWidget(ctk.CTkToplevel):
                 "y": self.winfo_y(),
                 "opacity": self.opacity,
                 "is_pinned": self.is_pinned,
-                "current_tab": self.current_tab,
-                "zoom": self.zoom
+                "view_mode": self.view_mode
             }
             with open(self.CONFIG_FILE, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
         except Exception:
             pass
 
+    def _load_events(self):
+        self.events = {}
+        if os.path.exists(self.EVENTS_FILE):
+            try:
+                with open(self.EVENTS_FILE, "r", encoding="utf-8") as f:
+                    self.events = json.load(f)
+            except Exception:
+                self.events = {}
+
+    def _save_events(self):
+        try:
+            with open(self.EVENTS_FILE, "w", encoding="utf-8") as f:
+                json.dump(self.events, f, ensure_ascii=False, indent=2)
+        except Exception:
+            pass
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # UI 구축: 첨부 이미지 감성의 글래스모피즘 바탕화면 달력
+    # ══════════════════════════════════════════════════════════════════════════
     def _build_ui(self):
         for w in self.winfo_children():
             w.destroy()
 
-        palette = theme_manager.get_theme()
-
+        # 전체 반투명 바다/하늘 틴트 컨테이너
         self.container = ctk.CTkFrame(
-            self, fg_color=palette["card_bg"],
-            corner_radius=14, border_width=2, border_color=palette["accent_blue"]
+            self, fg_color="#102534", corner_radius=12,
+            border_width=1, border_color="#1b4660"
         )
-        self.container.pack(fill="both", expand=True, padx=4, pady=4)
+        self.container.pack(fill="both", expand=True, padx=2, pady=2)
 
-        # ── 1. 상단 바 (탭 세그먼트 + 크기 버튼 + 핀/설정/닫기) ─────────────
-        top_bar = ctk.CTkFrame(self.container, fg_color=palette["sidebar_bg"], corner_radius=10)
-        top_bar.pack(fill="x", padx=6, pady=(6, 4))
+        # ── 1. 최상단 헤더 바 (이미지 스타일: "오늘은 2026년 9월 3일 목요일 (음) 7.22" + 미니멀 아이콘들) ──
+        top_bar = ctk.CTkFrame(self.container, fg_color="#16384e", corner_radius=8, height=36)
+        top_bar.pack(fill="x", padx=4, pady=(4, 2))
+        top_bar.pack_propagate(False)
 
-        # 세그먼트 버튼 (시간표 / 급식 / 메모)
-        tab_names = ["시간표", "급식", "메모"]
-        tab_keys = ["timetable", "meal", "memo"]
-        cur_label = tab_names[tab_keys.index(self.current_tab)] if self.current_tab in tab_keys else "시간표"
+        # 드래그 이동 핸들러
+        top_bar.bind("<Button-1>", self._start_drag)
+        top_bar.bind("<B1-Motion>", self._on_drag)
 
-        self.seg_btn = ctk.CTkSegmentedButton(
-            top_bar, values=tab_names, font=get_font(10, "bold"),
-            command=self._on_seg_changed, height=26
+        today = datetime.date.today()
+        weekday_str = DAYS_KO[today.weekday()]
+        lunar_today = get_lunar_str(today.year, today.month, today.day)
+        header_text = f"오늘은 {today.year}년{today.month}월{today.day}일 {weekday_str}요일 {lunar_today}"
+
+        today_lbl = ctk.CTkLabel(
+            top_bar, text=header_text, font=get_font(11, "bold"),
+            text_color="#93c5fd", cursor="fleur"
         )
-        self.seg_btn.set(cur_label)
-        self.seg_btn.pack(side="left", padx=4, pady=4)
+        today_lbl.pack(side="left", padx=12)
+        today_lbl.bind("<Button-1>", self._start_drag)
+        today_lbl.bind("<B1-Motion>", self._on_drag)
 
-        btn_box = ctk.CTkFrame(top_bar, fg_color="transparent")
-        btn_box.pack(side="right", padx=4, pady=4)
+        # 우측 미니 액션 버튼들
+        right_box = ctk.CTkFrame(top_bar, fg_color="transparent")
+        right_box.pack(side="right", padx=6)
 
-        # 크기 조절 프리셋 메뉴 버튼
-        self.size_btn = ctk.CTkButton(
-            btn_box, text="크기▼", width=42, height=24,
-            font=get_font(9, "bold"), fg_color="#334155", hover_color="#475569",
-            corner_radius=6, command=self._open_size_menu
+        # 이전달
+        prev_btn = ctk.CTkButton(
+            right_box, text="◀", width=24, height=22, font=get_font(9),
+            fg_color="#1f4b66", hover_color="#2b6589", text_color="#cbd5e1",
+            corner_radius=4, command=self._prev_month
         )
-        self.size_btn.pack(side="left", padx=1)
-        attach_tooltip(self.size_btn, "위젯 크기 원클릭 조절 (소/중/대/배율)")
+        prev_btn.pack(side="left", padx=1)
+        attach_tooltip(prev_btn, "이전 달로 이동")
 
-        # 설정 (투명도)
+        # 현재 월 라벨 (클릭 시 이번 달로 복귀)
+        self.month_lbl = ctk.CTkButton(
+            right_box, text=f"{self.curr_year}년 {self.curr_month}월", height=22,
+            font=get_font(10, "bold"), fg_color="#0284c7", hover_color="#0369a1",
+            text_color="#ffffff", corner_radius=4, command=self._go_today
+        )
+        self.month_lbl.pack(side="left", padx=2)
+        attach_tooltip(self.month_lbl, "클릭하여 오늘(이번 달)로 바로 이동")
+
+        # 다음달
+        next_btn = ctk.CTkButton(
+            right_box, text="▶", width=24, height=22, font=get_font(9),
+            fg_color="#1f4b66", hover_color="#2b6589", text_color="#cbd5e1",
+            corner_radius=4, command=self._next_month
+        )
+        next_btn.pack(side="left", padx=1)
+        attach_tooltip(next_btn, "다음 달로 이동")
+
+        # 뷰 모드 전환 (월간 달력 ↔ 오늘 시간표/급식)
+        self.view_btn = ctk.CTkButton(
+            right_box, text="📋 시간표" if self.view_mode == "month" else "📅 달력",
+            width=58, height=22, font=get_font(9, "bold"),
+            fg_color="#1e3a5f", hover_color="#2563eb", text_color="#93c5fd",
+            corner_radius=4, command=self._toggle_view_mode
+        )
+        self.view_btn.pack(side="left", padx=3)
+        attach_tooltip(self.view_btn, "월간 글래스 달력 ↔ 오늘 시간표/급식 모드 전환")
+
+        # 투명도 설정 버튼
         opt_btn = ctk.CTkButton(
-            btn_box, text="⚙️", width=24, height=24,
-            font=get_font(10), fg_color="#334155", hover_color="#475569",
-            corner_radius=6, command=self._open_settings_dialog
+            right_box, text="💧", width=22, height=22, font=get_font(9),
+            fg_color="#1f4b66", hover_color="#2b6589", corner_radius=4,
+            command=self._open_settings_dialog
         )
         opt_btn.pack(side="left", padx=1)
-        attach_tooltip(opt_btn, "투명도 및 위젯 설정")
+        attach_tooltip(opt_btn, "배경 투명도(글래스 강도) 조절")
 
-        # 핀 고정
+        # 핀 고정 (기본: 바탕화면 레이어 밀착)
         self.pin_btn = ctk.CTkButton(
-            btn_box, text="📌" if self.is_pinned else "📍",
-            width=24, height=24, font=get_font(10),
-            fg_color="#0284c7" if self.is_pinned else "#334155",
-            hover_color="#0369a1", corner_radius=6, command=self._toggle_pin
+            right_box, text="📌" if self.is_pinned else "📍", width=22, height=22,
+            font=get_font(9), fg_color="#0284c7" if self.is_pinned else "#1f4b66",
+            hover_color="#0369a1", corner_radius=4, command=self._toggle_pin
         )
         self.pin_btn.pack(side="left", padx=1)
-        attach_tooltip(self.pin_btn, "항상 맨 위 상단 고정 토글")
+        attach_tooltip(self.pin_btn, "항상 위 고정 토글 (기본: 바탕화면 고정 레이어)")
 
         # 닫기
         close_btn = ctk.CTkButton(
-            btn_box, text="✕", width=24, height=24,
-            font=get_font(11, "bold"), fg_color="#3f1d24", hover_color="#dc2626",
-            text_color="#fca5a5", corner_radius=6, command=self.close
+            right_box, text="✕", width=22, height=22, font=get_font(10, "bold"),
+            fg_color="#451a1a", hover_color="#dc2626", text_color="#fca5a5",
+            corner_radius=4, command=self.close
         )
         close_btn.pack(side="left", padx=(1, 2))
         attach_tooltip(close_btn, "위젯 닫기")
 
-        # ── 2. 메인 콘텐츠 스크롤 영역 ────────────────────────────────────
-        self.content_frame = ctk.CTkFrame(self.container, fg_color="transparent")
-        self.content_frame.pack(fill="both", expand=True, padx=4, pady=2)
+        # ── 2. 메인 콘텐츠 영역 (월간 캘린더 그리드 or 오늘 시간표 카드) ──
+        self.main_content = ctk.CTkFrame(self.container, fg_color="transparent")
+        self.main_content.pack(fill="both", expand=True, padx=4, pady=2)
 
-        # ── 3. 하단 상태 바 및 리사이즈 핸들 ──────────────────────────────
-        btm_bar = ctk.CTkFrame(self.container, fg_color="transparent", height=20)
-        btm_bar.pack(fill="x", side="bottom", padx=6, pady=(0, 2))
+        if self.view_mode == "month":
+            self._render_month_calendar()
+        else:
+            self._render_today_view()
+
+        # ── 3. 최하단 얇은 리사이즈 그립 바 ──
+        btm_bar = ctk.CTkFrame(self.container, fg_color="transparent", height=14)
+        btm_bar.pack(fill="x", side="bottom", padx=4, pady=(0, 2))
         btm_bar.pack_propagate(False)
 
-        today = datetime.date.today()
-        weekday_str = DAYS_KO[today.weekday()]
-        self.date_lbl = ctk.CTkLabel(
-            btm_bar, text=f"{today.strftime('%m/%d')} ({weekday_str})",
-            font=get_font(9), text_color="#64748b"
+        info_lbl = ctk.CTkLabel(
+            btm_bar, text="💡 날짜를 더블클릭하면 학급 일정/메모를 등록할 수 있습니다.",
+            font=get_font(8), text_color="#64748b"
         )
-        self.date_lbl.pack(side="left")
+        info_lbl.pack(side="left", padx=4)
 
-        # 우측 하단 리사이즈 핸들
         resize_handle = ctk.CTkLabel(
-            btm_bar, text="◢", font=get_font(11, "bold"),
+            btm_bar, text="◢", font=get_font(10, "bold"),
             text_color="#475569", width=16, cursor="size_nw_se"
         )
         resize_handle.pack(side="right")
@@ -210,88 +333,225 @@ class MiniTimetableWidget(ctk.CTkToplevel):
         resize_handle.bind("<B1-Motion>", self._on_resize)
         attach_tooltip(resize_handle, "드래그하여 위젯 크기 자유 조절")
 
-    # ─── 탭 전환 ──────────────────────────────────────────────────────────
-    def _on_seg_changed(self, val: str):
-        mapping = {"시간표": "timetable", "급식": "meal", "메모": "memo"}
-        self.current_tab = mapping.get(val, "timetable")
-        self._refresh_content()
-        self._save_config()
-
-    def _refresh_content(self):
-        for w in self.content_frame.winfo_children():
+    # ══════════════════════════════════════════════════════════════════════════
+    # 월간 캘린더 그리드 렌더링 (사진과 100% 동일한 비주얼 & 인터랙션)
+    # ══════════════════════════════════════════════════════════════════════════
+    def _render_month_calendar(self):
+        for w in self.main_content.winfo_children():
             w.destroy()
 
-        if self.current_tab == "timetable":
-            self._render_timetable()
-        elif self.current_tab == "meal":
-            self._render_meal()
-        elif self.current_tab == "memo":
-            self._render_memo()
+        cal_grid = ctk.CTkFrame(self.main_content, fg_color="transparent")
+        cal_grid.pack(fill="both", expand=True)
 
-    # ─── 시간표 렌더링 ────────────────────────────────────────────────────
-    def _render_timetable(self):
-        scroll = ctk.CTkScrollableFrame(self.content_frame, fg_color="transparent")
-        scroll.pack(fill="both", expand=True)
+        for c in range(7):
+            cal_grid.grid_columnconfigure(c, weight=1)
+
+        # 1. 요일 헤더: 일요일(레드), 월~금, 토요일(블루)
+        days_header = [
+            ("일요일", "#fca5a5"), ("월요일", "#bae6fd"), ("화요일", "#bae6fd"),
+            ("수요일", "#bae6fd"), ("목요일", "#bae6fd"), ("금요일", "#bae6fd"),
+            ("토요일", "#93c5fd")
+        ]
+        h_frame = ctk.CTkFrame(cal_grid, fg_color="#183f58", corner_radius=6, height=24)
+        h_frame.grid(row=0, column=0, columnspan=7, sticky="nsew", pady=(0, 2))
+        for c in range(7):
+            h_frame.grid_columnconfigure(c, weight=1)
+
+        for col_idx, (d_name, d_col) in enumerate(days_header):
+            ctk.CTkLabel(
+                h_frame, text=d_name, font=get_font(9, "bold"), text_color=d_col
+            ).grid(row=0, column=col_idx, sticky="ew", pady=2)
+
+        # 2. 날짜 타일 계산 (일요일 시작 캘린더)
+        cal = calendar.Calendar(firstweekday=6)  # 6 = Sunday
+        month_days = cal.monthdatescalendar(self.curr_year, self.curr_month)
+
+        today = datetime.date.today()
+
+        # 각 행 가중치 설정
+        for r_idx in range(1, len(month_days) + 1):
+            cal_grid.grid_rowconfigure(r_idx, weight=1)
+
+        for r_idx, week in enumerate(month_days, start=1):
+            for c_idx, dt in enumerate(week):
+                is_curr_m = (dt.month == self.curr_month)
+                is_today = (dt == today)
+                is_sun = (c_idx == 0)
+                is_sat = (c_idx == 6)
+
+                # 타일 배경색 (평일: 은은한 청록 글래스, 주말: 차분한 다크그레이 글래스)
+                if is_sun or is_sat:
+                    tile_bg = "#1b262e" if is_curr_m else "#12191f"
+                else:
+                    tile_bg = "#15364a" if is_curr_m else "#0d202c"
+
+                # 오늘 날짜는 사진과 똑같이 황금색/골드 네온 테두리!
+                if is_today:
+                    border_color = "#fef08a"
+                    border_width = 2
+                else:
+                    border_color = "#1e4c68" if is_curr_m else "#143142"
+                    border_width = 1
+
+                tile = ctk.CTkFrame(
+                    cal_grid, fg_color=tile_bg, corner_radius=4,
+                    border_width=border_width, border_color=border_color
+                )
+                tile.grid(row=r_idx, column=c_idx, sticky="nsew", padx=1, pady=1)
+
+                # 상단 헤더: 날짜 번호 + 음력/절기
+                top_row = ctk.CTkFrame(tile, fg_color="transparent", height=18)
+                top_row.pack(fill="x", padx=3, pady=(2, 0))
+
+                num_color = "#f87171" if is_sun else ("#60a5fa" if is_sat else "#f1f5f9")
+                if not is_curr_m:
+                    num_color = "#475569"
+
+                day_num_lbl = ctk.CTkLabel(
+                    top_row, text=str(dt.day), font=get_font(9, "bold"), text_color=num_color
+                )
+                day_num_lbl.pack(side="left")
+
+                # 절기 또는 음력 표기
+                term_name = SOLAR_TERMS.get((dt.year, dt.month, dt.day))
+                lunar_str = get_lunar_str(dt.year, dt.month, dt.day)
+
+                if term_name:
+                    ctk.CTkLabel(
+                        top_row, text=f" {term_name}", font=get_font(8, "bold"), text_color="#4ade80"
+                    ).pack(side="left", padx=1)
+                elif lunar_str and is_curr_m:
+                    ctk.CTkLabel(
+                        top_row, text=f" {lunar_str}", font=get_font(7), text_color="#64748b"
+                    ).pack(side="left", padx=1)
+
+                # 타일 본문: 사용자 일정 메모 & 해당 요일 시간표 과목 미리보기
+                body_box = ctk.CTkFrame(tile, fg_color="transparent")
+                body_box.pack(fill="both", expand=True, padx=2, pady=1)
+
+                date_key = dt.strftime("%Y-%m-%d")
+                event_text = self.events.get(date_key, "")
+
+                if event_text:
+                    ctk.CTkLabel(
+                        body_box, text=event_text, font=get_font(8, "bold"),
+                        text_color="#fef08a", anchor="nw", justify="left"
+                    ).pack(fill="both", expand=True)
+                elif is_curr_m and not (is_sun or is_sat):
+                    # 주중 평일에는 해당 요일의 시간표 요약 표시 (1~4교시 등)
+                    weekday_idx = dt.weekday()  # 0: 월 ~ 4: 금
+                    subjs = self._get_day_subjects(weekday_idx)
+                    if subjs:
+                        ctk.CTkLabel(
+                            body_box, text=subjs, font=get_font(7),
+                            text_color="#64748b", anchor="nw", justify="left"
+                        ).pack(fill="both", expand=True)
+
+                # 더블클릭 시 일정 메모 등록 팝업
+                tile.bind("<Double-Button-1>", lambda e, d=dt: self._edit_event_dialog(d))
+                day_num_lbl.bind("<Double-Button-1>", lambda e, d=dt: self._edit_event_dialog(d))
+                body_box.bind("<Double-Button-1>", lambda e, d=dt: self._edit_event_dialog(d))
+
+    def _get_day_subjects(self, weekday_idx: int) -> str:
+        """해당 요일의 등록된 시간표 과목 간략 요약 (예: 1.국어 2.수학...)"""
+        try:
+            day_keys = ["mon", "tue", "wed", "thu", "fri"]
+            if 0 <= weekday_idx < len(day_keys):
+                d_key = day_keys[weekday_idx]
+                sched = timetable_manager.timetables.get(d_key, {})
+                parts = []
+                for p in range(1, 7):
+                    subj = sched.get(str(p), "")
+                    if subj:
+                        parts.append(f"{p}.{subj}")
+                return " ".join(parts[:3]) + ("..." if len(parts) > 3 else "")
+        except Exception:
+            pass
+        return ""
+
+    def _edit_event_dialog(self, dt: datetime.date):
+        """특정 날짜 일정/메모 편집 팝업"""
+        date_key = dt.strftime("%Y-%m-%d")
+        curr_val = self.events.get(date_key, "")
+
+        diag = ctk.CTkToplevel(self)
+        diag.title(f"{dt.month}월 {dt.day}일 일정/메모")
+        diag.geometry("320x200")
+        diag.resizable(False, False)
+        diag.attributes("-topmost", True)
+
+        ctk.CTkLabel(
+            diag, text=f"📅 {dt.year}년 {dt.month}월 {dt.day}일 메모 등록",
+            font=get_font(11, "bold"), text_color="#38bdf8"
+        ).pack(pady=(12, 4))
+
+        txt = ctk.CTkTextbox(diag, height=80, font=get_font(10))
+        txt.pack(fill="x", padx=16, pady=4)
+        if curr_val:
+            txt.insert("1.0", curr_val)
+        txt.focus_set()
+
+        btn_row = ctk.CTkFrame(diag, fg_color="transparent")
+        btn_row.pack(fill="x", padx=16, pady=8)
+
+        def _save():
+            v = txt.get("1.0", "end-1c").strip()
+            if v:
+                self.events[date_key] = v
+            else:
+                self.events.pop(date_key, None)
+            self._save_events()
+            diag.destroy()
+            self._render_month_calendar()
+
+        def _delete():
+            self.events.pop(date_key, None)
+            self._save_events()
+            diag.destroy()
+            self._render_month_calendar()
+
+        ctk.CTkButton(btn_row, text="저장", font=get_font(10, "bold"), width=70, fg_color="#0284c7", command=_save).pack(side="left", padx=2)
+        ctk.CTkButton(btn_row, text="삭제", font=get_font(10), width=60, fg_color="#7f1d1d", command=_delete).pack(side="left", padx=2)
+        ctk.CTkButton(btn_row, text="취소", font=get_font(10), width=60, fg_color="#334155", command=diag.destroy).pack(side="right", padx=2)
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # 오늘 시간표 & 급식 뷰 (모드 전환 시 사용)
+    # ══════════════════════════════════════════════════════════════════════════
+    def _render_today_view(self):
+        for w in self.main_content.winfo_children():
+            w.destroy()
+
+        split = ctk.CTkFrame(self.main_content, fg_color="transparent")
+        split.pack(fill="both", expand=True)
+        split.grid_columnconfigure(0, weight=1)
+        split.grid_columnconfigure(1, weight=1)
+        split.grid_rowconfigure(0, weight=1)
+
+        # 좌측: 오늘 시간표
+        left_box = ctk.CTkScrollableFrame(split, fg_color="#132e42", corner_radius=8, label_text="📋 오늘의 수업 시간표")
+        left_box.grid(row=0, column=0, sticky="nsew", padx=2, pady=2)
 
         is_hol, hol_name, items = timetable_manager.get_today_schedule_items()
         now_str = datetime.datetime.now().strftime("%H:%M")
 
         if is_hol:
-            c = ctk.CTkFrame(scroll, fg_color="#3b1d11", corner_radius=8)
-            c.pack(fill="x", pady=10)
-            ctk.CTkLabel(c, text=f"🇰🇷 [{hol_name}] 공휴일", font=get_font(13, "bold"), text_color="#fdba74").pack(pady=16)
-            return
+            ctk.CTkLabel(left_box, text=f"🇰🇷 [{hol_name}] 공휴일", font=get_font(12, "bold"), text_color="#fdba74").pack(pady=30)
+        else:
+            for it in items:
+                is_lunch = it["is_lunch"]
+                is_cur = (it["start"] <= now_str <= it["end"])
+                card = ctk.CTkFrame(
+                    left_box, fg_color="#064e3b" if is_cur else ("#3b1d11" if is_lunch else "#1b3c54"),
+                    corner_radius=4, border_width=1, border_color="#10b981" if is_cur else "#255375"
+                )
+                card.pack(fill="x", pady=2)
+                ctk.CTkLabel(card, text=it["name"], font=get_font(9, "bold"), width=38, fg_color="#0284c7" if not is_lunch else "#ea580c", text_color="#fff", corner_radius=3).pack(side="left", padx=4, pady=3)
+                ctk.CTkLabel(card, text=f"{it['start']}~{it['end']}", font=get_font(8), text_color="#94a3b8").pack(side="left", padx=4)
+                ctk.CTkLabel(card, text=it["subject"], font=get_font(10, "bold"), text_color="#6ee7b7" if is_cur else "#ffffff").pack(side="left", fill="x", expand=True, padx=4)
 
-        colors = ["#1e3a8a", "#065f46", "#831843", "#701a75", "#78350f", "#1e293b", "#312e81"]
-
-        for idx, it in enumerate(items):
-            is_lunch = it["is_lunch"]
-            is_cur = (it["start"] <= now_str <= it["end"])
-
-            card_bg = "#064e3b" if is_cur else ("#3b1d11" if is_lunch else "#181d28")
-            border_c = "#10b981" if is_cur else ("#ea580c" if is_lunch else "#334155")
-
-            card = ctk.CTkFrame(scroll, fg_color=card_bg, corner_radius=6,
-                                border_width=1, border_color=border_c)
-            card.pack(fill="x", pady=2)
-
-            badge_bg = "#ea580c" if is_lunch else colors[idx % len(colors)]
-            badge = ctk.CTkLabel(
-                card, text=it["name"],
-                font=get_font(int(10 * self.zoom), "bold"),
-                fg_color=badge_bg, text_color="#ffffff",
-                corner_radius=4, width=max(44, int(52 * self.zoom)), height=max(20, int(24 * self.zoom))
-            )
-            badge.pack(side="left", padx=4, pady=4)
-
-            time_lbl = ctk.CTkLabel(
-                card, text=f"{it['start']}~{it['end']}",
-                font=get_font(int(9 * self.zoom)),
-                text_color="#94a3b8", width=max(68, int(76 * self.zoom))
-            )
-            time_lbl.pack(side="left")
-
-            subj_lbl = ctk.CTkLabel(
-                card, text=it["subject"],
-                font=get_font(int(11 * self.zoom), "bold"),
-                text_color="#6ee7b7" if is_cur else "#ffffff",
-                anchor="w"
-            )
-            subj_lbl.pack(side="left", fill="x", expand=True, padx=4)
-
-            tag = it.get("tag", "담임")
-            if tag in ["전담", "외강"]:
-                tag_bg = "#7c3aed" if tag == "전담" else "#0891b2"
-                ctk.CTkLabel(
-                    card, text=f"[{tag}]", font=get_font(int(9 * self.zoom), "bold"),
-                    fg_color=tag_bg, text_color="#ffffff", corner_radius=3,
-                    width=max(32, int(38 * self.zoom)), height=18
-                ).pack(side="right", padx=4)
-
-    # ─── 급식 렌더링 ──────────────────────────────────────────────────────
-    def _render_meal(self):
-        scroll = ctk.CTkScrollableFrame(self.content_frame, fg_color="transparent")
-        scroll.pack(fill="both", expand=True)
+        # 우측: 오늘 급식 식단
+        right_box = ctk.CTkScrollableFrame(split, fg_color="#132e42", corner_radius=8, label_text="🍱 오늘의 급식 식단")
+        right_box.grid(row=0, column=1, sticky="nsew", padx=2, pady=2)
 
         try:
             today = datetime.date.today()
@@ -302,99 +562,72 @@ class MiniTimetableWidget(ctk.CTkToplevel):
             dishes, cal = [], ""
 
         if cal:
-            ctk.CTkLabel(scroll, text=f"🔥 {cal}", font=get_font(int(11 * self.zoom), "bold"),
-                         text_color="#4ade80").pack(pady=(2, 6))
+            ctk.CTkLabel(right_box, text=f"🔥 {cal}", font=get_font(10, "bold"), text_color="#4ade80").pack(pady=2)
 
-        for i, dish in enumerate(dishes):
-            row_bg = "#221e10" if i % 2 == 0 else "#181d28"
-            row = ctk.CTkFrame(scroll, fg_color=row_bg, corner_radius=6)
-            row.pack(fill="x", pady=2)
-            ctk.CTkLabel(row, text=f"• {dish}",
-                         font=get_font(int(11 * self.zoom), "bold"),
-                         text_color="#f8fafc", anchor="w").pack(fill="x", padx=10, pady=5)
+        for d in dishes:
+            r = ctk.CTkFrame(right_box, fg_color="#193a52", corner_radius=4)
+            r.pack(fill="x", pady=2)
+            ctk.CTkLabel(r, text=f"• {d}", font=get_font(10, "bold"), text_color="#f1f5f9", anchor="w").pack(fill="x", padx=8, pady=4)
 
         if not dishes:
-            ctk.CTkLabel(scroll, text="오늘 등록된 급식이 없습니다.",
-                         font=get_font(11), text_color="#64748b").pack(pady=20)
+            ctk.CTkLabel(right_box, text="등록된 급식이 없습니다.", font=get_font(10), text_color="#64748b").pack(pady=30)
 
-    # ─── 알림 메모 렌더링 ────────────────────────────────────────────────
-    def _render_memo(self):
-        memo_file = os.path.join(get_config_dir(), "widget_memo.txt")
-        saved_text = ""
-        if os.path.exists(memo_file):
-            try:
-                with open(memo_file, "r", encoding="utf-8") as f:
-                    saved_text = f.read()
-            except Exception:
-                pass
+    # ══════════════════════════════════════════════════════════════════════════
+    # 헬퍼 액션들: 달 이동, 뷰 전환, 핀, 투명도, 리사이즈
+    # ══════════════════════════════════════════════════════════════════════════
+    def _prev_month(self):
+        if self.curr_month == 1:
+            self.curr_month = 12
+            self.curr_year -= 1
+        else:
+            self.curr_month -= 1
+        self.month_lbl.configure(text=f"{self.curr_year}년 {self.curr_month}월")
+        if self.view_mode == "month":
+            self._render_month_calendar()
 
-        box = ctk.CTkTextbox(
-            self.content_frame, font=get_font(int(11 * self.zoom)),
-            fg_color="#0f172a", text_color="#f8fafc", corner_radius=8
+    def _next_month(self):
+        if self.curr_month == 12:
+            self.curr_month = 1
+            self.curr_year += 1
+        else:
+            self.curr_month += 1
+        self.month_lbl.configure(text=f"{self.curr_year}년 {self.curr_month}월")
+        if self.view_mode == "month":
+            self._render_month_calendar()
+
+    def _go_today(self):
+        today = datetime.date.today()
+        self.curr_year = today.year
+        self.curr_month = today.month
+        self.month_lbl.configure(text=f"{self.curr_year}년 {self.curr_month}월")
+        if self.view_mode == "month":
+            self._render_month_calendar()
+
+    def _toggle_view_mode(self):
+        self.view_mode = "today" if self.view_mode == "month" else "month"
+        self.view_btn.configure(text="📋 시간표" if self.view_mode == "month" else "📅 달력")
+        self._build_ui()
+        self._save_config()
+
+    def _toggle_pin(self):
+        self.is_pinned = not self.is_pinned
+        self.attributes("-topmost", self.is_pinned)
+        self.pin_btn.configure(
+            text="📌" if self.is_pinned else "📍",
+            fg_color="#0284c7" if self.is_pinned else "#1f4b66"
         )
-        box.pack(fill="both", expand=True, padx=4, pady=4)
-        box.insert("1.0", saved_text if saved_text else "📌 오늘의 알림 메모\n• 준비물 챙기기\n• 전달사항 기록")
-
-        def _auto_save(event=None):
-            try:
-                with open(memo_file, "w", encoding="utf-8") as f:
-                    f.write(box.get("1.0", "end-1c"))
-            except Exception:
-                pass
-
-        box.bind("<KeyRelease>", _auto_save)
-
-    # ─── 크기 프리셋 메뉴 ─────────────────────────────────────────────────
-    def _open_size_menu(self):
-        menu = tk.Menu(self, tearoff=0)
-        menu.add_command(label="📱 소형 (280x380)", command=lambda: self._set_preset_size(280, 380, 0.9))
-        menu.add_command(label="💻 중형 (340x480 - 기본)", command=lambda: self._set_preset_size(340, 480, 1.0))
-        menu.add_command(label="🖥️ 대형 (420x600)", command=lambda: self._set_preset_size(420, 600, 1.2))
-        menu.add_separator()
-        menu.add_command(label="🔍 글자 확대 (A+)", command=lambda: self._adjust_zoom(0.1))
-        menu.add_command(label="🔍 글자 축소 (A-)", command=lambda: self._adjust_zoom(-0.1))
-
-        x = self.winfo_rootx() + self.size_btn.winfo_x()
-        y = self.winfo_rooty() + self.size_btn.winfo_y() + 26
-        menu.tk_popup(x, y)
-
-    def _set_preset_size(self, w: int, h: int, zoom: float):
-        self.width = w
-        self.height = h
-        self.zoom = zoom
-        self.geometry(f"{w}x{h}")
-        self._refresh_content()
+        if not self.is_pinned:
+            self._send_to_desktop_bottom()
         self._save_config()
 
-    def _adjust_zoom(self, delta: float):
-        self.zoom = max(0.7, min(1.8, round(self.zoom + delta, 1)))
-        self._refresh_content()
-        self._save_config()
-
-    # ─── 리사이즈 드래그 ─────────────────────────────────────────────────
-    def _start_resize(self, event):
-        self._resize_start_x = event.x_root
-        self._resize_start_y = event.y_root
-        self._orig_w = self.winfo_width()
-        self._orig_h = self.winfo_height()
-
-    def _on_resize(self, event):
-        dx = event.x_root - self._resize_start_x
-        dy = event.y_root - self._resize_start_y
-        nw = max(240, self._orig_w + dx)
-        nh = max(280, self._orig_h + dy)
-        self.geometry(f"{nw}x{nh}")
-        self._save_config()
-
-    # ─── 투명도 설정 팝업 ─────────────────────────────────────────────────
     def _open_settings_dialog(self):
         diag = ctk.CTkToplevel(self)
-        diag.title("위젯 설정")
-        diag.geometry("260x160")
+        diag.title("글래스 투명도 조절")
+        diag.geometry("280x160")
         diag.resizable(False, False)
         diag.attributes("-topmost", True)
 
-        ctk.CTkLabel(diag, text="⚙️ 위젯 배경 투명도", font=get_font(12, "bold")).pack(pady=(16, 4))
+        ctk.CTkLabel(diag, text="💧 배경화면 비침 투명도", font=get_font(11, "bold")).pack(pady=(16, 4))
         val_lbl = ctk.CTkLabel(diag, text=f"{int(self.opacity * 100)}%", font=get_font(11, "bold"), text_color="#38bdf8")
         val_lbl.pack()
 
@@ -407,19 +640,36 @@ class MiniTimetableWidget(ctk.CTkToplevel):
                 pass
             self._save_config()
 
-        sl = ctk.CTkSlider(diag, from_=0.35, to=1.0, number_of_steps=13, command=_on_slider)
+        sl = ctk.CTkSlider(diag, from_=0.35, to=0.98, number_of_steps=15, command=_on_slider)
         sl.set(self.opacity)
         sl.pack(fill="x", padx=24, pady=6)
 
         ctk.CTkButton(diag, text="확인", width=80, height=28, command=diag.destroy).pack(pady=(8, 0))
 
-    def _toggle_pin(self):
-        self.is_pinned = not self.is_pinned
-        self.attributes("-topmost", self.is_pinned)
-        self.pin_btn.configure(
-            text="📌" if self.is_pinned else "📍",
-            fg_color="#0284c7" if self.is_pinned else "#334155"
-        )
+    # 드래그 이동
+    def _start_drag(self, event):
+        self._drag_start_x = event.x
+        self._drag_start_y = event.y
+
+    def _on_drag(self, event):
+        x = self.winfo_x() + (event.x - self._drag_start_x)
+        y = self.winfo_y() + (event.y - self._drag_start_y)
+        self.geometry(f"+{x}+{y}")
+        self._save_config()
+
+    # 리사이즈
+    def _start_resize(self, event):
+        self._resize_start_x = event.x_root
+        self._resize_start_y = event.y_root
+        self._orig_w = self.winfo_width()
+        self._orig_h = self.winfo_height()
+
+    def _on_resize(self, event):
+        dx = event.x_root - self._resize_start_x
+        dy = event.y_root - self._resize_start_y
+        nw = max(460, self._orig_w + dx)
+        nh = max(320, self._orig_h + dy)
+        self.geometry(f"{nw}x{nh}")
         self._save_config()
 
     def close(self):
@@ -428,4 +678,3 @@ class MiniTimetableWidget(ctk.CTkToplevel):
             self.destroy()
         except Exception:
             pass
-        MiniTimetableWidget._instance = None

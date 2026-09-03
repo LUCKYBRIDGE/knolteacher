@@ -33,6 +33,7 @@ def build():
         "--hidden-import=pystray",
         "--hidden-import=pystray._win32",
         "--hidden-import=PIL._tkinter_finder",
+        "--hidden-import=korean_lunar_calendar",
         "main.py"
     ]
 
