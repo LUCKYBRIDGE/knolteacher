@@ -241,6 +241,7 @@ class StudentDisplayWindow(ctk.CTkToplevel):
             ("launcher",    "바로\n가기", "🚀", "자주 쓰는 수업 프로그램 및 웹사이트 빠른 실행 (➕ 등록)"),
             ("bgm",         "교실\nBGM",  "🎵", "유튜브 소리만 듣는 교실 배경음악 플레이어 (➕ 등록)"),
             ("video",       "유튜브\n영상", "🎬", "광고 없이 수업 영상을 재생하는 교실 유튜브 플레이어 (➕ 등록)"),
+            ("browser",     "교실\n인터넷", "🌐", "광고 없이 인터넷을 이용하는 교실 클린 웹 브라우저 (➕ 등록)"),
         ]
 
         self.dock_buttons = {}
@@ -1368,6 +1369,109 @@ class StudentDisplayWindow(ctk.CTkToplevel):
             )
             del_btn.pack(side="right", padx=6)
             attach_tooltip(del_btn, "이 수업 영상 삭제")
+
+    def _show_browser(self):
+        """교실 클린 웹 브라우저 모듈 (광고 차단)"""
+        from src.classroom_browser_manager import classroom_browser
+        body = self._create_white_module_window("browser", "교실 클린 웹 브라우저 (광고 차단)", "🌐", 540, 460)
+
+        # 1. 상단: URL/검색어 입력창 & 브라우저 열기 바
+        top_card = ctk.CTkFrame(body, fg_color="#f8fafc", corner_radius=10, border_width=1, border_color="#e2e8f0")
+        top_card.pack(fill="x", padx=10, pady=(6, 4))
+
+        ctk.CTkLabel(
+            top_card, text="🌐 주소 또는 검색어를 입력하면 광고가 차단된 클린 브라우저가 열립니다",
+            font=get_font(10, "bold"), text_color="#0284c7"
+        ).pack(fill="x", padx=8, pady=(6, 2))
+
+        in_row = ctk.CTkFrame(top_card, fg_color="transparent")
+        in_row.pack(fill="x", padx=8, pady=(2, 6))
+
+        url_ent = ctk.CTkEntry(in_row, placeholder_text="예: 네이버, 독도 역사, https://...", font=get_font(11))
+        url_ent.pack(side="left", fill="x", expand=True, padx=(0, 6))
+
+        def _open_url():
+            raw = url_ent.get().strip()
+            if not raw:
+                target = "https://www.naver.com"
+            elif raw.startswith("http://") or raw.startswith("https://"):
+                target = raw
+            elif "." in raw and " " not in raw:
+                target = "https://" + raw
+            else:
+                import urllib.parse
+                target = "https://search.naver.com/search.naver?query=" + urllib.parse.quote(raw)
+            classroom_browser.launch_browser(target)
+
+        open_btn = ctk.CTkButton(
+            in_row, text="🌐 브라우저 열기", width=98, height=28, font=get_font(10, "bold"),
+            fg_color="#0284c7", hover_color="#0369a1", command=_open_url
+        )
+        open_btn.pack(side="left", padx=2)
+        attach_tooltip(open_btn, "광고가 차단된 교실 전용 클린 브라우저 실행")
+
+        # 2. 수업 즐겨찾기 바 & 등록 버튼
+        mid_bar = ctk.CTkFrame(body, fg_color="transparent")
+        mid_bar.pack(fill="x", padx=12, pady=(4, 2))
+
+        ctk.CTkLabel(mid_bar, text="⭐ 교실 수업 즐겨찾기", font=get_font(11, "bold"), text_color="#1e293b").pack(side="left")
+
+        def _refresh():
+            self._close_module("browser")
+            self._show_browser()
+
+        def _open_add_bm():
+            from tkinter import simpledialog
+            u = simpledialog.askstring("즐겨찾기 등록", "등록할 사이트 주소(URL)를 입력하세요:", parent=self)
+            if u:
+                n = simpledialog.askstring("즐겨찾기 이름", "표시할 사이트 이름을 입력하세요:", parent=self) or u
+                classroom_browser.add_bookmark(n, u)
+                _refresh()
+
+        add_btn = ctk.CTkButton(
+            mid_bar, text="➕ 사이트 등록", width=84, height=26, font=get_font(10, "bold"),
+            fg_color="#059669", hover_color="#047857", command=_open_add_bm
+        )
+        add_btn.pack(side="right")
+        attach_tooltip(add_btn, "수업에 자주 활용하는 교육 사이트 북마크 등록")
+
+        # 3. 북마크 목록 스크롤
+        scroll = ctk.CTkScrollableFrame(body, fg_color="transparent")
+        scroll.pack(fill="both", expand=True, padx=8, pady=4)
+
+        bms = classroom_browser.get_bookmarks()
+        for bm in bms:
+            b_id = bm.get("id")
+            b_name = bm.get("name")
+            b_url = bm.get("url")
+            b_emoji = bm.get("emoji", "🌐")
+            b_cat = bm.get("category", "수업")
+
+            row = ctk.CTkFrame(scroll, fg_color="#f8fafc", corner_radius=8, border_width=1, border_color="#e2e8f0")
+            row.pack(fill="x", pady=2)
+
+            ctk.CTkLabel(
+                row, text=b_cat, font=get_font(9, "bold"), width=36,
+                fg_color="#0284c7", text_color="#ffffff", corner_radius=4
+            ).pack(side="left", padx=6, pady=6)
+
+            btn = ctk.CTkButton(
+                row, text=f"{b_emoji}  {b_name}",
+                font=get_font(11, "bold"), anchor="w", fg_color="transparent",
+                hover_color="#e0f2fe", text_color="#1e293b", height=34,
+                command=lambda u=b_url: classroom_browser.launch_browser(u)
+            )
+            btn.pack(side="left", fill="x", expand=True, padx=4)
+            attach_tooltip(btn, f"클릭하여 광고 없이 접속\n주소: {b_url}")
+
+            del_btn = ctk.CTkButton(
+                row, text="✕", width=22, height=22, font=get_font(9),
+                fg_color="transparent", hover_color="#fee2e2", text_color="#94a3b8",
+                corner_radius=4,
+                command=lambda bid=b_id: (classroom_browser.remove_bookmark(bid), _refresh())
+            )
+            del_btn.pack(side="right", padx=6)
+            attach_tooltip(del_btn, "이 즐겨찾기 삭제")
 
     # ══════════════════════════════════════════════════════════════════════════
     # 초기 기본 화면: 사진 3처럼 타이머 + 주사위 동시 소환
