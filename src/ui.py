@@ -83,6 +83,16 @@ class ClassAlarmCustomDialog(ctk.CTkToplevel):
             font=get_font(10), text_color=palette["text_main"], justify="left"
         ).pack(padx=10, pady=8, anchor="w")
 
+        # 🎨 알람 화면 시각적 디자인 커스텀 버튼
+        from src.alarm_designer_dialog import AlarmCustomDesignerDialog
+        ctk.CTkButton(
+            container, text="🎨 알람 화면 디자인 커스텀 (문구/위치/이미지 변경)",
+            font=get_font(10, "bold"), height=30,
+            fg_color=palette["card_inner_bg"], hover_color=palette["accent"],
+            text_color=palette["accent"], border_width=1, border_color=palette["accent"],
+            command=lambda: AlarmCustomDesignerDialog(self)
+        ).pack(fill="x", padx=16, pady=(0, 8))
+
         # 🖥️ 모니터 1 / 모니터 2 선택
         ctk.CTkLabel(container, text="🖥️ 타이머 팝업 띄울 모니터 선택:", font=get_font(11, "bold"), text_color=palette["text_main"]).pack(anchor="w", padx=16, pady=(2, 4))
         monitors = get_system_monitors()
@@ -1220,6 +1230,21 @@ class App(ctk.CTk):
         alarm_ctrl_box = ctk.CTkFrame(lc_top, fg_color="transparent")
         alarm_ctrl_box.pack(side="right")
 
+        from src.alarm_designer_dialog import AlarmCustomDesignerDialog
+        ctk.CTkButton(
+            alarm_ctrl_box,
+            text="🎨 알람 디자인",
+            font=get_font(10, "bold"),
+            fg_color=palette["sidebar_bg"],
+            hover_color=palette["sidebar_btn_hover"],
+            text_color=palette["text_main"],
+            border_width=1,
+            border_color=palette["card_border"],
+            height=28,
+            corner_radius=6,
+            command=lambda: AlarmCustomDesignerDialog(self)
+        ).pack(side="right", padx=(4, 0))
+
         from src.recurring_dialog import RecurringScheduleDialog
         ctk.CTkButton(
             alarm_ctrl_box,
@@ -2224,6 +2249,21 @@ class App(ctk.CTk):
 
         ctk.CTkLabel(h_in, text="⏰ 스마트 예약 센터", font=get_font(16, "bold"), text_color=palette["accent"]).pack(side="left")
         ctk.CTkLabel(h_in, text="수업 시작 알람(1분 전 카운트다운) 및 PC 전원(종료/절전/부팅) 예약을 한곳에서 관리합니다.", font=get_font(11), text_color=palette["text_sub"]).pack(side="left", padx=14)
+
+        from src.alarm_designer_dialog import AlarmCustomDesignerDialog
+        ctk.CTkButton(
+            h_in,
+            text="🎨 알람 디자인 커스텀",
+            font=get_font(11, "bold"),
+            height=30,
+            fg_color=palette["card_inner_bg"],
+            hover_color=palette["card_border"],
+            text_color=palette["text_main"],
+            border_width=1,
+            border_color=palette["card_border"],
+            corner_radius=6,
+            command=lambda: AlarmCustomDesignerDialog(self)
+        ).pack(side="right", padx=4)
 
         from src.recurring_dialog import RecurringScheduleDialog
         ctk.CTkButton(

@@ -376,7 +376,7 @@ class StudentDisplayWindow(ctk.CTkToplevel):
         self.clock_lbl = ctk.CTkLabel(
             l_box,
             text=f"{today.strftime('%m/%d')} ({weekday_str}) --:--:--",
-            font=ctk.CTkFont(family="Consolas", size=11, weight="bold"),
+            font=ctk.CTkFont(family="Malgun Gothic", size=11, weight="bold"),
             text_color=t["text_sub"]
         )
         self.clock_lbl.pack(side="left")
@@ -812,7 +812,7 @@ class StudentDisplayWindow(ctk.CTkToplevel):
     def _build_timer_content(self, win, p, t):
         lbl = ctk.CTkLabel(
             p, text=self._fmt_timer(self.timer_rem_sec),
-            font=ctk.CTkFont(family="Consolas", size=68, weight="bold"),
+            font=ctk.CTkFont(family="Malgun Gothic", size=64, weight="bold"),
             text_color=t["accent"]
         )
         lbl.pack(expand=True, pady=4)
@@ -846,7 +846,7 @@ class StudentDisplayWindow(ctk.CTkToplevel):
 
         def _resize():
             sz = max(40, min(120, int(min(win.current_w * 0.22, win.current_h * 0.35))))
-            lbl.configure(font=ctk.CTkFont(family="Consolas", size=sz, weight="bold"))
+            lbl.configure(font=ctk.CTkFont(family="Malgun Gothic", size=sz, weight="bold"))
         win._on_content_resized = _resize
 
     def _fmt_timer(self, s: int) -> str:
@@ -1011,7 +1011,7 @@ class StudentDisplayWindow(ctk.CTkToplevel):
         d_box = ctk.CTkFrame(split, fg_color=t["card_inner"], corner_radius=10)
         d_box.pack(side="left", fill="both", expand=True, padx=(0, 3))
 
-        d_lbl = ctk.CTkLabel(d_box, text="⚅", font=ctk.CTkFont(family="Segoe UI Symbol", size=60), text_color=t["accent"])
+        d_lbl = ctk.CTkLabel(d_box, text="🎲 6", font=ctk.CTkFont(family="Malgun Gothic", size=52, weight="bold"), text_color=t["accent"])
         d_lbl.pack(expand=True)
         win.d_lbl = d_lbl
 
@@ -1054,10 +1054,10 @@ class StudentDisplayWindow(ctk.CTkToplevel):
                 r2 = random.randint(1, self.dice_faces) if self.dice_count == 2 else None
                 if self.dice_faces == 6 and r1 in chars and (r2 is None or r2 in chars):
                     txt = chars[r1] if r2 is None else f"{chars[r1]} {chars[r2]}"
-                    win.d_lbl.configure(text=txt, font=ctk.CTkFont(family="Segoe UI Symbol", size=48 if r2 else 60))
+                    win.d_lbl.configure(text=f"🎲 {txt}", font=ctk.CTkFont(family="Malgun Gothic", size=44, weight="bold"))
                 else:
                     txt = str(r1) if r2 is None else f"{r1} + {r2}"
-                    win.d_lbl.configure(text=txt, font=ctk.CTkFont(family="Consolas", size=40, weight="bold"))
+                    win.d_lbl.configure(text=f"🎲 {txt}", font=ctk.CTkFont(family="Malgun Gothic", size=44, weight="bold"))
                 self.after(50 + step * 8, lambda: _anim(step + 1))
             else:
                 f1 = random.randint(1, self.dice_faces)
@@ -1067,7 +1067,7 @@ class StudentDisplayWindow(ctk.CTkToplevel):
                     win.d_lbl.configure(text=txt, font=ctk.CTkFont(family="Segoe UI Symbol", size=48 if f2 else 60))
                 else:
                     txt = str(f1) if f2 is None else f"{f1} + {f2}"
-                    win.d_lbl.configure(text=txt, font=ctk.CTkFont(family="Consolas", size=40, weight="bold"))
+                    win.d_lbl.configure(text=f"🎲 {txt}", font=ctk.CTkFont(family="Malgun Gothic", size=44, weight="bold"))
 
                 if f2 is not None:
                     win.d_sub.configure(text=f"A={f1}, B={f2} (합={f1+f2})")
@@ -1104,13 +1104,13 @@ class StudentDisplayWindow(ctk.CTkToplevel):
             r.pack(fill="x", pady=1)
             ctk.CTkLabel(r, text=f"{face}눈", width=26, font=get_font(8, "bold"), text_color=t["text_main"]).pack(side="left")
             ctk.CTkLabel(r, text=f"{cnt}회", width=30, font=get_font(8), text_color=t["text_sub"]).pack(side="left")
-            ctk.CTkLabel(r, text=f"{cnt}:{tot}", width=46, font=ctk.CTkFont(family="Consolas", size=8), text_color=t["text_sub"]).pack(side="left")
-            ctk.CTkLabel(r, text=f"{pct:.1f}%", width=46, font=ctk.CTkFont(family="Consolas", size=8, weight="bold"), text_color="#10b981").pack(side="left")
+            ctk.CTkLabel(r, text=f"{cnt}:{tot}", width=46, font=ctk.CTkFont(family="Malgun Gothic", size=8, weight="bold"), text_color=t["text_sub"]).pack(side="left")
+            ctk.CTkLabel(r, text=f"{pct:.1f}%", width=46, font=ctk.CTkFont(family="Malgun Gothic", size=8, weight="bold"), text_color="#10b981").pack(side="left")
 
     def _reset_dice_stats(self, win):
         self.dice_counts.clear()
         if hasattr(win, "d_lbl"):
-            win.d_lbl.configure(text="⚅" if self.dice_faces == 6 else str(self.dice_faces))
+            win.d_lbl.configure(text=f"🎲 {self.dice_faces}")
             win.d_sub.configure(text=f"면수: D{self.dice_faces}")
         self._render_dice_table(win)
 
@@ -1149,7 +1149,7 @@ class StudentDisplayWindow(ctk.CTkToplevel):
             grid.grid_rowconfigure(r, weight=1)
 
             ctk.CTkLabel(card, text=grp, font=get_font(10, "bold"), text_color=t["text_sub"]).pack(pady=(4, 0))
-            lbl = ctk.CTkLabel(card, text=str(sc), font=ctk.CTkFont(family="Consolas", size=22, weight="bold"), text_color=t["accent"])
+            lbl = ctk.CTkLabel(card, text=str(sc), font=ctk.CTkFont(family="Malgun Gothic", size=22, weight="bold"), text_color=t["accent"])
             lbl.pack(expand=True)
             lbls[grp] = lbl
 

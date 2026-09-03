@@ -47,6 +47,19 @@ class ScreenDrawingOverlay:
         self.current_width = 4
         self.bg_mode = "screen"  # screen (현재화면), whiteboard (흰화면), greenboard (초록칠판)
 
+        # 텍스트 도구용 무료 글꼴 시스템
+        self.font_family = "Malgun Gothic"
+        self.font_size = 20
+        self.font_map = {
+            "맑은 고딕": "Malgun Gothic",
+            "나눔고딕": "NanumGothic",
+            "돋움": "Dotum",
+            "굴림": "Gulim",
+            "바탕": "Batang",
+            "궁서": "Gungsuh",
+            "Arial": "Arial"
+        }
+
         # 히스토리 (실행취소용)
         self.history = []
         self.current_stroke = []
@@ -258,6 +271,18 @@ class ScreenDrawingOverlay:
             corner_radius=8, command=self._cycle_background_mode
         )
         self.board_btn.pack(side="left", padx=2)
+
+        _sep()
+
+        # 🔤 무료 글꼴(Font) 선택기
+        self.font_combo = ctk.CTkComboBox(
+            bg_frame, values=["맑은 고딕", "나눔고딕", "돋움", "굴림", "바탕", "궁서", "Arial"],
+            width=90, height=28, font=get_font(9, "bold"), state="readonly",
+            command=self._on_font_family_changed
+        )
+        self.font_combo.set("맑은 고딕")
+        self.font_combo.pack(side="left", padx=2)
+        attach_tooltip(self.font_combo, "판서 텍스트 글꼴(무료 폰트) 선택")
         attach_tooltip(self.board_btn, "배경 전환: 화면(F1) ↔ 화이트보드(F2) ↔ 칠판(F3)")
 
         _sep()
@@ -542,15 +567,25 @@ class ScreenDrawingOverlay:
             self.history.append(("single", self.temp_shape_id))
             self.temp_shape_id = None
 
+    def _on_font_family_changed(self, font_name: str):
+        self.font_family = self.font_map.get(font_name, "Malgun Gothic")
+        if self.selected_text_box:
+            # 선택된 글상자의 글꼴 즉시 변경
+            b = self.selected_text_box
+            b["font_family"] = self.font_family
+            self.canvas.itemconfig(b["text_id"], font=(self.font_family, b["font_size"], "bold"))
+            self._select_text_box(b)
+
     # ─── 텍스트 글상자 시스템 (T, Shift+Enter, Enter, 이동/크기조절/삭제) ───
     def _start_inline_text_input(self, x, y):
         """클릭 위치에 인라인 텍스트 에디터 생성"""
         f_size = max(14, self.current_width * 5)
+        fam = getattr(self, "font_family", "Malgun Gothic")
 
         # 텍스트 에디터 프레임
         entry_frame = tk.Frame(self.canvas, bg="#111827", bd=1, relief="solid")
         text_w = tk.Text(
-            entry_frame, font=("Malgun Gothic", f_size, "bold"),
+            entry_frame, font=(fam, f_size, "bold"),
             fg=self.current_color, bg="#111827",
             insertbackground="#ffffff", width=20, height=2,
             bd=0, highlightthickness=0
@@ -601,10 +636,11 @@ class ScreenDrawingOverlay:
         if not content:
             return
 
+        fam = getattr(self, "font_family", "Malgun Gothic")
         # 캔버스에 텍스트 아이템 생성
         t_id = self.canvas.create_text(
             x, y, text=content,
-            font=("Malgun Gothic", f_size, "bold"),
+            font=(fam, f_size, "bold"),
             fill=color, anchor="nw"
         )
         bbox = self.canvas.bbox(t_id)  # (x0, y0, x1, y1)
@@ -615,6 +651,7 @@ class ScreenDrawingOverlay:
             "content": content,
             "x": x, "y": y,
             "font_size": f_size,
+            "font_family": fam,
             "color": color,
             "box_id": None,
             "handle_id": None
@@ -694,7 +731,8 @@ class ScreenDrawingOverlay:
         new_sz = max(10, min(72, b["font_size"] + delta_sz))
         if new_sz != b["font_size"]:
             b["font_size"] = new_sz
-            self.canvas.itemconfigure(b["text_id"], font=("Malgun Gothic", new_sz, "bold"))
+            fam = b.get("font_family", getattr(self, "font_family", "Malgun Gothic"))
+            self.canvas.itemconfigure(b["text_id"], font=(fam, new_sz, "bold"))
             # 테두리 업데이트
             self._select_text_box(b)
 
