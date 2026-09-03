@@ -152,20 +152,35 @@ class TrayManager:
         def _quit_app(icon, item):
             self.app.after(0, self.app._on_closing)
 
-        toggle_label = "✅ 놀티쳐 숨기기" if is_visible else "📂 놀티쳐 열기"
+        from src.autostart_manager import autostart_manager
+        is_autostart = autostart_manager.is_autostart_enabled()
+
+        def _toggle_autostart(icon, item):
+            autostart_manager.set_autostart(not is_autostart)
+            self.update_menu()
+
+        def _open_taskbar_settings(icon, item):
+            import subprocess
+            try:
+                subprocess.run("start ms-settings:taskbar", shell=True, check=False)
+            except Exception:
+                pass
 
         menu = pystray.Menu(
             pystray.MenuItem(toggle_label, _show_or_hide, default=True),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("📋 오늘 시간표 & 급식 보기", _switch_today),
-            pystray.MenuItem("✏️ 화면 위 자유 판서 시작", _open_drawing),
+            pystray.MenuItem("✏️ 화면 위 자유 판서 시작 (Alt+2)", _open_drawing),
             pystray.MenuItem("📷 실물화상기 열기", _open_visualizer),
             pystray.MenuItem("🛠️ 플로팅 퀵바 열기", _open_quickbar),
             pystray.Menu.SEPARATOR,
-            pystray.MenuItem("⏱️ 교실 타이머 열기", _open_tools_timer),
+            pystray.MenuItem("⏱️ 교실 타이머 열기 (Alt+3)", _open_tools_timer),
             pystray.MenuItem("🎲 발표자 랜덤 뽑기", _open_picker),
             pystray.MenuItem("🎡 돌림판 열기", _open_wheel),
-            pystray.MenuItem("📌 미니 시간표 위젯", _open_mini_widget),
+            pystray.MenuItem("📌 미니 위젯 띄우기", _open_mini_widget),
+            pystray.Menu.SEPARATOR,
+            pystray.MenuItem("🚀 부팅 시 자동 실행 (트레이 상시 상주)", _toggle_autostart, checked=lambda item: is_autostart),
+            pystray.MenuItem("⚙️ 작업표시줄 아이콘 항상 표시 설정...", _open_taskbar_settings),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem(sched_label, _cancel_schedule, enabled=sched_enabled),
             pystray.Menu.SEPARATOR,

@@ -21,6 +21,11 @@ def main():
     manager = SchedulerManager()
     app = App(manager)
     setup_global_fonts(app)
+
+    # --tray 옵션으로 실행된 경우 창을 띄우지 않고 트레이에 조용히 상주
+    if "--tray" in sys.argv:
+        app.withdraw()
+
     app.mainloop()
 
 if __name__ == "__main__":
