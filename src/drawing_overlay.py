@@ -95,6 +95,20 @@ class ScreenDrawingOverlay:
         self.root.bind("<Escape>", lambda e: self.close())
         self.root.bind("<Control-z>", lambda e: self.undo())
         self.root.bind("<Control-Z>", lambda e: self.undo())
+        self.root.bind("<p>", lambda e: self._select_tool("pen"))
+        self.root.bind("<P>", lambda e: self._select_tool("pen"))
+        self.root.bind("<h>", lambda e: self._select_tool("highlighter"))
+        self.root.bind("<H>", lambda e: self._select_tool("highlighter"))
+        self.root.bind("<a>", lambda e: self._select_tool("arrow"))
+        self.root.bind("<A>", lambda e: self._select_tool("arrow"))
+        self.root.bind("<r>", lambda e: self._select_tool("rect"))
+        self.root.bind("<R>", lambda e: self._select_tool("rect"))
+        self.root.bind("<t>", lambda e: self._select_tool("text"))
+        self.root.bind("<T>", lambda e: self._select_tool("text"))
+        self.root.bind("<s>", lambda e: self._select_tool("emoji_stamp"))
+        self.root.bind("<S>", lambda e: self._select_tool("emoji_stamp"))
+        self.root.bind("<e>", lambda e: self._select_tool("eraser"))
+        self.root.bind("<E>", lambda e: self._select_tool("eraser"))
 
         # 플로팅 판서 도구 바 생성
         self._build_toolbar()
@@ -145,12 +159,13 @@ class ScreenDrawingOverlay:
         # ── 도구 선택 버튼 ────────────────────────────────────────────────
         self.tool_btns = {}
         tools = [
-            ("pen",         "pen",         COL_MAIN,   "일반 펜 판서 (P)"),
-            ("highlighter", "highlighter", COL_ORANGE, "반투명 형광펜 강조 (H)"),
-            ("arrow",       "arrow",       COL_MAIN,   "화살표 그리기 (A)"),
-            ("rect",        "rect",        COL_MAIN,   "사각형 박스 그리기 (R)"),
-            ("text",        "text",        COL_MAIN,   "화면에 텍스트 입력 (T)"),
-            ("eraser",      "eraser",      COL_MAIN,   "부분 지우개 (E)"),
+            ("pen",          "pen",          COL_MAIN,   "일반 펜 판서 (P)"),
+            ("highlighter",  "highlighter",  COL_YELLOW, "형광펜 강조 (H)"),
+            ("arrow",        "arrow",        COL_MAIN,   "화살표 그리기 (A)"),
+            ("rect",         "rect",         COL_MAIN,   "사각형 박스 그리기 (R)"),
+            ("text",         "text",         COL_MAIN,   "텍스트 글자 입력 (T)"),
+            ("emoji_stamp",  "emoji_stamp",  COL_YELLOW, "이모지 스탬프 (클릭으로 😊 배치)"),
+            ("eraser",       "eraser",       COL_MAIN,   "부분 지우개 (E)"),
         ]
 
         for t_key, icon_name, icon_col, desc in tools:
@@ -338,6 +353,23 @@ class ScreenDrawingOverlay:
             self._erase_at(event.x, event.y)
         elif self.current_tool == "text":
             self._prompt_text_input(event.x, event.y)
+        elif self.current_tool == "emoji_stamp":
+            self._place_emoji_stamp(event.x, event.y)
+
+    def _place_emoji_stamp(self, x, y):
+        """이모지 스탬프 — 클릭 위치에 이모지를 순환 배치"""
+        emojis = ["😊", "⭐", "👍", "🔥", "💡", "❓", "‼️", "✅", "❤️", "🎉"]
+        if not hasattr(self, "_emoji_idx"):
+            self._emoji_idx = 0
+        emoji = emojis[self._emoji_idx % len(emojis)]
+        self._emoji_idx += 1
+        stamp_size = max(24, self.current_width * 8)
+        item_id = self.canvas.create_text(
+            x, y, text=emoji,
+            font=("Segoe UI Emoji", stamp_size),
+            anchor="center"
+        )
+        self.history.append(("single", item_id))
 
     def _prompt_text_input(self, x, y):
         txt = simpledialog.askstring("텍스트 입력", "화면에 표시할 글자를 입력하세요:", parent=self.root)
