@@ -46,9 +46,20 @@ class StudentDisplayWindow(ctk.CTkToplevel):
 
         self.bind("<F11>", lambda e: self._toggle_fullscreen())
         self.bind("<Escape>", lambda e: self._exit_fullscreen())
+        self.protocol("WM_DELETE_WINDOW", self.destroy)
 
         self._build_ui()
         self._start_clock_loop()
+
+    def destroy(self):
+        if hasattr(self, "_stop_sd_camera"):
+            self._stop_sd_camera()
+        if getattr(self, "_timer_job", None):
+            try:
+                self.after_cancel(self._timer_job)
+            except Exception:
+                pass
+        super().destroy()
 
     # ─── 아이콘 ────────────────────────────────────────────────────────────
     def _load_icon(self):
@@ -113,6 +124,7 @@ class StudentDisplayWindow(ctk.CTkToplevel):
         tabs = [
             ("schedule", "📋 시간표"),
             ("meal",     "🍱 급식"),
+            ("camera",   "📷 화상기"),
             ("timer",    "⏱ 타이머"),
             ("picker",   "🎲 뽑기"),
             ("wheel",    "🎡 돌림판"),
@@ -121,7 +133,7 @@ class StudentDisplayWindow(ctk.CTkToplevel):
             btn = ctk.CTkButton(
                 tab_frame, text=tab_label,
                 font=get_font(11, "bold"),
-                width=72, height=28, corner_radius=8,
+                width=68, height=28, corner_radius=8,
                 fg_color="#0284c7" if tab_key == "schedule" else "#1e293b",
                 hover_color="#0369a1",
                 text_color="#ffffff" if tab_key == "schedule" else "#94a3b8",
@@ -220,10 +232,15 @@ class StudentDisplayWindow(ctk.CTkToplevel):
         self._last_item_count = -1
         self._last_highlight_idx = -1
 
+        if hasattr(self, "_stop_sd_camera"):
+            self._stop_sd_camera()
+
         if key == "schedule":
             self._build_schedule_tab()
         elif key == "meal":
             self._build_meal_tab()
+        elif key == "camera":
+            self._build_camera_tab()
         elif key == "timer":
             self._build_timer_tab()
         elif key == "picker":
@@ -455,6 +472,183 @@ class StudentDisplayWindow(ctk.CTkToplevel):
         if not dishes:
             ctk.CTkLabel(frame, text="오늘 등록된 급식 식단이 없습니다.",
                          font=get_font(14), text_color="#64748b").pack(pady=20)
+
+    # ─── 실물화상기 탭 ───────────────────────────────────────────────────
+    def _build_camera_tab(self):
+        frame = ctk.CTkFrame(self.content_area, fg_color="#090d16",
+                             corner_radius=12, border_width=1, border_color="#334155")
+        frame.pack(fill="both", expand=True)
+
+        # 상단 도구 바
+        bar = ctk.CTkFrame(frame, fg_color="#111827", height=44, corner_radius=8)
+        bar.pack(fill="x", padx=8, pady=(8, 4))
+        bar.pack_propagate(False)
+
+        b_in = ctk.CTkFrame(bar, fg_color="transparent")
+        b_in.pack(fill="both", expand=True, padx=8, pady=4)
+
+        ctk.CTkLabel(b_in, text="📷 실물화상기", font=get_font(13, "bold"),
+                     text_color="#38bdf8").pack(side="left", padx=(4, 10))
+
+        self._sd_cam_rot = 0
+        self._sd_cam_flip = False
+        self._sd_cam_freeze = False
+        self._sd_cam_doc = False
+        self._sd_frozen_frame = None
+
+        self._sd_rot_btn = ctk.CTkButton(
+            b_in, text="⟳ 0°", width=48, height=28,
+            font=get_font(10, "bold"), fg_color="#1e293b",
+            command=self._sd_rotate_cam
+        )
+        self._sd_rot_btn.pack(side="left", padx=2)
+
+        self._sd_flip_btn = ctk.CTkButton(
+            b_in, text="↔ 반전", width=50, height=28,
+            font=get_font(10, "bold"), fg_color="#1e293b",
+            command=self._sd_flip_cam
+        )
+        self._sd_flip_btn.pack(side="left", padx=2)
+
+        self._sd_freeze_btn = ctk.CTkButton(
+            b_in, text="❄️ 정지", width=54, height=28,
+            font=get_font(10, "bold"), fg_color="#1e293b",
+            command=self._sd_freeze_cam
+        )
+        self._sd_freeze_btn.pack(side="left", padx=2)
+
+        self._sd_doc_btn = ctk.CTkButton(
+            b_in, text="📄 문서", width=50, height=28,
+            font=get_font(10, "bold"), fg_color="#1e293b",
+            command=self._sd_doc_cam
+        )
+        self._sd_doc_btn.pack(side="left", padx=2)
+
+        # 우측: 전용 창 열기 & 판서
+        ctk.CTkButton(
+            b_in, text="🚀 전체 전용창으로 열기", width=140, height=28,
+            font=get_font(11, "bold"), fg_color="#0284c7", hover_color="#0369a1",
+            command=self._open_standalone_visualizer
+        ).pack(side="right", padx=2)
+
+        ctk.CTkButton(
+            b_in, text="✏️ 판서", width=54, height=28,
+            font=get_font(10, "bold"), fg_color="#ea580c", hover_color="#c2410c",
+            command=self._open_sd_drawing
+        ).pack(side="right", padx=2)
+
+        # 비디오 캔버스
+        self._sd_cam_canvas = tk.Canvas(
+            frame, bg="#05070d", highlightthickness=0
+        )
+        self._sd_cam_canvas.pack(fill="both", expand=True, padx=8, pady=(0, 8))
+
+        # 카메라 시작
+        self._sd_cam_running = True
+        self._sd_cam_latest = None
+        self._sd_cam_cap = None
+        self._sd_cam_photo = None
+
+        import threading
+        self._sd_cam_thread = threading.Thread(target=self._sd_cam_worker, daemon=True)
+        self._sd_cam_thread.start()
+        self._sd_cam_render_loop()
+
+    def _sd_cam_worker(self):
+        import cv2
+        cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+        if not cap.isOpened():
+            cap.release()
+            cap = cv2.VideoCapture(0)
+        self._sd_cam_cap = cap
+        while getattr(self, "_sd_cam_running", False) and cap.isOpened():
+            ret, frame = cap.read()
+            if ret and frame is not None:
+                self._sd_cam_latest = frame
+            else:
+                import time; time.sleep(0.03)
+            import time; time.sleep(0.01)
+        cap.release()
+
+    def _sd_cam_render_loop(self):
+        if not getattr(self, "_sd_cam_running", False) or not self.winfo_exists():
+            return
+        if self._tool_tab != "camera":
+            self._stop_sd_camera()
+            return
+
+        frame = self._sd_frozen_frame if self._sd_cam_freeze else self._sd_cam_latest
+        if frame is not None and hasattr(self, "_sd_cam_canvas") and self._sd_cam_canvas.winfo_exists():
+            import cv2
+            from PIL import Image, ImageTk
+            cw = self._sd_cam_canvas.winfo_width()
+            ch = self._sd_cam_canvas.winfo_height()
+            if cw > 20 and ch > 20:
+                img = frame.copy()
+                if self._sd_cam_rot == 90:
+                    img = cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE)
+                elif self._sd_cam_rot == 180:
+                    img = cv2.rotate(img, cv2.ROTATE_180)
+                elif self._sd_cam_rot == 270:
+                    img = cv2.rotate(img, cv2.ROTATE_90_COUNTERCLOCKWISE)
+                if self._sd_cam_flip:
+                    img = cv2.flip(img, 1)
+                if self._sd_cam_doc:
+                    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                    clahe = cv2.createCLAHE(clipLimit=2.5, tileGridSize=(8, 8))
+                    img = cv2.cvtColor(clahe.apply(gray), cv2.COLOR_GRAY2RGB)
+                else:
+                    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+                ih, iw = img.shape[:2]
+                scale = min(cw / iw, ch / ih)
+                nw = max(1, int(iw * scale))
+                nh = max(1, int(ih * scale))
+                img_res = cv2.resize(img, (nw, nh))
+                self._sd_cam_photo = ImageTk.PhotoImage(Image.fromarray(img_res))
+                self._sd_cam_canvas.delete("all")
+                self._sd_cam_canvas.create_image(cw // 2, ch // 2, image=self._sd_cam_photo, anchor="center")
+
+        self.after(33, self._sd_cam_render_loop)
+
+    def _sd_rotate_cam(self):
+        self._sd_cam_rot = (self._sd_cam_rot + 90) % 360
+        self._sd_rot_btn.configure(text=f"⟳ {self._sd_cam_rot}°")
+
+    def _sd_flip_cam(self):
+        self._sd_cam_flip = not self._sd_cam_flip
+        self._sd_flip_btn.configure(fg_color="#0284c7" if self._sd_cam_flip else "#1e293b")
+
+    def _sd_freeze_cam(self):
+        self._sd_cam_freeze = not self._sd_cam_freeze
+        if self._sd_cam_freeze:
+            self._sd_frozen_frame = self._sd_cam_latest.copy() if self._sd_cam_latest is not None else None
+            self._sd_freeze_btn.configure(text="▶ 재생", fg_color="#ea580c")
+        else:
+            self._sd_frozen_frame = None
+            self._sd_freeze_btn.configure(text="❄️ 정지", fg_color="#1e293b")
+
+    def _sd_doc_cam(self):
+        self._sd_cam_doc = not self._sd_cam_doc
+        self._sd_doc_btn.configure(fg_color="#059669" if self._sd_cam_doc else "#1e293b")
+
+    def _open_standalone_visualizer(self):
+        self._stop_sd_camera()
+        from src.visualizer_window import VisualizerWindow
+        VisualizerWindow.get_instance(self)
+
+    def _open_sd_drawing(self):
+        from src.drawing_overlay import ScreenDrawingOverlay
+        ScreenDrawingOverlay.get_instance(self).show()
+
+    def _stop_sd_camera(self):
+        self._sd_cam_running = False
+        if getattr(self, "_sd_cam_cap", None):
+            try:
+                self._sd_cam_cap.release()
+            except Exception:
+                pass
+            self._sd_cam_cap = None
 
     # ─── 타이머 탭 ────────────────────────────────────────────────────────
     def _build_timer_tab(self):

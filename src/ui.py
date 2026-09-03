@@ -21,6 +21,7 @@ from src.sheet_sync import sheet_sync_manager
 from src.autostart_manager import autostart_manager
 from src.drawing_overlay import ScreenDrawingOverlay
 from src.floating_toolbar import FloatingQuickToolbar
+from src.visualizer_window import VisualizerWindow
 from src.classroom_tools import ClassroomToolsDialog
 from src.system_monitor import system_monitor
 from src.site_bookmarks import site_bookmark_manager, SiteBookmarksDialog
@@ -1033,6 +1034,7 @@ class App(ctk.CTk):
 
         quick_actions = [
             ("✏️ 판서", self._open_screen_drawing, "어떤 화면 위에서도 펜/형광펜으로 자유롭게 판서"),
+            ("📷 화상기", self._open_visualizer, "웹캠/USB 실물화상기 실시간 고화질 스트리밍"),
             ("🛠️ 퀵바", self._open_floating_quick_toolbar, "모니터 구석에 띄워두는 올웨이즈온 미니 퀵바"),
             ("⏱️ 타이머", lambda: self._open_classroom_tools("timer"), "수업 및 모둠 활동 타이머 & 스톱워치"),
             ("🎲 뽑기", lambda: self._open_classroom_tools("picker"), "공정한 학생 발표자 무작위 랜덤 추첨"),
@@ -1044,7 +1046,7 @@ class App(ctk.CTk):
             ("🌐 사이트", self._open_site_bookmarks, "놀퀴즈, 업무포털 등 교사용 필수 사이트 바로가기")
         ]
 
-        # 5개씩 2행으로 배치 (좁은 화면에서도 잘리지 않음)
+        # 6개 / 5개로 2행 배치 (좁은 화면에서도 잘리지 않음)
         row1 = ctk.CTkFrame(lb_inner, fg_color="transparent")
         row1.pack(fill="x", pady=(0, 2))
         row2 = ctk.CTkFrame(lb_inner, fg_color="transparent")
@@ -1053,7 +1055,7 @@ class App(ctk.CTk):
         ctk.CTkLabel(row1, text="🚀 빠른 도구:", font=get_font(10, "bold"), text_color=palette["text_main"]).pack(side="left", padx=(4, 6))
 
         for i, (a_title, a_cmd, a_tip) in enumerate(quick_actions):
-            row = row1 if i < 5 else row2
+            row = row1 if i < 6 else row2
             btn = ctk.CTkButton(
                 row,
                 text=a_title,
@@ -1271,6 +1273,9 @@ class App(ctk.CTk):
     def _open_screen_drawing(self):
         overlay = ScreenDrawingOverlay.get_instance(self)
         overlay.show()
+
+    def _open_visualizer(self):
+        VisualizerWindow.get_instance(self)
 
     def _open_floating_quick_toolbar(self):
         FloatingQuickToolbar.get_instance(self)
@@ -1494,6 +1499,7 @@ class App(ctk.CTk):
 
         tool_items = [
             ("✏️ 화면 위 자유 판서", "모니터 위 모든 웹/앱 위에 펜으로 직접 판서 및 밑줄", palette["accent_orange"], "#c2410c", self._open_screen_drawing),
+            ("📷 스마트 실물화상기", "웹캠/USB 화상기 90°회전, 반전, 정지, 문서강조, 전체화면", palette["accent_blue"], "#0284c7", self._open_visualizer),
             ("🛠️ 스마트 플로팅 퀵바", "모니터 구석에 띄워두고 도구를 1초 만에 실행하는 미니바", palette["accent_blue"], "#0369a1", self._open_floating_quick_toolbar),
             ("⏱️ 교실 활동 타이머", "1분/3분/5분 모둠 활동 카운트다운 및 알람음", palette["accent_green"], "#059669", lambda: self._open_classroom_tools("timer")),
             ("🎲 발표자 랜덤 뽑기", "학급 학생 이름/번호 롤링 추첨 (중복 제외)", palette["accent_blue"], "#0369a1", lambda: self._open_classroom_tools("picker")),

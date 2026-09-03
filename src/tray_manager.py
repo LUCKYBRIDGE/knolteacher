@@ -122,6 +122,9 @@ class TrayManager:
         def _open_drawing(icon, item):
             self.app.after(0, self.app._open_screen_drawing)
 
+        def _open_visualizer(icon, item):
+            self.app.after(0, self.app._open_visualizer)
+
         def _open_quickbar(icon, item):
             self.app.after(0, self.app._open_floating_quick_toolbar)
 
@@ -156,6 +159,7 @@ class TrayManager:
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("📋 오늘 시간표 & 급식 보기", _switch_today),
             pystray.MenuItem("✏️ 화면 위 자유 판서 시작", _open_drawing),
+            pystray.MenuItem("📷 실물화상기 열기", _open_visualizer),
             pystray.MenuItem("🛠️ 플로팅 퀵바 열기", _open_quickbar),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("⏱️ 교실 타이머 열기", _open_tools_timer),

@@ -36,7 +36,7 @@ class FloatingQuickToolbar(tk.Toplevel):
 
         # 기본 크기 및 위치 (화면 상단 우측)
         sw = self.winfo_screenwidth()
-        self.full_width = 700
+        self.full_width = 750
         self.collapsed_width = 90
         self.tb_height = 52
         x = max(10, sw - self.full_width - 40)
@@ -126,6 +126,7 @@ class FloatingQuickToolbar(tk.Toplevel):
         # 3. 주요 도구 단축 버튼들 (아이콘 + 짧은 레이블)
         tools = [
             ("drawing",  "판서",  self._open_drawing,      COL_ORANGE, "화면 위 자유 판서 (펜/형광펜/도형)"),
+            ("camera",   "화상기", self._open_visualizer,   COL_ACTIVE, "웹캠/USB 실물화상기 실시간 뷰어"),
             ("timer",    "타이머", self._open_timer,         COL_MAIN,   "교실 집중 수업 타이머 & 스톱워치"),
             ("dice",     "뽑기",  self._open_picker,        COL_MAIN,   "공정한 학생 발표자 무작위 추첨"),
             ("wheel",    "돌림판", self._open_wheel,         COL_MAIN,   "모둠/벌칙/보상 돌려돌려 돌림판"),
@@ -226,6 +227,10 @@ class FloatingQuickToolbar(tk.Toplevel):
 
     def _open_drawing(self):
         ScreenDrawingOverlay.get_instance(self.parent).show()
+
+    def _open_visualizer(self):
+        from src.visualizer_window import VisualizerWindow
+        VisualizerWindow.get_instance(self.parent)
 
     def _open_timer(self):
         ClassroomToolsDialog.get_instance(self.parent, initial_tab="timer")
