@@ -90,6 +90,11 @@ class SchedulerManager:
         if seconds <= 0:
             return False, "예약 시간은 1초 이상이어야 합니다."
         
+        # 최대 2개월 (60일) 예약 제한 규칙
+        MAX_SCHEDULE_SECONDS = 60 * 86400
+        if seconds > MAX_SCHEDULE_SECONDS:
+            return False, "⚠️ 컴퓨터 전원 및 알람 예약은 시스템 안정성을 위해 최대 2개월(60일)까지만 지원됩니다."
+
         self.cancel_schedule(notify=False)
         
         with self._lock:
@@ -260,3 +265,64 @@ class SchedulerManager:
             'alarm': '알람 / 리마인더'
         }
         return names.get(action_type, '동작')
+
+    def get_active_schedules(self) -> list[dict]:
+        """현재 가동 중인 1회성 예약 및 주간 반복 자동 전원 일정을 일목요연하게 반환"""
+        items = []
+        with self._lock:
+            if self.is_scheduled and self.target_time:
+                action_kr = self._get_action_name(self.action_type)
+                items.append({
+                    "id": "active_timer",
+                    "type_name": action_kr,
+                    "action_type": self.action_type,
+                    "target_time_str": self.target_time.strftime("%Y-%m-%d %H:%M:%S"),
+                    "repeat_type": "오늘 1회성",
+                    "remaining_sec": self.remaining_seconds,
+                    "memo": self.memo or f"컴퓨터 {action_kr} 예약",
+                    "can_cancel": True
+                })
+
+        # 주간 퇴근 자동 종료 설정
+        if self.auto_power_config.get("auto_shutdown_enabled"):
+            t_str = self.auto_power_config.get("auto_shutdown_time", "16:40")
+            items.append({
+                "id": "weekly_shutdown",
+                "type_name": "컴퓨터 자동 종료",
+                "action_type": "auto_shutdown",
+                "target_time_str": f"매주 월~금 {t_str}",
+                "repeat_type": "매주 월~금 반복 (공휴일 제외)",
+                "remaining_sec": -1,
+                "memo": "퇴근 시간 자동 컴퓨터 끄기",
+                "can_cancel": True
+            })
+
+        # 주간 자동 켜짐 설정
+        if self.auto_power_config.get("auto_wake_enabled"):
+            t_str = self.auto_power_config.get("auto_wake_time", "08:30")
+            items.append({
+                "id": "weekly_wake",
+                "type_name": "컴퓨터 절전 깨우기",
+                "action_type": "auto_wake",
+                "target_time_str": f"매주 월~금 {t_str}",
+                "repeat_type": "매주 월~금 반복 (공휴일 제외)",
+                "remaining_sec": -1,
+                "memo": "출근 시간 자동 켜짐",
+                "can_cancel": True
+            })
+
+        return items
+
+    def cancel_item_by_id(self, item_id: str) -> tuple[bool, str]:
+        """항목 ID별 개별 예약 취소"""
+        if item_id == "active_timer":
+            return self.cancel_schedule(notify=True)
+        elif item_id == "weekly_shutdown":
+            self.auto_power_config["auto_shutdown_enabled"] = False
+            self.save_auto_power_config({"auto_shutdown_enabled": False})
+            return True, "주간 퇴근 자동 종료 예약이 취소되었습니다."
+        elif item_id == "weekly_wake":
+            self.auto_power_config["auto_wake_enabled"] = False
+            self.save_auto_power_config({"auto_wake_enabled": False})
+            return True, "주간 출근 자동 켜짐 예약이 취소되었습니다."
+        return False, "취소할 항목을 찾을 수 없습니다."

@@ -250,7 +250,7 @@ class NeisApiClient:
                 return True, cached_obj.get("data", []), f"네트워크 오류로 마지막 저장된 캐시를 표시합니다. (조회시각: {cached_obj.get('saved_at', '')})"
             return False, [], f"시간표 조회 실패: {str(e)}"
 
-    def get_meal_for_date(self, target_date: datetime.date) -> tuple[bool, dict[str, Any], str]:
+    def get_meal_for_date(self, target_date: datetime.date, force_refresh: bool = False) -> tuple[bool, dict[str, Any], str]:
         """
         특정 날짜의 급식(중식) 식단표 및 영양/칼로리 정보 조회 (캐싱 지원)
         반환: (성공여부, 급식딕셔너리, 상태메시지)
@@ -263,6 +263,10 @@ class NeisApiClient:
 
         ymd = target_date.strftime("%Y%m%d")
         cache_key = f"meal_{school_code}_{ymd}"
+
+        # 0ms 초고속 캐시 반환 (force_refresh가 아닐 때 네트워크 호출 생략)
+        if not force_refresh and cache_key in self.cache:
+            return True, self.cache[cache_key].get("data", {}), "급식 정보 조회 성공 (캐시)"
 
         params = {
             "ATPT_OFCDC_SC_CODE": office_code,

@@ -31,6 +31,8 @@ from src.github_updater import github_updater
 from src.tooltip import attach_tooltip
 from src.desktop_cleaner import desktop_cleaner
 from src.scrollable_2d_frame import CTk2DScrollableFrame
+from src.privacy_dialog import open_privacy_dialog
+from src.schedule_dialog import open_schedule_dialog
 from src.neis_auto_input import (
     ExcelNeisParser, DataValidator, ValidationResult,
     NeisPageType, PAGE_INFO, NeisScriptGenerator, cdp_bridge
@@ -531,7 +533,7 @@ class App(ctk.CTk):
         setup_global_fonts(self)
 
         self.title(f"놀티쳐 (KnolTeacher v{APP_VERSION} - 스마트 교사용 올인원 도구)")
-        self.geometry("980x840")
+        self.geometry("1180x840")
         self.minsize(860, 600)
         self.resizable(True, True)
 
@@ -1102,12 +1104,12 @@ class App(ctk.CTk):
             text="📋 오늘의 수업 시간표",
             font=get_font(13, "bold"),
             text_color=palette["text_main"]
-        ).pack(side="left")
+        ).pack(side="left", padx=(0, 20))
 
         lead_min = timetable_manager.settings.get("alarm_lead_minutes", 5)
-        ctk.CTkButton(
+        batch_alarm_btn = ctk.CTkButton(
             lc_top,
-            text=f"🔔 {lead_min}분 전 알람 등록",
+            text="🔔  일괄 알람",
             font=get_font(10, "bold"),
             fg_color=palette["sidebar_bg"],
             hover_color=palette["sidebar_btn_hover"],
@@ -1117,12 +1119,14 @@ class App(ctk.CTk):
             height=28,
             corner_radius=6,
             command=self._batch_schedule_today_classes
-        ).pack(side="right")
+        )
+        batch_alarm_btn.pack(side="right")
+        attach_tooltip(batch_alarm_btn, f"오늘 등록된 모든 수업의 시작 {lead_min}분 전 알람을 한 번에 자동 등록합니다.")
 
         from src.timetable_quick_editor import open_timetable_quick_editor
-        ctk.CTkButton(
+        edit_btn = ctk.CTkButton(
             lc_top,
-            text="✏️ 시간표 수정",
+            text="✏️  시간표 수정",
             font=get_font(10, "bold"),
             fg_color=palette["accent"],
             hover_color=palette["accent_hover"],
@@ -1130,7 +1134,9 @@ class App(ctk.CTk):
             height=28,
             corner_radius=6,
             command=lambda: open_timetable_quick_editor(self)
-        ).pack(side="right", padx=(0, 8))
+        )
+        edit_btn.pack(side="right", padx=(0, 10))
+        attach_tooltip(edit_btn, "오늘 또는 주간 시간표의 과목명과 시간을 즉시 수정합니다.")
 
         self.today_items_container = ctk.CTkFrame(left_card, fg_color="transparent")
         self.today_items_container.pack(fill="both", expand=True, padx=10, pady=(0, 10))
@@ -1147,11 +1153,11 @@ class App(ctk.CTk):
             text="🍱 오늘의 급식 식단표",
             font=get_font(13, "bold"),
             text_color=palette["text_main"]
-        ).pack(side="left")
+        ).pack(side="left", padx=(0, 20))
 
         ctk.CTkButton(
             rc_top,
-            text="🔄 새로고침",
+            text="🔄  새로고침",
             font=get_font(10, "bold"),
             fg_color=palette["sidebar_bg"],
             hover_color=palette["sidebar_btn_hover"],
@@ -1160,7 +1166,7 @@ class App(ctk.CTk):
             border_color=palette["card_border"],
             height=28,
             corner_radius=6,
-            command=self._refresh_today_meal
+            command=lambda: self._refresh_today_meal(force=True)
         ).pack(side="right")
 
         self.meal_container = ctk.CTkFrame(right_card, fg_color="transparent")
@@ -1203,7 +1209,7 @@ class App(ctk.CTk):
             row = row1 if i < 6 else row2
             btn = ctk.CTkButton(
                 row,
-                text=a_title,
+                text=f"  {a_title}",
                 image=get_icon(a_ico, a_col, 18),
                 compound="left",
                 font=get_font(10, "bold"),
@@ -1223,13 +1229,13 @@ class App(ctk.CTk):
         self._refresh_today_meal()
         self.today_scroll.bind_children_mousewheel()
 
-    def _refresh_today_meal(self):
+    def _refresh_today_meal(self, force: bool = False):
         palette = theme_manager.get_theme()
         for w in self.meal_container.winfo_children():
             w.destroy()
 
         today = datetime.date.today()
-        ok, meal_info, msg = neis_client.get_meal_for_date(today)
+        ok, meal_info, msg = neis_client.get_meal_for_date(today, force_refresh=force)
 
         school_nm = neis_client.config.get("school_name", "")
         if not school_nm:
@@ -1359,7 +1365,7 @@ class App(ctk.CTk):
                 width=56,
                 height=24
             )
-            badge.pack(side="left", padx=(8, 8), pady=4)
+            badge.pack(side="left", padx=(10, 10), pady=4)
 
             # 시간 텍스트: 일관된 ` ~ ` 띄어쓰기 적용
             ctk.CTkLabel(
@@ -1367,9 +1373,9 @@ class App(ctk.CTk):
                 text=f"{it['start']} ~ {it['end']}",
                 font=ctk.CTkFont(family="Consolas", size=10, weight="bold"),
                 text_color=palette["text_muted"],
-                width=86,
+                width=88,
                 anchor="w"
-            ).pack(side="left", padx=(0, 6))
+            ).pack(side="left", padx=(0, 10))
 
             subj_text = "🍱 점심식사 및 휴식" if is_lunch else it["subject"]
             subj_lbl = ctk.CTkLabel(
@@ -1379,7 +1385,7 @@ class App(ctk.CTk):
                 text_color=palette["text_main"] if not is_lunch else palette.get("lunch_text", palette["text_sub"]),
                 anchor="w"
             )
-            subj_lbl.pack(side="left", fill="x", expand=True, pady=4)
+            subj_lbl.pack(side="left", fill="x", expand=True, padx=(0, 10), pady=4)
 
             tag = it.get("tag", "담임")
             if tag in ["전담", "외강"]:
@@ -2015,12 +2021,39 @@ class App(ctk.CTk):
         pc_card = ctk.CTkFrame(scroll, corner_radius=12, fg_color=palette["card_inner_bg"], border_width=1, border_color=palette["card_border"])
         pc_card.pack(fill="x", pady=(0, 10))
 
+        pc_hdr_r = ctk.CTkFrame(pc_card, fg_color="transparent")
+        pc_hdr_r.pack(fill="x", padx=14, pady=(12, 6))
+
         ctk.CTkLabel(
-            pc_card,
+            pc_hdr_r,
             text="⏰ 컴퓨터 예약 / 종료 / 회의 알람 설정",
             font=get_font(13, "bold"),
-            text_color=palette["accent_blue"]
-        ).pack(anchor="w", padx=14, pady=(10, 6))
+            text_color=palette["text_main"]
+        ).pack(side="left")
+
+        sch_mgr_btn = ctk.CTkButton(
+            pc_hdr_r,
+            text="📅  예약 & 알람 관리 센터",
+            font=get_font(10, "bold"),
+            fg_color=palette["accent"],
+            hover_color=palette["accent_hover"],
+            text_color="#ffffff",
+            height=28,
+            corner_radius=6,
+            command=lambda: open_schedule_dialog(self, self.manager)
+        )
+        sch_mgr_btn.pack(side="right")
+        attach_tooltip(sch_mgr_btn, "현재 등록된 모든 예약과 알람을 모아보고 개별 취소 또는 일괄 취소합니다.")
+
+        # 2개월 제한 안내 칩
+        limit_chip = ctk.CTkFrame(pc_card, fg_color=palette["card_bg"], corner_radius=6, border_width=1, border_color=palette["card_border"])
+        limit_chip.pack(fill="x", padx=14, pady=(0, 6))
+        ctk.CTkLabel(
+            limit_chip,
+            text="💡 컴퓨터 전원 예약은 시스템 안정성을 위해 최대 2개월(60일)까지만 지원됩니다.",
+            font=get_font(9, "bold"),
+            text_color=palette["accent"]
+        ).pack(side="left", padx=10, pady=4)
 
         # 1-1. 동작 선택 행 (깔끔한 세그먼트 버튼 & 라벨)
         pc_row1 = ctk.CTkFrame(pc_card, fg_color="transparent")
@@ -2045,6 +2078,11 @@ class App(ctk.CTk):
             pc_row1,
             values=["종료", "다시 시작", "절전", "알람(소리)"],
             font=get_font(11, "bold"),
+            selected_color=palette["accent"],
+            selected_hover_color=palette["accent_hover"],
+            unselected_color=palette["sidebar_btn_hover"],
+            unselected_hover_color=palette["sidebar_bg"],
+            text_color="#ffffff",
             command=_on_action_seg
         )
         act_seg.set(inv_act_map.get(self.pc_action.get(), "종료"))
@@ -4138,14 +4176,43 @@ class App(ctk.CTk):
         )
         self.active_cancel_btn.pack(side="right")
 
-        # 저작권 표기
+        # 하단 푸터: 저작권 표기 + 개인정보 처리방침 + 통합 예약 센터
+        footer_frame = ctk.CTkFrame(parent, fg_color="transparent")
+        footer_frame.pack(fill="x", pady=(6, 6))
+
         self.copyright_lbl = ctk.CTkLabel(
-            parent,
+            footer_frame,
             text="Copyright 2026. 교사 서정완. All rights reserved.",
             font=get_font(10),
             text_color=palette["text_muted"]
         )
-        self.copyright_lbl.pack(pady=(6, 8))
+        self.copyright_lbl.pack(side="left")
+
+        privacy_btn = ctk.CTkButton(
+            footer_frame,
+            text="🔒 개인정보 처리방침",
+            font=get_font(9, "bold"),
+            fg_color="transparent",
+            hover_color=palette["sidebar_btn_hover"],
+            text_color=palette["accent"],
+            height=20,
+            command=lambda: open_privacy_dialog(self)
+        )
+        privacy_btn.pack(side="right")
+        attach_tooltip(privacy_btn, "100% 로컬 데이터 저장 원칙 및 제작자 공식 문의(lucky20220528@gmail.com) 안내를 확인합니다.")
+
+        schedule_center_btn = ctk.CTkButton(
+            footer_frame,
+            text="📅 통합 예약·알람 관리",
+            font=get_font(9, "bold"),
+            fg_color="transparent",
+            hover_color=palette["sidebar_btn_hover"],
+            text_color=palette["accent"],
+            height=20,
+            command=lambda: open_schedule_dialog(self, self.manager)
+        )
+        schedule_center_btn.pack(side="right", padx=(0, 6))
+        attach_tooltip(schedule_center_btn, "현재 등록된 모든 컴퓨터 예약 및 수업 알람을 한눈에 모아보고 관리합니다.")
 
     def _on_manager_state_change(self, is_scheduled: bool, action_type: Optional[str], message: str):
         self.after(0, self._update_state_ui, is_scheduled, action_type, message)

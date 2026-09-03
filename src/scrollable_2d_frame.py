@@ -96,15 +96,38 @@ class CTk2DScrollableFrame(ctk.CTkFrame):
             return palette.get("card_bg", "#0f172a")
         return palette.get("card_bg", "#fefdfa")
 
+    def _update_scrollbars_visibility(self):
+        try:
+            cw = self._canvas.winfo_width()
+            ch = self._canvas.winfo_height()
+            rw = max(self.viewport.winfo_reqwidth(), self.min_content_width)
+            rh = self.viewport.winfo_reqheight()
+
+            # 가로 스크롤바: 내용 너비가 캔버스 너비보다 클 때만 표시
+            if rw > cw and cw > 50:
+                self._x_scrollbar.grid(row=1, column=0, sticky="ew", pady=(2, 0))
+            else:
+                self._x_scrollbar.grid_remove()
+
+            # 세로 스크롤바: 내용 높이가 캔버스 높이보다 클 때만 표시
+            if rh > ch and ch > 50:
+                self._y_scrollbar.grid(row=0, column=1, sticky="ns", padx=(2, 0))
+            else:
+                self._y_scrollbar.grid_remove()
+        except Exception:
+            pass
+
     def _on_viewport_configure(self, event=None):
-        """내부 위젯 변경 시 전체 스크롤 영역 갱신"""
+        """내부 위젯 변경 시 전체 스크롤 영역 갱신 및 스크롤바 가시성 업데이트"""
         self._canvas.configure(scrollregion=self._canvas.bbox("all"))
+        self._update_scrollbars_visibility()
 
     def _on_canvas_configure(self, event):
         """캔버스 크기 변경 시: 창이 넓으면 100% 채우고, 창이 좁으면 최소 폭 유지"""
         target_width = max(event.width, self.min_content_width)
         self._canvas.itemconfigure(self._window_id, width=target_width)
         self._canvas.configure(scrollregion=self._canvas.bbox("all"))
+        self._update_scrollbars_visibility()
 
     def _bind_mouse_wheel(self, widget):
         widget.bind("<MouseWheel>", self._on_mousewheel, add="+")
