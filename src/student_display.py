@@ -239,6 +239,7 @@ class StudentDisplayWindow(ctk.CTkToplevel):
             ("clock",       "시계",       "🕒", "대형 교실 아날로그/디지털 시계"),
             ("drawing",     "색연필",     "✏️", "화면 위 자유 판서 및 색연필 도구"),
             ("launcher",    "바로\n가기", "🚀", "자주 쓰는 수업 프로그램 및 웹사이트 빠른 실행 (➕ 등록)"),
+            ("bgm",         "교실\nBGM",  "🎵", "유튜브 소리만 듣는 교실 배경음악 플레이어 (➕ 등록)"),
         ]
 
         self.dock_buttons = {}
@@ -1148,6 +1149,128 @@ class StudentDisplayWindow(ctk.CTkToplevel):
             )
             del_btn.pack(side="right", padx=6)
             attach_tooltip(del_btn, "이 바로가기 삭제")
+
+    def _show_bgm(self):
+        """유튜브 소리만 듣는 교실 배경음악(BGM) 플레이어 모듈"""
+        from src.youtube_audio_manager import youtube_audio
+        body = self._create_white_module_window("bgm", "교실 배경음악 BGM (유튜브 소리만 재생)", "🎵", 490, 430)
+
+        # 1. 상단 현재 재생 상태 & 컨트롤 바
+        ctrl_card = ctk.CTkFrame(body, fg_color="#f8fafc", corner_radius=10, border_width=1, border_color="#e2e8f0")
+        ctrl_card.pack(fill="x", padx=10, pady=(6, 4))
+
+        status_row = ctk.CTkFrame(ctrl_card, fg_color="transparent")
+        status_row.pack(fill="x", padx=8, pady=(8, 4))
+
+        cur_title = youtube_audio.current_track["name"] if youtube_audio.current_track else "재생 중인 음악 없음"
+        now_lbl = ctk.CTkLabel(
+            status_row, text=f"🎶 {cur_title}",
+            font=get_font(11, "bold"), text_color="#0284c7" if youtube_audio.is_playing else "#64748b",
+            anchor="w"
+        )
+        now_lbl.pack(side="left", fill="x", expand=True)
+
+        # 컨트롤 버튼 행 (재생/일시정지/정지/볼륨)
+        btn_row = ctk.CTkFrame(ctrl_card, fg_color="transparent")
+        btn_row.pack(fill="x", padx=8, pady=(2, 8))
+
+        def _refresh():
+            self._close_module("bgm")
+            self._show_bgm()
+
+        def _toggle_play():
+            if youtube_audio.is_playing:
+                youtube_audio.pause()
+            else:
+                if youtube_audio.current_track:
+                    youtube_audio.resume()
+                else:
+                    plist = youtube_audio.get_playlist()
+                    if plist:
+                        youtube_audio.play(plist[0])
+            _refresh()
+
+        play_btn = ctk.CTkButton(
+            btn_row, text="일시정지 ⏸" if youtube_audio.is_playing else "재생 ▶",
+            width=84, height=28, font=get_font(10, "bold"),
+            fg_color="#0284c7" if youtube_audio.is_playing else "#ea580c",
+            command=_toggle_play
+        )
+        play_btn.pack(side="left", padx=2)
+
+        stop_btn = ctk.CTkButton(
+            btn_row, text="정지 ⏹", width=58, height=28, font=get_font(10),
+            fg_color="#64748b", hover_color="#475569",
+            command=lambda: (youtube_audio.stop(), _refresh())
+        )
+        stop_btn.pack(side="left", padx=2)
+
+        # 볼륨 슬라이더
+        ctk.CTkLabel(btn_row, text="🔊", font=get_font(10)).pack(side="left", padx=(10, 2))
+        vol_slider = ctk.CTkSlider(
+            btn_row, from_=0, to=100, number_of_steps=20, width=110, height=14,
+            command=lambda v: youtube_audio.set_volume(int(v))
+        )
+        vol_slider.set(youtube_audio.volume)
+        vol_slider.pack(side="left", padx=2)
+
+        # ➕ 유튜브 링크 등록 버튼
+        add_btn = ctk.CTkButton(
+            btn_row, text="➕ 링크 추가", width=74, height=28, font=get_font(10, "bold"),
+            fg_color="#059669", hover_color="#047857",
+            command=lambda: youtube_audio.open_add_dialog(parent=self, on_success=_refresh)
+        )
+        add_btn.pack(side="right", padx=2)
+        attach_tooltip(add_btn, "유튜브 영상 링크를 입력하여 BGM으로 등록")
+
+        # 2. 플레이리스트 스크롤 영역
+        scroll = ctk.CTkScrollableFrame(body, fg_color="transparent")
+        scroll.pack(fill="both", expand=True, padx=8, pady=4)
+
+        playlist = youtube_audio.get_playlist()
+        for track in playlist:
+            vid = track.get("video_id")
+            t_name = track.get("name")
+            t_emoji = track.get("emoji", "🎵")
+            t_cat = track.get("category", "수업")
+            is_cur = (youtube_audio.current_track and youtube_audio.current_track.get("video_id") == vid)
+
+            row = ctk.CTkFrame(
+                scroll,
+                fg_color="#f0fdf4" if (is_cur and youtube_audio.is_playing) else "#f8fafc",
+                corner_radius=8, border_width=1,
+                border_color="#86efac" if (is_cur and youtube_audio.is_playing) else "#e2e8f0"
+            )
+            row.pack(fill="x", pady=2)
+
+            # 카테고리 태그
+            ctk.CTkLabel(
+                row, text=t_cat, font=get_font(9, "bold"), width=36,
+                fg_color="#0284c7" if is_cur else "#64748b", text_color="#ffffff", corner_radius=4
+            ).pack(side="left", padx=6, pady=6)
+
+            # 제목 버튼 (클릭 시 소리 재생)
+            t_btn = ctk.CTkButton(
+                row, text=f"{t_emoji} {t_name}",
+                font=get_font(10, "bold" if is_cur else "normal"),
+                anchor="w", fg_color="transparent",
+                hover_color="#e0f2fe",
+                text_color="#0369a1" if is_cur else "#1e293b",
+                height=32,
+                command=lambda trk=track: (youtube_audio.play(trk), _refresh())
+            )
+            t_btn.pack(side="left", fill="x", expand=True, padx=4)
+            attach_tooltip(t_btn, f"클릭하여 소리만 재생\n유튜브 ID: {vid}")
+
+            # 삭제 버튼
+            del_btn = ctk.CTkButton(
+                row, text="✕", width=20, height=20, font=get_font(9),
+                fg_color="transparent", hover_color="#fee2e2", text_color="#94a3b8",
+                corner_radius=4,
+                command=lambda v=vid: (youtube_audio.remove_track(v), _refresh())
+            )
+            del_btn.pack(side="right", padx=6)
+            attach_tooltip(del_btn, "이 BGM 삭제")
 
     # ══════════════════════════════════════════════════════════════════════════
     # 초기 기본 화면: 사진 3처럼 타이머 + 주사위 동시 소환

@@ -572,6 +572,16 @@ def icon_rocket(color=COL_ACTIVE, size=24, **kw) -> Image.Image:
     d.polygon([(S*0.20, S*0.80), (S*0.08, S*0.92), (S*0.28, S*0.88)], fill=_hex("#ef4444"))
     return _finish_canvas(img, size)
 
+def icon_music(color=COL_GREEN, size=24, **kw) -> Image.Image:
+    """🎵 8분 음표 한 쌍 (음악 / BGM 아이콘)"""
+    img, d, S = _make_canvas(size)
+    d.ellipse([S*0.18, S*0.62, S*0.42, S*0.84], fill=_hex(color))
+    d.ellipse([S*0.58, S*0.50, S*0.82, S*0.72], fill=_hex(color))
+    d.line([(S*0.38, S*0.68), (S*0.38, S*0.22)], fill=_hex(color), width=int(S*0.08))
+    d.line([(S*0.78, S*0.56), (S*0.78, S*0.14)], fill=_hex(color), width=int(S*0.08))
+    d.polygon([(S*0.34, S*0.24), (S*0.82, S*0.12), (S*0.82, S*0.26), (S*0.34, S*0.38)], fill=_hex(color))
+    return _finish_canvas(img, size)
+
 # ══════════════════════════════════════════════════════════════════════════════
 # 아이콘 레지스트리 & 캐시 매니저
 # ══════════════════════════════════════════════════════════════════════════════
@@ -615,12 +625,12 @@ ICON_REGISTRY = {
     "timer_balloon":    icon_timer_balloon,
     "timer_stopwatch":  icon_timer_stopwatch,
 
-    # 사진 3, 4의 플로팅 툴바 전용 아이콘
     "pencil":           icon_pencil,
     "pointer":          icon_pointer,
     "eraser_box":       icon_eraser_box,
     "eye":              icon_eye,
     "rocket":           icon_rocket,
+    "music":            icon_music,
 }
 
 _CTK_CACHE = {}

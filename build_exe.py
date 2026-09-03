@@ -34,6 +34,11 @@ def build():
         "--hidden-import=pystray._win32",
         "--hidden-import=PIL._tkinter_finder",
         "--hidden-import=korean_lunar_calendar",
+        "--collect-all=webview",
+        "--collect-all=bottle",
+        "--hidden-import=webview",
+        "--hidden-import=bottle",
+        "--hidden-import=yt_dlp",
         "main.py"
     ]
 

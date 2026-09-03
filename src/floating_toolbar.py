@@ -53,21 +53,21 @@ class FloatingQuickToolbar(tk.Toplevel):
 
     def _update_dimensions(self):
         if self.size_mode == "S":
-            self.full_width = 720
+            self.full_width = 770
             self.tb_height = 42
             self.btn_w = 40
             self.btn_h = 32
             self.ico_sz = 18
             self.show_text = False
         elif self.size_mode == "L":
-            self.full_width = 990
+            self.full_width = 1060
             self.tb_height = 62
             self.btn_w = 56
             self.btn_h = 46
             self.ico_sz = 24
             self.show_text = True
         else:  # "M"
-            self.full_width = 870
+            self.full_width = 930
             self.tb_height = 52
             self.btn_w = 48
             self.btn_h = 38
@@ -118,7 +118,7 @@ class FloatingQuickToolbar(tk.Toplevel):
         )
         self.container.pack(fill="both", expand=True, padx=1, pady=1)
 
-        from src.icon_renderer import get_icon, COL_MAIN, COL_ACTIVE, COL_DANGER, COL_ORANGE
+        from src.icon_renderer import get_icon, COL_MAIN, COL_ACTIVE, COL_DANGER, COL_ORANGE, COL_GREEN
         ICO = self.ico_sz
 
         # 1. 드래그 핸들
@@ -155,6 +155,7 @@ class FloatingQuickToolbar(tk.Toplevel):
             ("camera",  "화상기",   self._open_visualizer,      COL_ACTIVE, "실물화상기 실시간 뷰어"),
             ("timer",   "타이머",   self._open_timer,           COL_MAIN,   "교실 타이머 (Alt+3)"),
             ("rocket",  "바로가기", self._open_quick_launcher,  COL_ACTIVE, "자주 쓰는 프로그램 / 바로가기 빠른 실행 (➕ 등록)"),
+            ("music",   "BGM",      self._open_bgm_player,      COL_GREEN,  "유튜브 교실 배경음악 BGM (소리만 재생)"),
             ("mouse",   "마우스",   self._open_mouse_settings,  COL_MAIN,   "수업용 마우스 크기 & 색상 설정"),
             ("dice",    "뽑기",     self._open_picker,          COL_PURPLE, "공정한 발표자 추첨"),
             ("wheel",   "돌림판",   self._open_wheel,           COL_MAIN,   "돌려돌려 돌림판"),
@@ -325,6 +326,10 @@ class FloatingQuickToolbar(tk.Toplevel):
         """자주 쓰는 프로그램 및 바로가기 빠른 실행 팝업 열기"""
         QuickLauncherPopup.get_instance(self)
 
+    def _open_bgm_player(self):
+        """유튜브 교실 BGM 오디오 플레이어 팝업 열기"""
+        BGMPlayerPopup.get_instance(self)
+
     def close(self):
         try:
             self.destroy()
@@ -469,4 +474,179 @@ class QuickLauncherPopup(ctk.CTkToplevel):
 
     def _on_add_click(self):
         self.ql.open_add_dialog(parent=self, on_success=self._build_ui)
+
+
+class BGMPlayerPopup(ctk.CTkToplevel):
+    """
+    플로팅 바와 연동되는 '유튜브 교실 BGM 오디오 플레이어' 팝업 (화면 없이 소리만 재생)
+    """
+    _instance = None
+
+    @classmethod
+    def get_instance(cls, parent=None):
+        if cls._instance is None or not cls._instance.winfo_exists():
+            cls._instance = cls(parent)
+        else:
+            cls._instance.deiconify()
+            cls._instance.lift()
+            cls._instance.focus_force()
+        return cls._instance
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.toolbar = parent
+        self.title("교실 BGM 플레이어 (유튜브 소리만 재생)")
+        self.attributes("-topmost", True)
+        self.overrideredirect(True)
+
+        from src.youtube_audio_manager import youtube_audio
+        self.audio = youtube_audio
+
+        w = 380
+        h = 420
+
+        # 플로팅 바 아래에 자동 스냅 위치
+        if self.toolbar and self.toolbar.winfo_exists():
+            tx = self.toolbar.winfo_rootx()
+            ty = self.toolbar.winfo_rooty()
+            th = self.toolbar.winfo_height()
+            px = max(10, min(self.winfo_screenwidth() - w - 10, tx + 140))
+            py = ty + th + 8
+        else:
+            px = (self.winfo_screenwidth() - w) // 2
+            py = (self.winfo_screenheight() - h) // 2
+
+        self.geometry(f"{w}x{h}+{px}+{py}")
+        self._build_ui()
+
+    def _build_ui(self):
+        for w in self.winfo_children():
+            w.destroy()
+
+        card = ctk.CTkFrame(
+            self, fg_color="#090d16", corner_radius=16,
+            border_width=2, border_color="#10b981"
+        )
+        card.pack(fill="both", expand=True, padx=2, pady=2)
+
+        # 상단 헤더
+        header = ctk.CTkFrame(card, fg_color="#1e293b", height=38, corner_radius=12)
+        header.pack(fill="x", side="top", padx=4, pady=4)
+        header.pack_propagate(False)
+
+        ctk.CTkLabel(
+            header, text="🎵 교실 BGM (유튜브 소리만 재생)",
+            font=get_font(11, "bold"), text_color="#34d399"
+        ).pack(side="left", padx=10)
+
+        ctk.CTkButton(
+            header, text="✕", width=22, height=22, font=get_font(10, "bold"),
+            fg_color="#3f1d24", hover_color="#dc2626", text_color="#fca5a5",
+            corner_radius=6, command=self.destroy
+        ).pack(side="right", padx=6)
+
+        add_btn = ctk.CTkButton(
+            header, text="➕ 링크 추가", width=74, height=24, font=get_font(10, "bold"),
+            fg_color="#059669", hover_color="#047857", text_color="#ffffff",
+            corner_radius=6, command=lambda: self.audio.open_add_dialog(parent=self, on_success=self._build_ui)
+        )
+        add_btn.pack(side="right", padx=2)
+        attach_tooltip(add_btn, "유튜브 영상 링크를 입력하여 BGM으로 등록")
+
+        # 재생 컨트롤 바
+        ctrl = ctk.CTkFrame(card, fg_color="#131d31", corner_radius=10, border_width=1, border_color="#1e293b")
+        ctrl.pack(fill="x", padx=8, pady=(4, 6))
+
+        cur_title = self.audio.current_track["name"] if self.audio.current_track else "재생 중인 음악 없음"
+        disp = ctk.CTkLabel(
+            ctrl, text=f"🎶 {cur_title}",
+            font=get_font(10, "bold"),
+            text_color="#38bdf8" if self.audio.is_playing else "#64748b",
+            anchor="w"
+        )
+        disp.pack(fill="x", padx=8, pady=(6, 2))
+
+        ctrl_btns = ctk.CTkFrame(ctrl, fg_color="transparent")
+        ctrl_btns.pack(fill="x", padx=8, pady=(2, 6))
+
+        def _toggle():
+            if self.audio.is_playing:
+                self.audio.pause()
+            else:
+                if self.audio.current_track:
+                    self.audio.resume()
+                else:
+                    plist = self.audio.get_playlist()
+                    if plist:
+                        self.audio.play(plist[0])
+            self._build_ui()
+
+        play_btn = ctk.CTkButton(
+            ctrl_btns, text="일시정지 ⏸" if self.audio.is_playing else "재생 ▶",
+            width=78, height=26, font=get_font(9, "bold"),
+            fg_color="#0284c7" if self.audio.is_playing else "#10b981",
+            command=_toggle
+        )
+        play_btn.pack(side="left", padx=2)
+
+        stop_btn = ctk.CTkButton(
+            ctrl_btns, text="정지 ⏹", width=52, height=26, font=get_font(9),
+            fg_color="#334155", hover_color="#475569",
+            command=lambda: (self.audio.stop(), self._build_ui())
+        )
+        stop_btn.pack(side="left", padx=2)
+
+        ctk.CTkLabel(ctrl_btns, text="🔊", font=get_font(9)).pack(side="left", padx=(6, 2))
+        vol = ctk.CTkSlider(
+            ctrl_btns, from_=0, to=100, number_of_steps=20, width=90, height=12,
+            command=lambda v: self.audio.set_volume(int(v))
+        )
+        vol.set(self.audio.volume)
+        vol.pack(side="left", padx=2)
+
+        # 플레이리스트 스크롤
+        scroll = ctk.CTkScrollableFrame(card, fg_color="transparent")
+        scroll.pack(fill="both", expand=True, padx=6, pady=2)
+
+        plist = self.audio.get_playlist()
+        for track in plist:
+            vid = track.get("video_id")
+            t_name = track.get("name")
+            t_emoji = track.get("emoji", "🎵")
+            t_cat = track.get("category", "수업")
+            is_cur = (self.audio.current_track and self.audio.current_track.get("video_id") == vid)
+
+            row = ctk.CTkFrame(
+                scroll,
+                fg_color="#064e3b" if (is_cur and self.audio.is_playing) else "#1e293b",
+                corner_radius=8, border_width=1,
+                border_color="#34d399" if (is_cur and self.audio.is_playing) else "#334155"
+            )
+            row.pack(fill="x", pady=2)
+
+            ctk.CTkLabel(
+                row, text=t_cat, font=get_font(8, "bold"), width=32,
+                fg_color="#0284c7" if is_cur else "#334155", text_color="#ffffff", corner_radius=4
+            ).pack(side="left", padx=6, pady=4)
+
+            btn = ctk.CTkButton(
+                row, text=f"{t_emoji} {t_name}",
+                font=get_font(10, "bold" if is_cur else "normal"),
+                anchor="w", fg_color="transparent",
+                hover_color="#0284c7", text_color="#f8fafc",
+                height=30,
+                command=lambda trk=track: (self.audio.play(trk), self._build_ui())
+            )
+            btn.pack(side="left", fill="x", expand=True, padx=2)
+            attach_tooltip(btn, f"클릭하여 소리만 재생\n유튜브 ID: {vid}")
+
+            del_btn = ctk.CTkButton(
+                row, text="✕", width=20, height=20, font=get_font(9),
+                fg_color="transparent", hover_color="#dc2626", text_color="#64748b",
+                corner_radius=4,
+                command=lambda v=vid: (self.audio.remove_track(v), self._build_ui())
+            )
+            del_btn.pack(side="right", padx=4)
+            attach_tooltip(del_btn, "이 BGM 삭제")
+
 
