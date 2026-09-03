@@ -152,6 +152,8 @@ class TrayManager:
         def _quit_app(icon, item):
             self.app.after(0, self.app._on_closing)
 
+        toggle_label = "✅ 놀티쳐 숨기기" if is_visible else "📂 놀티쳐 열기"
+
         from src.autostart_manager import autostart_manager
         is_autostart = autostart_manager.is_autostart_enabled()
 
