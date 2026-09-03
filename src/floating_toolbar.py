@@ -149,16 +149,17 @@ class FloatingQuickToolbar(tk.Toplevel):
         _sep()
 
         # 3. 핵심 수업 도구 단축 버튼들
+        from src.icon_renderer import COL_PURPLE
         tools = [
-            ("drawing",  "판서",   self._open_drawing,         COL_ORANGE, "화면 위 판서 (Alt+2)"),
-            ("camera",   "화상기", self._open_visualizer,      COL_ACTIVE, "실물화상기 실시간 뷰어"),
-            ("timer",    "타이머", self._open_timer,           COL_MAIN,   "교실 타이머 (Alt+3)"),
-            ("dice",     "마우스", self._open_mouse_settings,  COL_MAIN,   "수업용 마우스 크기 & 색상 설정"),
-            ("dice",     "뽑기",   self._open_picker,          COL_MAIN,   "공정한 발표자 추첨"),
-            ("wheel",    "돌림판", self._open_wheel,           COL_MAIN,   "돌려돌려 돌림판"),
-            ("widget",   "학생TV", self._open_student_display, COL_ACTIVE, "교실 TV용 학생 화면"),
-            ("widget",   "위젯",   self._open_mini_widget,     COL_MAIN,   "바탕화면 미니 위젯"),
-            ("home",     "메인",   self._open_main_app,        COL_ACTIVE, "놀티쳐 메인 창 열기"),
+            ("pen",     "판서",   self._open_drawing,         COL_ORANGE, "화면 위 판서 (Alt+2)"),
+            ("camera",  "화상기", self._open_visualizer,      COL_ACTIVE, "실물화상기 실시간 뷰어"),
+            ("timer",   "타이머", self._open_timer,           COL_MAIN,   "교실 타이머 (Alt+3)"),
+            ("mouse",   "마우스", self._open_mouse_settings,  COL_MAIN,   "수업용 마우스 크기 & 색상 설정"),
+            ("dice",    "뽑기",   self._open_picker,          COL_PURPLE, "공정한 발표자 추첨"),
+            ("wheel",   "돌림판", self._open_wheel,           COL_MAIN,   "돌려돌려 돌림판"),
+            ("screen",  "학생TV", self._open_student_display, COL_ACTIVE, "교실 TV용 학생 화면"),
+            ("widget",  "위젯",   self._open_mini_widget,     COL_MAIN,   "바탕화면 미니 위젯"),
+            ("home",    "메인",   self._open_main_app,        COL_ACTIVE, "놀티쳐 메인 창 열기"),
         ]
 
         for icon_name, label, cmd, icon_col, tip in tools:

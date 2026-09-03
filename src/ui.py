@@ -1040,36 +1040,38 @@ class App(ctk.CTk):
         lb_inner = ctk.CTkFrame(launcher_bar, fg_color="transparent")
         lb_inner.pack(fill="x", padx=8, pady=5)
 
+        from src.icon_renderer import get_icon, COL_MAIN, COL_ACTIVE, COL_DANGER, COL_GREEN, COL_ORANGE, COL_YELLOW, COL_PURPLE
+
         quick_actions = [
-            ("✏️ 판서", self._open_screen_drawing, "어떤 화면 위에서도 자유롭게 판서 (단축키: Alt+2)"),
-            ("📷 화상기", self._open_visualizer, "웹캠/USB 실물화상기 실시간 고화질 스트리밍"),
-            ("⏱️ 타이머", lambda: self._open_classroom_tools("timer"), "수업 및 모둠 활동 타이머 (단축키: Alt+3)"),
-            ("🖱️ 마우스", self._open_mouse_settings, "교실 수업용 마우스 포인터 크기 & 색상 설정 (0.1초 직행)"),
-            ("🛠️ 퀵바", self._open_floating_quick_toolbar, "모니터 구석에 띄워두는 올웨이즈온 미니 퀵바"),
-            ("🎲 뽑기", lambda: self._open_classroom_tools("picker"), "공정한 학생 발표자 무작위 랜덤 추첨"),
-            ("🎡 돌림판", lambda: self._open_classroom_tools("wheel"), "모둠/벌칙/보상 돌려돌려 돌림판"),
-            ("🪜 사다리", lambda: self._open_classroom_tools("ladder"), "짜릿한 학생/모둠 사다리타기 게임"),
-            ("⚾ 핀볼", lambda: self._open_classroom_tools("pinball"), "아케이드 통통 튀는 핀볼 추첨기"),
-            ("📌 위젯", self._open_mini_widget, "바탕화면에 띄워두는 미니 시간표 및 오늘 급식"),
-            ("🧹 정리", self._organize_desktop_action, "바탕화면 흩어진 파일 1초 자동 분류 정리"),
-            ("🌐 사이트", self._open_site_bookmarks, "놀퀴즈, 업무포털 등 교사용 필수 사이트 바로가기")
+            ("pen",     COL_ORANGE, "판서",   self._open_screen_drawing, "어떤 화면 위에서도 자유 판서 (Alt+2)"),
+            ("camera",  COL_ACTIVE, "화상기", self._open_visualizer, "웹캠/USB 실물화상기 실시간 뷰어"),
+            ("timer",   COL_GREEN,  "타이머", lambda: self._open_classroom_tools("timer"), "수업 및 모둠 활동 타이머 (Alt+3)"),
+            ("mouse",   COL_MAIN,   "마우스", self._open_mouse_settings, "교실 수업용 마우스 크기/색상 설정"),
+            ("dice",    COL_PURPLE, "뽑기",   lambda: self._open_classroom_tools("picker"), "공정한 학생 발표자 무작위 추첨"),
+            ("wheel",   COL_ORANGE, "돌림판", lambda: self._open_classroom_tools("wheel"), "모둠/벌칙/보상 돌려돌려 돌림판"),
+            ("ladder",  COL_ACTIVE, "사다리", lambda: self._open_classroom_tools("ladder"), "짜릿한 학생/모둠 사다리타기 게임"),
+            ("pinball", COL_YELLOW, "핀볼",   lambda: self._open_classroom_tools("pinball"), "아케이드 통통 튀는 핀볼 추첨기"),
+            ("screen",  COL_ACTIVE, "학생TV", self._open_student_display, "교실 TV/전자칠판용 대형 화면"),
+            ("widget",  COL_MAIN,   "위젯",   self._open_mini_widget, "바탕화면에 띄워두는 미니 시간표 위젯"),
+            ("broom",   COL_YELLOW, "정리",   self._organize_desktop_action, "바탕화면 흩어진 파일 1초 자동 분류 정리"),
+            ("globe",   COL_ACTIVE, "사이트", self._open_site_bookmarks, "놀퀴즈, 업무포털 등 교사용 필수 사이트 바로가기")
         ]
 
-        # 6개 / 5개로 2행 배치 (좁은 화면에서도 잘리지 않음)
+        # 6개씩 2행 배치
         row1 = ctk.CTkFrame(lb_inner, fg_color="transparent")
         row1.pack(fill="x", pady=(0, 2))
         row2 = ctk.CTkFrame(lb_inner, fg_color="transparent")
         row2.pack(fill="x")
 
-        ctk.CTkLabel(row1, text="🚀 빠른 도구:", font=get_font(10, "bold"), text_color=palette["text_main"]).pack(side="left", padx=(4, 6))
-
-        for i, (a_title, a_cmd, a_tip) in enumerate(quick_actions):
+        for i, (a_ico, a_col, a_title, a_cmd, a_tip) in enumerate(quick_actions):
             row = row1 if i < 6 else row2
             btn = ctk.CTkButton(
                 row,
-                text=a_title,
+                text=f" {a_title}",
+                image=get_icon(a_ico, a_col, 18),
+                compound="left",
                 font=get_font(10, "bold"),
-                height=28,
+                height=30,
                 corner_radius=8,
                 fg_color=palette["sidebar_btn_hover"],
                 hover_color=palette["accent_blue"],
