@@ -36,9 +36,10 @@ class ScreenDrawingOverlay:
     def __init__(self, parent=None):
         self.parent = parent
         self.is_active = False
-        self.root = None
         self.canvas = None
         self.toolbar = None
+        self.minibar = None
+        self.is_toolbar_visible = False
 
         # 그리기 상태
         self.current_tool = "pen"  # pen, highlighter, arrow, rect, text, emoji_stamp, eraser
@@ -131,7 +132,17 @@ class ScreenDrawingOverlay:
         self.root.bind("<e>", lambda e: self._select_tool("eraser"))
         self.root.bind("<E>", lambda e: self._select_tool("eraser"))
 
+        # 도구함 접기/펼치기 단축키 (Tab 또는 ` 키)
+        self.root.bind("<Tab>", lambda e: self._toggle_toolbar())
+        self.root.bind("<grave>", lambda e: self._toggle_toolbar())
+
         self._build_toolbar()
+        self._build_minibar()
+
+        # 기본 상태: 툴바는 접혀서 완전히 깨끗하고 자유로운 화면으로 시작!
+        self.toolbar.withdraw()
+        self.is_toolbar_visible = False
+
         self.root.lift()
         self.root.focus_force()
 
@@ -269,6 +280,14 @@ class ScreenDrawingOverlay:
         cap_btn.pack(side="left", padx=1)
         attach_tooltip(cap_btn, "판서 화면 캡처 저장")
 
+        fold_btn = ctk.CTkButton(
+            bg_frame, text="▲ 접기", font=get_font(10, "bold"), width=56, height=30,
+            fg_color="#1e293b", hover_color="#334155", text_color="#cbd5e1",
+            corner_radius=8, command=self._toggle_toolbar
+        )
+        fold_btn.pack(side="left", padx=1)
+        attach_tooltip(fold_btn, "도구함 접기 — 전체 깨끗한 화면으로 판서 (단축키: Tab)")
+
         close_btn = ctk.CTkButton(
             bg_frame, text="종료", image=get_icon("close", COL_DANGER, ICO),
             font=get_font(10, "bold"), width=58, height=30,
@@ -277,6 +296,49 @@ class ScreenDrawingOverlay:
         )
         close_btn.pack(side="left", padx=(2, 6))
         attach_tooltip(close_btn, "판서 종료 (ESC)")
+
+    def _build_minibar(self):
+        """화면 상단 중앙에 눈에 띄지 않게 배치되는 슬림한 도구함 토글 알약 탭"""
+        sw = self.root.winfo_screenwidth()
+        mb_w = 126
+        mb_h = 28
+        mb_x = (sw - mb_w) // 2
+        mb_y = 6
+
+        self.minibar = tk.Toplevel(self.root)
+        self.minibar.title("미니바")
+        self.minibar.geometry(f"{mb_w}x{mb_h}+{mb_x}+{mb_y}")
+        self.minibar.overrideredirect(True)
+        self.minibar.attributes("-topmost", True)
+
+        m_frame = ctk.CTkFrame(
+            self.minibar, fg_color="#090d16", corner_radius=14,
+            border_width=1, border_color="#38bdf8"
+        )
+        m_frame.pack(fill="both", expand=True, padx=1, pady=1)
+
+        self.minibar_btn = ctk.CTkButton(
+            m_frame, text="🛠️ 도구함 (Tab)", font=get_font(9, "bold"),
+            fg_color="transparent", hover_color="#1e293b", text_color="#38bdf8",
+            corner_radius=12, command=self._toggle_toolbar
+        )
+        self.minibar_btn.pack(fill="both", expand=True)
+        attach_tooltip(self.minibar_btn, "판서 도구함 펼치기 / 접기 (단축키: Tab)")
+
+    def _toggle_toolbar(self):
+        """판서 툴바 접기 / 펼치기 토글"""
+        self.is_toolbar_visible = not self.is_toolbar_visible
+        if self.is_toolbar_visible:
+            if self.toolbar and self.toolbar.winfo_exists():
+                self.toolbar.deiconify()
+                self.toolbar.lift()
+            if hasattr(self, "minibar_btn") and self.minibar_btn.winfo_exists():
+                self.minibar_btn.configure(text="▲ 숨기기 (Tab)", text_color="#f59e0b")
+        else:
+            if self.toolbar and self.toolbar.winfo_exists():
+                self.toolbar.withdraw()
+            if hasattr(self, "minibar_btn") and self.minibar_btn.winfo_exists():
+                self.minibar_btn.configure(text="🛠️ 도구함 (Tab)", text_color="#38bdf8")
 
     # ─── 배경 전환 (F1, F2, F3) ───────────────────────────────────────────
     def _set_background_mode(self, mode: str):
@@ -688,10 +750,24 @@ class ScreenDrawingOverlay:
         if not self.is_active:
             return
         self.is_active = False
+        if self.minibar and self.minibar.winfo_exists():
+            try:
+                self.minibar.destroy()
+            except Exception:
+                pass
+        self.minibar = None
+
         if self.toolbar and self.toolbar.winfo_exists():
-            self.toolbar.destroy()
+            try:
+                self.toolbar.destroy()
+            except Exception:
+                pass
+        self.toolbar = None
+
         if self.root and self.root.winfo_exists():
-            self.root.destroy()
+            try:
+                self.root.destroy()
+            except Exception:
+                pass
         self.root = None
         self.canvas = None
-        self.toolbar = None
