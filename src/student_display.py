@@ -240,6 +240,7 @@ class StudentDisplayWindow(ctk.CTkToplevel):
             ("drawing",     "색연필",     "✏️", "화면 위 자유 판서 및 색연필 도구"),
             ("launcher",    "바로\n가기", "🚀", "자주 쓰는 수업 프로그램 및 웹사이트 빠른 실행 (➕ 등록)"),
             ("bgm",         "교실\nBGM",  "🎵", "유튜브 소리만 듣는 교실 배경음악 플레이어 (➕ 등록)"),
+            ("video",       "유튜브\n영상", "🎬", "광고 없이 수업 영상을 재생하는 교실 유튜브 플레이어 (➕ 등록)"),
         ]
 
         self.dock_buttons = {}
@@ -1271,6 +1272,102 @@ class StudentDisplayWindow(ctk.CTkToplevel):
             )
             del_btn.pack(side="right", padx=6)
             attach_tooltip(del_btn, "이 BGM 삭제")
+
+    def _show_video(self):
+        """교실 수업 영상 플레이어 모듈 (유튜브 무광고)"""
+        from src.classroom_video_manager import classroom_video
+        from src.youtube_audio_manager import extract_youtube_id
+        body = self._create_white_module_window("video", "교실 수업 영상 플레이어 (유튜브 무광고)", "🎬", 520, 440)
+
+        # 1. 상단: 유튜브 링크 직접 입력 & 즉시 재생 바
+        top_card = ctk.CTkFrame(body, fg_color="#f8fafc", corner_radius=10, border_width=1, border_color="#e2e8f0")
+        top_card.pack(fill="x", padx=10, pady=(6, 4))
+
+        ctk.CTkLabel(
+            top_card, text="🎬 유튜브 링크를 입력하면 광고 없이 고화질로 즉시 재생됩니다",
+            font=get_font(10, "bold"), text_color="#0284c7"
+        ).pack(fill="x", padx=8, pady=(6, 2))
+
+        in_row = ctk.CTkFrame(top_card, fg_color="transparent")
+        in_row.pack(fill="x", padx=8, pady=(2, 6))
+
+        url_ent = ctk.CTkEntry(in_row, placeholder_text="예: https://www.youtube.com/watch?v=...", font=get_font(11))
+        url_ent.pack(side="left", fill="x", expand=True, padx=(0, 6))
+
+        def _play_url():
+            raw = url_ent.get().strip()
+            vid = extract_youtube_id(raw)
+            if not vid:
+                return
+            classroom_video.launch_video(vid, "수업 영상")
+
+        play_btn = ctk.CTkButton(
+            in_row, text="🎬 영상 재생", width=86, height=28, font=get_font(10, "bold"),
+            fg_color="#0284c7", hover_color="#0369a1", command=_play_url
+        )
+        play_btn.pack(side="left", padx=2)
+        attach_tooltip(play_btn, "입력한 유튜브 영상을 광고 없이 즉시 재생")
+
+        # 2. 수업 영상 즐겨찾기 목록 & 등록 바
+        mid_bar = ctk.CTkFrame(body, fg_color="transparent")
+        mid_bar.pack(fill="x", padx=12, pady=(4, 2))
+
+        ctk.CTkLabel(mid_bar, text="📋 등록된 수업 영상 목록", font=get_font(11, "bold"), text_color="#1e293b").pack(side="left")
+
+        def _refresh():
+            self._close_module("video")
+            self._show_video()
+
+        def _open_add_video():
+            from tkinter import simpledialog
+            u = simpledialog.askstring("수업 영상 등록", "등록할 유튜브 영상 링크를 입력하세요:", parent=self)
+            if u:
+                classroom_video.add_video(u)
+                _refresh()
+
+        add_btn = ctk.CTkButton(
+            mid_bar, text="➕ 영상 등록", width=78, height=26, font=get_font(10, "bold"),
+            fg_color="#059669", hover_color="#047857", command=_open_add_video
+        )
+        add_btn.pack(side="right")
+        attach_tooltip(add_btn, "수업에 자주 활용하는 유튜브 영상을 목록에 등록")
+
+        # 3. 비디오 목록 스크롤
+        scroll = ctk.CTkScrollableFrame(body, fg_color="transparent")
+        scroll.pack(fill="both", expand=True, padx=8, pady=4)
+
+        vids = classroom_video.get_videos()
+        for v in vids:
+            vid = v.get("video_id")
+            v_name = v.get("name")
+            v_emoji = v.get("emoji", "🎬")
+            v_cat = v.get("category", "수업")
+
+            row = ctk.CTkFrame(scroll, fg_color="#f8fafc", corner_radius=8, border_width=1, border_color="#e2e8f0")
+            row.pack(fill="x", pady=2)
+
+            ctk.CTkLabel(
+                row, text=v_cat, font=get_font(9, "bold"), width=36,
+                fg_color="#0284c7", text_color="#ffffff", corner_radius=4
+            ).pack(side="left", padx=6, pady=6)
+
+            btn = ctk.CTkButton(
+                row, text=f"{v_emoji}  {v_name}",
+                font=get_font(11, "bold"), anchor="w", fg_color="transparent",
+                hover_color="#e0f2fe", text_color="#1e293b", height=34,
+                command=lambda v_id=vid, v_title=v_name: classroom_video.launch_video(v_id, v_title)
+            )
+            btn.pack(side="left", fill="x", expand=True, padx=4)
+            attach_tooltip(btn, f"클릭하여 광고 없이 재생\n유튜브 ID: {vid}")
+
+            del_btn = ctk.CTkButton(
+                row, text="✕", width=22, height=22, font=get_font(9),
+                fg_color="transparent", hover_color="#fee2e2", text_color="#94a3b8",
+                corner_radius=4,
+                command=lambda v_id=vid: (classroom_video.remove_video(v_id), _refresh())
+            )
+            del_btn.pack(side="right", padx=6)
+            attach_tooltip(del_btn, "이 수업 영상 삭제")
 
     # ══════════════════════════════════════════════════════════════════════════
     # 초기 기본 화면: 사진 3처럼 타이머 + 주사위 동시 소환
