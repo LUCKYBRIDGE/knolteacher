@@ -704,11 +704,18 @@ class App(ctk.CTk):
         self.protocol("WM_DELETE_WINDOW", self._minimize_to_tray)
         self.bind("<F2>", lambda e: self._open_student_display())
 
-        # 교실 수업 전역 단축키 매니저 (Alt+1 ~ Alt+6) 시작
+        # 교실 수업 전역 단축키 매니저 (Alt+1 ~ Alt+9, F2) 시작
         try:
             from src.hotkey_manager import hotkey_manager
             hotkey_manager.app = self
             hotkey_manager.start()
+        except Exception:
+            pass
+
+        # 정기 반복 알람 & 예약 매니저 앱 연결
+        try:
+            from src.repeat_schedule_manager import recurring_manager
+            recurring_manager.app = self
         except Exception:
             pass
 
@@ -1212,6 +1219,21 @@ class App(ctk.CTk):
         # 가변 수업 알람 조절 컨트롤러
         alarm_ctrl_box = ctk.CTkFrame(lc_top, fg_color="transparent")
         alarm_ctrl_box.pack(side="right")
+
+        from src.recurring_dialog import RecurringScheduleDialog
+        ctk.CTkButton(
+            alarm_ctrl_box,
+            text="🔄 반복 설정",
+            font=get_font(10, "bold"),
+            fg_color=palette["sidebar_bg"],
+            hover_color=palette["sidebar_btn_hover"],
+            text_color=palette["text_main"],
+            border_width=1,
+            border_color=palette["card_border"],
+            height=28,
+            corner_radius=6,
+            command=lambda: RecurringScheduleDialog(self)
+        ).pack(side="right", padx=(4, 0))
 
         self.batch_alarm_btn = ctk.CTkButton(
             alarm_ctrl_box,
@@ -2010,10 +2032,18 @@ class App(ctk.CTk):
             font=get_font(13, "bold"),
             text_color=palette["text_main"]
         ).pack(side="left")
-        ctk.CTkLabel(
+
+        from src.hotkey_dialog import HotkeyGuideDialog
+        ctk.CTkButton(
             tc_hdr,
-            text="↑ 놀티쳐 보드 위에서도 동일하게 실행 가능",
-            font=get_font(9), text_color=palette["accent"]
+            text="⌨️ 빠른 도구 단축키 안내 & 설정 (Alt+숫자)",
+            font=get_font(10, "bold"),
+            height=26,
+            fg_color=palette["accent"],
+            hover_color=palette["accent_hover"],
+            text_color="#ffffff",
+            corner_radius=6,
+            command=lambda: HotkeyGuideDialog(self)
         ).pack(side="right")
 
         t_grid = ctk.CTkFrame(tools_card, fg_color="transparent")
@@ -2022,14 +2052,14 @@ class App(ctk.CTk):
             t_grid.grid_columnconfigure(col_idx, weight=1)
 
         tool_items = [
-            ("✏️ 화면 위 자유 판서", "모니터 위 모든 앱 위에 펜으로 직접 판서 및 밑줄", self._open_screen_drawing),
+            ("✏️ 화면 위 자유 판서 (Alt+2)", "모니터 위 모든 앱 위에 펜으로 직접 판서 및 밑줄", self._open_screen_drawing),
             ("📷 스마트 실물화상기", "웹캠/USB 화상기 90°회전, 반전, 문서강조, 전체화면", self._open_visualizer),
-            ("⏱️ 교실 활동 타이머", "1분/3분/5분 모둠 활동 카운트다운 및 알람음", lambda: self._open_classroom_tools("timer")),
-            ("🎲 발표자 랜덤 뽑기", "학급 학생 이름/번호 롤링 추첨 (중복 제외)", lambda: self._open_classroom_tools("picker")),
+            ("⏱️ 교실 활동 타이머 (Alt+3)", "1분/3분/5분 모둠 활동 카운트다운 및 알람음", lambda: self._open_classroom_tools("timer")),
+            ("🎲 발표자 랜덤 뽑기 (Alt+8)", "학급 학생 이름/번호 롤링 추첨 (중복 제외)", lambda: self._open_classroom_tools("picker")),
             ("🎡 돌려돌려 돌림판", "모둠, 발표자, 벌칙, 보상 돌려돌려 돌림판", lambda: self._open_classroom_tools("wheel")),
             ("🪜 짜릿한 사다리타기", "학생/모둠 사다리타기 게임", lambda: self._open_classroom_tools("ladder")),
             ("⚾ 아케이드 핀볼", "통통 튀는 물리 바운스 핀볼 추첨기", lambda: self._open_classroom_tools("pinball")),
-            ("🖥️ 스마트 플로팅 독", "화면 상단 슬림바: 현재 교시+남은 시간+도구 원클릭", self._open_mini_widget),
+            ("🖥️ 스마트 플로팅 독 (Alt+9)", "화면 상단 슬림바: 현재 교시+남은 시간+도구 원클릭", self._open_mini_widget),
             ("🖱️ 마우스 설정", "교실 수업용 마우스 크기/색상 설정", self._open_mouse_settings),
         ]
 
@@ -2194,6 +2224,19 @@ class App(ctk.CTk):
 
         ctk.CTkLabel(h_in, text="⏰ 스마트 예약 센터", font=get_font(16, "bold"), text_color=palette["accent"]).pack(side="left")
         ctk.CTkLabel(h_in, text="수업 시작 알람(1분 전 카운트다운) 및 PC 전원(종료/절전/부팅) 예약을 한곳에서 관리합니다.", font=get_font(11), text_color=palette["text_sub"]).pack(side="left", padx=14)
+
+        from src.recurring_dialog import RecurringScheduleDialog
+        ctk.CTkButton(
+            h_in,
+            text="🔄 정기 반복 설정 관리",
+            font=get_font(11, "bold"),
+            height=30,
+            fg_color=palette["accent"],
+            hover_color=palette["accent_hover"],
+            text_color="#ffffff",
+            corner_radius=6,
+            command=lambda: RecurringScheduleDialog(self)
+        ).pack(side="right")
 
         # 2. 메인 2단 그리드: 좌측(수업 알람 예약) + 우측(PC 전원 예약)
         grid_row = ctk.CTkFrame(scroll, fg_color="transparent")
