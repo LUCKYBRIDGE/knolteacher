@@ -103,17 +103,23 @@ class CTk2DScrollableFrame(ctk.CTkFrame):
             rw = max(self.viewport.winfo_reqwidth(), self.min_content_width)
             rh = self.viewport.winfo_reqheight()
 
-            # 가로 스크롤바: 내용 너비가 캔버스 너비보다 클 때만 표시
-            if rw > cw and cw > 50:
-                self._x_scrollbar.grid(row=1, column=0, sticky="ew", pady=(2, 0))
-            else:
-                self._x_scrollbar.grid_remove()
+            need_x = (rw > cw and cw > 50)
+            need_y = (rh > ch and ch > 50)
 
-            # 세로 스크롤바: 내용 높이가 캔버스 높이보다 클 때만 표시
-            if rh > ch and ch > 50:
-                self._y_scrollbar.grid(row=0, column=1, sticky="ns", padx=(2, 0))
-            else:
-                self._y_scrollbar.grid_remove()
+            # 불필요한 반복 grid/grid_remove 호출 차단 (화면 깜빡임 완전 방지)
+            if getattr(self, "_x_visible", None) != need_x:
+                self._x_visible = need_x
+                if need_x:
+                    self._x_scrollbar.grid(row=1, column=0, sticky="ew", pady=(2, 0))
+                else:
+                    self._x_scrollbar.grid_remove()
+
+            if getattr(self, "_y_visible", None) != need_y:
+                self._y_visible = need_y
+                if need_y:
+                    self._y_scrollbar.grid(row=0, column=1, sticky="ns", padx=(2, 0))
+                else:
+                    self._y_scrollbar.grid_remove()
         except Exception:
             pass
 

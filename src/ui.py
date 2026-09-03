@@ -913,6 +913,26 @@ class App(ctk.CTk):
         except Exception as e:
             print(f"[UI] Error reloading timetable views: {e}")
 
+    def _ensure_view(self, key: str):
+        """요청된 뷰가 아직 생성되지 않았으면 그 시점에 최초 1회만 초고속 생성 (지연 로딩)"""
+        if key in self.views and self.views[key].winfo_exists():
+            return self.views[key]
+
+        palette = theme_manager.get_theme()
+        f = ctk.CTkFrame(self.views_container, fg_color=palette["card_bg"], corner_radius=14, border_width=1, border_color=palette["card_border"])
+        
+        if key == "today":
+            self._build_today_tab(f)
+        elif key == "classroom_tools":
+            self._build_classroom_tools_tab(f)
+        elif key == "neis_workspace":
+            self._build_neis_workspace_tab(f)
+        elif key == "pc_settings":
+            self._build_pc_settings_tab(f)
+
+        self.views[key] = f
+        return f
+
     def _switch_view(self, key: str):
         self.current_view_key = key
         palette = theme_manager.get_theme()
@@ -932,34 +952,18 @@ class App(ctk.CTk):
                     hover_color=palette["sidebar_btn_hover"]
                 )
 
-        # 뷰 프레임 교체
-        for k, frame in self.views.items():
-            if k == key:
-                frame.pack(fill="both", expand=True)
-            else:
+        # 1. 이전 활성화된 프레임들을 먼저 숨겨 겹침/깜빡임 완전 제거
+        for k, frame in list(self.views.items()):
+            if k != key and frame.winfo_exists():
                 frame.pack_forget()
 
+        # 2. 목표 뷰 지연 로딩 후 즉시 표시
+        target_frame = self._ensure_view(key)
+        target_frame.pack(fill="both", expand=True)
+
     def _init_all_views(self):
-        palette = theme_manager.get_theme()
-        # 1. 오늘의 일과 & 급식 (홈)
-        f_today = ctk.CTkFrame(self.views_container, fg_color=palette["card_bg"], corner_radius=14, border_width=1, border_color=palette["card_border"])
-        self._build_today_tab(f_today)
-        self.views["today"] = f_today
-
-        # 2. ✏️ 수업 도구 & 교육 사이트 바로가기
-        f_tools = ctk.CTkFrame(self.views_container, fg_color=palette["card_bg"], corner_radius=14, border_width=1, border_color=palette["card_border"])
-        self._build_classroom_tools_tab(f_tools)
-        self.views["classroom_tools"] = f_tools
-
-        # 3. 📝 나이스 업무 & 시간표 (주간 시간표 + 엑셀 자동입력 통합 서브탭)
-        f_neis = ctk.CTkFrame(self.views_container, fg_color=palette["card_bg"], corner_radius=14, border_width=1, border_color=palette["card_border"])
-        self._build_neis_workspace_tab(f_neis)
-        self.views["neis_workspace"] = f_neis
-
-        # 4. ⚙️ PC 관리 & 설정 (컴퓨터 예약/종료 + 화면 분할 + 환경 설정)
-        f_settings = ctk.CTkFrame(self.views_container, fg_color=palette["card_bg"], corner_radius=14, border_width=1, border_color=palette["card_border"])
-        self._build_pc_settings_tab(f_settings)
-        self.views["pc_settings"] = f_settings
+        # 시작 시점에는 오늘 탭 1개만 초고속 렌더링 (앱 기동 속도 대폭 향상)
+        self._ensure_view("today")
 
     # =========================================================================
     # 뷰 1: 오늘의 일과 & 급식 (홈 - 직관적 2단 대시보드)
@@ -1230,12 +1234,39 @@ class App(ctk.CTk):
         self.today_scroll.bind_children_mousewheel()
 
     def _refresh_today_meal(self, force: bool = False):
+        if not hasattr(self, "meal_container") or not self.meal_container.winfo_exists():
+            return
+
+        palette = theme_manager.get_theme()
+        today = datetime.date.today()
+
+        def _do_fetch():
+            ok, meal_info, msg = neis_client.get_meal_for_date(today, force_refresh=force)
+            if hasattr(self, "after"):
+                self.after(0, self._render_meal_ui, ok, meal_info, msg)
+
+        if force:
+            for w in self.meal_container.winfo_children():
+                w.destroy()
+            loading_lbl = ctk.CTkLabel(
+                self.meal_container,
+                text="⏳ 최신 급식 식단표를 불러오는 중...",
+                font=get_font(11),
+                text_color=palette["accent"]
+            )
+            loading_lbl.pack(pady=20)
+            threading.Thread(target=_do_fetch, daemon=True).start()
+        else:
+            ok, meal_info, msg = neis_client.get_meal_for_date(today, force_refresh=False)
+            self._render_meal_ui(ok, meal_info, msg)
+
+    def _render_meal_ui(self, ok: bool, meal_info: dict, msg: str):
+        if not hasattr(self, "meal_container") or not self.meal_container.winfo_exists():
+            return
+
         palette = theme_manager.get_theme()
         for w in self.meal_container.winfo_children():
             w.destroy()
-
-        today = datetime.date.today()
-        ok, meal_info, msg = neis_client.get_meal_for_date(today, force_refresh=force)
 
         school_nm = neis_client.config.get("school_name", "")
         if not school_nm:
@@ -1285,7 +1316,7 @@ class App(ctk.CTk):
                 text_color=palette["accent"]
             ).pack(side="right")
 
-        # 메뉴 리스트 - 컴팩트하게 한눈에 전체 표시 (불필요한 내부 스크롤 없음)
+        # 메뉴 리스트
         dishes = meal_info.get("dishes", [])
         menu_box = ctk.CTkFrame(self.meal_container, fg_color=palette["card_bg"], corner_radius=8, border_width=1, border_color=palette["card_border"])
         menu_box.pack(fill="both", expand=True)

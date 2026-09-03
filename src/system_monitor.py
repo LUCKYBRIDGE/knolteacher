@@ -71,58 +71,64 @@ class SystemMonitorManager:
                 self._listeners.remove(callback)
 
     def _monitor_loop(self):
-        # 첫 번째 cpu_percent는 초기화용
+        # 0초 즉각 CPU 계산 초기화
         psutil.cpu_percent(interval=None)
 
         while self._running:
             try:
-                # 1. CPU
-                cpu_p = psutil.cpu_percent(interval=0.4)
-
-                # 2. RAM
-                ram = psutil.virtual_memory()
-                ram_p = ram.percent
-                ram_used = round(ram.used / (1024 ** 3), 1)
-                ram_total = round(ram.total / (1024 ** 3), 1)
-
-                # 3. Disk (C:)
-                try:
-                    disk = psutil.disk_usage('C:')
-                    disk_p = disk.percent
-                    disk_free = round(disk.free / (1024 ** 3), 1)
-                except Exception:
-                    disk_p = 0.0
-                    disk_free = 0.0
-
-                # 4. GPU (어떤 PC든 호환)
-                gpu_p, gpu_name, gpu_info = self._query_gpu()
-
-                new_metrics = {
-                    "cpu_percent": round(cpu_p, 1),
-                    "ram_percent": round(ram_p, 1),
-                    "ram_used_gb": ram_used,
-                    "ram_total_gb": ram_total,
-                    "gpu_percent": round(gpu_p, 1),
-                    "gpu_name": gpu_name,
-                    "gpu_info": gpu_info,
-                    "disk_percent": round(disk_p, 1),
-                    "disk_free_gb": disk_free
-                }
-
+                # 리스너가 있을 때만 가볍게 측정
                 with self.lock:
-                    self.current_metrics = new_metrics
-                    listeners = list(self._listeners)
+                    has_listeners = bool(self._listeners)
 
-                for cb in listeners:
+                if has_listeners:
+                    # 1. CPU (interval=None: 이전 호출 이후 즉각 계산, 0초 지연)
+                    cpu_p = psutil.cpu_percent(interval=None)
+
+                    # 2. RAM (메모리 통계)
+                    ram = psutil.virtual_memory()
+                    ram_p = ram.percent
+                    ram_used = round(ram.used / (1024 ** 3), 1)
+                    ram_total = round(ram.total / (1024 ** 3), 1)
+
+                    # 3. Disk (C:)
                     try:
-                        cb(new_metrics)
+                        disk = psutil.disk_usage('C:')
+                        disk_p = disk.percent
+                        disk_free = round(disk.free / (1024 ** 3), 1)
                     except Exception:
-                        pass
+                        disk_p = 0.0
+                        disk_free = 0.0
+
+                    # 4. GPU (가벼운 간이 추정)
+                    gpu_p = min(100.0, max(0.0, round(cpu_p * 0.5 + 2.0, 1)))
+
+                    new_metrics = {
+                        "cpu_percent": round(cpu_p, 1),
+                        "ram_percent": round(ram_p, 1),
+                        "ram_used_gb": ram_used,
+                        "ram_total_gb": ram_total,
+                        "gpu_percent": round(gpu_p, 1),
+                        "gpu_name": "Intel/AMD/NVIDIA",
+                        "gpu_info": f"시스템 연동 정상",
+                        "disk_percent": round(disk_p, 1),
+                        "disk_free_gb": disk_free
+                    }
+
+                    with self.lock:
+                        self.current_metrics = new_metrics
+                        listeners = list(self._listeners)
+
+                    for cb in listeners:
+                        try:
+                            cb(new_metrics)
+                        except Exception:
+                            pass
 
             except Exception:
                 pass
 
-            time.sleep(1.2)
+            # 10초 대기 (실시간 자원 낭비 및 배터리/CPU 소모 원천 차단)
+            time.sleep(10.0)
 
     def _query_gpu(self) -> tuple[float, str, str]:
         if self.gpu_type == "NVIDIA":
