@@ -1212,7 +1212,7 @@ class App(ctk.CTk):
             ("ladder",  launcher_icon_col, "사다리", lambda: self._open_classroom_tools("ladder"), "짜릿한 학생/모둠 사다리타기 게임"),
             ("pinball", launcher_icon_col, "핀볼",   lambda: self._open_classroom_tools("pinball"), "아케이드 통통 튀는 핀볼 추첨기"),
             ("screen",  launcher_icon_col, "보드",   self._open_student_display, "교실 TV/전자칠판용 대형 놀티쳐 보드"),
-            ("widget",  launcher_icon_col, "위젯",   self._open_mini_widget, "바탕화면에 띄워두는 미니 시간표 위젯"),
+            ("widget",  launcher_icon_col, "스마트 독",   self._open_mini_widget, "바탕화면에 띄워두는 미니 시간표 위젯"),
             ("broom",   launcher_icon_col, "정리",   self._organize_desktop_action, "바탕화면 흩어진 파일 1초 자동 분류 정리"),
             ("globe",   launcher_icon_col, "사이트", self._open_site_bookmarks, "놀퀴즈, 업무포털 등 교사용 필수 사이트 바로가기")
         ]
@@ -1473,19 +1473,24 @@ class App(ctk.CTk):
                     command=lambda item=it: self._schedule_single_class_alarm(item)
                 ).pack(side="right", padx=(0, 8), pady=4)
 
-    def _open_mini_widget(self):
+    def _open_smart_dock(self):
+        """파편화된 위젯과 플로팅바를 단 하나의 정돈된 스마트 올인원 독으로 통일 실행"""
         if self.mini_widget and self.mini_widget.winfo_exists():
-            self.mini_widget.lift()
-            self.mini_widget.focus_force()
-        else:
-            self.mini_widget = MiniTimetableWidget(self)
+            try: self.mini_widget.destroy()
+            except Exception: pass
+            self.mini_widget = None
+        if self.mini_ticker and self.mini_ticker.winfo_exists():
+            try: self.mini_ticker.destroy()
+            except Exception: pass
+            self.mini_ticker = None
+
+        FloatingQuickToolbar.get_instance(self)
+
+    def _open_mini_widget(self):
+        self._open_smart_dock()
 
     def _open_mini_ticker(self):
-        if self.mini_ticker and self.mini_ticker.winfo_exists():
-            self.mini_ticker.lift()
-            self.mini_ticker.focus_force()
-        else:
-            self.mini_ticker = MiniTickerWidget(self.manager, self)
+        self._open_smart_dock()
 
     def _open_student_display(self):
         if self.student_window and self.student_window.winfo_exists():
@@ -1509,7 +1514,7 @@ class App(ctk.CTk):
             subprocess.run("main.cpl", shell=True, check=False)
 
     def _open_floating_quick_toolbar(self):
-        FloatingQuickToolbar.get_instance(self)
+        self._open_smart_dock()
 
     def _open_classroom_tools(self, tab="timer"):
         ClassroomToolsDialog.get_instance(self, initial_tab=tab)
