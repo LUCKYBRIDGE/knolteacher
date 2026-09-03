@@ -176,13 +176,24 @@ HTML_CONTENT = """<!DOCTYPE html>
         var isAd = document.querySelector('.ad-showing, .ad-interrupting, .ytp-ad-module, .video-ads');
         var v = document.querySelector('video');
 
-        // 1. 광고 영상 발생 즉시: 소리 완전 차단(Mute) + 16배속 + 비디오 끝으로 점프
+        // 1. 광고 영상 발생 즉시: 소리 완전 차단(Mute) + 64배속 가속 + 비디오 끝(duration) 강제 텔레포트
         if (v && isAd) {
           v.muted = true;
           v.volume = 0;
-          v.playbackRate = 16.0;
+          try {
+            v.playbackRate = 64.0; // 64배속 초고속 감기
+          } catch(e1) {
+            try { v.playbackRate = 16.0; } catch(e2) {}
+          }
           if (v.duration && isFinite(v.duration)) {
-            v.currentTime = v.duration - 0.05;
+            v.currentTime = v.duration; // 0.0001초 만에 광고 끝으로 강제 순간이동
+          } else {
+            v.currentTime = 999999;
+          }
+          // 플레이어 자체 스킵 메서드가 존재할 경우 즉시 호출
+          if (player) {
+            if (typeof player.skipAd === 'function') try { player.skipAd(); } catch(e) {}
+            if (typeof player.cancelPlayback === 'function') try { player.cancelPlayback(); } catch(e) {}
           }
         } else if (v && !isAd) {
           // 일반 영상으로 복귀 시 볼륨 및 배속 정상화
