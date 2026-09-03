@@ -48,7 +48,7 @@ class DesktopCleanerManager:
         moved_count = 0
 
         # 보호 대상 파일 (정리하지 않고 바탕화면에 그대로 둘 파일)
-        PROTECTED_NAMES = ["놀티쳐 데스크.exe", "desktop.ini"]
+        PROTECTED_NAMES = ["놀티쳐.exe", "놀티쳐 데스크.exe", "knolteacher.exe", "desktop.ini"]
 
         try:
             for item in os.listdir(desktop):

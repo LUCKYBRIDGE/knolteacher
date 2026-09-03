@@ -617,6 +617,7 @@ class App(ctk.CTk):
         self.root_frame.pack(fill="both", expand=True)
 
         # 1. 좌측 사이드바 (너비 215px, macOS 사이드바 감성)
+        self.sidebar_collapsed = False
         self.sidebar = ctk.CTkFrame(
             self.root_frame,
             width=215,
@@ -630,54 +631,70 @@ class App(ctk.CTk):
 
         # 사이드바 상단 로고 / 브랜드
         logo_frame = ctk.CTkFrame(self.sidebar, fg_color="transparent")
-        logo_frame.pack(fill="x", padx=14, pady=(18, 12))
+        logo_frame.pack(fill="x", padx=10, pady=(18, 12))
 
         title_row = ctk.CTkFrame(logo_frame, fg_color="transparent")
         title_row.pack(fill="x")
 
         # 세련된 앱 아이콘 뱃지
-        ctk.CTkLabel(
+        self.logo_icon_lbl = ctk.CTkLabel(
             title_row,
             text="📅",
             font=get_font(18),
             width=26
-        ).pack(side="left", padx=(0, 6))
+        )
+        self.logo_icon_lbl.pack(side="left", padx=(0, 4))
 
         self.logo_title_lbl = ctk.CTkLabel(
             title_row,
-            text="놀티쳐 데스크",
+            text="놀티쳐",
             font=get_font(17, "bold"),
             text_color=palette["text_main"]
         )
         self.logo_title_lbl.pack(side="left")
 
+        # 사이드바 접기/펼치기 토글 버튼
+        self.sidebar_toggle_btn = ctk.CTkButton(
+            title_row,
+            text="◀",
+            width=26, height=26,
+            font=get_font(10, "bold"),
+            fg_color="transparent",
+            hover_color=palette["sidebar_btn_hover"],
+            text_color=palette["text_sub"],
+            corner_radius=6,
+            command=self._toggle_sidebar
+        )
+        self.sidebar_toggle_btn.pack(side="right")
+        attach_tooltip(self.sidebar_toggle_btn, "사이드바 접기 / 펼치기")
+
         self.logo_sub_lbl = ctk.CTkLabel(
             logo_frame,
-            text="KnolTeacher Desk • pinky-ne.com",
+            text="KnolTeacher • pinky-ne.com",
             font=get_font(10, "bold"),
             text_color=palette["text_sub"],
             cursor="hand2"
         )
-        self.logo_sub_lbl.pack(anchor="w", padx=(32, 0), pady=(1, 0))
+        self.logo_sub_lbl.pack(anchor="w", padx=(30, 0), pady=(1, 0))
         self.logo_sub_lbl.bind("<Button-1>", lambda e: webbrowser.open("https://pinky-ne.com"))
         attach_tooltip(self.logo_sub_lbl, "놀퀴즈(pinky-ne.com) 플랫폼 바로가기")
 
         # 사이드바 메뉴 (직관적이고 단순한 4대 핵심 탭)
         self.menu_buttons: dict[str, ctk.CTkButton] = {}
         self.menu_items = [
-            ("today", "🌟 오늘의 일과 & 급식"),
-            ("classroom_tools", "✏️ 수업 도구 & 바로가기"),
-            ("neis_workspace", "📝 나이스 업무 & 시간표"),
-            ("pc_settings", "⚙️ PC 관리 & 설정")
+            ("today", "오늘의 일과 & 급식", "🌟"),
+            ("classroom_tools", "수업 도구 & 바로가기", "✏️"),
+            ("neis_workspace", "나이스 업무 & 시간표", "📝"),
+            ("pc_settings", "PC 관리 & 설정", "⚙️")
         ]
 
         self.sidebar_scroll = ctk.CTkFrame(self.sidebar, fg_color="transparent")
-        self.sidebar_scroll.pack(fill="both", expand=True, padx=8, pady=10)
+        self.sidebar_scroll.pack(fill="both", expand=True, padx=6, pady=10)
 
-        for key, label in self.menu_items:
+        for key, name, ico in self.menu_items:
             btn = ctk.CTkButton(
                 self.sidebar_scroll,
-                text=label,
+                text=f"{ico} {name}",
                 font=get_font(13, "bold"),
                 height=42,
                 corner_radius=10,
@@ -689,20 +706,21 @@ class App(ctk.CTk):
             )
             btn.pack(fill="x", pady=4, padx=2)
             self.menu_buttons[key] = btn
+            attach_tooltip(btn, name)
 
         # 사이드바 하단 테마 선택기 (🌾 베이지 | 🌙 다크 | ☀️ 라이트)
-        theme_selector_box = ctk.CTkFrame(self.sidebar, fg_color="transparent")
-        theme_selector_box.pack(fill="x", padx=10, pady=(0, 14))
+        self.theme_selector_box = ctk.CTkFrame(self.sidebar, fg_color="transparent")
+        self.theme_selector_box.pack(fill="x", padx=10, pady=(0, 14))
 
         ctk.CTkLabel(
-            theme_selector_box,
+            self.theme_selector_box,
             text="🎨 테마 선택:",
             font=get_font(10, "bold"),
             text_color=palette["text_sub"]
         ).pack(anchor="w", padx=2, pady=(0, 4))
 
         self.theme_seg_btn = ctk.CTkSegmentedButton(
-            theme_selector_box,
+            self.theme_selector_box,
             values=["🌾 베이지", "🌙 다크", "☀️ 라이트"],
             font=get_font(10, "bold"),
             height=26,
@@ -714,7 +732,7 @@ class App(ctk.CTk):
         self.theme_seg_btn.pack(fill="x")
 
         # 사이드바 상시 투명도 조절 바
-        alpha_box = ctk.CTkFrame(theme_selector_box, fg_color="transparent")
+        alpha_box = ctk.CTkFrame(self.theme_selector_box, fg_color="transparent")
         alpha_box.pack(fill="x", pady=(8, 0))
 
         ab_top = ctk.CTkFrame(alpha_box, fg_color="transparent")
@@ -764,6 +782,40 @@ class App(ctk.CTk):
 
         # 기본 뷰: 오늘의 일과 & 급식
         self._switch_view("today")
+
+    def _toggle_sidebar(self):
+        self.sidebar_collapsed = not self.sidebar_collapsed
+        palette = theme_manager.get_theme()
+
+        if self.sidebar_collapsed:
+            # 사이드바 축소 (너비 64px, 아이콘 모드)
+            self.sidebar.configure(width=64)
+            self.sidebar_toggle_btn.configure(text="▶")
+            self.logo_title_lbl.pack_forget()
+            self.logo_sub_lbl.pack_forget()
+
+            for key, name, ico in self.menu_items:
+                btn = self.menu_buttons[key]
+                btn.configure(text=ico, anchor="center", font=get_font(15))
+                attach_tooltip(btn, name)
+
+            self.theme_selector_box.pack_forget()
+        else:
+            # 사이드바 확장 (너비 215px, 텍스트 모드)
+            self.sidebar.configure(width=215)
+            self.sidebar_toggle_btn.configure(text="◀")
+            self.logo_title_lbl.pack(side="left")
+            self.logo_sub_lbl.pack(anchor="w", padx=(30, 0), pady=(1, 0))
+
+            for key, name, ico in self.menu_items:
+                btn = self.menu_buttons[key]
+                btn.configure(text=f"{ico} {name}", anchor="w", font=get_font(13, "bold"))
+                attach_tooltip(btn, name)
+
+            self.theme_selector_box.pack(fill="x", padx=10, pady=(0, 14))
+
+        # 현재 뷰 버튼 상태 동기화
+        self._switch_view(self.current_view_key)
 
     def _on_sidebar_theme_selected(self, choice: str):
         if "베이지" in choice:
@@ -3399,11 +3451,11 @@ class App(ctk.CTk):
         )
         self.cleaner_status_lbl.pack(fill="x", padx=12, pady=(4, 10))
 
-        # 7. 🚀 놀티쳐 데스크 최신 버전 & 1초 스마트 자동 업데이트 카드
+        # 7. 🚀 놀티쳐 최신 버전 & 1초 스마트 자동 업데이트 카드
         updater_card = ctk.CTkFrame(scroll, corner_radius=10, fg_color=palette["card_inner_bg"], border_width=1, border_color=palette["card_border"])
         updater_card.pack(fill="x", pady=(0, 8))
 
-        ctk.CTkLabel(updater_card, text="🚀 7. 놀티쳐 데스크 최신 버전 & 1초 스마트 자동 업데이트", font=get_font(13, "bold"), text_color=palette["accent_blue"]).pack(anchor="w", padx=12, pady=(10, 4))
+        ctk.CTkLabel(updater_card, text="🚀 7. 놀티쳐 최신 버전 & 1초 스마트 자동 업데이트", font=get_font(13, "bold"), text_color=palette["accent_blue"]).pack(anchor="w", padx=12, pady=(10, 4))
 
         up_row = ctk.CTkFrame(updater_card, fg_color="transparent")
         up_row.pack(fill="x", padx=12, pady=4)
@@ -3427,7 +3479,7 @@ class App(ctk.CTk):
             hover_color=palette["accent_blue"],
             text_color=palette["text_main"],
             height=30,
-            command=lambda: webbrowser.open("https://github.com/LUCKYBRIDGE/knol-teacher-desk")
+            command=lambda: webbrowser.open("https://github.com/LUCKYBRIDGE/knolteacher")
         ).pack(side="left", padx=(0, 6))
 
         self.update_check_btn = ctk.CTkButton(
@@ -3436,6 +3488,7 @@ class App(ctk.CTk):
             font=get_font(11, "bold"),
             fg_color=palette["accent_blue"],
             hover_color="#0369a1",
+            text_color="#ffffff",
             height=30,
             command=self._check_and_run_github_update
         )
@@ -3444,17 +3497,17 @@ class App(ctk.CTk):
         up_info = "• GitHub(LUCKYBRIDGE/knol-teacher-desk) 릴리스와 연동되어 웹 브라우저 다운로드 없이 앱 내부에서 1초 만에 최신 버전으로 직접 덮어쓰기 업데이트됩니다.\n• 새 버전을 받더라도 선생님께서 설정하신 모든 시간표, 학교, 바로가기, 테마는 영구 보존됩니다."
         ctk.CTkLabel(updater_card, text=up_info, font=get_font(10), text_color=palette["text_sub"], justify="left", anchor="w").pack(fill="x", padx=12, pady=(2, 10))
 
-        # 8. ℹ️ 프로그램 정보 및 저작권 카드
+        # 8. ℹ️ 프로그램 정보 & 저작권
         info_card = ctk.CTkFrame(scroll, corner_radius=10, fg_color=palette["card_inner_bg"], border_width=1, border_color=palette["card_border"])
         info_card.pack(fill="x", pady=(0, 6))
 
         ctk.CTkLabel(info_card, text="ℹ️ 8. 프로그램 정보 & 저작권", font=get_font(13, "bold"), text_color=palette["text_main"]).pack(anchor="w", padx=12, pady=(10, 4))
         info_str = (
-            f"• 프로그램명: 놀티쳐 데스크 (KnolTeacher Desk v{APP_VERSION})\n"
+            f"• 프로그램명: 놀티쳐 (KnolTeacher v{APP_VERSION})\n"
             "• 개발 및 저작권: Copyright 2026. 교사 서정완. All rights reserved.\n"
             "• 브랜드: Knol (Knowledge & Play - 즐거운 배움과 스마트 교실 생태계)\n"
             "• 기능: 4세대 나이스 학생번호 기준 안전 자동입력, 전국 17개 교육청 전역 학교 시간표 연동,\n"
-            "        화면 전체 판서 & 플로팅 퀵바, 올웨이즈온 미니바/급식 위젯, 수업 알람, PC 전원 예약."
+            "        놀티쳐 보드(교실 TV), 판서 & 플로팅 퀵바, 올웨이즈온 미니바/급식 위젯, 수업 알람, PC 전원 예약."
         )
         ctk.CTkLabel(info_card, text=info_str, font=get_font(11), text_color="#cbd5e1", justify="left", anchor="w").pack(fill="x", padx=12, pady=(2, 10))
 
@@ -3525,7 +3578,7 @@ class App(ctk.CTk):
                 if has_update and download_url:
                     self.updater_status_lbl.configure(text=f"🎉 새 버전 발견: v{latest_ver}", text_color="#f59e0b")
                     ans = messagebox.askyesno(
-                        "놀티쳐 데스크 새 버전 업데이트",
+                        "놀티쳐 새 버전 업데이트",
                         f"새로운 버전(v{latest_ver})이 출시되었습니다!\n\n"
                         f"[업데이트 주요 내용]\n{notes[:200]}\n\n"
                         f"지금 바로 1초 자동 업데이트를 적용하시겠습니까?\n"
@@ -4026,8 +4079,8 @@ class App(ctk.CTk):
         try:
             if hasattr(self, "tray") and self.tray and self.tray.tray_icon:
                 self.tray.tray_icon.notify(
-                    "놀티쳐 데스크가 트레이에 상주 중입니다.\n트레이 아이콘을 더블클릭하거나 우클릭하여 기능을 사용하세요.",
-                    "놀티쳐 데스크 — 백그라운드 실행 중"
+                    "놀티쳐가 트레이에 상주 중입니다.\n트레이 아이콘을 더블클릭하거나 우클릭하여 기능을 사용하세요.",
+                    "놀티쳐 — 백그라운드 실행 중"
                 )
         except Exception:
             pass
