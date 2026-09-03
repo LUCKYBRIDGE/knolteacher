@@ -265,36 +265,45 @@ class VisualizerWindow(ctk.CTkToplevel):
 
     # ─── 카메라 탐색 & 안전 오픈 엔진 (Resource Busy 방지) ─────────────────────
     def _detect_and_start_camera(self):
+        self._draw_placeholder("연결된 실물화상기 및 웹캠을 검색하는 중...")
+        
         def _bg_scan():
             pnp_names = get_pnp_camera_names()
             cams = []
 
-            # 0~5번 인덱스 탐색
-            for i in range(6):
+            # 0~9번 인덱스 (총 10개 포트) 정밀 스캔
+            for i in range(10):
+                opened = False
                 cap = cv2.VideoCapture(i, cv2.CAP_DSHOW)
-                opened = cap.isOpened()
-                if not opened:
+                if cap.isOpened():
+                    opened = True
+                else:
                     cap.release()
-                    cap = cv2.VideoCapture(i)
-                    opened = cap.isOpened()
+                    cap = cv2.VideoCapture(i, cv2.CAP_MSMF)
+                    if cap.isOpened():
+                        opened = True
+                    else:
+                        cap.release()
+                        cap = cv2.VideoCapture(i)
+                        if cap.isOpened():
+                            opened = True
 
                 if opened:
-                    # 첫 프레임 읽기 시도 (센서 웜업 지원)
+                    # 센서 웜업 및 유효 프레임 체크
                     ok = False
                     for _ in range(3):
                         ret, _ = cap.read()
                         if ret:
                             ok = True
                             break
-                        time.sleep(0.05)
+                        time.sleep(0.04)
 
                     cap.release()
 
-                    if ok or opened:
-                        friendly = pnp_names[i] if i < len(pnp_names) else f"카메라 {i}"
-                        cams.append((i, f"{friendly} (인덱스 {i})"))
+                    friendly = pnp_names[i] if i < len(pnp_names) else f"카메라 장치 {i}"
+                    cams.append((i, f"[{i}] {friendly}"))
 
-                time.sleep(0.08)  # 드라이버 릴리즈 안전 대기
+                time.sleep(0.06)  # 드라이버 릴리즈 안전 대기
 
             def _apply():
                 if not self.winfo_exists():
@@ -305,11 +314,11 @@ class VisualizerWindow(ctk.CTkToplevel):
                     self.cam_combo.set(val_list[0])
                     self.current_cam_index = cams[0][0]
                 else:
-                    self.cam_combo.configure(values=["기본 카메라 (0)"])
-                    self.cam_combo.set("기본 카메라 (0)")
+                    self.cam_combo.configure(values=["[0] 기본 카메라"])
+                    self.cam_combo.set("[0] 기본 카메라")
                     self.current_cam_index = 0
 
-                # 150ms 하드웨어 쿨다운 후 안전 오픈
+                # 150ms 안전 대기 후 첫 카메라 자동 실행
                 self.after(150, lambda: self._start_camera(self.current_cam_index))
 
             self.after(0, _apply)
@@ -318,14 +327,14 @@ class VisualizerWindow(ctk.CTkToplevel):
 
     def _on_cam_changed(self, val: str):
         try:
-            # "BESTCAM S3 (인덱스 0)" 등에서 인덱스 숫자 추출
             import re
-            m = re.search(r'인덱스\s*(\d+)', val)
+            m = re.search(r'\[(\d+)\]', val) or re.search(r'(\d+)', val)
             if m:
                 idx = int(m.group(1))
             else:
                 idx = 0
-            self._start_camera(idx)
+            self._draw_placeholder(f"[{val}] 카메라로 전환 중입니다...")
+            self.after(100, lambda: self._start_camera(idx))
         except Exception:
             pass
 

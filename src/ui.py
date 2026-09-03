@@ -35,6 +35,7 @@ from src.privacy_dialog import open_privacy_dialog
 from src.schedule_dialog import open_schedule_dialog
 from src.config_utils import get_config_dir
 from src.icon_renderer import get_icon
+from src.class_countdown_popup import ClassCountdownPopup
 from src.neis_auto_input import (
     ExcelNeisParser, DataValidator, ValidationResult,
     NeisPageType, PAGE_INFO, NeisScriptGenerator, cdp_bridge
@@ -1593,6 +1594,14 @@ class App(ctk.CTk):
         if dialog.result:
             self.manager.schedule_action("alarm", seconds_diff, memo=memo, sound_id=sound_id)
             self._play_sound("success")
+            
+            # 사전 카운트다운 팝업 연동 (알람 울리기 1분 전 = 60초 전)
+            cd_sec = 60
+            if seconds_diff > cd_sec:
+                pop_delay_ms = (seconds_diff - cd_sec) * 1000
+                self.after(pop_delay_ms, lambda: ClassCountdownPopup.show(item['name'], item['subject'], lead_min, total_seconds=cd_sec, parent=self))
+            elif seconds_diff > 0:
+                ClassCountdownPopup.show(item['name'], item['subject'], lead_min, total_seconds=seconds_diff, parent=self)
 
     def _batch_schedule_today_classes(self):
         lead_min = timetable_manager.settings.get("alarm_lead_minutes", 5)
@@ -1630,6 +1639,14 @@ class App(ctk.CTk):
         if dialog.result:
             self.manager.schedule_action("alarm", target_sec, memo=memo, sound_id=sound_id)
             self._play_sound("success")
+
+            # 사전 카운트다운 팝업 연동 (알람 울리기 1분 전 = 60초 전)
+            cd_sec = 60
+            if target_sec > cd_sec:
+                pop_delay_ms = (target_sec - cd_sec) * 1000
+                self.after(pop_delay_ms, lambda: ClassCountdownPopup.show(target_item['name'], target_item['subject'], lead_min, total_seconds=cd_sec, parent=self))
+            elif target_sec > 0:
+                ClassCountdownPopup.show(target_item['name'], target_item['subject'], lead_min, total_seconds=target_sec, parent=self)
 
     # =========================================================================
     # 뷰 2: ✏️ 수업 도구 & 바로가기 (화면 판서, 플로팅 바, 타이머, 뽑기, 사이트 모음)
