@@ -608,6 +608,9 @@ class App(ctk.CTk):
         except Exception:
             pass
 
+        # 시간표 변경 실시간 감지 리스너 등록
+        timetable_manager.add_listener(self._on_timetable_changed)
+
     # =========================================================================
     # Apple macOS 스타일 사이드바 & 다이내믹 아일랜드 상단 바
     # =========================================================================
@@ -857,6 +860,32 @@ class App(ctk.CTk):
             th_display_map = {"Beige": "🌾 베이지", "Dark": "🌙 다크", "Light": "☀️ 라이트"}
             self.theme_seg_btn.set(th_display_map.get(theme_key, "🌾 베이지"))
 
+    def _on_timetable_changed(self):
+        """시간표 실시간 변경 감지 -> 메인 창의 오늘 일과 뷰 및 시간표 뷰 자동 갱신"""
+        if self.winfo_exists():
+            self.after(0, self._reload_timetable_views)
+
+    def _reload_timetable_views(self):
+        try:
+            palette = theme_manager.get_theme()
+            if "today" in self.views and self.views["today"].winfo_exists():
+                self.views["today"].destroy()
+                f_today = ctk.CTkFrame(self.views_container, fg_color=palette["card_bg"], corner_radius=14, border_width=1, border_color=palette["card_border"])
+                self._build_today_tab(f_today)
+                self.views["today"] = f_today
+                if self.current_view_key == "today":
+                    f_today.pack(fill="both", expand=True)
+
+            if "neis_workspace" in self.views and self.views["neis_workspace"].winfo_exists():
+                self.views["neis_workspace"].destroy()
+                f_neis = ctk.CTkFrame(self.views_container, fg_color=palette["card_bg"], corner_radius=14, border_width=1, border_color=palette["card_border"])
+                self._build_neis_workspace_tab(f_neis)
+                self.views["neis_workspace"] = f_neis
+                if self.current_view_key == "neis_workspace":
+                    f_neis.pack(fill="both", expand=True)
+        except Exception as e:
+            print(f"[UI] Error reloading timetable views: {e}")
+
     def _switch_view(self, key: str):
         self.current_view_key = key
         palette = theme_manager.get_theme()
@@ -1054,6 +1083,18 @@ class App(ctk.CTk):
             command=self._batch_schedule_today_classes
         ).pack(side="right")
 
+        from src.timetable_quick_editor import open_timetable_quick_editor
+        ctk.CTkButton(
+            lc_top,
+            text="✏️ 시간표 수정",
+            font=get_font(10, "bold"),
+            fg_color=palette["accent_blue"],
+            hover_color="#0369a1",
+            text_color="#ffffff",
+            height=26,
+            command=lambda: open_timetable_quick_editor(self)
+        ).pack(side="right", padx=(0, 6))
+
         self.today_items_container = ctk.CTkFrame(left_card, fg_color="transparent")
         self.today_items_container.pack(fill="both", expand=True, padx=8, pady=(0, 8))
 
@@ -1235,6 +1276,7 @@ class App(ctk.CTk):
             ctk.CTkLabel(c, text=f"🇰🇷 오늘은 [{hol_name}] 공휴일입니다.\n오늘 설정된 정규 수업은 없습니다.", font=get_font(13, "bold"), text_color=palette["accent_orange"]).pack(pady=20)
             return
 
+        lesson_counter = 0
         for idx, it in enumerate(items):
             is_lunch = it["is_lunch"]
             start_s, end_s = it["start"], it["end"]
@@ -1299,6 +1341,16 @@ class App(ctk.CTk):
                 ctk.CTkLabel(c_frame, text=f"[{tag}]", font=get_font(9, "bold"), fg_color=tag_bg, text_color="#ffffff", corner_radius=4, width=36, height=18).pack(side="left", padx=3)
 
             if not is_lunch:
+                c_frame.configure(cursor="hand2")
+                cur_l = lesson_counter
+                def _click_edit(e, p_idx=cur_l):
+                    open_timetable_quick_editor(self, focus_period=p_idx)
+                c_frame.bind("<Button-1>", _click_edit)
+                subj_lbl.bind("<Button-1>", _click_edit)
+                badge.bind("<Button-1>", _click_edit)
+                attach_tooltip(c_frame, f"클릭하여 {it['name']}({it['subject']}) 과목 즉시 수정")
+                lesson_counter += 1
+
                 ctk.CTkButton(
                     c_frame,
                     text=f"🔔 {lead_min}분전",

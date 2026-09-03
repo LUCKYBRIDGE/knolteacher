@@ -105,6 +105,9 @@ class StudentDisplayWindow(ctk.CTkToplevel):
         self._build_main_ui()
         self._start_clock_loop()
 
+        from src.timetable_manager import timetable_manager
+        timetable_manager.add_listener(self._on_timetable_changed)
+
         # 기본으로 타이머와 주사위를 띄워 사진 3과 동일한 환상적인 첫 화면 제공
         self.after(200, self._open_default_tools)
 
@@ -1632,8 +1635,146 @@ class StudentDisplayWindow(ctk.CTkToplevel):
         if self.is_fullscreen:
             self._toggle_fullscreen()
 
+    # ══════════════════════════════════════════════════════════════════════════
+    # 4. 오늘의 수업 시간표 모듈 (학생 화면 클릭 즉시 과목 수정 & 실시간 연동)
+    # ══════════════════════════════════════════════════════════════════════════
+    def _on_timetable_changed(self):
+        """시간표가 어디서든 변경되었을 때 놀티쳐 보드 실시간 자동 갱신"""
+        if "timetable" in self.active_modules:
+            self.after(0, self._render_timetable_content)
+
+    def _show_timetable(self):
+        """놀티쳐 보드 내 오늘의 수업 시간표 모듈 창"""
+        self._create_white_module_window("timetable", "오늘의 수업 시간표", "📋", 440, 490)
+        self._render_timetable_content()
+
+    def _render_timetable_content(self):
+        if "timetable" not in self.active_modules:
+            return
+        body = self.active_modules["timetable"]["body"]
+        for w in body.winfo_children():
+            w.destroy()
+
+        from src.timetable_manager import timetable_manager, DAYS_KO
+        from src.timetable_quick_editor import open_timetable_quick_editor
+
+        today = datetime.date.today()
+        weekday_str = DAYS_KO[today.weekday()]
+        now_str = datetime.datetime.now().strftime("%H:%M")
+
+        # 1. 상단 바 (오늘 날짜 + ✏️ 시간표 빠른 수정 버튼)
+        top_bar = ctk.CTkFrame(body, fg_color="#f8fafc", corner_radius=10, height=44, border_width=1, border_color="#e2e8f0")
+        top_bar.pack(fill="x", padx=8, pady=(4, 6))
+        top_bar.pack_propagate(False)
+
+        ctk.CTkLabel(
+            top_bar, text=f"📋 {today.month}월 {today.day}일 ({weekday_str}) 수업 시간표",
+            font=get_font(11, "bold"), text_color="#0f172a"
+        ).pack(side="left", padx=10)
+
+        edit_btn = ctk.CTkButton(
+            top_bar, text="✏️ 시간표 수정", width=95, height=28,
+            font=get_font(10, "bold"), fg_color="#0284c7", hover_color="#0369a1",
+            text_color="#ffffff", corner_radius=6,
+            command=lambda: open_timetable_quick_editor(self)
+        )
+        edit_btn.pack(side="right", padx=8)
+        attach_tooltip(edit_btn, "오늘의 시간표 과목을 원클릭으로 빠르게 수정합니다")
+
+        # 2. 본체 시간표 카드 리스트
+        scroll = ctk.CTkScrollableFrame(body, fg_color="transparent")
+        scroll.pack(fill="both", expand=True, padx=6, pady=2)
+
+        is_hol, hol_name, items = timetable_manager.get_today_schedule_items()
+
+        if is_hol:
+            ctk.CTkLabel(
+                scroll, text=f"🇰🇷 오늘은 [{hol_name}] 공휴일입니다.\n(정규 수업 일정이 없습니다)",
+                font=get_font(12, "bold"), text_color="#ea580c"
+            ).pack(pady=40)
+        else:
+            lesson_idx = 0
+            for it in items:
+                is_lunch = it["is_lunch"]
+                is_cur = (it["start"] <= now_str <= it["end"])
+
+                card = ctk.CTkFrame(
+                    scroll,
+                    fg_color="#ecfdf5" if is_cur else ("#fff7ed" if is_lunch else "#ffffff"),
+                    corner_radius=8,
+                    border_width=2 if is_cur else 1,
+                    border_color="#10b981" if is_cur else ("#fed7aa" if is_lunch else "#e2e8f0"),
+                    cursor="hand2" if not is_lunch else "arrow"
+                )
+                card.pack(fill="x", pady=3)
+
+                # 교시 뱃지
+                b_col = "#10b981" if is_cur else ("#ea580c" if is_lunch else "#0284c7")
+                badge = ctk.CTkFrame(card, fg_color=b_col, width=54, height=36, corner_radius=6)
+                badge.pack(side="left", padx=8, pady=6)
+                badge.pack_propagate(False)
+
+                ctk.CTkLabel(badge, text=it["name"], font=get_font(10, "bold"), text_color="#ffffff").pack(pady=(2, 0))
+                ctk.CTkLabel(badge, text=f"{it['start']}", font=get_font(7), text_color="#e0f2fe").pack()
+
+                # 과목명 & 시간
+                c_box = ctk.CTkFrame(card, fg_color="transparent")
+                c_box.pack(side="left", fill="x", expand=True, padx=4)
+
+                subj_lbl = ctk.CTkLabel(
+                    c_box, text=it["subject"],
+                    font=get_font(13, "bold"),
+                    text_color="#065f46" if is_cur else ("#9a3412" if is_lunch else "#0f172a"),
+                    anchor="w"
+                )
+                subj_lbl.pack(anchor="w")
+
+                time_lbl = ctk.CTkLabel(
+                    c_box, text=f"{it['start']} ~ {it['end']}",
+                    font=get_font(9), text_color="#64748b", anchor="w"
+                )
+                time_lbl.pack(anchor="w")
+
+                if not is_lunch:
+                    # 태그
+                    tag = it.get("tag", "담임")
+                    tag_col = "#0284c7" if tag == "담임" else ("#7c3aed" if tag == "전담" else "#059669")
+                    ctk.CTkLabel(
+                        card, text=tag, font=get_font(9, "bold"), width=34, height=22,
+                        fg_color="#f1f5f9", text_color=tag_col, corner_radius=4
+                    ).pack(side="right", padx=6)
+
+                    # 수정 유도 펜 아이콘
+                    pen_lbl = ctk.CTkLabel(card, text="✏️", font=get_font(11), text_color="#94a3b8")
+                    pen_lbl.pack(side="right", padx=2)
+
+                    # 카드 클릭 시 해당 교시 바로 편집 팝업 열기
+                    cur_lesson = lesson_idx
+                    def _open_edit(e, l_idx=cur_lesson):
+                        open_timetable_quick_editor(self, focus_period=l_idx)
+
+                    card.bind("<Button-1>", _open_edit)
+                    badge.bind("<Button-1>", _open_edit)
+                    subj_lbl.bind("<Button-1>", _open_edit)
+                    time_lbl.bind("<Button-1>", _open_edit)
+                    attach_tooltip(card, f"클릭하여 {it['name']}({it['subject']}) 과목을 즉시 수정합니다")
+                    lesson_idx += 1
+
+        # 3. 하단 안내 바
+        guide_box = ctk.CTkFrame(body, fg_color="transparent", height=24)
+        guide_box.pack(fill="x", side="bottom", padx=8, pady=(0, 4))
+        ctk.CTkLabel(
+            guide_box, text="💡 교시 카드를 클릭하면 교실 화면에서 바로 과목을 변경할 수 있습니다.",
+            font=get_font(9), text_color="#64748b"
+        ).pack(side="left")
+
     def close(self):
         self._save_config()
+        try:
+            from src.timetable_manager import timetable_manager
+            timetable_manager.remove_listener(self._on_timetable_changed)
+        except Exception:
+            pass
         try:
             self.destroy()
         except Exception:

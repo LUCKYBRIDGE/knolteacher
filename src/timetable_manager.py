@@ -26,6 +26,7 @@ class TimetableManager:
         self.max_periods: int = 6  # 기본 6교시 (7교시 추가 지원)
         self.weekly_timetable = self._get_default_weekly_timetable()
         self.periods = self._get_default_periods()
+        self._listeners: list[Any] = []
         self.settings = {
             "alarm_lead_minutes": 5,
             "alarm_sound_id": "chime",
@@ -37,6 +38,28 @@ class TimetableManager:
         }
 
         self.load_all()
+
+    def add_listener(self, callback):
+        """시간표/일과 변경 시 실시간 통보받을 리스너 등록"""
+        if callback not in self._listeners:
+            self._listeners.append(callback)
+
+    def remove_listener(self, callback):
+        """리스너 해제"""
+        if callback in self._listeners:
+            self._listeners.remove(callback)
+
+    def notify_listeners(self):
+        """등록된 모든 UI(놀티쳐 보드, 위젯, 메인 창)에 실시간 변경 알림"""
+        dead = []
+        for cb in self._listeners:
+            try:
+                cb()
+            except Exception:
+                dead.append(cb)
+        for d in dead:
+            if d in self._listeners:
+                self._listeners.remove(d)
 
     def _get_default_periods(self) -> list[dict[str, Any]]:
         """사용자 요청 표준 일과표 기본값 (9:10 시작, 점심 12:20~13:20)"""
@@ -124,6 +147,7 @@ class TimetableManager:
         try:
             with open(self.timetable_file, "w", encoding="utf-8") as f:
                 json.dump(self.weekly_timetable, f, ensure_ascii=False, indent=2)
+            self.notify_listeners()
             return True
         except Exception as e:
             print(f"Error saving weekly timetable: {e}")
@@ -134,6 +158,7 @@ class TimetableManager:
         try:
             with open(self.periods_file, "w", encoding="utf-8") as f:
                 json.dump(self.periods, f, ensure_ascii=False, indent=2)
+            self.notify_listeners()
             return True
         except Exception as e:
             print(f"Error saving periods: {e}")
@@ -147,10 +172,34 @@ class TimetableManager:
         try:
             with open(self.settings_file, "w", encoding="utf-8") as f:
                 json.dump(self.settings, f, ensure_ascii=False, indent=2)
+            self.notify_listeners()
             return True
         except Exception as e:
             print(f"Error saving timetable settings: {e}")
             return False
+
+    def update_period_subject(self, day_key: str, lesson_idx: int, new_subject: str, new_tag: str = "담임") -> bool:
+        """특정 요일의 교시 과목 즉시 변경 및 전체 연동"""
+        if day_key not in self.weekly_timetable:
+            self.weekly_timetable[day_key] = [{"subject": "", "tag": "담임"} for _ in range(7)]
+        
+        while len(self.weekly_timetable[day_key]) <= lesson_idx:
+            self.weekly_timetable[day_key].append({"subject": "", "tag": "담임"})
+
+        self.weekly_timetable[day_key][lesson_idx] = {
+            "subject": new_subject.strip(),
+            "tag": new_tag
+        }
+        return self.save_weekly_timetable(self.weekly_timetable)
+
+    def update_today_period(self, lesson_idx: int, new_subject: str, new_tag: str = "담임") -> bool:
+        """오늘 요일의 교시 과목 즉시 변경 및 전체 연동"""
+        d = datetime.date.today()
+        w = d.weekday()
+        if 0 <= w < len(DAY_KEYS):
+            day_key = DAY_KEYS[w]
+            return self.update_period_subject(day_key, lesson_idx, new_subject, new_tag)
+        return False
 
     def reset_to_defaults(self):
         """기본값으로 전면 초기화"""

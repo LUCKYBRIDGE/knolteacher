@@ -116,6 +116,9 @@ class MiniTimetableWidget(ctk.CTkToplevel):
         self._build_ui()
         self._send_to_desktop_bottom()
 
+        # 시간표 변경 실시간 감지 리스너 등록
+        timetable_manager.add_listener(self._on_timetable_changed)
+
         # 주기적으로 바탕화면 최하단 레이어 유지 (다른 앱들이 열리면 그 뒤로 자연스럽게 배치)
         self._keep_bottom_timer()
 
@@ -478,10 +481,10 @@ class MiniTimetableWidget(ctk.CTkToplevel):
             day_keys = ["mon", "tue", "wed", "thu", "fri"]
             if 0 <= weekday_idx < len(day_keys):
                 d_key = day_keys[weekday_idx]
-                sched = timetable_manager.timetables.get(d_key, {})
+                sched = timetable_manager.weekly_timetable.get(d_key, [])
                 parts = []
-                for p in range(1, 7):
-                    subj = sched.get(str(p), "")
+                for p, item in enumerate(sched[:6], 1):
+                    subj = item.get("subject", "") if isinstance(item, dict) else str(item)
                     if subj:
                         parts.append(f"{p}.{subj}")
                 return " ".join(parts[:3]) + ("..." if len(parts) > 3 else "")
@@ -548,8 +551,26 @@ class MiniTimetableWidget(ctk.CTkToplevel):
         split.grid_rowconfigure(0, weight=1)
 
         # 좌측: 오늘 시간표
-        left_box = ctk.CTkScrollableFrame(split, fg_color="#132e42", corner_radius=8, label_text="📋 오늘의 수업 시간표")
+        left_box = ctk.CTkScrollableFrame(split, fg_color="#132e42", corner_radius=8)
         left_box.grid(row=0, column=0, sticky="nsew", padx=2, pady=2)
+
+        hdr_row = ctk.CTkFrame(left_box, fg_color="transparent")
+        hdr_row.pack(fill="x", pady=(2, 6))
+
+        ctk.CTkLabel(
+            hdr_row, text="📋 오늘의 수업 시간표",
+            font=get_font(11, "bold"), text_color="#38bdf8"
+        ).pack(side="left", padx=4)
+
+        from src.timetable_quick_editor import open_timetable_quick_editor
+        edit_btn = ctk.CTkButton(
+            hdr_row, text="✏️ 수정", width=52, height=24,
+            font=get_font(9, "bold"), fg_color="#0284c7", hover_color="#0369a1",
+            text_color="#ffffff", corner_radius=4,
+            command=lambda: open_timetable_quick_editor(self)
+        )
+        edit_btn.pack(side="right", padx=4)
+        attach_tooltip(edit_btn, "오늘의 시간표 과목을 원클릭으로 수정합니다")
 
         is_hol, hol_name, items = timetable_manager.get_today_schedule_items()
         now_str = datetime.datetime.now().strftime("%H:%M")
@@ -557,17 +578,29 @@ class MiniTimetableWidget(ctk.CTkToplevel):
         if is_hol:
             ctk.CTkLabel(left_box, text=f"🇰🇷 [{hol_name}] 공휴일", font=get_font(12, "bold"), text_color="#fdba74").pack(pady=30)
         else:
+            lesson_counter = 0
             for it in items:
                 is_lunch = it["is_lunch"]
                 is_cur = (it["start"] <= now_str <= it["end"])
                 card = ctk.CTkFrame(
                     left_box, fg_color="#064e3b" if is_cur else ("#3b1d11" if is_lunch else "#1b3c54"),
-                    corner_radius=4, border_width=1, border_color="#10b981" if is_cur else "#255375"
+                    corner_radius=4, border_width=1, border_color="#10b981" if is_cur else "#255375",
+                    cursor="hand2" if not is_lunch else "arrow"
                 )
                 card.pack(fill="x", pady=2)
                 ctk.CTkLabel(card, text=it["name"], font=get_font(9, "bold"), width=38, fg_color="#0284c7" if not is_lunch else "#ea580c", text_color="#fff", corner_radius=3).pack(side="left", padx=4, pady=3)
                 ctk.CTkLabel(card, text=f"{it['start']}~{it['end']}", font=get_font(8), text_color="#94a3b8").pack(side="left", padx=4)
                 ctk.CTkLabel(card, text=it["subject"], font=get_font(10, "bold"), text_color="#6ee7b7" if is_cur else "#ffffff").pack(side="left", fill="x", expand=True, padx=4)
+                if not is_lunch:
+                    ctk.CTkLabel(card, text="✏️", font=get_font(9), text_color="#64748b").pack(side="right", padx=4)
+                    cur_idx = lesson_counter
+                    def _edit_it(e, idx=cur_idx):
+                        open_timetable_quick_editor(self, focus_period=idx)
+                    card.bind("<Button-1>", _edit_it)
+                    for ch in card.winfo_children():
+                        ch.bind("<Button-1>", _edit_it)
+                    attach_tooltip(card, f"클릭하여 {it['name']}({it['subject']}) 과목 즉시 수정")
+                    lesson_counter += 1
 
         # 우측: 오늘 급식 식단
         right_box = ctk.CTkScrollableFrame(split, fg_color="#132e42", corner_radius=8, label_text="🍱 오늘의 급식 식단")
@@ -777,7 +810,22 @@ class MiniTimetableWidget(ctk.CTkToplevel):
         self.geometry(f"{nw}x{nh}")
         self._save_config()
 
+    def _on_timetable_changed(self):
+        """시간표 실시간 변경 감지 -> 위젯 화면 즉각 갱신"""
+        if self.winfo_exists():
+            self.after(0, self._refresh_current_view)
+
+    def _refresh_current_view(self):
+        if self.view_mode == "today":
+            self._render_today_view()
+        elif self.view_mode == "month":
+            self._render_month_calendar()
+
     def close(self):
+        try:
+            timetable_manager.remove_listener(self._on_timetable_changed)
+        except Exception:
+            pass
         self._save_config()
         try:
             self.destroy()
