@@ -2171,33 +2171,109 @@ class App(ctk.CTk):
         self.hub_power_seg.set("💻 자동 종료")
         self.hub_power_seg.pack(fill="x", padx=14, pady=(2, 8))
 
-        # 특정 시각 직접 입력
-        t_row = ctk.CTkFrame(power_card, fg_color="transparent")
-        t_row.pack(fill="x", padx=14, pady=2)
-        ctk.CTkLabel(t_row, text="희망 시각(HH:MM):", font=get_font(11, "bold"), text_color=palette["text_sub"]).pack(side="left", padx=(0, 6))
+        # 🕒 1. 오전/오후 특정 시각 설정기 (사용자 요청 100% 반영)
+        clock_box = ctk.CTkFrame(power_card, fg_color=palette["card_bg"], corner_radius=8, border_width=1, border_color=palette["card_border"])
+        clock_box.pack(fill="x", padx=14, pady=(2, 6))
 
-        self.hub_time_entry = ctk.CTkEntry(t_row, width=80, height=28, font=ctk.CTkFont(family="Consolas", size=12, weight="bold"), justify="center")
+        c_top = ctk.CTkFrame(clock_box, fg_color="transparent")
+        c_top.pack(fill="x", padx=10, pady=(6, 4))
+        ctk.CTkLabel(c_top, text="🕒 오전 / 오후 지정 시각 예약:", font=get_font(10, "bold"), text_color=palette["accent"]).pack(side="left")
+
+        picker_row = ctk.CTkFrame(clock_box, fg_color="transparent")
+        picker_row.pack(fill="x", padx=10, pady=(0, 8))
+
+        # 오전/오후 선택
         now_dt = datetime.datetime.now()
-        def_t = (now_dt + datetime.timedelta(hours=1)).strftime("%H:%M")
-        self.hub_time_entry.insert(0, def_t)
-        self.hub_time_entry.pack(side="left", padx=(0, 6))
+        cur_is_pm = now_dt.hour >= 12
+        cur_12h = now_dt.hour % 12
+        if cur_12h == 0: cur_12h = 12
+        cur_m = (now_dt.minute // 10) * 10
 
+        self.hub_ampm_seg = ctk.CTkSegmentedButton(
+            picker_row,
+            values=["오전", "오후"],
+            font=get_font(10, "bold"),
+            width=80,
+            height=28
+        )
+        self.hub_ampm_seg.set("오후" if cur_is_pm else "오전")
+        self.hub_ampm_seg.pack(side="left", padx=(0, 4))
+
+        # 시 (1~12)
+        self.hub_hour_combo = ctk.CTkComboBox(
+            picker_row,
+            values=[f"{h}시" for h in range(1, 13)],
+            width=68,
+            height=28,
+            font=get_font(10, "bold"),
+            state="readonly"
+        )
+        self.hub_hour_combo.set(f"{cur_12h}시")
+        self.hub_hour_combo.pack(side="left", padx=2)
+
+        # 분 (00~55분)
+        min_vals = [f"{m:02d}분" for m in range(0, 60, 5)]
+        self.hub_min_combo = ctk.CTkComboBox(
+            picker_row,
+            values=min_vals,
+            width=72,
+            height=28,
+            font=get_font(10, "bold"),
+            state="readonly"
+        )
+        self.hub_min_combo.set(f"{cur_m:02d}분")
+        self.hub_min_combo.pack(side="left", padx=2)
+
+        # 예약 등록 버튼
         ctk.CTkButton(
-            t_row, text="지정시각 예약", font=get_font(10, "bold"), height=28, width=80,
-            fg_color="#0284c7", hover_color="#0369a1", text_color="#ffffff", corner_radius=6,
-            command=self._do_hub_schedule_custom_time
-        ).pack(side="left")
+            picker_row,
+            text="시각 예약",
+            font=get_font(10, "bold"),
+            height=28,
+            width=76,
+            fg_color="#0284c7",
+            hover_color="#0369a1",
+            text_color="#ffffff",
+            corner_radius=6,
+            command=self._do_hub_schedule_ampm_time
+        ).pack(side="left", padx=(4, 0))
 
-        # 퀵 프리셋 버튼들
-        ctk.CTkLabel(power_card, text="빠른 시간 예약:", font=get_font(10, "bold"), text_color=palette["text_sub"]).pack(anchor="w", padx=14, pady=(8, 2))
+        # 🕒 2. 학교 주요 시각 바로 예약 칩
+        preset_time_lbl = ctk.CTkLabel(power_card, text="자주 쓰는 시각 바로 예약:", font=get_font(10, "bold"), text_color=palette["text_sub"])
+        preset_time_lbl.pack(anchor="w", padx=14, pady=(4, 2))
+
+        school_chip_row = ctk.CTkFrame(power_card, fg_color="transparent")
+        school_chip_row.pack(fill="x", padx=14, pady=(0, 4))
+
+        school_presets = [
+            ("오후 04:40 (퇴근)", "16:40"),
+            ("오후 05:00 (초과)", "17:00"),
+            ("오후 06:00 (야간)", "18:00"),
+            ("오후 01:20 (5교시)", "13:20"),
+        ]
+        for sp_title, sp_time in school_presets:
+            ctk.CTkButton(
+                school_chip_row,
+                text=sp_title,
+                font=get_font(9, "bold"),
+                height=24,
+                corner_radius=6,
+                fg_color=palette["card_bg"],
+                hover_color=palette["accent"],
+                text_color=palette["text_main"],
+                command=lambda st=sp_time: self._do_hub_schedule_preset(st)
+            ).pack(side="left", fill="x", expand=True, padx=2)
+
+        # 🕒 3. 상대 시간 빠른 예약 (몇 분 뒤, 몇 시간 뒤)
+        ctk.CTkLabel(power_card, text="상대 시간 예약 (몇 분 뒤, 몇 시간 뒤):", font=get_font(10, "bold"), text_color=palette["text_sub"]).pack(anchor="w", padx=14, pady=(4, 2))
         q_row = ctk.CTkFrame(power_card, fg_color="transparent")
-        q_row.pack(fill="x", padx=14, pady=(0, 8))
+        q_row.pack(fill="x", padx=14, pady=(0, 6))
 
         presets = [
-            ("10분 후", 600),
-            ("30분 후", 1800),
-            ("1시간 후", 3600),
-            ("퇴근(16:40)", "16:40")
+            ("10분 뒤", 600),
+            ("30분 뒤", 1800),
+            ("1시간 뒤", 3600),
+            ("2시간 뒤", 7200)
         ]
         for p_name, p_val in presets:
             ctk.CTkButton(
@@ -2324,8 +2400,47 @@ class App(ctk.CTk):
         self._render_hub_active_schedules()
         self._show_simple_alert("전체 취소", msg)
 
+    def _do_hub_schedule_ampm_time(self):
+        """오전/오후 시각 선택기로부터 계산하여 예약 실행"""
+        ampm = self.hub_ampm_seg.get() if hasattr(self, "hub_ampm_seg") else "오후"
+        h_str = self.hub_hour_combo.get().replace("시", "") if hasattr(self, "hub_hour_combo") else "4"
+        m_str = self.hub_min_combo.get().replace("분", "") if hasattr(self, "hub_min_combo") else "40"
+        
+        try:
+            h = int(h_str)
+            m = int(m_str)
+            if ampm == "오후" and h < 12:
+                h += 12
+            elif ampm == "오전" and h == 12:
+                h = 0
+            
+            now = datetime.datetime.now()
+            tgt = datetime.datetime(now.year, now.month, now.day, h, m, 0)
+            if tgt <= now:
+                tgt += datetime.timedelta(days=1)
+            diff = int((tgt - now).total_seconds())
+            val_display = f"{ampm} {h_str}시 {m_str}분 ({tgt.strftime('%m/%d %H:%M')})"
+        except Exception as e:
+            self._show_simple_alert("오류", f"올바른 시각을 선택해주세요: {e}")
+            return
+
+        choice = self.hub_power_seg.get()
+        act_type = "shutdown"
+        if "다시시작" in choice: act_type = "restart"
+        elif "절전" in choice: act_type = "sleep"
+
+        ok, msg = self.manager.schedule_action(act_type, diff, memo=f"{choice} 예약 ({val_display})")
+        if not ok and "CONFLICT" in msg:
+            if messagebox.askyesno("예약 충돌", f"이미 비슷한 시각에 다른 전원 제어 예약이 있습니다.\n{val_display} 예약으로 대체하시겠습니까?"):
+                self.manager.schedule_action(act_type, diff, memo=f"{choice} 예약 ({val_display})", force=True)
+                self._show_simple_alert("예약 완료", f"{val_display}에 {choice}이(가) 등록되었습니다.")
+        elif ok:
+            self._show_simple_alert("예약 완료", f"{val_display}에 {choice}이(가) 등록되었습니다.")
+        self._render_hub_active_schedules()
+
     def _do_hub_schedule_custom_time(self):
-        val = self.hub_time_entry.get().strip()
+        val = getattr(self, "hub_time_entry", None)
+        val = val.get().strip() if val else "16:40"
         try:
             h, m = map(int, val.split(":"))
             now = datetime.datetime.now()
