@@ -229,7 +229,7 @@ class MiniTimetableWidget(ctk.CTkToplevel):
         today = datetime.date.today()
         weekday_str = DAYS_KO[today.weekday()]
         lunar_today = get_lunar_str(today.year, today.month, today.day)
-        header_text = f"오늘은 {today.year}년{today.month}월{today.day}일 {weekday_str}요일 {lunar_today}"
+        header_text = f"오늘은 {today.year}년 {today.month}월 {today.day}일 {weekday_str}요일 {lunar_today}"
 
         today_lbl = ctk.CTkLabel(
             top_bar, text=header_text, font=get_font(11, "bold"),
@@ -589,7 +589,7 @@ class MiniTimetableWidget(ctk.CTkToplevel):
                 )
                 card.pack(fill="x", pady=2)
                 ctk.CTkLabel(card, text=it["name"], font=get_font(9, "bold"), width=38, fg_color="#0284c7" if not is_lunch else "#ea580c", text_color="#fff", corner_radius=3).pack(side="left", padx=4, pady=3)
-                ctk.CTkLabel(card, text=f"{it['start']}~{it['end']}", font=get_font(8), text_color="#94a3b8").pack(side="left", padx=4)
+                ctk.CTkLabel(card, text=f"{it['start']} ~ {it['end']}", font=get_font(8), text_color="#94a3b8").pack(side="left", padx=4)
                 ctk.CTkLabel(card, text=it["subject"], font=get_font(10, "bold"), text_color="#6ee7b7" if is_cur else "#ffffff").pack(side="left", fill="x", expand=True, padx=4)
                 if not is_lunch:
                     ctk.CTkLabel(card, text="✏️", font=get_font(9), text_color="#64748b").pack(side="right", padx=4)

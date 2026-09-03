@@ -634,7 +634,7 @@ class App(ctk.CTk):
 
         # 사이드바 상단 로고 / 브랜드
         logo_frame = ctk.CTkFrame(self.sidebar, fg_color="transparent")
-        logo_frame.pack(fill="x", padx=10, pady=(18, 12))
+        logo_frame.pack(fill="x", padx=12, pady=(16, 10))
 
         title_row = ctk.CTkFrame(logo_frame, fg_color="transparent")
         title_row.pack(fill="x")
@@ -646,7 +646,7 @@ class App(ctk.CTk):
             font=get_font(18),
             width=26
         )
-        self.logo_icon_lbl.pack(side="left", padx=(0, 4))
+        self.logo_icon_lbl.pack(side="left", padx=(0, 6))
 
         self.logo_title_lbl = ctk.CTkLabel(
             title_row,
@@ -678,7 +678,7 @@ class App(ctk.CTk):
             text_color=palette["text_sub"],
             cursor="hand2"
         )
-        self.logo_sub_lbl.pack(anchor="w", padx=(30, 0), pady=(1, 0))
+        self.logo_sub_lbl.pack(anchor="w", padx=(32, 0), pady=(2, 0))
         self.logo_sub_lbl.bind("<Button-1>", lambda e: webbrowser.open("https://pinky-ne.com"))
         attach_tooltip(self.logo_sub_lbl, "놀퀴즈(pinky-ne.com) 플랫폼 바로가기")
 
@@ -692,7 +692,7 @@ class App(ctk.CTk):
         ]
 
         self.sidebar_scroll = ctk.CTkFrame(self.sidebar, fg_color="transparent")
-        self.sidebar_scroll.pack(fill="both", expand=True, padx=6, pady=10)
+        self.sidebar_scroll.pack(fill="both", expand=True, padx=6, pady=8)
 
         for key, name, ico in self.menu_items:
             btn = ctk.CTkButton(
@@ -707,26 +707,26 @@ class App(ctk.CTk):
                 text_color=palette["sidebar_text"],
                 command=lambda k=key: self._switch_view(k)
             )
-            btn.pack(fill="x", pady=4, padx=2)
+            btn.pack(fill="x", pady=3, padx=2)
             self.menu_buttons[key] = btn
             attach_tooltip(btn, name)
 
         # 사이드바 하단 테마 선택기 (🌾 베이지 | 🌙 다크 | ☀️ 라이트)
         self.theme_selector_box = ctk.CTkFrame(self.sidebar, fg_color="transparent")
-        self.theme_selector_box.pack(fill="x", padx=10, pady=(0, 14))
+        self.theme_selector_box.pack(fill="x", padx=10, pady=(0, 16))
 
         ctk.CTkLabel(
             self.theme_selector_box,
             text="🎨 테마 선택:",
             font=get_font(10, "bold"),
             text_color=palette["text_sub"]
-        ).pack(anchor="w", padx=2, pady=(0, 4))
+        ).pack(anchor="w", padx=2, pady=(0, 6))
 
         self.theme_seg_btn = ctk.CTkSegmentedButton(
             self.theme_selector_box,
             values=["🌾 베이지", "🌙 다크", "☀️ 라이트"],
             font=get_font(10, "bold"),
-            height=26,
+            height=28,
             selected_color=palette["accent"],
             selected_hover_color=palette["accent_hover"],
             unselected_color=palette["sidebar_btn_hover"],
@@ -740,7 +740,7 @@ class App(ctk.CTk):
 
         # 사이드바 상시 투명도 조절 바
         alpha_box = ctk.CTkFrame(self.theme_selector_box, fg_color="transparent")
-        alpha_box.pack(fill="x", pady=(8, 0))
+        alpha_box.pack(fill="x", pady=(10, 0))
 
         ab_top = ctk.CTkFrame(alpha_box, fg_color="transparent")
         ab_top.pack(fill="x")
@@ -773,7 +773,7 @@ class App(ctk.CTk):
             command=self._on_alpha_changed
         )
         self.sidebar_alpha_slider.set(init_alpha)
-        self.sidebar_alpha_slider.pack(fill="x", pady=(2, 0))
+        self.sidebar_alpha_slider.pack(fill="x", pady=(4, 0))
         attach_tooltip(self.sidebar_alpha_slider, "창 전체 투명도를 40% ~ 100% 사이로 실시간 조절합니다")
 
         # 2. 우측 메인 컨텐츠 영역
@@ -975,9 +975,9 @@ class App(ctk.CTk):
         weekday_str = DAYS_KO[today.weekday()]
         is_hol, hol_name, _ = timetable_manager.get_today_schedule_items()
 
-        title_text = f"📅 {today.strftime('%Y년 %m월 %d일')} ({weekday_str}요일)"
+        title_text = f"📅 {today.year}년 {today.month}월 {today.day}일 ({weekday_str}요일)"
         if is_hol:
-            title_text += f" - 🇰🇷 [{hol_name}] 공휴일"
+            title_text += f" • 🇰🇷 [{hol_name}] 공휴일"
 
         ctk.CTkLabel(
             tb_inner,
@@ -991,12 +991,13 @@ class App(ctk.CTk):
         top_right_box = ctk.CTkFrame(tb_inner, fg_color="transparent")
         top_right_box.pack(side="right")
 
-        # 상단 상시 투명도 조절 바
-        top_alpha_chip = ctk.CTkFrame(top_right_box, fg_color=palette["sidebar_bg"], corner_radius=8, border_width=1, border_color=palette["card_border"])
-        top_alpha_chip.pack(side="left", padx=(0, 6))
+        # 상단 상시 투명도 조절 바 (높이 32px 표준화)
+        top_alpha_chip = ctk.CTkFrame(top_right_box, fg_color=palette["sidebar_bg"], corner_radius=8, border_width=1, border_color=palette["card_border"], height=32)
+        top_alpha_chip.pack(side="left", padx=(0, 8))
+        top_alpha_chip.pack_propagate(False)
 
         tac_inner = ctk.CTkFrame(top_alpha_chip, fg_color="transparent")
-        tac_inner.pack(padx=6, pady=2)
+        tac_inner.pack(padx=8, pady=3, fill="both", expand=True)
 
         init_alpha = timetable_manager.settings.get("window_alpha", 1.0)
         self.top_alpha_lbl = ctk.CTkLabel(
@@ -1023,24 +1024,25 @@ class App(ctk.CTk):
         self.top_alpha_slider.pack(side="left")
         attach_tooltip(top_alpha_chip, "화면 위 다른 창을 보면서 작업할 수 있도록 투명도를 40% ~ 100% 사이로 실시간 조절합니다")
 
-        # 우측 미니멀 시스템 자원 칩 (CPU / RAM / GPU - 단일 톤온톤 적용)
-        res_chip_box = ctk.CTkFrame(top_right_box, fg_color=palette["sidebar_bg"], corner_radius=8, border_width=1, border_color=palette["card_border"])
+        # 우측 미니멀 시스템 자원 칩 (CPU / RAM / GPU - 높이 32px 표준화 및 정돈된 간격)
+        res_chip_box = ctk.CTkFrame(top_right_box, fg_color=palette["sidebar_bg"], corner_radius=8, border_width=1, border_color=palette["card_border"], height=32)
         res_chip_box.pack(side="left")
+        res_chip_box.pack_propagate(False)
 
         chip_inner = ctk.CTkFrame(res_chip_box, fg_color="transparent")
-        chip_inner.pack(padx=8, pady=3)
+        chip_inner.pack(padx=8, pady=3, fill="both", expand=True)
 
-        self.cpu_label = ctk.CTkLabel(chip_inner, text="💻 CPU: -- %", font=get_font(10, "bold"), text_color=palette["text_sub"])
+        self.cpu_label = ctk.CTkLabel(chip_inner, text="💻 CPU --%", font=get_font(10, "bold"), text_color=palette["text_sub"])
         self.cpu_label.pack(side="left", padx=4)
 
-        ctk.CTkFrame(chip_inner, width=1, height=14, fg_color=palette["card_border"]).pack(side="left", padx=2)
+        ctk.CTkFrame(chip_inner, width=1, height=14, fg_color=palette["card_border"]).pack(side="left", padx=3)
 
-        self.ram_label = ctk.CTkLabel(chip_inner, text="🧠 RAM: -- %", font=get_font(10, "bold"), text_color=palette["text_sub"])
+        self.ram_label = ctk.CTkLabel(chip_inner, text="🧠 RAM --%", font=get_font(10, "bold"), text_color=palette["text_sub"])
         self.ram_label.pack(side="left", padx=4)
 
-        ctk.CTkFrame(chip_inner, width=1, height=14, fg_color=palette["card_border"]).pack(side="left", padx=2)
+        ctk.CTkFrame(chip_inner, width=1, height=14, fg_color=palette["card_border"]).pack(side="left", padx=3)
 
-        self.gpu_label = ctk.CTkLabel(chip_inner, text="🎮 GPU: -- %", font=get_font(10, "bold"), text_color=palette["text_sub"])
+        self.gpu_label = ctk.CTkLabel(chip_inner, text="🎮 GPU --%", font=get_font(10, "bold"), text_color=palette["text_sub"])
         self.gpu_label.pack(side="left", padx=4)
 
         # 1.5. 💡 놀퀴즈 (pinky-ne.com) 소프트 베젤 스마트 연결 유도 배너
@@ -1051,14 +1053,14 @@ class App(ctk.CTk):
             border_width=1,
             border_color=palette["card_border"],
         )
-        pinky_banner.pack(fill="x", pady=(0, 8))
+        pinky_banner.pack(fill="x", pady=(0, 10))
 
         pb_inner = ctk.CTkFrame(pinky_banner, fg_color="transparent")
-        pb_inner.pack(fill="x", padx=12, pady=5)
+        pb_inner.pack(fill="x", padx=14, pady=8)
 
         ctk.CTkLabel(
             pb_inner,
-            text="✨ 지식과 놀이의 배움터:  선생님과 학생이 함께하는 인터랙티브 수업 퀴즈 플랫폼",
+            text="✨ 지식과 놀이의 배움터: 선생님과 학생이 함께하는 인터랙티브 수업 퀴즈 플랫폼",
             font=get_font(10),
             text_color=palette["text_sub"],
             anchor="w"
@@ -1073,11 +1075,11 @@ class App(ctk.CTk):
             text_color=palette["accent"],
             border_width=1,
             border_color=palette["card_border"],
-            height=26,
+            height=28,
             corner_radius=6,
             command=lambda: webbrowser.open("https://pinky-ne.com")
         )
-        pinky_btn.pack(side="right")
+        pinky_btn.pack(side="right", padx=(8, 0))
         attach_tooltip(pinky_btn, "선생님과 아이들이 함께 즐기는 놀퀴즈 (pinky-ne.com) 웹사이트로 이동합니다")
 
         # 2. 메인 컨텐츠 영역 (좌측: 오늘 시간표 / 우측: 오늘의 급식 식단표)
@@ -1089,7 +1091,7 @@ class App(ctk.CTk):
         left_card.pack(side="left", fill="both", expand=True, padx=(0, 6))
 
         lc_top = ctk.CTkFrame(left_card, fg_color="transparent")
-        lc_top.pack(fill="x", padx=12, pady=(10, 6))
+        lc_top.pack(fill="x", padx=14, pady=(12, 8))
 
         ctk.CTkLabel(
             lc_top,
@@ -1101,14 +1103,15 @@ class App(ctk.CTk):
         lead_min = timetable_manager.settings.get("alarm_lead_minutes", 5)
         ctk.CTkButton(
             lc_top,
-            text=f"🔔 {lead_min}분전 알람 일괄 등록",
+            text=f"🔔 {lead_min}분 전 알람 등록",
             font=get_font(10, "bold"),
             fg_color=palette["sidebar_bg"],
             hover_color=palette["sidebar_btn_hover"],
             text_color=palette["text_main"],
             border_width=1,
             border_color=palette["card_border"],
-            height=26,
+            height=28,
+            corner_radius=6,
             command=self._batch_schedule_today_classes
         ).pack(side="right")
 
@@ -1120,19 +1123,20 @@ class App(ctk.CTk):
             fg_color=palette["accent"],
             hover_color=palette["accent_hover"],
             text_color="#ffffff",
-            height=26,
+            height=28,
+            corner_radius=6,
             command=lambda: open_timetable_quick_editor(self)
-        ).pack(side="right", padx=(0, 6))
+        ).pack(side="right", padx=(0, 8))
 
         self.today_items_container = ctk.CTkFrame(left_card, fg_color="transparent")
-        self.today_items_container.pack(fill="both", expand=True, padx=8, pady=(0, 8))
+        self.today_items_container.pack(fill="both", expand=True, padx=10, pady=(0, 10))
 
         # 우측: 오늘의 급식 식단표 카드
         right_card = ctk.CTkFrame(content_row, fg_color=palette["card_inner_bg"], corner_radius=12, border_width=1, border_color=palette["card_border"])
         right_card.pack(side="right", fill="both", expand=True, padx=(6, 0))
 
         rc_top = ctk.CTkFrame(right_card, fg_color="transparent")
-        rc_top.pack(fill="x", padx=12, pady=(10, 6))
+        rc_top.pack(fill="x", padx=14, pady=(12, 8))
 
         ctk.CTkLabel(
             rc_top,
@@ -1148,19 +1152,22 @@ class App(ctk.CTk):
             fg_color=palette["sidebar_bg"],
             hover_color=palette["sidebar_btn_hover"],
             text_color=palette["text_main"],
-            height=26,
+            border_width=1,
+            border_color=palette["card_border"],
+            height=28,
+            corner_radius=6,
             command=self._refresh_today_meal
         ).pack(side="right")
 
         self.meal_container = ctk.CTkFrame(right_card, fg_color="transparent")
-        self.meal_container.pack(fill="both", expand=True, padx=8, pady=(0, 8))
+        self.meal_container.pack(fill="both", expand=True, padx=10, pady=(0, 10))
 
         # 3. 하단 퀵 액션 런처 바 (판서, 플로팅바, 타이머, 미니위젯, 사이트 바로가기)
-        launcher_bar = ctk.CTkFrame(scroll, fg_color=palette["card_inner_bg"], corner_radius=10, border_width=1, border_color=palette["card_border"])
-        launcher_bar.pack(fill="x", pady=(10, 0))
+        launcher_bar = ctk.CTkFrame(scroll, fg_color=palette["card_inner_bg"], corner_radius=12, border_width=1, border_color=palette["card_border"])
+        launcher_bar.pack(fill="x", pady=(12, 6))
 
         lb_inner = ctk.CTkFrame(launcher_bar, fg_color="transparent")
-        lb_inner.pack(fill="x", padx=8, pady=5)
+        lb_inner.pack(fill="x", padx=10, pady=8)
 
         from src.icon_renderer import get_icon
 
@@ -1184,7 +1191,7 @@ class App(ctk.CTk):
 
         # 6개씩 2행 배치
         row1 = ctk.CTkFrame(lb_inner, fg_color="transparent")
-        row1.pack(fill="x", pady=(0, 2))
+        row1.pack(fill="x", pady=(0, 6))
         row2 = ctk.CTkFrame(lb_inner, fg_color="transparent")
         row2.pack(fill="x")
 
@@ -1192,11 +1199,11 @@ class App(ctk.CTk):
             row = row1 if i < 6 else row2
             btn = ctk.CTkButton(
                 row,
-                text=f" {a_title}",
+                text=a_title,
                 image=get_icon(a_ico, a_col, 18),
                 compound="left",
                 font=get_font(10, "bold"),
-                height=30,
+                height=32,
                 corner_radius=8,
                 fg_color=palette["sidebar_btn_hover"],
                 hover_color=palette["sidebar_bg"],
@@ -1205,7 +1212,7 @@ class App(ctk.CTk):
                 border_color=palette["card_border"],
                 command=a_cmd
             )
-            btn.pack(side="left", fill="x", expand=True, padx=2)
+            btn.pack(side="left", fill="x", expand=True, padx=3)
             attach_tooltip(btn, a_tip)
 
         self._render_today_items()
@@ -1247,10 +1254,10 @@ class App(ctk.CTk):
         # 급식 메뉴 요약 카드
         cal_str = meal_info.get("calorie", "")
         hdr_box = ctk.CTkFrame(self.meal_container, fg_color=palette["card_inner_bg"], corner_radius=8, border_width=1, border_color=palette["card_border"])
-        hdr_box.pack(fill="x", pady=(0, 4))
+        hdr_box.pack(fill="x", pady=(0, 6))
 
         h_in = ctk.CTkFrame(hdr_box, fg_color="transparent")
-        h_in.pack(fill="x", padx=10, pady=5)
+        h_in.pack(fill="x", padx=12, pady=6)
 
         ctk.CTkLabel(
             h_in,
@@ -1278,19 +1285,19 @@ class App(ctk.CTk):
             row.pack(fill="x")
             ctk.CTkLabel(
                 row,
-                text=f"• {d}",
+                text=f"•  {d}",
                 font=get_font(11),
                 text_color=palette["text_main"],
                 anchor="w"
-            ).pack(fill="x", padx=10, pady=3)
+            ).pack(fill="x", padx=12, pady=4)
 
         # 하단 알레르기 안내 팁
         ctk.CTkLabel(
             self.meal_container,
             text="* 번호는 알레르기 유발물질 표시입니다.",
             font=get_font(9),
-            text_color=palette["text_sub"]
-        ).pack(anchor="w", pady=(3, 0))
+            text_color=palette["text_muted"]
+        ).pack(anchor="w", padx=4, pady=(6, 2))
 
     def _render_today_items(self):
         for w in self.today_items_container.winfo_children():
@@ -1326,12 +1333,12 @@ class App(ctk.CTk):
 
             c_frame = ctk.CTkFrame(
                 self.today_items_container, 
-                corner_radius=6, 
+                corner_radius=8, 
                 fg_color=card_bg, 
                 border_width=2 if is_current else 1, 
                 border_color=card_border
             )
-            c_frame.pack(fill="x", pady=2)
+            c_frame.pack(fill="x", pady=3)
 
             badge_bg = palette["accent"] if is_current else palette["sidebar_btn_hover"]
             badge_fg = "#ffffff" if is_current else palette["text_main"]
@@ -1343,30 +1350,31 @@ class App(ctk.CTk):
                 font=get_font(9, "bold"),
                 fg_color=badge_bg,
                 text_color=badge_fg,
-                corner_radius=5,
+                corner_radius=6,
                 width=56,
-                height=22
+                height=24
             )
-            badge.pack(side="left", padx=(6, 6), pady=3)
+            badge.pack(side="left", padx=(8, 8), pady=4)
 
-            # 시간 텍스트: 차분한 서브 뉴트럴 톤으로 통일
+            # 시간 텍스트: 일관된 ` ~ ` 띄어쓰기 적용
             ctk.CTkLabel(
                 c_frame,
-                text=f"{it['start']}~{it['end']}",
+                text=f"{it['start']} ~ {it['end']}",
                 font=ctk.CTkFont(family="Consolas", size=10, weight="bold"),
                 text_color=palette["text_muted"],
-                width=80,
+                width=86,
                 anchor="w"
-            ).pack(side="left")
+            ).pack(side="left", padx=(0, 6))
 
+            subj_text = "🍱 점심식사 및 휴식" if is_lunch else it["subject"]
             subj_lbl = ctk.CTkLabel(
                 c_frame,
-                text=it["subject"],
+                text=subj_text,
                 font=get_font(12, "bold"),
                 text_color=palette["text_main"] if not is_lunch else palette.get("lunch_text", palette["text_sub"]),
                 anchor="w"
             )
-            subj_lbl.pack(side="left", fill="x", expand=True, pady=3)
+            subj_lbl.pack(side="left", fill="x", expand=True, pady=4)
 
             tag = it.get("tag", "담임")
             if tag in ["전담", "외강"]:
@@ -1379,9 +1387,9 @@ class App(ctk.CTk):
                     fg_color=tag_bg,
                     text_color=tag_fg,
                     corner_radius=4,
-                    width=38,
-                    height=20
-                ).pack(side="left", padx=3)
+                    width=40,
+                    height=22
+                ).pack(side="left", padx=(0, 6))
 
             if not is_lunch:
                 c_frame.configure(cursor="hand2")
@@ -1396,18 +1404,18 @@ class App(ctk.CTk):
 
                 ctk.CTkButton(
                     c_frame,
-                    text=f"🔔 {lead_min}분전",
+                    text=f"🔔 {lead_min}분 전",
                     font=get_font(9, "bold"),
                     fg_color=palette["sidebar_bg"],
                     hover_color=palette["sidebar_btn_hover"],
                     text_color=palette["text_sub"],
                     border_width=1,
                     border_color=palette["card_border"],
-                    corner_radius=5,
-                    width=66,
-                    height=20,
+                    corner_radius=6,
+                    width=70,
+                    height=24,
                     command=lambda item=it: self._schedule_single_class_alarm(item)
-                ).pack(side="right", padx=5, pady=3)
+                ).pack(side="right", padx=(0, 8), pady=4)
 
     def _open_mini_widget(self):
         if self.mini_widget and self.mini_widget.winfo_exists():
@@ -1515,23 +1523,26 @@ class App(ctk.CTk):
         gpu_p = m.get("gpu_percent", 0.0)
         gpu_name = m.get("gpu_name", "GPU")
 
+        palette = theme_manager.get_theme()
+        normal_col = palette["text_sub"]
+
         self.cpu_label.configure(
             text=f"💻 CPU {cpu_p:.0f}%",
-            text_color="#ef4444" if cpu_p > 85 else ("#f59e0b" if cpu_p > 60 else "#38bdf8")
+            text_color="#ef4444" if cpu_p > 85 else normal_col
         )
         if hasattr(self, "cpu_progress") and self.cpu_progress.winfo_exists():
             self.cpu_progress.set(min(1.0, max(0.0, cpu_p / 100.0)))
 
         self.ram_label.configure(
             text=f"🧠 RAM {ram_p:.0f}%",
-            text_color="#ef4444" if ram_p > 85 else "#4ade80"
+            text_color="#ef4444" if ram_p > 85 else normal_col
         )
         if hasattr(self, "ram_progress") and self.ram_progress.winfo_exists():
             self.ram_progress.set(min(1.0, max(0.0, ram_p / 100.0)))
 
         self.gpu_label.configure(
             text=f"🎮 GPU {gpu_p:.0f}%",
-            text_color="#ef4444" if gpu_p > 85 else "#f59e0b"
+            text_color="#ef4444" if gpu_p > 85 else normal_col
         )
         if hasattr(self, "gpu_progress") and self.gpu_progress.winfo_exists():
             self.gpu_progress.set(min(1.0, max(0.0, gpu_p / 100.0)))
@@ -1622,13 +1633,13 @@ class App(ctk.CTk):
         roster_card.pack(fill="x", pady=(0, 10))
 
         r_hdr = ctk.CTkFrame(roster_card, fg_color="transparent")
-        r_hdr.pack(fill="x", padx=14, pady=(10, 4))
+        r_hdr.pack(fill="x", padx=14, pady=(12, 6))
 
         ctk.CTkLabel(
             r_hdr,
             text="👥 우리 반 학생 명렬표 관리 (발표자 뽑기 & 교실 도구 연동)",
             font=get_font(13, "bold"),
-            text_color=palette["accent_green"]
+            text_color=palette["text_main"]
         ).pack(side="left")
 
         from src.student_manager import student_manager
@@ -1639,14 +1650,16 @@ class App(ctk.CTk):
             r_hdr,
             text="👥 학생 명단 등록 / 수정",
             font=get_font(11, "bold"),
-            fg_color=palette["accent_green"],
-            hover_color="#059669",
+            fg_color=palette["accent"],
+            hover_color=palette["accent_hover"],
+            text_color="#ffffff",
             height=28,
+            corner_radius=6,
             command=lambda: StudentRosterEditDialog(self, on_saved_callback=lambda: self._switch_view("classroom_tools"))
         ).pack(side="right")
 
         sec_info = f"• 현재 등록된 학생: 총 {stu_cnt}명 | 발표자 뽑기(🎲)에서 [👦 학생 이름 모드] 또는 [🔢 번호 전용 모드]를 선택하여 사용하실 수 있습니다.\n• 🔒 100% 로컬 영구 보관: 학생 개인정보는 외부 서버로 절대 전송되지 않으며 선생님 PC에만 안전하게 저장됩니다."
-        ctk.CTkLabel(roster_card, text=sec_info, font=get_font(10), text_color=palette["text_sub"], justify="left", anchor="w").pack(fill="x", padx=14, pady=(0, 10))
+        ctk.CTkLabel(roster_card, text=sec_info, font=get_font(10), text_color=palette["text_sub"], justify="left", anchor="w").pack(fill="x", padx=14, pady=(0, 12))
 
         # 2. ✏️ 교실 수업 진행 도구 6종 카드
         tools_card = ctk.CTkFrame(scroll, corner_radius=12, fg_color=palette["card_inner_bg"], border_width=1, border_color=palette["card_border"])
@@ -1656,8 +1669,8 @@ class App(ctk.CTk):
             tools_card,
             text="✏️ 교실 수업 진행 도구 (원클릭 실행)",
             font=get_font(13, "bold"),
-            text_color=palette["accent_blue"]
-        ).pack(anchor="w", padx=14, pady=(10, 6))
+            text_color=palette["text_main"]
+        ).pack(anchor="w", padx=14, pady=(12, 6))
 
         t_grid = ctk.CTkFrame(tools_card, fg_color="transparent")
         t_grid.pack(fill="x", padx=10, pady=(0, 10))
@@ -1665,19 +1678,19 @@ class App(ctk.CTk):
             t_grid.grid_columnconfigure(col_idx, weight=1)
 
         tool_items = [
-            ("✏️ 화면 위 자유 판서", "모니터 위 모든 웹/앱 위에 펜으로 직접 판서 및 밑줄", palette["accent_orange"], "#c2410c", self._open_screen_drawing),
-            ("📷 스마트 실물화상기", "웹캠/USB 화상기 90°회전, 반전, 정지, 문서강조, 전체화면", palette["accent_blue"], "#0284c7", self._open_visualizer),
-            ("🛠️ 스마트 플로팅 퀵바", "모니터 구석에 띄워두고 도구를 1초 만에 실행하는 미니바", palette["accent_blue"], "#0369a1", self._open_floating_quick_toolbar),
-            ("⏱️ 교실 활동 타이머", "1분/3분/5분 모둠 활동 카운트다운 및 알람음", palette["accent_green"], "#059669", lambda: self._open_classroom_tools("timer")),
-            ("🎲 발표자 랜덤 뽑기", "학급 학생 이름/번호 롤링 추첨 (중복 제외)", palette["accent_blue"], "#0369a1", lambda: self._open_classroom_tools("picker")),
-            ("🎡 돌려돌려 돌림판", "모둠, 발표자, 벌칙, 보상 돌려돌려 돌림판", palette["accent_orange"], "#c2410c", lambda: self._open_classroom_tools("wheel")),
-            ("🪜 짜릿한 사다리타기", "학생/모둠 사다리타기 게임", palette["accent_purple"], "#7c3aed", lambda: self._open_classroom_tools("ladder")),
-            ("⚾ 아케이드 핀볼", "통통 튀는 물리 바운스 핀볼 추첨기", palette["accent_green"], "#059669", lambda: self._open_classroom_tools("pinball")),
-            ("📌 바탕화면 미니 시간표", "모서리 드래그 크기 조절 & 상단 핀 고정 미니 위젯", palette["sidebar_btn_hover"], palette["accent_blue"], self._open_mini_widget),
-            ("📺 학생용 대형 스크린", "교실 TV/전자칠판용 대형 시간표 및 알림판", palette["accent_purple"], "#6d28d9", self._open_student_display)
+            ("✏️ 화면 위 자유 판서", "모니터 위 모든 웹/앱 위에 펜으로 직접 판서 및 밑줄", self._open_screen_drawing),
+            ("📷 스마트 실물화상기", "웹캠/USB 화상기 90°회전, 반전, 정지, 문서강조, 전체화면", self._open_visualizer),
+            ("🛠️ 스마트 플로팅 퀵바", "모니터 구석에 띄워두고 도구를 1초 만에 실행하는 미니바", self._open_floating_quick_toolbar),
+            ("⏱️ 교실 활동 타이머", "1분/3분/5분 모둠 활동 카운트다운 및 알람음", lambda: self._open_classroom_tools("timer")),
+            ("🎲 발표자 랜덤 뽑기", "학급 학생 이름/번호 롤링 추첨 (중복 제외)", lambda: self._open_classroom_tools("picker")),
+            ("🎡 돌려돌려 돌림판", "모둠, 발표자, 벌칙, 보상 돌려돌려 돌림판", lambda: self._open_classroom_tools("wheel")),
+            ("🪜 짜릿한 사다리타기", "학생/모둠 사다리타기 게임", lambda: self._open_classroom_tools("ladder")),
+            ("⚾ 아케이드 핀볼", "통통 튀는 물리 바운스 핀볼 추첨기", lambda: self._open_classroom_tools("pinball")),
+            ("📌 바탕화면 미니 시간표", "모서리 드래그 크기 조절 & 상단 핀 고정 미니 위젯", self._open_mini_widget),
+            ("📺 학생용 대형 스크린", "교실 TV/전자칠판용 대형 시간표 및 알림판", self._open_student_display)
         ]
 
-        for idx, (t_title, t_desc, t_col, t_hov, t_cmd) in enumerate(tool_items):
+        for idx, (t_title, t_desc, t_cmd) in enumerate(tool_items):
             r = idx // 3
             c = idx % 3
 
@@ -1691,34 +1704,37 @@ class App(ctk.CTk):
                 c_box,
                 text="실행하기",
                 font=get_font(11, "bold"),
-                height=26,
-                fg_color=t_col,
-                hover_color=t_hov,
-                text_color="#ffffff" if t_col != palette["sidebar_btn_hover"] else palette["text_main"],
+                height=28,
+                corner_radius=6,
+                fg_color=palette["accent"],
+                hover_color=palette["accent_hover"],
+                text_color="#ffffff",
                 command=t_cmd
             ).pack(fill="x", padx=10, pady=(0, 8))
 
         # 2. 🌐 교사용 교육 사이트 바로가기 모음 카드
-        site_card = ctk.CTkFrame(scroll, corner_radius=12, fg_color="#182234", border_width=1, border_color="#38bdf8")
-        site_card.pack(fill="x", pady=(0, 6))
+        site_card = ctk.CTkFrame(scroll, corner_radius=12, fg_color=palette["card_inner_bg"], border_width=1, border_color=palette["card_border"])
+        site_card.pack(fill="x", pady=(0, 10))
 
         s_hdr = ctk.CTkFrame(site_card, fg_color="transparent")
-        s_hdr.pack(fill="x", padx=14, pady=(10, 6))
+        s_hdr.pack(fill="x", padx=14, pady=(12, 6))
 
         ctk.CTkLabel(
             s_hdr,
             text="🌐 교사용 추천 교육 사이트 & 내 바로가기",
             font=get_font(13, "bold"),
-            text_color="#38bdf8"
+            text_color=palette["text_main"]
         ).pack(side="left")
 
         ctk.CTkButton(
             s_hdr,
             text="➕ 사이트 관리 / 추가",
             font=get_font(11, "bold"),
-            fg_color="#10b981",
-            hover_color="#059669",
-            height=26,
+            fg_color=palette["accent"],
+            hover_color=palette["accent_hover"],
+            text_color="#ffffff",
+            height=28,
+            corner_radius=6,
             command=self._open_site_bookmarks
         ).pack(side="right")
 
@@ -4118,7 +4134,7 @@ class App(ctk.CTk):
             font=get_font(10),
             text_color=palette["text_muted"]
         )
-        self.copyright_lbl.pack(pady=(6, 0))
+        self.copyright_lbl.pack(pady=(6, 8))
 
     def _on_manager_state_change(self, is_scheduled: bool, action_type: Optional[str], message: str):
         self.after(0, self._update_state_ui, is_scheduled, action_type, message)

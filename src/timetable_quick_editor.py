@@ -151,13 +151,15 @@ class TimetableQuickEditorDialog(ctk.CTkToplevel):
             row.pack(fill="x", pady=3)
 
             p_name = p_info.get("name", f"{idx+1}교시")
-            time_str = f"{p_info.get('start', '')}~{p_info.get('end', '')}"
+            s_val = p_info.get('start', '')
+            e_val = p_info.get('end', '')
+            time_str = f"{s_val} ~ {e_val}" if s_val and e_val else ""
             badge = ctk.CTkFrame(row, fg_color=palette["accent"], corner_radius=6, width=64, height=36)
             badge.pack(side="left", padx=8, pady=6)
             badge.pack_propagate(False)
 
             ctk.CTkLabel(badge, text=p_name, font=get_font(10, "bold"), text_color="#ffffff").pack(pady=(3, 0))
-            if time_str.strip("~"):
+            if time_str:
                 sub_tc = "#fef3c7" if palette["ctk_mode"] == "Light" else "#bae6fd"
                 ctk.CTkLabel(badge, text=time_str, font=get_font(7), text_color=sub_tc).pack()
 
