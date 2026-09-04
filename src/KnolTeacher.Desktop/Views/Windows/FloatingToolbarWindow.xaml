@@ -99,10 +99,10 @@
                 <Image Source="/assets/app_icon.png" Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,10,0"/>
 
                 <!-- Quick Tool Buttons -->
-                <Button x:Name="BtnBoard" Style="{StaticResource DockAccentButtonStyle}" Click="BtnBoard_Click" ToolTip="놀티쳐 보드 열기 (F2)">
+                <Button x:Name="BtnBoard" Style="{StaticResource DockAccentButtonStyle}" Click="BtnBoard_Click" ToolTip="놀보드 열기 (F2)">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="📺 " FontSize="12"/>
-                        <TextBlock Text="보드"/>
+                        <TextBlock Text="놀보드"/>
                     </StackPanel>
                 </Button>
 

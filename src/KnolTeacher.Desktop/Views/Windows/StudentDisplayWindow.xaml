@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="놀티쳐 보드 (학생용 대형 대화형 위젯 게시판)" Height="850" Width="1350"
+        Title="놀보드 (학생용 올인원 인터랙티브 보드)" Height="850" Width="1350"
         Icon="/assets/board_icon.ico"
         WindowStartupLocation="CenterScreen"
         Background="#0B0F19">
@@ -30,7 +30,7 @@
 
                 <!-- Left: Title & Clock -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="📋 놀티쳐 보드" FontWeight="Bold" FontSize="15" Foreground="White" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <TextBlock Text="📋 놀보드" FontWeight="Bold" FontSize="15" Foreground="White" VerticalAlignment="Center" Margin="0,0,10,0"/>
                     <Border Background="#0F172A" CornerRadius="6" BorderBrush="#334155" BorderThickness="1" Padding="8,4" Margin="0,0,14,0">
                         <TextBlock x:Name="TxtClock" Text="09:00:00" FontFamily="Consolas, Malgun Gothic" FontSize="13" FontWeight="Bold" Foreground="#38BDF8"/>
                     </Border>
@@ -64,6 +64,7 @@
                             <ComboBoxItem Content="📅 오늘의 시간표" Tag="timetable"/>
                             <ComboBoxItem Content="🍱 오늘의 급식" Tag="meal"/>
                             <ComboBoxItem Content="📝 학급 알림장" Tag="memo"/>
+                            <ComboBoxItem Content="📱 실시간 QR코드" Tag="qr"/>
                         </ComboBox>
 
                         <Separator Margin="0,8,12,8" Background="#475569"/>

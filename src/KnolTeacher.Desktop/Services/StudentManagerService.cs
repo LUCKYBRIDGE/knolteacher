@@ -18,6 +18,8 @@ public interface IStudentManagerService
     void ResetPicked();
     List<List<StudentItem>> CreateGroups(int groupSize);
     List<StudentItem> ShuffleForSeating();
+    void SaveRoster();
+    void UpdateStudentAvatar(int studentNumber, string avatarId);
 }
 
 public class StudentManagerService : IStudentManagerService
@@ -112,5 +114,32 @@ public class StudentManagerService : IStudentManagerService
     public List<StudentItem> ShuffleForSeating()
     {
         return Students.OrderBy(_ => _random.Next()).ToList();
+    }
+
+    public void SaveRoster()
+    {
+        try
+        {
+            string path = Path.Combine(_configService.ConfigDir, "student_roster.json");
+            var container = new StudentRosterContainer { Students = Students };
+            var options = new JsonSerializerOptions
+            {
+                WriteIndented = true,
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.All)
+            };
+            string json = JsonSerializer.Serialize(container, options);
+            File.WriteAllText(path, json);
+        }
+        catch { }
+    }
+
+    public void UpdateStudentAvatar(int studentNumber, string avatarId)
+    {
+        var student = Students.FirstOrDefault(s => s.Number == studentNumber);
+        if (student != null)
+        {
+            student.AvatarId = avatarId;
+            SaveRoster();
+        }
     }
 }

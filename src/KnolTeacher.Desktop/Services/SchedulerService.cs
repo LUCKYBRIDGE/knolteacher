@@ -194,7 +194,7 @@ public class SchedulerService : ISchedulerService
                 break;
 
             case "board":
-                HudNotificationWindow.Instance.ShowToast("📋", $"{prefix}놀티쳐 보드 실행: {item.Title}");
+                HudNotificationWindow.Instance.ShowToast("📋", $"{prefix}놀보드 실행: {item.Title}");
                 break;
 
             case "shutdown":

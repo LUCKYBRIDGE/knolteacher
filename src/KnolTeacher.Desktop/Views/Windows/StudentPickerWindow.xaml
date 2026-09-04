@@ -4,50 +4,194 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="🎲 발표자 추첨기 (Alt+8)" Height="520" Width="560"
+        Title="🎰 스마트 동물 핀볼 추첨기 (Alt+8)" Height="820" Width="920"
+        MinHeight="680" MinWidth="740"
         WindowStartupLocation="CenterScreen"
         Topmost="True"
-        Background="#0F172A">
-    <Grid Margin="20">
+        Background="#080C14">
+
+    <Grid>
         <Grid.RowDefinitions>
-            <!-- Title -->
+            <!-- Top Control & Status Toolbar -->
             <RowDefinition Height="Auto" />
-            <!-- Winner Display -->
+            <!-- Pinball Playfield (Responsive Viewbox) -->
             <RowDefinition Height="*" />
-            <!-- Options -->
-            <RowDefinition Height="Auto" />
-            <!-- Action Button -->
+            <!-- Bottom Control Bar -->
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!-- Header -->
-        <TextBlock Grid.Row="0" Text="🎲 발표자 무작위 추첨" FontSize="18" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" Margin="0,0,0,16"/>
+        <!-- 1. Top Control & Status Bar -->
+        <Border Grid.Row="0" Background="#0F172A" BorderBrush="#1E293B" BorderThickness="0,0,0,1" Padding="14,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
 
-        <!-- Winner Card -->
-        <Border Grid.Row="1" Background="#1E293B" CornerRadius="20" BorderBrush="#38BDF8" BorderThickness="2" Margin="0,0,0,16">
-            <Border.Effect>
-                <DropShadowEffect BlurRadius="20" Opacity="0.4" ShadowDepth="4" Color="#000000"/>
-            </Border.Effect>
-            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                <TextBlock x:Name="TxtWinnerNumber" Text="🎉" FontSize="36" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                <Viewbox Stretch="Uniform" MaxHeight="90" Margin="16,0">
-                    <TextBlock x:Name="TxtWinnerName" Text="추첨 준비 완료" FontSize="38" FontWeight="Bold" Foreground="#FDE047" HorizontalAlignment="Center"/>
-                </Viewbox>
-                <TextBlock x:Name="TxtRemaining" Text="남은 학생: 20명" FontSize="14" Foreground="#94A3B8" HorizontalAlignment="Center" Margin="0,12,0,0"/>
-            </StackPanel>
+                <!-- Left: Title & Mode Indicator -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="🎰" FontSize="22" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="스마트 동물 핀볼 추첨기" FontWeight="Bold" FontSize="16" Foreground="White"/>
+                            <Border Background="#0284C7" CornerRadius="4" Padding="6,2" Margin="8,0,0,0" VerticalAlignment="Center">
+                                <TextBlock Text="60 FPS 물리 엔진" FontSize="10" FontWeight="Bold" Foreground="White"/>
+                            </Border>
+                        </StackPanel>
+                        <TextBlock x:Name="TxtStatus" Text="남은 학생: 25명 / 총 25명" FontSize="11" Foreground="#94A3B8" Margin="0,2,0,0"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Center: Modes -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <RadioButton x:Name="RbModeRace" Content="🏆 전원 핀볼 레이스 (추천)" IsChecked="True" Foreground="#FDE047" FontWeight="Bold" FontSize="12" Margin="0,0,12,0" Checked="Mode_Checked"/>
+                    <RadioButton x:Name="RbModeSingle" Content="🎯 단일 핀볼 샷" Foreground="White" FontSize="12" Margin="0,0,12,0" Checked="Mode_Checked"/>
+                    <RadioButton x:Name="RbModeClassic" Content="🎡 클래식 룰렛" Foreground="#94A3B8" FontSize="12" Checked="Mode_Checked"/>
+                </StackPanel>
+
+                <!-- Right: Options & Avatar Manage -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <CheckBox x:Name="ChkExcludePicked" Content="당첨자 제외" IsChecked="True" Foreground="#CBD5E1" FontSize="12" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <Button Content="👥 학생 &amp; 동물 아바타" Click="BtnManageRoster_Click" Padding="10,6" Margin="0,0,6,0" Background="#1E293B" Foreground="#38BDF8" BorderBrush="#334155" BorderThickness="1" FontWeight="Bold" FontSize="11" Cursor="Hand" ToolTip="학생 명단 및 32종 동물 아바타 관리">
+                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                    </Button>
+                    <Button Content="↺ 초기화" Click="BtnReset_Click" Padding="10,6" Background="#334155" Foreground="White" FontSize="11" BorderThickness="0" Cursor="Hand" ToolTip="제외 목록 초기화">
+                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                    </Button>
+                </StackPanel>
+            </Grid>
         </Border>
 
-        <!-- Options -->
-        <Grid Grid.Row="2" Margin="0,0,0,16">
-            <CheckBox x:Name="ChkExcludePicked" Content="한 번 뽑힌 학생은 제외하기" IsChecked="True" Foreground="White" VerticalAlignment="Center" HorizontalAlignment="Left"/>
-            <Button Content="↺ 제외 목록 초기화" Click="BtnReset_Click" HorizontalAlignment="Right" Padding="12,6" Background="#334155" Foreground="White" BorderThickness="0" Cursor="Hand">
-                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
-            </Button>
-        </Grid>
+        <!-- 2. Main Playfield (Auto-Scaling Viewbox) -->
+        <Viewbox Grid.Row="1" Stretch="Uniform" Margin="10">
+            <Grid Width="800" Height="860">
+                <!-- Pinball Arcade Frame -->
+                <Border Background="#0B1120" CornerRadius="24" BorderBrush="#1E293B" BorderThickness="3">
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="25" Opacity="0.6" ShadowDepth="6" Color="#000000"/>
+                    </Border.Effect>
+                </Border>
 
-        <!-- Main Pick Button -->
-        <Button x:Name="BtnPick" Grid.Row="3" Content="🎲 발표자 뽑기!" Click="BtnPick_Click" Padding="0,14" Background="#0284C7" Foreground="White" FontSize="18" FontWeight="Bold" BorderThickness="0" Cursor="Hand">
-            <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="10"/></Style></Button.Resources>
-        </Button>
+                <!-- Starfield / Grid Canvas Background -->
+                <Canvas x:Name="PinballCanvas" Width="800" Height="860" ClipToBounds="True">
+                    <!-- Top Dispenser Chute -->
+                    <Border Canvas.Left="200" Canvas.Top="12" Width="400" Height="50" CornerRadius="12" Background="#1E293B" BorderBrush="#38BDF8" BorderThickness="1.5">
+                        <TextBlock Text="🚀 핀볼 발사 챔버 (대기 중)" FontSize="12" FontWeight="Bold" Foreground="#38BDF8" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+
+                    <!-- Side Slanted Deflector Rails (Left) -->
+                    <Path Data="M 0,0 L 70,0 L 0,380 Z" Fill="#1E293B" Stroke="#334155" StrokeThickness="2" Canvas.Left="0" Canvas.Top="60"/>
+                    <Path Data="M 0,550 L 80,720 L 0,720 Z" Fill="#1E293B" Stroke="#334155" StrokeThickness="2" Canvas.Left="0" Canvas.Top="0"/>
+
+                    <!-- Side Slanted Deflector Rails (Right) -->
+                    <Path Data="M 800,0 L 730,0 L 800,380 Z" Fill="#1E293B" Stroke="#334155" StrokeThickness="2" Canvas.Left="0" Canvas.Top="60"/>
+                    <Path Data="M 800,550 L 720,720 L 800,720 Z" Fill="#1E293B" Stroke="#334155" StrokeThickness="2" Canvas.Left="0" Canvas.Top="0"/>
+
+                    <!-- Bottom Goal Gate: Golden Champion Cup -->
+                    <Border Canvas.Left="300" Canvas.Top="730" Width="200" Height="110" CornerRadius="18" Background="#1A2E05" BorderBrush="#EAB308" BorderThickness="3">
+                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <TextBlock Text="🏆" FontSize="28" HorizontalAlignment="Center"/>
+                            <TextBlock Text="CHAMPION CUP" FontWeight="Bold" FontSize="13" Foreground="#FDE047" HorizontalAlignment="Center"/>
+                            <TextBlock Text="1등 당첨 골대" FontSize="11" Foreground="#FEF08A" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Bottom Left Tray -->
+                    <Border Canvas.Left="80" Canvas.Top="760" Width="180" Height="80" CornerRadius="14" Background="#1E293B" BorderBrush="#334155" BorderThickness="2">
+                        <TextBlock Text="도전 완료 💫" FontSize="12" Foreground="#94A3B8" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+
+                    <!-- Bottom Right Tray -->
+                    <Border Canvas.Left="540" Canvas.Top="760" Width="180" Height="80" CornerRadius="14" Background="#1E293B" BorderBrush="#334155" BorderThickness="2">
+                        <TextBlock Text="도전 완료 💫" FontSize="12" Foreground="#94A3B8" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                </Canvas>
+
+                <!-- Classic Mode Overlay (Hidden by default) -->
+                <Grid x:Name="GridClassicMode" Visibility="Collapsed" Background="#F0080C14">
+                    <Border Background="#1E293B" CornerRadius="20" BorderBrush="#38BDF8" BorderThickness="2" Width="520" Height="360" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="20">
+                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <TextBlock Text="🎡" FontSize="44" HorizontalAlignment="Center" Margin="0,0,0,10"/>
+                            <TextBlock x:Name="TxtClassicWinnerNumber" Text="준비 완료" FontSize="20" FontWeight="Bold" Foreground="#38BDF8" HorizontalAlignment="Center"/>
+                            <TextBlock x:Name="TxtClassicWinnerName" Text="발표자 뽑기를 눌러주세요" FontSize="36" FontWeight="Bold" Foreground="#FDE047" HorizontalAlignment="Center" Margin="0,10,0,16"/>
+                            <TextBlock x:Name="TxtClassicRemaining" Text="남은 학생: 25명" FontSize="14" Foreground="#94A3B8" HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- Celebration Card Overlay (Shown when winner arrives) -->
+                <Grid x:Name="GridCelebration" Visibility="Collapsed" Background="#CC000000">
+                    <Border Background="#1E293B" CornerRadius="24" BorderBrush="#EAB308" BorderThickness="3" Width="540" Height="420" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="24">
+                        <Border.Effect>
+                            <DropShadowEffect BlurRadius="40" Color="#EAB308" Opacity="0.8"/>
+                        </Border.Effect>
+                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <TextBlock Text="🎉 1등 골인! 당첨을 축하합니다! 🎉" FontWeight="Bold" FontSize="18" Foreground="#FDE047" HorizontalAlignment="Center" Margin="0,0,0,14"/>
+                            
+                            <!-- Big Winner Avatar -->
+                            <Border CornerRadius="60" BorderBrush="#FDE047" BorderThickness="4" Width="120" Height="120" HorizontalAlignment="Center" Margin="0,0,0,12" Background="#0F172A">
+                                <Image x:Name="ImgWinnerAvatar" Width="112" Height="112" RenderOptions.BitmapScalingMode="HighQuality"/>
+                            </Border>
+
+                            <TextBlock x:Name="TxtWinnerTitle" Text="7번 김민준 (판다)" FontWeight="Bold" FontSize="30" Foreground="White" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                            <TextBlock Text="오늘의 멋진 발표자입니다! 👏" FontSize="15" Foreground="#94A3B8" HorizontalAlignment="Center" Margin="0,0,0,20"/>
+
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                <Button Content="확인 / 계속하기" Click="BtnDismissCelebration_Click" Width="140" Height="42" Background="#0284C7" Foreground="White" FontWeight="Bold" FontSize="14" BorderThickness="0" Cursor="Hand" Margin="0,0,10,0">
+                                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="10"/></Style></Button.Resources>
+                                </Button>
+                                <Button Content="🚀 다음 핀볼 발사" Click="BtnNextLaunch_Click" Width="140" Height="42" Background="#10B981" Foreground="White" FontWeight="Bold" FontSize="14" BorderThickness="0" Cursor="Hand">
+                                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="10"/></Style></Button.Resources>
+                                </Button>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Grid>
+        </Viewbox>
+
+        <!-- 3. Bottom Control Bar -->
+        <Border Grid.Row="2" Background="#0F172A" BorderBrush="#1E293B" BorderThickness="0,1,0,0" Padding="20,12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="💡 단축키:" FontSize="12" Foreground="#64748B" Margin="0,0,4,0"/>
+                    <Border Background="#1E293B" CornerRadius="4" Padding="6,2" Margin="0,0,8,0">
+                        <TextBlock Text="Space (발사)" FontSize="11" FontWeight="Bold" Foreground="#38BDF8"/>
+                    </Border>
+                    <Border Background="#1E293B" CornerRadius="4" Padding="6,2">
+                        <TextBlock Text="Esc (닫기)" FontSize="11" FontWeight="Bold" Foreground="#94A3B8"/>
+                    </Border>
+                </StackPanel>
+
+                <!-- Huge Main Action Button -->
+                <Button x:Name="BtnLaunch" Grid.Column="1" Click="BtnLaunch_Click" Width="320" Height="52" Background="#0284C7" Foreground="White" FontSize="20" FontWeight="Bold" BorderThickness="0" Cursor="Hand">
+                    <Button.Resources>
+                        <Style TargetType="Border">
+                            <Setter Property="CornerRadius" Value="14"/>
+                        </Style>
+                    </Button.Resources>
+                    <Button.Effect>
+                        <DropShadowEffect BlurRadius="18" Color="#0284C7" Opacity="0.6"/>
+                    </Button.Effect>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <TextBlock Text="🚀 " FontSize="22"/>
+                        <TextBlock x:Name="TxtBtnLaunchLabel" Text="핀볼 일제 발사! (추첨)"/>
+                    </StackPanel>
+                </Button>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <Button Content="배경음 / 효과음 ON" x:Name="BtnSoundToggle" Click="BtnSoundToggle_Click" Padding="12,8" Background="#1E293B" Foreground="#38BDF8" BorderBrush="#334155" BorderThickness="1" FontWeight="Bold" FontSize="11" Cursor="Hand">
+                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></Button.Resources>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
     </Grid>
 </Window>

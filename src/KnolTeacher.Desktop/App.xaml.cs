@@ -149,7 +149,7 @@ public partial class App : Application
                                 if (studentBoard.IsVisible)
                                 {
                                     studentBoard.Hide();
-                                    HudNotificationWindow.Instance.ShowToast("📺", "놀티쳐 보드 닫힘");
+                                    HudNotificationWindow.Instance.ShowToast("📺", "놀보드 닫힘");
                                 }
                                 else
                                 {
@@ -159,7 +159,7 @@ public partial class App : Application
                                     }
                                     studentBoard.Show();
                                     studentBoard.Activate();
-                                    HudNotificationWindow.Instance.ShowToast("📺", "놀티쳐 보드 열림 (F2)");
+                                    HudNotificationWindow.Instance.ShowToast("📺", "놀보드 열림 (F2)");
                                 }
                                 break;
 

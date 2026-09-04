@@ -19,7 +19,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Resource Include="assets\*.ico;assets\*.png" />
+    <Resource Include="assets\*.ico;assets\*.png;assets\avatars\*.png" />
   </ItemGroup>
 
   <ItemGroup>

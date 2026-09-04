@@ -53,7 +53,14 @@
         <!-- Big Display Card (Responsive Viewbox) -->
         <Border Grid.Row="1" Background="#0F172A" CornerRadius="10" BorderBrush="#334155" BorderThickness="1" Margin="0,0,0,6" Padding="8">
             <Viewbox Stretch="Uniform">
-                <TextBlock x:Name="TxtWinner" Text="?" FontFamily="Malgun Gothic" FontSize="52" FontWeight="Bold" Foreground="#38BDF8" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Border x:Name="BorderWinnerAvatar" Width="72" Height="72" CornerRadius="36" BorderBrush="#FBBF24" BorderThickness="3" HorizontalAlignment="Center" Margin="0,0,0,6" Visibility="Collapsed">
+                        <Border.Background>
+                            <ImageBrush x:Name="ImgWinnerAvatar" Stretch="UniformToFill"/>
+                        </Border.Background>
+                    </Border>
+                    <TextBlock x:Name="TxtWinner" Text="?" FontFamily="Malgun Gothic" FontSize="52" FontWeight="Bold" Foreground="#38BDF8" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </StackPanel>
             </Viewbox>
         </Border>
 

@@ -29,7 +29,7 @@
                     <ComboBoxItem Content="💻 PC 자동 종료 (퇴근 전 전원 차단)" Tag="shutdown"/>
                     <ComboBoxItem Content="💤 PC 절전 모드" Tag="sleep"/>
                     <ComboBoxItem Content="🔄 PC 재부팅" Tag="restart"/>
-                    <ComboBoxItem Content="📺 놀티쳐 보드 자동 열기" Tag="board"/>
+                    <ComboBoxItem Content="📺 놀보드 자동 열기" Tag="board"/>
                 </ComboBox>
 
                 <!-- Time Picker -->

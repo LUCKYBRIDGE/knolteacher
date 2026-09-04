@@ -72,7 +72,7 @@
                         <TextBlock Text="KnolTeacher • pinky-ne.com" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource BeigeTextMuted}" Cursor="Hand" Margin="34,2,0,0" MouseLeftButtonUp="LogoSub_MouseLeftButtonUp" ToolTip="놀퀴즈 (pinky-ne.com) 플랫폼 바로가기"/>
                     </StackPanel>
 
-                    <!-- 🌟 Primary Signature Button: 놀티쳐 보드 열기 (F2) -->
+                    <!-- 🌟 Primary Signature Button: 놀보드 열기 (F2) -->
                     <Border Grid.Row="1" Margin="12,4,12,12">
                         <Button x:Name="BtnSidebarBoard" Click="BtnLaunchBoard_Click"
                                 Background="{DynamicResource BeigeAccent}"
@@ -88,7 +88,7 @@
                             </Button.Resources>
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                                 <TextBlock Text="📺" FontSize="14" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                <TextBlock Text="놀티쳐 보드 열기" VerticalAlignment="Center"/>
+                                <TextBlock Text="놀보드 열기" VerticalAlignment="Center"/>
                                 <TextBlock Text=" (F2)" FontSize="10" Foreground="#FED7AA" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
@@ -368,7 +368,7 @@
                             <Border Margin="6" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="18" Cursor="Hand" MouseLeftButtonUp="BtnLaunchBoard_Click">
                                 <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
                                     <TextBlock Text="📋" FontSize="38" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                    <TextBlock Text="놀티쳐 보드" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="놀보드" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
                                     <TextBlock Text="초록칠판/화이트보드 (F2)" FontSize="12" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
                                 </StackPanel>
                             </Border>

@@ -1,0 +1,114 @@
+<Window x:Class="KnolTeacher.Desktop.Views.Windows.StudentRosterManageDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="👥 학생 명렬표 &amp; 동물 아바타 관리" Height="680" Width="720"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False"
+        Background="#0F172A">
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <!-- Header -->
+            <RowDefinition Height="Auto" />
+            <!-- Toolbar -->
+            <RowDefinition Height="Auto" />
+            <!-- Student List Grid -->
+            <RowDefinition Height="*" />
+            <!-- Footer -->
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0" Margin="0,0,0,12" Background="#1E293B" BorderBrush="#334155" BorderThickness="1" CornerRadius="12" Padding="14,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="👥" FontSize="18" Margin="0,0,8,0"/>
+                        <TextBlock Text="학생 명렬표 및 귀여운 동물 아바타 설정" FontWeight="Bold" FontSize="15" Foreground="White"/>
+                    </StackPanel>
+                    <TextBlock Text="학생별로 원하는 동물 캐릭터를 클릭해 변경할 수 있으며, 핀볼 추첨기에서 해당 아바타 핀볼로 표출됩니다." FontSize="11" Foreground="#94A3B8" Margin="0,3,0,0"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Quick actions -->
+        <Border Grid.Row="1" Margin="0,0,0,10" Background="#1E293B" BorderBrush="#334155" BorderThickness="1" CornerRadius="8" Padding="10,8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="총 학생 수:" Foreground="#94A3B8" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <TextBox x:Name="TbStudentCount" Text="25" Width="36" Height="26" FontSize="12" FontWeight="Bold" TextAlignment="Center" Background="#0F172A" Foreground="White" BorderBrush="#334155" VerticalContentAlignment="Center"/>
+                    <TextBlock Text="명으로" Foreground="#94A3B8" FontSize="12" VerticalAlignment="Center" Margin="4,0,8,0"/>
+                    <Button Content="명렬표 재생성" Click="BtnRegenerate_Click" Height="26" Padding="10,0" Background="#334155" Foreground="White" FontSize="11" Cursor="Hand"/>
+                </StackPanel>
+
+                <Button Grid.Column="2" Content="🎲 32종 동물 아바타 랜덤 셔플 재배정" Click="BtnShuffleAvatars_Click" Height="28" Padding="12,0" Background="#0284C7" Foreground="White" FontWeight="Bold" FontSize="11" Cursor="Hand">
+                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                </Button>
+            </Grid>
+        </Border>
+
+        <!-- Student List Items -->
+        <Border Grid.Row="2" Background="#1E293B" BorderBrush="#334155" BorderThickness="1" CornerRadius="12" Padding="8" Margin="0,0,0,12">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <ItemsControl x:Name="ItemsStudents">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Columns="3" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Margin="5" Background="#0F172A" BorderBrush="#334155" BorderThickness="1" CornerRadius="10" Padding="8">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- Avatar button -->
+                                    <Button Grid.Column="0" Click="BtnChangeAvatar_Click" Tag="{Binding}" Background="Transparent" BorderThickness="0" Cursor="Hand" ToolTip="클릭하여 동물 아바타 변경">
+                                        <Border CornerRadius="24" BorderBrush="#38BDF8" BorderThickness="1.5" Width="48" Height="48" Background="#1E293B">
+                                            <Image Source="{Binding AvatarUri}" Width="44" Height="44" RenderOptions.BitmapScalingMode="HighQuality"/>
+                                        </Border>
+                                    </Button>
+
+                                    <!-- Name input -->
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="8,0,0,0">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding Number}" FontWeight="Bold" FontSize="13" Foreground="#FDE047"/>
+                                            <TextBlock Text="번" FontWeight="Bold" FontSize="13" Foreground="#FDE047" Margin="0,0,6,0"/>
+                                            <TextBlock Text="{Binding AvatarName}" FontSize="11" Foreground="#94A3B8"/>
+                                        </StackPanel>
+                                        <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" Height="24" FontSize="12" FontWeight="Bold" Background="#1E293B" Foreground="White" BorderBrush="#334155" Margin="0,3,0,0" Padding="4,2"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Border>
+
+        <!-- Footer -->
+        <Grid Grid.Row="3">
+            <TextBlock Text="💡 동물 이미지를 클릭하면 32종 동물 갤러리에서 원하는 캐릭터로 바꿀 수 있습니다." FontSize="11" Foreground="#94A3B8" VerticalAlignment="Center"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="💾 저장하고 닫기" Click="BtnSave_Click" Width="120" Height="36" Background="#10B981" Foreground="White" FontWeight="Bold" FontSize="13" BorderThickness="0" Cursor="Hand">
+                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></Button.Resources>
+                </Button>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>
