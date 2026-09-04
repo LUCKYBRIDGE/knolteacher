@@ -28,7 +28,7 @@
             <ui:TitleBar.Header>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,0,0">
                     <Image Source="/assets/app_icon.png" Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                    <Border Background="{DynamicResource BeigeAccentSoft}" CornerRadius="6" Padding="8,2" Margin="0,0,8,0">
+                    <Border Background="{DynamicResource BeigeAccentSoft}" CornerRadius="6" Padding="8,2" Margin="0,0,8,0" Cursor="Hand" MouseLeftButtonUp="BtnLaunchSchoolScale_Click" ToolTip="클릭하여 내 기본 학교 변경 및 전국 학교 규모 통계 조회">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="🏫 " FontSize="11" VerticalAlignment="Center"/>
                             <TextBlock Text="{Binding SchoolName}" FontWeight="Bold" FontSize="11" Foreground="{DynamicResource BeigeAccent}" VerticalAlignment="Center"/>

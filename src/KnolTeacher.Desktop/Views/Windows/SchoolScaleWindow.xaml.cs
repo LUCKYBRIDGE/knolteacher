@@ -41,6 +41,8 @@ public partial class SchoolScaleWindow : Window
 
     private void SchoolScaleWindow_Loaded(object sender, RoutedEventArgs e)
     {
+        UpdateApiKeyBadge();
+
         // If config already has a school, prefill search box
         var cfg = _configService.NeisConfig;
         if (!string.IsNullOrEmpty(cfg.SchoolName) && string.IsNullOrEmpty(TbSchoolQuery.Text))
@@ -266,6 +268,52 @@ public partial class SchoolScaleWindow : Window
         catch (Exception ex)
         {
             MessageBox.Show($"클립보드 복사 중 오류: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    private void UpdateApiKeyBadge()
+    {
+        string key = _configService.NeisConfig?.ApiKey?.Trim() ?? string.Empty;
+        if (!string.IsNullOrEmpty(key))
+        {
+            string masked = key.Length > 8 ? $"{key.Substring(0, 4)}...{key.Substring(key.Length - 4)}" : key;
+            TxtApiKeyStatus.Text = $"인증 활성화 ({masked})";
+            BadgeApiKeyStatus.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#DCFCE7"));
+            BadgeApiKeyStatus.BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#86EFAC"));
+            TxtApiKeyStatus.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#15803D"));
+            BadgeApiKeyStatus.ToolTip = $"등록된 인증키: {key}\n(쿼리 제한 해제 및 초고속 정밀 API 응답 적용 중)";
+        }
+        else
+        {
+            TxtApiKeyStatus.Text = "공공 기본 모드 (키 미등록)";
+            BadgeApiKeyStatus.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FEF3C7"));
+            BadgeApiKeyStatus.BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FDE68A"));
+            TxtApiKeyStatus.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#B45309"));
+            BadgeApiKeyStatus.ToolTip = "클릭하여 교육정보 개방포털에서 발급받은 개인 API 키를 등록할 수 있습니다.";
+        }
+    }
+
+    private void BtnConfigApiKey_Click(object sender, RoutedEventArgs e)
+    {
+        string currentKey = _configService.NeisConfig?.ApiKey ?? string.Empty;
+        var dlg = new PromptInputDialog(
+            "나이스(NEIS) 오픈 API 인증키 설정",
+            "교육정보 개방포털(open.neis.go.kr)에서 발급받으신 인증키를 입력해주세요:\n(인증키 등록 시 호출 제한 해제 및 초고속 데이터 조회가 적용됩니다)",
+            currentKey)
+        {
+            Owner = this
+        };
+
+        if (dlg.ShowDialog() == true)
+        {
+            if (_configService.NeisConfig == null)
+            {
+                _configService.NeisConfig = new NeisConfig();
+            }
+            _configService.NeisConfig.ApiKey = dlg.InputText.Trim();
+            _configService.SaveNeisConfig();
+            UpdateApiKeyBadge();
+            MessageBox.Show("나이스 API 인증키가 안전하게 저장되었습니다!", "API 키 설정 완료", MessageBoxButton.OK, MessageBoxImage.Information);
         }
     }
 }
