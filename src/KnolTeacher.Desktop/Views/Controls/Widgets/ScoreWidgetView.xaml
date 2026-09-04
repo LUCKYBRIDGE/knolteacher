@@ -1,0 +1,151 @@
+<UserControl x:Class="KnolTeacher.Desktop.Views.Controls.Widgets.ScoreWidgetView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d">
+    <Grid Margin="6">
+        <Grid.RowDefinitions>
+            <!-- Grid of 6 Groups -->
+            <RowDefinition Height="*" />
+            <!-- Action Buttons Bar -->
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <UniformGrid Grid.Row="0" Rows="2" Columns="3" Margin="0,0,0,6">
+            <!-- Group 1 -->
+            <Border Background="#0F172A" CornerRadius="8" BorderBrush="#334155" BorderThickness="1" Margin="2" Padding="4">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <TextBox x:Name="TbName1" Grid.Row="0" Text="1모둠" FontSize="11" Foreground="#94A3B8" Background="#1E293B" BorderBrush="#334155" BorderThickness="1" TextAlignment="Center" Padding="2,1" Margin="2,0,2,2" LostFocus="Name_LostFocus"/>
+                    <Viewbox Grid.Row="1" Stretch="Uniform" Margin="0,1">
+                        <TextBox x:Name="TbScore1" Text="0" MinWidth="40" FontSize="32" FontWeight="Bold" Foreground="#38BDF8" Background="Transparent" BorderThickness="0" TextAlignment="Center" LostFocus="Score_LostFocus" KeyDown="Score_KeyDown" Tag="1"/>
+                    </Viewbox>
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,2,0,0">
+                        <Button Content="-1" Click="BtnScore_Click" Tag="1,-1" Width="22" Height="20" Background="#334155" Foreground="White" FontSize="10" FontWeight="Bold" Margin="0,0,2,0" BorderThickness="0" Cursor="Hand"/>
+                        <Button Content="+1" Click="BtnScore_Click" Tag="1,1" Width="24" Height="20" Background="#0284C7" Foreground="White" FontSize="10" FontWeight="Bold" Margin="0,0,2,0" BorderThickness="0" Cursor="Hand"/>
+                        <Button Content="+5" Click="BtnScore_Click" Tag="1,5" Width="24" Height="20" Background="#0369A1" Foreground="#FDE047" FontSize="10" FontWeight="Bold" BorderThickness="0" Cursor="Hand"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Group 2 -->
+            <Border Background="#0F172A" CornerRadius="8" BorderBrush="#334155" BorderThickness="1" Margin="2" Padding="4">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <TextBox x:Name="TbName2" Grid.Row="0" Text="2모둠" FontSize="11" Foreground="#94A3B8" Background="#1E293B" BorderBrush="#334155" BorderThickness="1" TextAlignment="Center" Padding="2,1" Margin="2,0,2,2" LostFocus="Name_LostFocus"/>
+                    <Viewbox Grid.Row="1" Stretch="Uniform" Margin="0,1">
+                        <TextBox x:Name="TbScore2" Text="0" MinWidth="40" FontSize="32" FontWeight="Bold" Foreground="#38BDF8" Background="Transparent" BorderThickness="0" TextAlignment="Center" LostFocus="Score_LostFocus" KeyDown="Score_KeyDown" Tag="2"/>
+                    </Viewbox>
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,2,0,0">
+                        <Button Content="-1" Click="BtnScore_Click" Tag="2,-1" Width="22" Height="20" Background="#334155" Foreground="White" FontSize="10" FontWeight="Bold" Margin="0,0,2,0" BorderThickness="0" Cursor="Hand"/>
+                        <Button Content="+1" Click="BtnScore_Click" Tag="2,1" Width="24" Height="20" Background="#0284C7" Foreground="White" FontSize="10" FontWeight="Bold" Margin="0,0,2,0" BorderThickness="0" Cursor="Hand"/>
+                        <Button Content="+5" Click="BtnScore_Click" Tag="2,5" Width="24" Height="20" Background="#0369A1" Foreground="#FDE047" FontSize="10" FontWeight="Bold" BorderThickness="0" Cursor="Hand"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Group 3 -->
+            <Border Background="#0F172A" CornerRadius="8" BorderBrush="#334155" BorderThickness="1" Margin="2" Padding="4">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <TextBox x:Name="TbName3" Grid.Row="0" Text="3모둠" FontSize="11" Foreground="#94A3B8" Background="#1E293B" BorderBrush="#334155" BorderThickness="1" TextAlignment="Center" Padding="2,1" Margin="2,0,2,2" LostFocus="Name_LostFocus"/>
+                    <Viewbox Grid.Row="1" Stretch="Uniform" Margin="0,1">
+                        <TextBox x:Name="TbScore3" Text="0" MinWidth="40" FontSize="32" FontWeight="Bold" Foreground="#38BDF8" Background="Transparent" BorderThickness="0" TextAlignment="Center" LostFocus="Score_LostFocus" KeyDown="Score_KeyDown" Tag="3"/>
+                    </Viewbox>
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,2,0,0">
+                        <Button Content="-1" Click="BtnScore_Click" Tag="3,-1" Width="22" Height="20" Background="#334155" Foreground="White" FontSize="10" FontWeight="Bold" Margin="0,0,2,0" BorderThickness="0" Cursor="Hand"/>
+                        <Button Content="+1" Click="BtnScore_Click" Tag="3,1" Width="24" Height="20" Background="#0284C7" Foreground="White" FontSize="10" FontWeight="Bold" Margin="0,0,2,0" BorderThickness="0" Cursor="Hand"/>
+                        <Button Content="+5" Click="BtnScore_Click" Tag="3,5" Width="24" Height="20" Background="#0369A1" Foreground="#FDE047" FontSize="10" FontWeight="Bold" BorderThickness="0" Cursor="Hand"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Group 4 -->
+            <Border Background="#0F172A" CornerRadius="8" BorderBrush="#334155" BorderThickness="1" Margin="2" Padding="4">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <TextBox x:Name="TbName4" Grid.Row="0" Text="4모둠" FontSize="11" Foreground="#94A3B8" Background="#1E293B" BorderBrush="#334155" BorderThickness="1" TextAlignment="Center" Padding="2,1" Margin="2,0,2,2" LostFocus="Name_LostFocus"/>
+                    <Viewbox Grid.Row="1" Stretch="Uniform" Margin="0,1">
+                        <TextBox x:Name="TbScore4" Text="0" MinWidth="40" FontSize="32" FontWeight="Bold" Foreground="#38BDF8" Background="Transparent" BorderThickness="0" TextAlignment="Center" LostFocus="Score_LostFocus" KeyDown="Score_KeyDown" Tag="4"/>
+                    </Viewbox>
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,2,0,0">
+                        <Button Content="-1" Click="BtnScore_Click" Tag="4,-1" Width="22" Height="20" Background="#334155" Foreground="White" FontSize="10" FontWeight="Bold" Margin="0,0,2,0" BorderThickness="0" Cursor="Hand"/>
+                        <Button Content="+1" Click="BtnScore_Click" Tag="4,1" Width="24" Height="20" Background="#0284C7" Foreground="White" FontSize="10" FontWeight="Bold" Margin="0,0,2,0" BorderThickness="0" Cursor="Hand"/>
+                        <Button Content="+5" Click="BtnScore_Click" Tag="4,5" Width="24" Height="20" Background="#0369A1" Foreground="#FDE047" FontSize="10" FontWeight="Bold" BorderThickness="0" Cursor="Hand"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Group 5 -->
+            <Border Background="#0F172A" CornerRadius="8" BorderBrush="#334155" BorderThickness="1" Margin="2" Padding="4">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <TextBox x:Name="TbName5" Grid.Row="0" Text="5모둠" FontSize="11" Foreground="#94A3B8" Background="#1E293B" BorderBrush="#334155" BorderThickness="1" TextAlignment="Center" Padding="2,1" Margin="2,0,2,2" LostFocus="Name_LostFocus"/>
+                    <Viewbox Grid.Row="1" Stretch="Uniform" Margin="0,1">
+                        <TextBox x:Name="TbScore5" Text="0" MinWidth="40" FontSize="32" FontWeight="Bold" Foreground="#38BDF8" Background="Transparent" BorderThickness="0" TextAlignment="Center" LostFocus="Score_LostFocus" KeyDown="Score_KeyDown" Tag="5"/>
+                    </Viewbox>
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,2,0,0">
+                        <Button Content="-1" Click="BtnScore_Click" Tag="5,-1" Width="22" Height="20" Background="#334155" Foreground="White" FontSize="10" FontWeight="Bold" Margin="0,0,2,0" BorderThickness="0" Cursor="Hand"/>
+                        <Button Content="+1" Click="BtnScore_Click" Tag="5,1" Width="24" Height="20" Background="#0284C7" Foreground="White" FontSize="10" FontWeight="Bold" Margin="0,0,2,0" BorderThickness="0" Cursor="Hand"/>
+                        <Button Content="+5" Click="BtnScore_Click" Tag="5,5" Width="24" Height="20" Background="#0369A1" Foreground="#FDE047" FontSize="10" FontWeight="Bold" BorderThickness="0" Cursor="Hand"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Group 6 -->
+            <Border Background="#0F172A" CornerRadius="8" BorderBrush="#334155" BorderThickness="1" Margin="2" Padding="4">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <TextBox x:Name="TbName6" Grid.Row="0" Text="6모둠" FontSize="11" Foreground="#94A3B8" Background="#1E293B" BorderBrush="#334155" BorderThickness="1" TextAlignment="Center" Padding="2,1" Margin="2,0,2,2" LostFocus="Name_LostFocus"/>
+                    <Viewbox Grid.Row="1" Stretch="Uniform" Margin="0,1">
+                        <TextBox x:Name="TbScore6" Text="0" MinWidth="40" FontSize="32" FontWeight="Bold" Foreground="#38BDF8" Background="Transparent" BorderThickness="0" TextAlignment="Center" LostFocus="Score_LostFocus" KeyDown="Score_KeyDown" Tag="6"/>
+                    </Viewbox>
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,2,0,0">
+                        <Button Content="-1" Click="BtnScore_Click" Tag="6,-1" Width="22" Height="20" Background="#334155" Foreground="White" FontSize="10" FontWeight="Bold" Margin="0,0,2,0" BorderThickness="0" Cursor="Hand"/>
+                        <Button Content="+1" Click="BtnScore_Click" Tag="6,1" Width="24" Height="20" Background="#0284C7" Foreground="White" FontSize="10" FontWeight="Bold" Margin="0,0,2,0" BorderThickness="0" Cursor="Hand"/>
+                        <Button Content="+5" Click="BtnScore_Click" Tag="6,5" Width="24" Height="20" Background="#0369A1" Foreground="#FDE047" FontSize="10" FontWeight="Bold" BorderThickness="0" Cursor="Hand"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </UniformGrid>
+
+        <!-- Bottom Action Bar -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Button Grid.Column="0" Content="전원 +1점 부여" Click="BtnAddAll_Click" Height="28" Margin="0,0,3,0" Background="#0369A1" Foreground="White" FontSize="11" FontWeight="Bold" BorderThickness="0" Cursor="Hand">
+                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+            </Button>
+            <Button Grid.Column="1" Content="점수 전체 초기화" Click="BtnReset_Click" Height="28" Margin="3,0,0,0" Background="#334155" Foreground="#CBD5E1" FontSize="11" BorderThickness="0" Cursor="Hand">
+                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+            </Button>
+        </Grid>
+    </Grid>
+</UserControl>

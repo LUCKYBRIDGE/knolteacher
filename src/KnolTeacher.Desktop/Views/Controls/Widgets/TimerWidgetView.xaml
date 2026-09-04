@@ -1,0 +1,71 @@
+<UserControl x:Class="KnolTeacher.Desktop.Views.Controls.Widgets.TimerWidgetView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d">
+    <Grid Margin="6">
+        <Grid.RowDefinitions>
+            <!-- Digits Display (Auto Scaling Viewbox) -->
+            <RowDefinition Height="*" />
+            <!-- Manual Input & Fine-Tuning Bar -->
+            <RowDefinition Height="Auto" />
+            <!-- Presets -->
+            <RowDefinition Height="Auto" />
+            <!-- Controls -->
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Big Neon Timer Display in Responsive Viewbox -->
+        <Border Grid.Row="0" Background="#0F172A" CornerRadius="10" BorderBrush="#334155" BorderThickness="1" Margin="0,0,0,6" Padding="12">
+            <Viewbox Stretch="Uniform">
+                <TextBlock x:Name="TxtDisplay" Text="05:00" FontFamily="Consolas, Malgun Gothic" FontSize="48" FontWeight="Bold" Foreground="#38BDF8" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Viewbox>
+        </Border>
+
+        <!-- Manual Numeric Input & Fine-Tuning Bar -->
+        <Grid Grid.Row="1" Margin="0,0,0,6">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="시간입력:" Foreground="#94A3B8" FontSize="11" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                <TextBox x:Name="TbMinutes" Text="05" Width="30" Height="26" FontSize="11" FontWeight="Bold" TextAlignment="Center" Background="#1E293B" Foreground="White" BorderBrush="#334155" VerticalContentAlignment="Center" KeyDown="TbTime_KeyDown"/>
+                <TextBlock Text="분" Foreground="#94A3B8" FontSize="11" VerticalAlignment="Center" Margin="2,0,4,0"/>
+                <TextBox x:Name="TbSeconds" Text="00" Width="30" Height="26" FontSize="11" FontWeight="Bold" TextAlignment="Center" Background="#1E293B" Foreground="White" BorderBrush="#334155" VerticalContentAlignment="Center" KeyDown="TbTime_KeyDown"/>
+                <TextBlock Text="초" Foreground="#94A3B8" FontSize="11" VerticalAlignment="Center" Margin="2,0,4,0"/>
+                <Button Content="설정" Click="BtnApplyManualTime_Click" Height="26" Padding="6,0" Background="#0284C7" Foreground="White" FontSize="10" FontWeight="Bold" Cursor="Hand"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                <Button Content="+1분" Click="BtnAddSec_Click" Tag="60" Height="26" Padding="4,0" Margin="2,0" Background="#1E293B" Foreground="#38BDF8" FontSize="10" FontWeight="Bold" Cursor="Hand"/>
+                <Button Content="+10초" Click="BtnAddSec_Click" Tag="10" Height="26" Padding="4,0" Margin="2,0" Background="#1E293B" Foreground="#38BDF8" FontSize="10" FontWeight="Bold" Cursor="Hand"/>
+                <Button Content="-10초" Click="BtnAddSec_Click" Tag="-10" Height="26" Padding="4,0" Margin="2,0" Background="#1E293B" Foreground="#EF4444" FontSize="10" FontWeight="Bold" Cursor="Hand"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- Presets -->
+        <UniformGrid Grid.Row="2" Columns="5" Margin="0,0,0,6">
+            <Button Content="1분" Click="BtnPreset_Click" Tag="60" Margin="1" Padding="0,3" Background="#334155" Foreground="White" BorderThickness="0" Cursor="Hand"/>
+            <Button Content="3분" Click="BtnPreset_Click" Tag="180" Margin="1" Padding="0,3" Background="#334155" Foreground="White" BorderThickness="0" Cursor="Hand"/>
+            <Button Content="5분" Click="BtnPreset_Click" Tag="300" Margin="1" Padding="0,3" Background="#334155" Foreground="White" BorderThickness="0" Cursor="Hand"/>
+            <Button Content="10분" Click="BtnPreset_Click" Tag="600" Margin="1" Padding="0,3" Background="#334155" Foreground="White" BorderThickness="0" Cursor="Hand"/>
+            <Button Content="40분" Click="BtnPreset_Click" Tag="2400" Margin="1" Padding="0,3" Background="#475569" Foreground="#FDE047" FontWeight="Bold" BorderThickness="0" Cursor="Hand"/>
+        </UniformGrid>
+
+        <!-- Controls -->
+        <Grid Grid.Row="3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Button x:Name="BtnStartPause" Grid.Column="0" Content="▶ 시작" Click="BtnStartPause_Click" Height="34" Margin="0,0,6,0" Background="#0284C7" Foreground="White" FontWeight="Bold" FontSize="13" BorderThickness="0" Cursor="Hand">
+                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+            </Button>
+            <Button Content="↺ 리셋" Click="BtnReset_Click" Grid.Column="1" Width="60" Height="34" Background="#334155" Foreground="White" FontWeight="Bold" FontSize="12" BorderThickness="0" Cursor="Hand">
+                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+            </Button>
+        </Grid>
+    </Grid>
+</UserControl>

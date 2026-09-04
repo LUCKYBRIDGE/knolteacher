@@ -1,0 +1,37 @@
+<UserControl x:Class="KnolTeacher.Desktop.Views.Controls.Widgets.MemoWidgetView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d">
+    <Grid Margin="6">
+        <Grid.RowDefinitions>
+            <!-- Mini Toolbar -->
+            <RowDefinition Height="Auto" />
+            <!-- Text Editor -->
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Top Mini Toolbar -->
+        <Border Grid.Row="0" Background="#0F172A" CornerRadius="6" BorderBrush="#334155" BorderThickness="1" Padding="4,2" Margin="0,0,0,6">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Content="+알림" Click="BtnInsertTag_Click" Tag="• [알림] " Height="22" Padding="4,0" Margin="0,0,3,0" Background="#1E293B" Foreground="#38BDF8" FontSize="10" FontWeight="Bold" BorderThickness="0" Cursor="Hand"/>
+                    <Button Content="+준비물" Click="BtnInsertTag_Click" Tag="• [준비물] " Height="22" Padding="4,0" Margin="0,0,3,0" Background="#1E293B" Foreground="#FDE047" FontSize="10" FontWeight="Bold" BorderThickness="0" Cursor="Hand"/>
+                    <Button Content="+과제" Click="BtnInsertTag_Click" Tag="• [과제] " Height="22" Padding="4,0" Margin="0,0,3,0" Background="#1E293B" Foreground="#F472B6" FontSize="10" FontWeight="Bold" BorderThickness="0" Cursor="Hand"/>
+                </StackPanel>
+                <Button Grid.Column="1" Content="🗑️ 비우기" Click="BtnClear_Click" Height="22" Padding="6,0" Background="#334155" Foreground="#CBD5E1" FontSize="10" BorderThickness="0" Cursor="Hand"/>
+            </Grid>
+        </Border>
+
+        <!-- Memo Text Area -->
+        <TextBox x:Name="TbMemo" Grid.Row="1" AcceptsReturn="True" TextWrapping="Wrap"
+                 Background="#0F172A" Foreground="White" BorderBrush="#334155" BorderThickness="1"
+                 FontSize="12" Padding="8"
+                 VerticalScrollBarVisibility="Auto"/>
+    </Grid>
+</UserControl>

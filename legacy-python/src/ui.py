@@ -704,7 +704,7 @@ class App(ctk.CTk):
         self.manager.on_state_change = self._on_manager_state_change
         self.manager.on_alarm_triggered = self._on_manager_alarm_triggered
 
-        system_monitor.register_listener(self._on_system_metrics_updated)
+        # 💡 상시 리소스 감시 루프 제거 (클릭 시 1회성 확인 방식으로 전환하여 CPU 낭비 박멸)
 
         # 시스템 트레이 초기화 (작업 표시줄 알림 영역 상주)
         from src.tray_manager import init_tray
@@ -1194,25 +1194,22 @@ class App(ctk.CTk):
 
 # 상단 투명도 조절 바 제거됨
 
-        # 우측 미니멀 시스템 자원 칩 (CPU / RAM / GPU - 텍스트 잘림 없는 탄력적 너비)
-        res_chip_box = ctk.CTkFrame(top_right_box, fg_color=palette["sidebar_bg"], corner_radius=8, border_width=1, border_color=palette["card_border"], height=32)
-        res_chip_box.pack(side="left")
-
-        chip_inner = ctk.CTkFrame(res_chip_box, fg_color="transparent")
-        chip_inner.pack(padx=(10, 14), pady=3, fill="both", expand=True)
-
-        self.cpu_label = ctk.CTkLabel(chip_inner, text="💻 CPU --%", font=get_font(10, "bold"), text_color=palette["text_sub"])
-        self.cpu_label.pack(side="left", padx=4)
-
-        ctk.CTkFrame(chip_inner, width=1, height=14, fg_color=palette["card_border"]).pack(side="left", padx=4)
-
-        self.ram_label = ctk.CTkLabel(chip_inner, text="🧠 RAM --%", font=get_font(10, "bold"), text_color=palette["text_sub"])
-        self.ram_label.pack(side="left", padx=4)
-
-        ctk.CTkFrame(chip_inner, width=1, height=14, fg_color=palette["card_border"]).pack(side="left", padx=4)
-
-        self.gpu_label = ctk.CTkLabel(chip_inner, text="🎮 GPU --%", font=get_font(10, "bold"), text_color=palette["text_sub"])
-        self.gpu_label.pack(side="left", padx=(4, 4))
+        # 💡 클릭 시에만 1회 측정하는 온디맨드 PC 리소스 버튼
+        self.res_check_btn = ctk.CTkButton(
+            top_right_box,
+            text="💻 PC 리소스 확인",
+            font=get_font(10, "bold"),
+            height=30,
+            corner_radius=8,
+            fg_color=palette["card_inner_bg"],
+            hover_color=palette["sidebar_btn_hover"],
+            text_color=palette["text_sub"],
+            border_width=1,
+            border_color=palette["card_border"],
+            command=self._check_system_resources_on_click
+        )
+        self.res_check_btn.pack(side="left")
+        attach_tooltip(self.res_check_btn, "클릭하여 현재 컴퓨터의 CPU, RAM, 디스크 사용량을 1회 측정합니다 (상시 부하 0%)")
 
         # 1.5. 💡 놀퀴즈 (pinky-ne.com) 소프트 베젤 스마트 연결 유도 배너
         pinky_banner = ctk.CTkFrame(
@@ -1829,6 +1826,42 @@ class App(ctk.CTk):
         ctk.CTkButton(pop, text="닫기", font=get_font(10, "bold"), height=28, command=pop.destroy).pack(pady=8)
 
 
+
+    def _check_system_resources_on_click(self):
+        """클릭 시 1회성으로 시스템 리소스를 측정하여 깔끔하게 안내"""
+        if hasattr(self, "res_check_btn") and self.res_check_btn.winfo_exists():
+            self.res_check_btn.configure(text="💻 측정 중...", state="disabled")
+
+        def _bg():
+            m = system_monitor.get_instant_metrics()
+            def _ui():
+                if hasattr(self, "res_check_btn") and self.res_check_btn.winfo_exists():
+                    c_p = m.get("cpu_percent", 0.0)
+                    r_p = m.get("ram_percent", 0.0)
+                    self.res_check_btn.configure(
+                        text=f"💻 CPU {c_p:.0f}% | RAM {r_p:.0f}%",
+                        state="normal"
+                    )
+
+                cpu_p = m.get("cpu_percent", 0.0)
+                ram_p = m.get("ram_percent", 0.0)
+                ram_u = m.get("ram_used_gb", 0.0)
+                ram_t = m.get("ram_total_gb", 0.0)
+                disk_p = m.get("disk_percent", 0.0)
+                disk_f = m.get("disk_free_gb", 0.0)
+
+                msg = (
+                    f"📊 현재 컴퓨터 시스템 리소스 상태\n\n"
+                    f"• 💻 CPU 사용량: {cpu_p:.1f}%\n"
+                    f"• 🧠 메모리(RAM): {ram_u}GB / {ram_t}GB ({ram_p:.1f}% 사용 중)\n"
+                    f"• 💽 C: 드라이브 여유: {disk_f}GB ({disk_p:.1f}% 사용 중)\n\n"
+                    f"💡 백그라운드 상시 모니터링을 중단하여 PC 자원을 전혀 소모하지 않습니다."
+                )
+                self._show_simple_alert("PC 리소스 상태", msg)
+
+            self.after(0, _ui)
+
+        threading.Thread(target=_bg, daemon=True).start()
 
     def _on_system_metrics_updated(self, metrics: dict[str, Any]):
         try:

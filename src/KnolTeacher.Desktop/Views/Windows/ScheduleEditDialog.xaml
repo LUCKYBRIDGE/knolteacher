@@ -1,0 +1,95 @@
+<Window x:Class="KnolTeacher.Desktop.Views.Windows.ScheduleEditDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="스마트 예약 등록 / 수정" Height="530" Width="480"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="#F8F5EE">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <TextBlock Grid.Row="0" Text="⏰ 스마트 정기 예약 설정" FontSize="18" FontWeight="Bold" Foreground="#1C1917" Margin="0,0,0,16"/>
+
+        <!-- Form Fields -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <!-- Title -->
+                <TextBlock Text="예약 제목" FontWeight="Bold" FontSize="12" Foreground="#44403C" Margin="0,0,0,4"/>
+                <TextBox x:Name="TbTitle" Height="34" FontSize="13" Padding="8,4" Margin="0,0,0,14" Background="White" BorderBrush="#DBCDBA"/>
+
+                <!-- Action Type -->
+                <TextBlock Text="실행 동작" FontWeight="Bold" FontSize="12" Foreground="#44403C" Margin="0,0,0,4"/>
+                <ComboBox x:Name="CbActionType" Height="34" Margin="0,0,0,14" FontSize="13">
+                    <ComboBoxItem Content="🔔 차임벨 알람 (음악 재생)" Tag="alarm" IsSelected="True"/>
+                    <ComboBoxItem Content="💻 PC 자동 종료 (퇴근 전 전원 차단)" Tag="shutdown"/>
+                    <ComboBoxItem Content="💤 PC 절전 모드" Tag="sleep"/>
+                    <ComboBoxItem Content="🔄 PC 재부팅" Tag="restart"/>
+                    <ComboBoxItem Content="📺 놀티쳐 보드 자동 열기" Tag="board"/>
+                </ComboBox>
+
+                <!-- Time Picker -->
+                <TextBlock Text="실행 시간" FontWeight="Bold" FontSize="12" Foreground="#44403C" Margin="0,0,0,4"/>
+                <Grid Margin="0,0,0,14">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <ComboBox x:Name="CbAmPm" Grid.Column="0" Height="34" Margin="0,0,4,0" FontSize="13">
+                        <ComboBoxItem Content="오전" IsSelected="True"/>
+                        <ComboBoxItem Content="오후"/>
+                    </ComboBox>
+                    <ComboBox x:Name="CbHour" Grid.Column="1" Height="34" Margin="4,0,4,0" FontSize="13"/>
+                    <ComboBox x:Name="CbMinute" Grid.Column="2" Height="34" Margin="4,0,0,0" FontSize="13"/>
+                </Grid>
+
+                <!-- Reservation Type (Single vs Recurring) -->
+                <TextBlock Text="예약 방식" FontWeight="Bold" FontSize="12" Foreground="#44403C" Margin="0,0,0,6"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+                    <RadioButton x:Name="RbSingle" Content="📅 단건 예약 (1회)" Checked="RbScheduleType_Changed" FontWeight="SemiBold" Margin="0,0,16,0" VerticalAlignment="Center"/>
+                    <RadioButton x:Name="RbRecurring" Content="🔄 정기 반복 예약" IsChecked="True" Checked="RbScheduleType_Changed" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Single Date Picker Panel -->
+                <StackPanel x:Name="PanelSingleDate" Visibility="Collapsed" Margin="0,0,0,14">
+                    <TextBlock Text="실행 날짜" FontWeight="Bold" FontSize="12" Foreground="#44403C" Margin="0,0,0,4"/>
+                    <DatePicker x:Name="DpDate" Height="34" FontSize="13"/>
+                </StackPanel>
+
+                <!-- Repeat Days Panel -->
+                <StackPanel x:Name="PanelRecurringDays">
+                    <TextBlock Text="반복 요일" FontWeight="Bold" FontSize="12" Foreground="#44403C" Margin="0,0,0,4"/>
+                    <WrapPanel Margin="0,0,0,10">
+                        <CheckBox x:Name="ChkMon" Content="월" IsChecked="True" Margin="0,0,10,4" FontWeight="SemiBold"/>
+                        <CheckBox x:Name="ChkTue" Content="화" IsChecked="True" Margin="0,0,10,4" FontWeight="SemiBold"/>
+                        <CheckBox x:Name="ChkWed" Content="수" IsChecked="True" Margin="0,0,10,4" FontWeight="SemiBold"/>
+                        <CheckBox x:Name="ChkThu" Content="목" IsChecked="True" Margin="0,0,10,4" FontWeight="SemiBold"/>
+                        <CheckBox x:Name="ChkFri" Content="금" IsChecked="True" Margin="0,0,10,4" FontWeight="SemiBold"/>
+                        <CheckBox x:Name="ChkSat" Content="토" Margin="0,0,10,4" FontWeight="SemiBold" Foreground="#0284C7"/>
+                        <CheckBox x:Name="ChkSun" Content="일" Margin="0,0,10,4" FontWeight="SemiBold" Foreground="#EF4444"/>
+                    </WrapPanel>
+                    <CheckBox x:Name="ChkSkipHolidays" Content="공휴일 및 휴일에는 건너뛰기" IsChecked="True" Margin="0,0,0,14" FontWeight="SemiBold"/>
+                </StackPanel>
+
+                <!-- Memo -->
+                <TextBlock Text="메모 (선택)" FontWeight="Bold" FontSize="12" Foreground="#44403C" Margin="0,0,0,4"/>
+                <TextBox x:Name="TbMemo" Height="50" TextWrapping="Wrap" AcceptsReturn="True" Padding="8,4" Background="White" BorderBrush="#DBCDBA" Margin="0,0,0,10"/>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Bottom Action Buttons -->
+        <Grid Grid.Row="2" Margin="0,16,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Button Content="취소" Click="BtnCancel_Click" Grid.Column="0" Height="38" Margin="0,0,6,0" Background="#E7DAC7" Foreground="#44403C" FontWeight="Bold" BorderThickness="0" Cursor="Hand"/>
+            <Button Content="저장하기" Click="BtnSave_Click" Grid.Column="1" Height="38" Margin="6,0,0,0" Background="#B45309" Foreground="White" FontWeight="Bold" BorderThickness="0" Cursor="Hand"/>
+        </Grid>
+    </Grid>
+</Window>

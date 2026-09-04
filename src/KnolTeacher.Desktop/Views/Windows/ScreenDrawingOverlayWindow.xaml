@@ -1,0 +1,55 @@
+<Window x:Class="KnolTeacher.Desktop.Views.Windows.ScreenDrawingOverlayWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        mc:Ignorable="d"
+        Title="화면 전체 판서 (Alt+2)"
+        WindowStyle="None"
+        Topmost="True"
+        ShowInTaskbar="False"
+        WindowStartupLocation="Manual">
+    <Grid>
+        <!-- Background Freeze Image -->
+        <Image x:Name="FreezeImage" Stretch="Fill" />
+
+        <!-- GPU Accelerated InkCanvas for instant, lag-free drawing -->
+        <InkCanvas x:Name="OverlayInkCanvas"
+                   Background="Transparent" />
+
+        <!-- Floating Top Toolbar (Draggable) -->
+        <Border HorizontalAlignment="Center" VerticalAlignment="Top"
+                Margin="0,16,0,0"
+                Background="#EE1E293B" CornerRadius="12"
+                BorderBrush="#475569" BorderThickness="1.5"
+                Padding="12,8"
+                MouseLeftButtonDown="Toolbar_MouseLeftButtonDown">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="15" Opacity="0.5" ShadowDepth="4"/>
+            </Border.Effect>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="✏️ 화면 판서" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" Margin="4,0,12,0"/>
+
+                <!-- Tool Toggles -->
+                <RadioButton x:Name="RbPen" Content="펜" IsChecked="True" Checked="RbPen_Checked" Foreground="White" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                <RadioButton x:Name="RbHighlighter" Content="형광펜" Checked="RbHighlighter_Checked" Foreground="White" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                <RadioButton x:Name="RbEraser" Content="획 지우개" Checked="RbEraser_Checked" Foreground="White" Margin="0,0,12,0" VerticalAlignment="Center"/>
+
+                <!-- Quick Colors -->
+                <Button Width="20" Height="20" Background="#EF4444" Click="BtnColor_Click" Tag="#EF4444" Margin="0,0,4,0" ToolTip="빨강"/>
+                <Button Width="20" Height="20" Background="#FDE047" Click="BtnColor_Click" Tag="#FDE047" Margin="0,0,4,0" ToolTip="노랑"/>
+                <Button Width="20" Height="20" Background="#38BDF8" Click="BtnColor_Click" Tag="#38BDF8" Margin="0,0,4,0" ToolTip="파랑"/>
+                <Button Width="20" Height="20" Background="#22C55E" Click="BtnColor_Click" Tag="#22C55E" Margin="0,0,4,0" ToolTip="초록"/>
+                <Button Width="20" Height="20" Background="#FFFFFF" Click="BtnColor_Click" Tag="#FFFFFF" Margin="0,0,12,0" ToolTip="흰색"/>
+
+                <!-- Actions -->
+                <Button Content="↩ 실행취소" Click="BtnUndo_Click" Margin="0,0,6,0" Padding="8,3" Background="#334155" Foreground="White" BorderThickness="0"/>
+                <Button Content="🗑 지우기" Click="BtnClear_Click" Margin="0,0,12,0" Padding="8,3" Background="#DC2626" Foreground="White" BorderThickness="0"/>
+
+                <!-- Exit -->
+                <Button Content="✕ 판서 종료 (ESC)" Click="BtnClose_Click" Padding="10,4" Background="#E11D48" Foreground="White" FontWeight="Bold" BorderThickness="0"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

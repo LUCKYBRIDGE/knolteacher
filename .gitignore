@@ -18,6 +18,17 @@ config/*.json
 !config/default_*.json
 *.log
 
+# .NET / C# Build Outputs
+bin/
+obj/
+dist-net/
+*.user
+*.suo
+.vs/
+*.exe
+*.dll
+*.pdb
+
 # IDE
 .idea/
 .vscode/

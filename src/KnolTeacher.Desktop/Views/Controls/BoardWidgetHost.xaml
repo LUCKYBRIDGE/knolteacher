@@ -1,0 +1,116 @@
+<UserControl x:Class="KnolTeacher.Desktop.Views.Controls.BoardWidgetHost"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             MinWidth="240" MinHeight="180">
+    <UserControl.Resources>
+        <!-- Resize Thumb Style -->
+        <Style x:Key="ResizeThumbStyle" TargetType="Thumb">
+            <Setter Property="Width" Value="18"/>
+            <Setter Property="Height" Value="18"/>
+            <Setter Property="Cursor" Value="SizeNWSE"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Thumb">
+                        <Border Background="Transparent">
+                            <TextBlock Text="◢" FontSize="11" Foreground="#64748B" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,2,2"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <!-- Main Outer Widget Card with Frosted Acrylic Glass Effect -->
+    <Border x:Name="OuterBorder"
+            Background="#F21E293B"
+            BorderBrush="#38BDF8"
+            BorderThickness="1.5"
+            CornerRadius="12">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="20" Opacity="0.55" ShadowDepth="6" Color="#000000"/>
+        </Border.Effect>
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <!-- Titlebar / Drag Handle -->
+                <RowDefinition Height="36" />
+                <!-- Content Body -->
+                <RowDefinition Height="*" />
+                <!-- Bottom Bar (Resize Handle) -->
+                <RowDefinition Height="14" />
+            </Grid.RowDefinitions>
+
+            <!-- 1. Header Bar -->
+            <Border Grid.Row="0" x:Name="TitleBar"
+                    Background="#111827"
+                    CornerRadius="10,10,0,0"
+                    BorderBrush="#334155"
+                    BorderThickness="0,0,0,1"
+                    Cursor="SizeAll"
+                    MouseLeftButtonDown="TitleBar_MouseLeftButtonDown"
+                    MouseMove="TitleBar_MouseMove"
+                    MouseLeftButtonUp="TitleBar_MouseLeftButtonUp">
+                <Grid Margin="10,0,6,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Column="0" Text="⋮⋮" Foreground="#64748B" FontSize="13" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <TextBlock Grid.Column="1" x:Name="TxtTitle" Text="위젯 제목" Foreground="White" FontSize="12" FontWeight="Bold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+
+                    <!-- Font Zoom Controls & Close Button -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Border Background="#1E293B" CornerRadius="4" Padding="2,0" Margin="0,0,6,0">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button Click="BtnZoomOut_Click" Width="20" Height="20" Padding="0" Background="Transparent" Foreground="#94A3B8" BorderThickness="0" Cursor="Hand" ToolTip="내부 글씨·숫자 축소 (-)">
+                                    <TextBlock Text="-" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Button>
+                                <TextBlock x:Name="TxtZoomLevel" Text="100%" FontSize="9" Foreground="#38BDF8" FontWeight="SemiBold" VerticalAlignment="Center" Margin="3,0"/>
+                                <Button Click="BtnZoomIn_Click" Width="20" Height="20" Padding="0" Background="Transparent" Foreground="#94A3B8" BorderThickness="0" Cursor="Hand" ToolTip="내부 글씨·숫자 확대 (+)">
+                                    <TextBlock Text="+" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Button>
+                            </StackPanel>
+                        </Border>
+
+                        <Separator Margin="4,4" Width="1" Background="#334155"/>
+
+                        <Button Click="BtnClose_Click" Width="22" Height="22" Background="Transparent" BorderThickness="0" Cursor="Hand" ToolTip="위젯 닫기">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="bClose" CornerRadius="11" Background="Transparent">
+                                        <TextBlock Text="✕" Foreground="#94A3B8" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="bClose" Property="Background" Value="#EF4444"/>
+                                            <Setter Property="Foreground" Value="White"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- 2. Content Area with Transform -->
+            <ContentPresenter Grid.Row="1" x:Name="HostContentPresenter" Margin="8,8,8,2">
+                <ContentPresenter.LayoutTransform>
+                    <ScaleTransform x:Name="ContentScaleTransform" ScaleX="1.0" ScaleY="1.0"/>
+                </ContentPresenter.LayoutTransform>
+            </ContentPresenter>
+
+            <!-- 3. Bottom Resize Grip -->
+            <Grid Grid.Row="2">
+                <Thumb HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                       Style="{StaticResource ResizeThumbStyle}"
+                       DragDelta="ResizeThumb_DragDelta"/>
+            </Grid>
+        </Grid>
+    </Border>
+</UserControl>

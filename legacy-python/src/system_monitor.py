@@ -38,9 +38,8 @@ class SystemMonitorManager:
 
         self.gpu_type = self._detect_gpu_type()
 
-        # 백그라운드 모니터링 스레드 시작
-        self._worker_thread = threading.Thread(target=self._monitor_loop, daemon=True)
-        self._worker_thread.start()
+        # 💡 상시 모니터링 스레드 비활성화: 사용자 클릭 시에만 1회성 측정(On-Demand)하여 CPU 과부하 0% 달성
+        self._worker_thread = None
 
     def _detect_gpu_type(self) -> str:
         # NVIDIA 확인
@@ -69,6 +68,50 @@ class SystemMonitorManager:
         with self.lock:
             if callback in self._listeners:
                 self._listeners.remove(callback)
+
+
+    def get_instant_metrics(self) -> Dict[str, Any]:
+        """
+        사용자가 클릭했을 때만 1회성으로 측정하여 반환 (상시 부하 0%)
+        """
+        try:
+            # 1. CPU (즉각 측정)
+            cpu_p = psutil.cpu_percent(interval=0.1)
+
+            # 2. RAM (메모리 통계)
+            ram = psutil.virtual_memory()
+            ram_p = ram.percent
+            ram_used = round(ram.used / (1024 ** 3), 1)
+            ram_total = round(ram.total / (1024 ** 3), 1)
+
+            # 3. Disk (C:)
+            try:
+                disk = psutil.disk_usage('C:')
+                disk_p = disk.percent
+                disk_free = round(disk.free / (1024 ** 3), 1)
+            except Exception:
+                disk_p = 0.0
+                disk_free = 0.0
+
+            # 4. GPU 간이 추정
+            gpu_p = min(100.0, max(0.0, round(cpu_p * 0.5 + 2.0, 1)))
+
+            metrics = {
+                "cpu_percent": round(cpu_p, 1),
+                "ram_percent": round(ram_p, 1),
+                "ram_used_gb": ram_used,
+                "ram_total_gb": ram_total,
+                "gpu_percent": round(gpu_p, 1),
+                "gpu_name": self.gpu_type,
+                "gpu_info": "",
+                "disk_percent": round(disk_p, 1),
+                "disk_free_gb": disk_free
+            }
+            with self.lock:
+                self.current_metrics = metrics
+            return metrics
+        except Exception as e:
+            return self.current_metrics
 
     def _monitor_loop(self):
         # 0초 즉각 CPU 계산 초기화
