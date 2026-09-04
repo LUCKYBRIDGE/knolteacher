@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -20,6 +21,7 @@ public partial class YouTubePlayerWindow : Window
     private bool _isPlaying = false;
     private bool _isAudioOnly = false;
     private bool _isWebViewReady = false;
+    private string _webPlayerDir = string.Empty;
 
     public YouTubePlayerWindow(IYouTubeService youtubeService)
     {
@@ -57,6 +59,31 @@ public partial class YouTubePlayerWindow : Window
             WebPlayer.CoreWebView2.Settings.IsStatusBarEnabled = false;
             WebPlayer.CoreWebView2.Settings.AreDevToolsEnabled = false;
             WebPlayer.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
+
+            // 1. Setup local web folder mapped to https://knolteacher.local
+            _webPlayerDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "KnolTeacher", "WebPlayer");
+            Directory.CreateDirectory(_webPlayerDir);
+
+            WebPlayer.CoreWebView2.SetVirtualHostNameToFolderMapping(
+                "knolteacher.local",
+                _webPlayerDir,
+                Microsoft.Web.WebView2.Core.CoreWebView2HostResourceAccessKind.Allow
+            );
+
+            // 2. Intercept YouTube requests to guarantee Referer and Origin headers (fixes YouTube Error 153)
+            WebPlayer.CoreWebView2.AddWebResourceRequestedFilter("*youtube.com*", Microsoft.Web.WebView2.Core.CoreWebView2WebResourceContext.All);
+            WebPlayer.CoreWebView2.AddWebResourceRequestedFilter("*youtube-nocookie.com*", Microsoft.Web.WebView2.Core.CoreWebView2WebResourceContext.All);
+            WebPlayer.CoreWebView2.AddWebResourceRequestedFilter("*googlevideo.com*", Microsoft.Web.WebView2.Core.CoreWebView2WebResourceContext.All);
+
+            WebPlayer.CoreWebView2.WebResourceRequested += (sender, args) =>
+            {
+                try
+                {
+                    // Always inject valid Referer to satisfy Google Terms of Service for embeds
+                    args.Request.Headers.SetHeader("Referer", "https://www.youtube.com/");
+                }
+                catch { }
+            };
 
             WebPlayer.WebMessageReceived += WebPlayer_WebMessageReceived;
             _isWebViewReady = true;
@@ -172,28 +199,15 @@ public partial class YouTubePlayerWindow : Window
 <html>
 <head>
   <meta charset='utf-8'/>
+  <meta name='referrer' content='strict-origin-when-cross-origin'/>
   <style>
     html, body {{ margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:#000; }}
-    #player {{ width:100%; height:100%; }}
+    #player {{ width:100%; height:100%; border:none; }}
   </style>
 </head>
 <body>
   <div id='player'></div>
   <script>
-    const AD_DOMAINS = ['googleads', 'doubleclick', 'pagead', 'adservice', 'youtube.com/api/stats/ads', 'youtube.com/ptracking', 'youtube.com/pagead', 'adunit', '/log_event'];
-    function isAdUrl(u) {{
-      if (!u) return false;
-      var s = String(u).toLowerCase();
-      for (var i=0; i<AD_DOMAINS.length; i++) {{ if (s.indexOf(AD_DOMAINS[i]) !== -1) return true; }}
-      return false;
-    }}
-    const origFetch = window.fetch;
-    window.fetch = function(i, init) {{
-      var u = (typeof i === 'string') ? i : (i && i.url ? i.url : '');
-      if (isAdUrl(u)) return Promise.resolve(new Response('{{}}', {{ status: 200, headers: {{ 'Content-Type': 'application/json' }} }}));
-      return origFetch.apply(this, arguments);
-    }};
-
     var tag = document.createElement('script');
     tag.src = 'https://www.youtube.com/iframe_api';
     var firstScriptTag = document.getElementsByTagName('script')[0];
@@ -210,7 +224,7 @@ public partial class YouTubePlayerWindow : Window
         height: '100%',
         width: '100%',
         videoId: '{track.VideoId}',
-        host: 'https://www.youtube-nocookie.com',
+        host: 'https://www.youtube.com',
         playerVars: {{
           'autoplay': 1,
           'controls': 1,
@@ -219,11 +233,14 @@ public partial class YouTubePlayerWindow : Window
           'iv_load_policy': 3,
           'fs': 1,
           'playsinline': 1,
-          'enablejsapi': 1
+          'enablejsapi': 1,
+          'origin': 'https://www.youtube.com',
+          'widget_referrer': 'https://www.youtube.com'
         }},
         events: {{
           'onReady': onPlayerReady,
-          'onStateChange': onPlayerStateChange
+          'onStateChange': onPlayerStateChange,
+          'onError': onPlayerError
         }}
       }});
     }}
@@ -246,6 +263,10 @@ public partial class YouTubePlayerWindow : Window
       }}
     }}
 
+    function onPlayerError(event) {{
+      console.warn('YouTube Player Error code:', event.data);
+    }}
+
     function killAdNow() {{
       try {{
         var isAd = document.querySelector('.ad-showing, .ad-interrupting, .ytp-ad-module, .video-ads');
@@ -253,7 +274,7 @@ public partial class YouTubePlayerWindow : Window
         if (v && isAd) {{
           v.muted = true;
           v.volume = 0;
-          try {{ v.playbackRate = 64.0; }} catch(e) {{ try {{ v.playbackRate = 16.0; }} catch(e2) {{}} }}
+          try {{ v.playbackRate = 16.0; }} catch(e) {{}}
           if (v.duration && isFinite(v.duration)) {{ v.currentTime = v.duration; }} else {{ v.currentTime = 999999; }}
           if (player && typeof player.skipAd === 'function') try {{ player.skipAd(); }} catch(e) {{}}
         }} else if (v && !isAd) {{
@@ -266,7 +287,7 @@ public partial class YouTubePlayerWindow : Window
         for (var k=0; k<overlays.length; k++) overlays[k].remove();
       }} catch(e) {{}}
     }}
-    setInterval(killAdNow, 20);
+    setInterval(killAdNow, 100);
 
     setInterval(function() {{
       if (player && typeof player.getCurrentTime === 'function') {{
@@ -300,6 +321,18 @@ public partial class YouTubePlayerWindow : Window
   </script>
 </body>
 </html>";
+
+        try
+        {
+            if (!string.IsNullOrEmpty(_webPlayerDir))
+            {
+                string filePath = Path.Combine(_webPlayerDir, "player.html");
+                File.WriteAllText(filePath, html);
+                WebPlayer.CoreWebView2.Navigate("https://knolteacher.local/player.html?v=" + track.VideoId + "&t=" + DateTime.UtcNow.Ticks);
+                return;
+            }
+        }
+        catch { }
 
         WebPlayer.NavigateToString(html);
     }
