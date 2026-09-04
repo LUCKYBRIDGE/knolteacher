@@ -74,11 +74,11 @@ public partial class PeriodAlarmSettingsDialog : Window
         ChkSoundChime.IsChecked = g.PlaySoundChime;
         TbAutoCloseSec.Text = g.AutoCloseSeconds.ToString();
 
-        // Monitor Selection
+        // Monitor Selection (0: Monitor 2 권장, 1: Monitor 1, 2: 마우스 위치)
         int mon = g.TargetMonitorIndex;
-        if (mon == 0) CbMonitorSelect.SelectedIndex = 1;
-        else if (mon == 1) CbMonitorSelect.SelectedIndex = 2;
-        else CbMonitorSelect.SelectedIndex = 0;
+        if (mon == 1) CbMonitorSelect.SelectedIndex = 0;
+        else if (mon == 0) CbMonitorSelect.SelectedIndex = 1;
+        else CbMonitorSelect.SelectedIndex = 2;
 
         UpdateTimeCalculation();
 

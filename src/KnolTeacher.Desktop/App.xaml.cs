@@ -52,8 +52,9 @@ public partial class App : Application
                 services.AddSingleton<ISoundService, SoundService>();
                 services.AddSingleton<ITimetableService, TimetableService>();
                 services.AddSingleton<ISchedulerService, SchedulerService>();
-                services.AddSingleton<IYouTubeService, YouTubeService>();
                 services.AddSingleton<ISiteBookmarkService, SiteBookmarkService>();
+                services.AddSingleton<IQrCodeService, QrCodeService>();
+                services.AddSingleton<INeisCommentBatchService, NeisCommentBatchService>();
 
                 // ViewModels
                 services.AddSingleton<MainViewModel>();
@@ -66,7 +67,6 @@ public partial class App : Application
                 services.AddSingleton<ClassroomTimerWindow>();
                 services.AddSingleton<StudentPickerWindow>();
                 services.AddSingleton<FloatingToolbarWindow>();
-                services.AddSingleton<YouTubePlayerWindow>();
             })
             .Build();
     }
@@ -230,18 +230,12 @@ public partial class App : Application
                                 break;
 
                             case "youtube":
-                                var youtubePlayer = _host.Services.GetRequiredService<YouTubePlayerWindow>();
-                                if (youtubePlayer.IsVisible)
-                                {
-                                    youtubePlayer.Hide();
-                                    HudNotificationWindow.Instance.ShowToast("🎵", "유튜브 플레이어 숨김");
-                                }
-                                else
-                                {
-                                    youtubePlayer.Show();
-                                    youtubePlayer.Activate();
-                                    HudNotificationWindow.Instance.ShowToast("🎵", "무광고 유튜브 BGM 플레이어");
-                                }
+                            case "qr":
+                                var qrService = _host.Services.GetRequiredService<IQrCodeService>();
+                                var qrDlg = new QrCodeModalDialog(qrService, "📱 빠른 QR코드 생성기", "https://pinky-ne.com/");
+                                qrDlg.Show();
+                                qrDlg.Activate();
+                                HudNotificationWindow.Instance.ShowToast("📱", "QR코드 생성기 (Alt+Q)");
                                 break;
                         }
                     });

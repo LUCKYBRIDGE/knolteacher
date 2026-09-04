@@ -11,7 +11,7 @@ public partial class FloatingToolbarWindow : Window
     private readonly ClassroomTimerWindow _timerWindow;
     private readonly VisualizerWindow _visualizerWindow;
     private readonly StudentPickerWindow _pickerWindow;
-    private readonly YouTubePlayerWindow _youtubePlayerWindow;
+    private readonly IQrCodeService _qrCodeService;
     private readonly IDesktopCleanerService _cleanerService;
 
     public FloatingToolbarWindow(
@@ -20,7 +20,7 @@ public partial class FloatingToolbarWindow : Window
         ClassroomTimerWindow timerWindow,
         VisualizerWindow visualizerWindow,
         StudentPickerWindow pickerWindow,
-        YouTubePlayerWindow youtubePlayerWindow,
+        IQrCodeService qrCodeService,
         IDesktopCleanerService cleanerService)
     {
         _studentBoard = studentBoard;
@@ -28,7 +28,7 @@ public partial class FloatingToolbarWindow : Window
         _timerWindow = timerWindow;
         _visualizerWindow = visualizerWindow;
         _pickerWindow = pickerWindow;
-        _youtubePlayerWindow = youtubePlayerWindow;
+        _qrCodeService = qrCodeService;
         _cleanerService = cleanerService;
 
         InitializeComponent();
@@ -82,10 +82,10 @@ public partial class FloatingToolbarWindow : Window
         else _pickerWindow.Show();
     }
 
-    private void BtnYouTube_Click(object sender, RoutedEventArgs e)
+    private void BtnQr_Click(object sender, RoutedEventArgs e)
     {
-        if (_youtubePlayerWindow.IsVisible) _youtubePlayerWindow.Hide();
-        else { _youtubePlayerWindow.Show(); _youtubePlayerWindow.Activate(); }
+        var dlg = new QrCodeModalDialog(_qrCodeService, "📱 QR코드 생성기", "https://pinky-ne.com");
+        dlg.Show();
     }
 
     private void BtnZen_Click(object sender, RoutedEventArgs e)

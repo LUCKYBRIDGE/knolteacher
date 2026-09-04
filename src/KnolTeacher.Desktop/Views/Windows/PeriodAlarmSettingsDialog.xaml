@@ -93,9 +93,9 @@
                         <!-- Monitor Selector -->
                         <TextBlock Text="🖥️ 타이머를 띄울 모니터 선택" FontWeight="Bold" FontSize="12" Foreground="#44403C" Margin="0,0,0,4"/>
                         <ComboBox x:Name="CbMonitorSelect" Height="32" MinHeight="32" FontSize="12" Margin="0,0,0,14">
-                            <ComboBoxItem Content="🖱️ 현재 마우스 커서가 위치한 모니터 (권장)" Tag="-1" IsSelected="True"/>
-                            <ComboBoxItem Content="1️⃣ 1번 주 모니터 (교사용 PC 본 화면)" Tag="0"/>
-                            <ComboBoxItem Content="2️⃣ 2번 보조 모니터 (전자칠판 / 학생 디스플레이)" Tag="1"/>
+                            <ComboBoxItem Content="📺 2번 모니터 (학생용 전자칠판 / TV) (권장)" Tag="1" IsSelected="True"/>
+                            <ComboBoxItem Content="💻 1번 주 모니터 (교사용 PC 본 화면)" Tag="0"/>
+                            <ComboBoxItem Content="🖱️ 현재 마우스 커서가 위치한 모니터" Tag="-1"/>
                         </ComboBox>
 
                         <!-- Notice Text Inputs -->

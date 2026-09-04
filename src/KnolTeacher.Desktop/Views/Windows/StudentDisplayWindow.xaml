@@ -163,7 +163,7 @@
                             <Button x:Name="BtnToolTimetable" Content="📅 시간표" Click="DockToolBtn_Click" Tag="timetable" Height="32" Padding="10,0" Margin="0,2,6,2" Background="#1E293B" Foreground="#94A3B8" BorderBrush="#334155" BorderThickness="1" FontSize="11" Cursor="Hand"/>
                             <Button x:Name="BtnToolMeal" Content="🍱 급식" Click="DockToolBtn_Click" Tag="meal" Height="32" Padding="10,0" Margin="0,2,6,2" Background="#1E293B" Foreground="#94A3B8" BorderBrush="#334155" BorderThickness="1" FontSize="11" Cursor="Hand"/>
                             <Button x:Name="BtnToolMemo" Content="📝 알림장" Click="DockToolBtn_Click" Tag="memo" Height="32" Padding="10,0" Margin="0,2,6,2" Background="#1E293B" Foreground="#94A3B8" BorderBrush="#334155" BorderThickness="1" FontSize="11" Cursor="Hand"/>
-                            <Button x:Name="BtnToolYouTube" Content="🎵 BGM" Click="DockToolBtn_Click" Tag="youtube" Height="32" Padding="10,0" Margin="0,2,6,2" Background="#1E293B" Foreground="#94A3B8" BorderBrush="#334155" BorderThickness="1" FontSize="11" Cursor="Hand" ToolTip="무광고 유튜브 교실 BGM &amp; 구간반복 플레이어"/>
+                            <Button x:Name="BtnToolQr" Content="📱 QR코드" Click="DockToolBtn_Click" Tag="qr" Height="32" Padding="10,0" Margin="0,2,6,2" Background="#1E293B" Foreground="#94A3B8" BorderBrush="#334155" BorderThickness="1" FontSize="11" Cursor="Hand" ToolTip="수업 링크 및 자료 실시간 QR코드 생성 &amp; 학생 공유"/>
                         </WrapPanel>
 
                         <!-- Right: Layout & Close Actions -->

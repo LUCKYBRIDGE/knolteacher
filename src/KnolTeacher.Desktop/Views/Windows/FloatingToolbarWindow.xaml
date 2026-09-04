@@ -134,10 +134,10 @@
                     </StackPanel>
                 </Button>
 
-                <Button x:Name="BtnYouTube" Style="{StaticResource DockButtonStyle}" Click="BtnYouTube_Click" ToolTip="무광고 유튜브 BGM 플레이어">
+                <Button x:Name="BtnQr" Style="{StaticResource DockButtonStyle}" Click="BtnQr_Click" ToolTip="QR코드 생성기">
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="🎵 " FontSize="12"/>
-                        <TextBlock Text="BGM"/>
+                        <TextBlock Text="📱 " FontSize="12"/>
+                        <TextBlock Text="QR코드"/>
                     </StackPanel>
                 </Button>
 

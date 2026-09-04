@@ -19,7 +19,7 @@ public partial class StudentDisplayWindow : Window
     private readonly ITimetableService _timetableService;
     private readonly INeisService _neisService;
     private readonly IConfigService _configService;
-    private readonly IYouTubeService _youtubeService;
+    private readonly IQrCodeService _qrCodeService;
 
     private readonly Stack<Stroke> _undoStack = new();
     private readonly DispatcherTimer _clockTimer;
@@ -31,14 +31,14 @@ public partial class StudentDisplayWindow : Window
         ITimetableService timetableService,
         INeisService neisService,
         IConfigService configService,
-        IYouTubeService youtubeService)
+        IQrCodeService qrCodeService)
     {
         _soundService = soundService;
         _studentService = studentService;
         _timetableService = timetableService;
         _neisService = neisService;
         _configService = configService;
-        _youtubeService = youtubeService;
+        _qrCodeService = qrCodeService;
 
         InitializeComponent();
 
@@ -138,7 +138,7 @@ public partial class StudentDisplayWindow : Window
             "timetable" => AddWidget("timetable", "📅 오늘의 시간표", new TimetableWidgetView(_timetableService), nextX, nextY, 320, 440),
             "meal" => AddWidget("meal", "🍱 오늘의 급식", new MealWidgetView(_neisService), nextX, nextY, 320, 440),
             "memo" => AddWidget("memo", "📝 학급 알림장", new MemoWidgetView(_configService), nextX, nextY, 360, 340),
-            "youtube" => AddWidget("youtube", "🎵 무광고 유튜브 BGM", new YouTubeWidgetView(_youtubeService), nextX, nextY, 380, 420),
+            "qr" => AddWidget("qr", "📱 실시간 수업 QR코드", new QrWidgetView(_qrCodeService), nextX, nextY, 320, 360),
             _ => null
         };
     }
@@ -156,7 +156,7 @@ public partial class StudentDisplayWindow : Window
         UpdateBtnState(BtnToolTimetable, "timetable");
         UpdateBtnState(BtnToolMeal, "meal");
         UpdateBtnState(BtnToolMemo, "memo");
-        UpdateBtnState(BtnToolYouTube, "youtube");
+        UpdateBtnState(BtnToolQr, "qr");
     }
 
     private void UpdateBtnState(Button? btn, string tag)

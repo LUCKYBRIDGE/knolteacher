@@ -40,6 +40,6 @@ public static class DefaultHotkeys
         new() { Id = 8, Action = "picker", Name = "발표자 추첨", Description = "무작위 발표자 학생 이름 뽑기", Modifier = "Alt", Key = "8", Enabled = true },
         new() { Id = 9, Action = "dock", Name = "스마트 플로팅 독", Description = "화면 상단 미니 리모컨 토글", Modifier = "Alt", Key = "9", Enabled = true },
         new() { Id = 10, Action = "board_f2", Name = "놀티쳐 보드 (F2)", Description = "놀티쳐 보드 1초 원클릭 실행", Modifier = "None", Key = "F2", Enabled = true },
-        new() { Id = 11, Action = "youtube", Name = "유튜브 BGM 플레이어", Description = "무광고 유튜브 교실 BGM 토글 (Alt+Y)", Modifier = "Alt", Key = "Y", Enabled = true },
+        new() { Id = 11, Action = "qr", Name = "QR코드 생성기", Description = "학생 태블릿 스캔용 QR 생성기 (Alt+Q)", Modifier = "Alt", Key = "Q", Enabled = true },
     };
 }

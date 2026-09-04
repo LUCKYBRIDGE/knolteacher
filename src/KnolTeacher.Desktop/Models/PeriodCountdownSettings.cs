@@ -31,7 +31,7 @@ public class PeriodCountdownItem
     public int LeadEndSeconds { get; set; } = 0;
 
     [JsonPropertyName("target_monitor_index")]
-    public int TargetMonitorIndex { get; set; } = -1; // -1: Current cursor monitor, 0: Primary, 1: Secondary
+    public int TargetMonitorIndex { get; set; } = 1; // 1: Secondary (학생용 전자칠판/모니터 2 권장), 0: Primary
 
     [JsonPropertyName("pre_notice_text")]
     public string PreNoticeText { get; set; } = "🔔 다음 시간 {교시} ({과목}) 준비 시간입니다! 자리에 앉아 교과서를 펴주세요.";
@@ -71,7 +71,7 @@ public class PeriodAlarmSystemConfig
         LeadStartSeconds = 0,
         LeadEndMinutes = 3,
         LeadEndSeconds = 0,
-        TargetMonitorIndex = -1,
+        TargetMonitorIndex = 1, // 모니터 2 (학생용 전자칠판/TV 권장)
         PreNoticeText = "🔔 다음 시간 {교시} ({과목}) 준비 시간입니다! 자리에 앉아 교과서를 펴주세요.",
         PostNoticeText = "👏 수업 준비 완료! 자리에 모두 착석했습니다.",
         PlaySoundChime = true,
@@ -106,7 +106,7 @@ public class PeriodAlarmSystemConfig
                 LeadStartSeconds = 0,
                 LeadEndMinutes = 3,
                 LeadEndSeconds = 0,
-                TargetMonitorIndex = -1,
+                TargetMonitorIndex = 1,
                 PreNoticeText = $"🔔 {p}교시 ({{과목}}) 준비 시간입니다! 자리에 앉아 교과서를 펴주세요.",
                 PostNoticeText = $"👏 {p}교시 수업 준비 완료! 자리에 모두 착석했습니다."
             };

@@ -1,3 +1,5 @@
+using System.Collections.ObjectModel;
+using Microsoft.Win32;
 using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -11,6 +13,9 @@ using KnolTeacher.Desktop.Models;
 using KnolTeacher.Desktop.Services;
 using KnolTeacher.Desktop.ViewModels;
 using KnolTeacher.Desktop.Views.Windows;
+using MessageBoxButton = System.Windows.MessageBoxButton;
+using MessageBoxResult = System.Windows.MessageBoxResult;
+using MessageBoxImage = System.Windows.MessageBoxImage;
 
 namespace KnolTeacher.Desktop;
 
@@ -31,10 +36,11 @@ public partial class MainWindow : FluentWindow
     private readonly ITimetableService _timetableService;
     private readonly ISoundService _soundService;
     private readonly IGlobalHotkeyService _hotkeyService;
-    private readonly IYouTubeService _youtubeService;
-    private readonly YouTubePlayerWindow _youtubePlayerWindow;
+    private readonly IQrCodeService _qrCodeService;
+    private readonly INeisCommentBatchService _neisCommentBatchService;
     private readonly ISiteBookmarkService _siteBookmarkService;
     private readonly DispatcherTimer _statusTimer;
+    private readonly ObservableCollection<NeisStudentComment> _neisComments = new();
 
     public MainWindow(
         MainViewModel viewModel,
@@ -53,8 +59,8 @@ public partial class MainWindow : FluentWindow
         ITimetableService timetableService,
         ISoundService soundService,
         IGlobalHotkeyService hotkeyService,
-        IYouTubeService youtubeService,
-        YouTubePlayerWindow youtubePlayerWindow,
+        IQrCodeService qrCodeService,
+        INeisCommentBatchService neisCommentBatchService,
         ISiteBookmarkService siteBookmarkService)
     {
         DataContext = viewModel;
@@ -73,8 +79,8 @@ public partial class MainWindow : FluentWindow
         _timetableService = timetableService;
         _soundService = soundService;
         _hotkeyService = hotkeyService;
-        _youtubeService = youtubeService;
-        _youtubePlayerWindow = youtubePlayerWindow;
+        _qrCodeService = qrCodeService;
+        _neisCommentBatchService = neisCommentBatchService;
         _siteBookmarkService = siteBookmarkService;
 
         InitializeComponent();
@@ -239,6 +245,8 @@ public partial class MainWindow : FluentWindow
             NavBtnZen.Foreground = textMainBrush;
             NavBtnSites.Background = transparentBrush;
             NavBtnSites.Foreground = textMainBrush;
+            NavBtnNeis.Background = transparentBrush;
+            NavBtnNeis.Foreground = textMainBrush;
 
             // Activate selected
             if (index == 0)
@@ -270,6 +278,12 @@ public partial class MainWindow : FluentWindow
                 NavBtnSites.Background = accentBrush;
                 NavBtnSites.Foreground = Brushes.White;
                 TxtViewTitle.Text = "🌐 교사용 유용한 교육 사이트 & 업무포털";
+            }
+            else if (index == 5)
+            {
+                NavBtnNeis.Background = accentBrush;
+                NavBtnNeis.Foreground = Brushes.White;
+                TxtViewTitle.Text = "📝 나이스 평어 일괄입력 도구";
             }
         }
     }
@@ -439,19 +453,6 @@ public partial class MainWindow : FluentWindow
         else { _dockWindow.Show(); _dockWindow.Activate(); }
     }
 
-    private void BtnLaunchYouTube_Click(object sender, RoutedEventArgs e)
-    {
-        if (_youtubePlayerWindow.IsVisible)
-        {
-            _youtubePlayerWindow.Activate();
-        }
-        else
-        {
-            _youtubePlayerWindow.Show();
-            _youtubePlayerWindow.Activate();
-        }
-    }
-
     private void BtnOpenPeriodAlarmSettings_Click(object sender, RoutedEventArgs e)
     {
         var dlg = new PeriodAlarmSettingsDialog(_configService, _soundService, _timetableService)
@@ -567,4 +568,206 @@ public partial class MainWindow : FluentWindow
         ListSchedules.ItemsSource = null;
         ListSchedules.ItemsSource = _configService.RecurringSchedules;
     }
+
+    #region QR Code & NEIS Comment Batch Handlers
+
+    private void BtnQuickQr_Click(object sender, RoutedEventArgs e)
+    {
+        var dlg = new QrCodeModalDialog(_qrCodeService, "📱 빠른 QR코드 생성기", "https://pinky-ne.com/")
+        {
+            Owner = this
+        };
+        dlg.ShowDialog();
+    }
+
+    private void BtnBannerQr_Click(object sender, RoutedEventArgs e)
+    {
+        var dlg = new QrCodeModalDialog(_qrCodeService, "🌟 핑키네 교실자료실 QR코드", "https://pinky-ne.com/")
+        {
+            Owner = this
+        };
+        dlg.ShowDialog();
+    }
+
+    private void BtnOfficeQr_Click(object sender, RoutedEventArgs e)
+    {
+        var office = _siteBookmarkService.EducationOffices.FirstOrDefault(o => o.DomainCode == _siteBookmarkService.SelectedRegionCode)
+                     ?? _siteBookmarkService.EducationOffices.FirstOrDefault();
+        string url = office?.Url ?? "https://gwe.eduptl.kr/";
+        string title = $"🏫 {office?.RegionName ?? "교육청"} K-에듀파인 QR코드";
+        var dlg = new QrCodeModalDialog(_qrCodeService, title, url)
+        {
+            Owner = this
+        };
+        dlg.ShowDialog();
+    }
+
+    private void BtnSiteQr_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement fe && fe.Tag is SiteBookmarkItem item)
+        {
+            var dlg = new QrCodeModalDialog(_qrCodeService, $"{item.Icon} {item.Title} QR코드", item.Url)
+            {
+                Owner = this
+            };
+            dlg.ShowDialog();
+        }
+    }
+
+    private void UpdateNeisSummary()
+    {
+        int total = _neisComments.Count;
+        int over = _neisComments.Count(c => c.IsOverLimit);
+        TxtNeisSummary.Text = over > 0 
+            ? $"등록된 학생: {total}명 (⚠️ {over}명 바이트 초과)" 
+            : $"등록된 학생: {total}명 (모두 정상)";
+    }
+
+    private void BtnDownloadNeisTemplate_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var sfd = new SaveFileDialog
+            {
+                Filter = "Excel 통합 문서 (*.xlsx)|*.xlsx",
+                FileName = $"나이스_평어_입력양식_{DateTime.Now:yyyyMMdd}.xlsx"
+            };
+            if (sfd.ShowDialog() == true)
+            {
+                _neisCommentBatchService.GenerateExcelTemplate(sfd.FileName);
+                HudNotificationWindow.Instance.ShowToast("📥", "나이스 표준 엑셀 양식이 저장되었습니다.");
+                if (System.Windows.MessageBox.Show("저장된 엑셀 양식을 바로 여시겠습니까?", "양식 열기", MessageBoxButton.YesNo, MessageBoxImage.Information) == MessageBoxResult.Yes)
+                {
+                    Process.Start(new ProcessStartInfo(sfd.FileName) { UseShellExecute = true });
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show($"양식 저장 실패: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void BtnOpenNeisExcel_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var ofd = new OpenFileDialog
+            {
+                Filter = "Excel 파일 (*.xlsx)|*.xlsx"
+            };
+            if (ofd.ShowDialog() == true)
+            {
+                var parsed = _neisCommentBatchService.ParseExcelFile(ofd.FileName);
+                _neisComments.Clear();
+                foreach (var c in parsed) _neisComments.Add(c);
+                UpdateNeisSummary();
+                HudNotificationWindow.Instance.ShowToast("📂", $"{_neisComments.Count}명의 학생 평어를 불러왔습니다.");
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show($"엑셀 열기 오류: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void BtnPasteFromClipboard_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            string clip = Clipboard.GetText();
+            if (string.IsNullOrWhiteSpace(clip))
+            {
+                System.Windows.MessageBox.Show("클립보드에 복사된 내용이 없습니다.\n엑셀에서 번호, 성명, 평어 셀들을 선택 후 Ctrl+C를 누르고 다시 시도하세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var parsed = _neisCommentBatchService.ParseClipboardText(clip);
+            if (parsed.Count == 0)
+            {
+                System.Windows.MessageBox.Show("클립보드 데이터에서 학생 평어를 파싱하지 못했습니다.\n번호, 성명, 평어 열이 포함되어 있는지 확인해 주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            _neisComments.Clear();
+            foreach (var c in parsed) _neisComments.Add(c);
+            UpdateNeisSummary();
+            HudNotificationWindow.Instance.ShowToast("📋", $"엑셀 복사 데이터로부터 {parsed.Count}명의 평어를 붙여넣었습니다.");
+        }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show($"붙여넣기 오류: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void BtnClearNeisData_Click(object sender, RoutedEventArgs e)
+    {
+        if (_neisComments.Count > 0 && System.Windows.MessageBox.Show("등록된 학생 평어 목록을 모두 비우시겠습니까?", "목록 비우기", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+        {
+            _neisComments.Clear();
+            UpdateNeisSummary();
+        }
+    }
+
+    private void BtnCopyNeisScript_Click(object sender, RoutedEventArgs e)
+    {
+        if (_neisComments.Count == 0)
+        {
+            System.Windows.MessageBox.Show("입력할 학생 평어가 없습니다.\n먼저 엑셀 파일을 불러오거나 복사한 내용을 붙여넣어 주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        string script = _neisCommentBatchService.GenerateNeisConsoleScript(_neisComments.ToList(), "BEHAVIOR");
+        Clipboard.SetText(script);
+
+        System.Windows.MessageBox.Show(
+            "🚀 [나이스 1초 일괄입력 코드가 복사되었습니다!]\n\n" +
+            "【사용 방법】\n" +
+            "1. 4세대 나이스 웹 화면(행동특성 또는 학기말종합의견)을 켭니다.\n" +
+            "2. 키보드 [F12] (개발자 도구)를 누릅니다.\n" +
+            "3. 상단의 [Console] (콘솔) 탭을 클릭합니다.\n" +
+            "4. [Ctrl + V]로 붙여넣은 후 [Enter]를 누르면,\n" +
+            "   " + _neisComments.Count + "명의 학생 번호에 맞춰 1초 만에 자동으로 쏙 채워집니다!\n\n" +
+            "※ 입력 확인 후 나이스 상단의 [저장] 버튼을 클릭해 완료하세요.",
+            "나이스 일괄입력 코드 복사 완료",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
+    }
+
+    private void BtnOpenFloatingPaster_Click(object sender, RoutedEventArgs e)
+    {
+        if (_neisComments.Count == 0)
+        {
+            System.Windows.MessageBox.Show("입력할 학생 평어가 없습니다.\n먼저 엑셀을 열거나 복사내용을 붙여넣어 주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var win = new NeisFloatingPasterWindow(_neisComments.ToList());
+        win.Show();
+    }
+
+    private void BtnNeisHelp_Click(object sender, RoutedEventArgs e)
+    {
+        System.Windows.MessageBox.Show(
+            "📖 【나이스 평어 일괄 입력 상세 가이드】\n\n" +
+            "1️⃣ 엑셀 준비 및 불러오기\n" +
+            " • [📥 표준 엑셀 양식 다운로드]를 받아 작성하거나,\n" +
+            " • 기존 엑셀 표(번호, 성명, 평어)를 Ctrl+C 복사 후 [📋 엑셀에서 복사한 내용 바로 붙여넣기]를 클릭합니다.\n\n" +
+            "2️⃣ 글자수 / 바이트 자동 검사\n" +
+            " • 4세대 나이스 규격(한글 3바이트)에 맞추어 실시간 계산됩니다.\n" +
+            " • 1,500 Byte를 초과하는 학생은 ⚠️ 경고로 표시되어 나이스 저장 거부를 방지합니다.\n\n" +
+            "3️⃣ 나이스 입력하기 (2가지 방법 중 선택)\n" +
+            " • [방식 1] 🚀 나이스 1초 일괄입력 코드 복사 (추천!)\n" +
+            "   - 나이스 화면에서 F12 누르고 Console 탭에 Ctrl+V 붙여넣기 후 Enter!\n" +
+            "   - 전교생 평어가 학생 번호 1:1 매칭으로 1초 만에 입력됩니다 (밀림 0%).\n\n" +
+            " • [방식 2] 🖱️ 플로팅 순차 입력 도우미 실행\n" +
+            "   - 나이스 창 위에 작은 미니 창이 항상 뜹니다.\n" +
+            "   - 나이스 칸을 클릭하고 스페이스바 또는 복사 버튼만 누르면 1번부터 차례대로 쏙쏙 복사됩니다.\n\n" +
+            "4️⃣ 마지막으로 나이스 상단의 [저장] 버튼을 누르면 끝!",
+            "나이스 평어 일괄입력 사용방법 안내",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
+    }
+
+    #endregion
 }

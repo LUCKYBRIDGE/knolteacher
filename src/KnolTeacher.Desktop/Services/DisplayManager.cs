@@ -9,6 +9,7 @@ namespace KnolTeacher.Desktop.Services;
 public interface IDisplayManager
 {
     int ScreenCount { get; }
+    int RecommendedStudentMonitorIndex { get; }
     List<ScreenInfo> GetScreens();
     void MoveWindowToScreen(Window window, int screenIndex, bool maximize = false);
 }
@@ -20,11 +21,13 @@ public class ScreenInfo
     public bool IsPrimary { get; set; }
     public Rect Bounds { get; set; }
     public Rect WorkingArea { get; set; }
+    public string DisplayLabel => Index == 1 ? $"📺 모니터 {Index + 1} [학생용 전자칠판/TV] (권장)" : (IsPrimary ? $"💻 모니터 {Index + 1} [선생님 메인 PC]" : $"🖥️ 모니터 {Index + 1}");
 }
 
 public class DisplayManager : IDisplayManager
 {
     public int ScreenCount => GetScreens().Count;
+    public int RecommendedStudentMonitorIndex => ScreenCount >= 2 ? 1 : 0;
 
     public List<ScreenInfo> GetScreens()
     {
