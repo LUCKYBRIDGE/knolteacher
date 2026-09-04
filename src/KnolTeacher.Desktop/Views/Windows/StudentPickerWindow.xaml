@@ -6,7 +6,7 @@
         mc:Ignorable="d"
         Title="🎰 스마트 동물 핀볼 추첨기 (Alt+8)" Height="820" Width="920"
         MinHeight="680" MinWidth="740"
-        WindowStartupLocation="CenterScreen"
+        WindowStartupLocation="Manual"
         Topmost="True"
         Background="#080C14">
 
@@ -52,6 +52,9 @@
 
                 <!-- Right: Options & Avatar Manage -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button x:Name="BtnSwitchMonitor" Content="📺 모니터 2" Click="BtnSwitchMonitor_Click" Padding="8,6" Margin="0,0,6,0" Background="#1E293B" Foreground="#38BDF8" BorderBrush="#0284C7" BorderThickness="1" FontWeight="Bold" FontSize="11" Cursor="Hand" ToolTip="핀볼 창을 모니터 1 ↔ 모니터 2로 즉시 이동">
+                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                    </Button>
                     <CheckBox x:Name="ChkExcludePicked" Content="당첨자 제외" IsChecked="True" Foreground="#CBD5E1" FontSize="12" VerticalAlignment="Center" Margin="0,0,10,0"/>
                     <Button Content="👥 학생 &amp; 동물 아바타" Click="BtnManageRoster_Click" Padding="10,6" Margin="0,0,6,0" Background="#1E293B" Foreground="#38BDF8" BorderBrush="#334155" BorderThickness="1" FontWeight="Bold" FontSize="11" Cursor="Hand" ToolTip="학생 명단 및 32종 동물 아바타 관리">
                         <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>

@@ -6,7 +6,7 @@
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
         Title="📷 스마트 실물화상기 (Knol Visualizer)" Height="700" Width="1000"
-        WindowStartupLocation="CenterScreen"
+        WindowStartupLocation="Manual"
         Background="#0F172A">
     <Grid>
         <Grid.RowDefinitions>
@@ -46,6 +46,7 @@
 
                 <!-- Right: Status / Close -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button x:Name="BtnSwitchMonitor" Content="📺 모니터 2" Click="BtnSwitchMonitor_Click" Padding="8,4" Margin="0,0,10,0" Background="#1E293B" Foreground="#38BDF8" BorderBrush="#0284C7" BorderThickness="1" FontSize="11" FontWeight="Bold" Cursor="Hand" ToolTip="실물화상기 창을 모니터 1 ↔ 모니터 2로 즉시 이동"/>
                     <TextBlock x:Name="TxtStatus" Text="대기 중" Foreground="#38BDF8" VerticalAlignment="Center" Margin="0,0,12,0"/>
                     <Button Content="✕ 닫기" Click="BtnClose_Click" Padding="10,4" Background="#DC2626" Foreground="White" BorderThickness="0"/>
                 </StackPanel>

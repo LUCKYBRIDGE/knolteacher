@@ -72,6 +72,21 @@ public partial class ClassroomCountdownOverlayWindow : Window
     {
         try
         {
+            var displayManager = (Application.Current as App)?.Services?.GetService(typeof(IDisplayManager)) as IDisplayManager;
+            if (displayManager != null)
+            {
+                if (monitorIndex == 1)
+                {
+                    displayManager.MoveToStudentMonitor(this, maximize: true);
+                }
+                else
+                {
+                    int screenIdx = Math.Min(Math.Max(0, monitorIndex), displayManager.ScreenCount - 1);
+                    displayManager.MoveWindowToScreen(this, screenIdx, maximize: true);
+                }
+                return;
+            }
+
             NativeMethods.RECT rect;
             if (monitorIndex < 0)
             {

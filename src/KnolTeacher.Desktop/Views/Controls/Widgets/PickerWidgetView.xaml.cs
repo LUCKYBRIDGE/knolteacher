@@ -31,7 +31,9 @@ public partial class PickerWidgetView : UserControl
     {
         if (_studentService != null && _soundService != null)
         {
-            var win = new StudentPickerWindow(_studentService, _soundService);
+            var displayManager = (Application.Current as App)?.Services?.GetService(typeof(IDisplayManager)) as IDisplayManager;
+            var win = new StudentPickerWindow(_studentService, _soundService, displayManager);
+            displayManager?.MoveToStudentMonitor(win, maximize: false);
             win.Show();
             win.Activate();
         }

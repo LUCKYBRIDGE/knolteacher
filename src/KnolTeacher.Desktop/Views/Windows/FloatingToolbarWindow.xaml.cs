@@ -13,6 +13,7 @@ public partial class FloatingToolbarWindow : Window
     private readonly StudentPickerWindow _pickerWindow;
     private readonly IQrCodeService _qrCodeService;
     private readonly IDesktopCleanerService _cleanerService;
+    private readonly IDisplayManager? _displayManager;
 
     public FloatingToolbarWindow(
         StudentDisplayWindow studentBoard,
@@ -21,7 +22,8 @@ public partial class FloatingToolbarWindow : Window
         VisualizerWindow visualizerWindow,
         StudentPickerWindow pickerWindow,
         IQrCodeService qrCodeService,
-        IDesktopCleanerService cleanerService)
+        IDesktopCleanerService cleanerService,
+        IDisplayManager? displayManager = null)
     {
         _studentBoard = studentBoard;
         _screenDrawing = screenDrawing;
@@ -30,6 +32,7 @@ public partial class FloatingToolbarWindow : Window
         _pickerWindow = pickerWindow;
         _qrCodeService = qrCodeService;
         _cleanerService = cleanerService;
+        _displayManager = displayManager;
 
         InitializeComponent();
         Loaded += (s, e) => PositionAtTopCenter();
@@ -55,7 +58,12 @@ public partial class FloatingToolbarWindow : Window
     private void BtnBoard_Click(object sender, RoutedEventArgs e)
     {
         if (_studentBoard.IsVisible) _studentBoard.Hide();
-        else _studentBoard.Show();
+        else
+        {
+            _displayManager?.MoveToStudentMonitor(_studentBoard, maximize: true);
+            _studentBoard.Show();
+            _studentBoard.Activate();
+        }
     }
 
     private void BtnDraw_Click(object sender, RoutedEventArgs e)
@@ -67,19 +75,34 @@ public partial class FloatingToolbarWindow : Window
     private void BtnTimer_Click(object sender, RoutedEventArgs e)
     {
         if (_timerWindow.IsVisible) _timerWindow.Hide();
-        else _timerWindow.Show();
+        else
+        {
+            _displayManager?.MoveToStudentMonitor(_timerWindow, maximize: false);
+            _timerWindow.Show();
+            _timerWindow.Activate();
+        }
     }
 
     private void BtnVisualizer_Click(object sender, RoutedEventArgs e)
     {
         if (_visualizerWindow.IsVisible) _visualizerWindow.Hide();
-        else _visualizerWindow.Show();
+        else
+        {
+            _displayManager?.MoveToStudentMonitor(_visualizerWindow, maximize: false);
+            _visualizerWindow.Show();
+            _visualizerWindow.Activate();
+        }
     }
 
     private void BtnPicker_Click(object sender, RoutedEventArgs e)
     {
         if (_pickerWindow.IsVisible) _pickerWindow.Hide();
-        else _pickerWindow.Show();
+        else
+        {
+            _displayManager?.MoveToStudentMonitor(_pickerWindow, maximize: false);
+            _pickerWindow.Show();
+            _pickerWindow.Activate();
+        }
     }
 
     private void BtnQr_Click(object sender, RoutedEventArgs e)

@@ -188,7 +188,12 @@ public partial class MainWindow : FluentWindow
     private void BtnLaunchClassTimer_Click(object sender, RoutedEventArgs e)
     {
         if (_timerWindow.IsVisible) _timerWindow.Hide();
-        else { _timerWindow.Show(); _timerWindow.Activate(); }
+        else
+        {
+            _displayManager.MoveToStudentMonitor(_timerWindow, maximize: false);
+            _timerWindow.Show();
+            _timerWindow.Activate();
+        }
     }
 
     private void BtnShiftTimetable_Click(object sender, RoutedEventArgs e)
@@ -209,7 +214,12 @@ public partial class MainWindow : FluentWindow
     private void BtnItemTimer_Click(object sender, RoutedEventArgs e)
     {
         if (_timerWindow.IsVisible) _timerWindow.Hide();
-        else { _timerWindow.Show(); _timerWindow.Activate(); }
+        else
+        {
+            _displayManager.MoveToStudentMonitor(_timerWindow, maximize: false);
+            _timerWindow.Show();
+            _timerWindow.Activate();
+        }
     }
 
     private void BtnEditSubject_Click(object sender, RoutedEventArgs e)
@@ -416,10 +426,7 @@ public partial class MainWindow : FluentWindow
         }
         else
         {
-            if (_displayManager.ScreenCount > 1)
-            {
-                _displayManager.MoveWindowToScreen(_studentDisplayWindow, 1, maximize: true);
-            }
+            _displayManager.MoveToStudentMonitor(_studentDisplayWindow, maximize: true);
             _studentDisplayWindow.Show();
             _studentDisplayWindow.Activate();
         }
@@ -440,19 +447,34 @@ public partial class MainWindow : FluentWindow
     private void BtnLaunchTimer_Click(object sender, RoutedEventArgs e)
     {
         if (_timerWindow.IsVisible) _timerWindow.Hide();
-        else { _timerWindow.Show(); _timerWindow.Activate(); }
+        else
+        {
+            _displayManager.MoveToStudentMonitor(_timerWindow, maximize: false);
+            _timerWindow.Show();
+            _timerWindow.Activate();
+        }
     }
 
     private void BtnLaunchPicker_Click(object sender, RoutedEventArgs e)
     {
         if (_pickerWindow.IsVisible) _pickerWindow.Hide();
-        else { _pickerWindow.Show(); _pickerWindow.Activate(); }
+        else
+        {
+            _displayManager.MoveToStudentMonitor(_pickerWindow, maximize: false);
+            _pickerWindow.Show();
+            _pickerWindow.Activate();
+        }
     }
 
     private void BtnLaunchVisualizer_Click(object sender, RoutedEventArgs e)
     {
-        _visualizerWindow.Show();
-        _visualizerWindow.Activate();
+        if (_visualizerWindow.IsVisible) _visualizerWindow.Hide();
+        else
+        {
+            _displayManager.MoveToStudentMonitor(_visualizerWindow, maximize: false);
+            _visualizerWindow.Show();
+            _visualizerWindow.Activate();
+        }
     }
 
     private void BtnLaunchDock_Click(object sender, RoutedEventArgs e)

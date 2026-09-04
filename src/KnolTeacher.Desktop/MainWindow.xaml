@@ -7,7 +7,7 @@
         xmlns:vm="clr-namespace:KnolTeacher.Desktop.ViewModels"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance vm:MainViewModel}"
-        Title="놀티쳐 (KnolTeacher v2.8.5 - 스마트 교사용 올인원 도구)"
+        Title="놀티쳐 (KnolTeacher v2.9.0 - 스마트 교사용 올인원 도구)"
         Icon="/assets/app_icon.ico"
         Height="830" Width="1220"
         MinHeight="680" MinWidth="940"
@@ -24,7 +24,7 @@
         </Grid.RowDefinitions>
 
         <!-- Top Title Bar -->
-        <ui:TitleBar Grid.Row="0" Title="놀티쳐 (KnolTeacher v2.8.5)">
+        <ui:TitleBar Grid.Row="0" Title="놀티쳐 (KnolTeacher v2.9.0)">
             <ui:TitleBar.Header>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,0,0">
                     <Image Source="/assets/app_icon.png" Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,8,0"/>
@@ -251,7 +251,7 @@
                             <Button Content="📱 QR 생성기" Click="BtnQuickQr_Click" Padding="12,6" Margin="0,0,8,0" Background="{DynamicResource BeigeCardInner}" Foreground="{DynamicResource BeigeTextMain}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="11" FontWeight="Bold" Cursor="Hand">
                                 <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
                             </Button>
-                            <Button Content="🔄 최신 상태 확인 (v2.8.5)" Click="BtnUpdate_Click" Padding="12,6" Background="{DynamicResource BeigeCardInner}" Foreground="{DynamicResource BeigeAccent}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="11" FontWeight="Bold" Cursor="Hand">
+                            <Button Content="🔄 최신 상태 확인 (v2.9.0)" Click="BtnUpdate_Click" Padding="12,6" Background="{DynamicResource BeigeCardInner}" Foreground="{DynamicResource BeigeAccent}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="11" FontWeight="Bold" Cursor="Hand">
                                 <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
                             </Button>
                         </StackPanel>

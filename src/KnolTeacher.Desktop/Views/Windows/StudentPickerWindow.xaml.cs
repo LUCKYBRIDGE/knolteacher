@@ -18,6 +18,8 @@ public partial class StudentPickerWindow : Window
 {
     private readonly IStudentManagerService _studentService;
     private readonly ISoundService _soundService;
+    private readonly IDisplayManager? _displayManager;
+    private int _currentMonitorIndex = 1;
 
     // Physics Simulation State
     private readonly List<PinballBall> _balls = new();
@@ -35,19 +37,47 @@ public partial class StudentPickerWindow : Window
     private StudentItem? _lastWinner = null;
     private DateTime _lastFrameTime = DateTime.UtcNow;
 
-    public StudentPickerWindow(IStudentManagerService studentService, ISoundService soundService)
+    public StudentPickerWindow(IStudentManagerService studentService, ISoundService soundService, IDisplayManager? displayManager = null)
     {
         _studentService = studentService;
         _soundService = soundService;
+        _displayManager = displayManager ?? (Application.Current as App)?.Services?.GetService(typeof(IDisplayManager)) as IDisplayManager;
         InitializeComponent();
 
         Loaded += (s, e) =>
         {
             SetupPegsAndBumpers();
             UpdateStatus();
+            PositionToDefaultMonitor();
         };
 
         KeyDown += Window_KeyDown;
+    }
+
+    public void PositionToDefaultMonitor()
+    {
+        if (_displayManager != null)
+        {
+            _currentMonitorIndex = _displayManager.RecommendedStudentMonitorIndex;
+            _displayManager.MoveToStudentMonitor(this, maximize: false);
+            UpdateMonitorButtonText();
+        }
+    }
+
+    private void UpdateMonitorButtonText()
+    {
+        if (BtnSwitchMonitor != null)
+        {
+            BtnSwitchMonitor.Content = _currentMonitorIndex == 1 ? "📺 모니터 2 (학생용)" : "💻 모니터 1 (메인)";
+        }
+    }
+
+    private void BtnSwitchMonitor_Click(object sender, RoutedEventArgs e)
+    {
+        if (_displayManager == null || _displayManager.ScreenCount < 2) return;
+        _currentMonitorIndex = _currentMonitorIndex == 1 ? 0 : 1;
+        _displayManager.MoveWindowToScreen(this, _currentMonitorIndex, maximize: false);
+        UpdateMonitorButtonText();
     }
 
     private void Window_KeyDown(object sender, KeyEventArgs e)

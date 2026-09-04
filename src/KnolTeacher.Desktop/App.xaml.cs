@@ -16,6 +16,7 @@ public partial class App : Application
     private const string MutexName = "KnolTeacherDesktopNetMutex";
 
     private readonly IHost _host;
+    public IServiceProvider? Services => _host?.Services;
 
     public App()
     {
@@ -155,10 +156,7 @@ public partial class App : Application
                                 }
                                 else
                                 {
-                                    if (displayManager.ScreenCount > 1)
-                                    {
-                                        displayManager.MoveWindowToScreen(studentBoard, 1, maximize: true);
-                                    }
+                                    displayManager.MoveToStudentMonitor(studentBoard, maximize: true);
                                     studentBoard.Show();
                                     studentBoard.Activate();
                                     HudNotificationWindow.Instance.ShowToast("📺", "놀보드 열림 (F2)");
@@ -188,6 +186,7 @@ public partial class App : Application
                                 }
                                 else
                                 {
+                                    displayManager.MoveToStudentMonitor(timerWindow, maximize: false);
                                     timerWindow.Show();
                                     timerWindow.Activate();
                                     HudNotificationWindow.Instance.ShowToast("⏱️", "교실 집중 타이머 (Alt+3)");
@@ -203,6 +202,7 @@ public partial class App : Application
                                 }
                                 else
                                 {
+                                    displayManager.MoveToStudentMonitor(pickerWindow, maximize: false);
                                     pickerWindow.Show();
                                     pickerWindow.Activate();
                                     HudNotificationWindow.Instance.ShowToast("🎲", "발표자 추첨기 (Alt+8)");
@@ -226,9 +226,18 @@ public partial class App : Application
 
                             case "visualizer":
                                 var visualizer = _host.Services.GetRequiredService<VisualizerWindow>();
-                                visualizer.Show();
-                                visualizer.Activate();
-                                HudNotificationWindow.Instance.ShowToast("📷", "스마트 실물화상기");
+                                if (visualizer.IsVisible)
+                                {
+                                    visualizer.Hide();
+                                    HudNotificationWindow.Instance.ShowToast("📷", "실물화상기 닫힘");
+                                }
+                                else
+                                {
+                                    displayManager.MoveToStudentMonitor(visualizer, maximize: false);
+                                    visualizer.Show();
+                                    visualizer.Activate();
+                                    HudNotificationWindow.Instance.ShowToast("📷", "스마트 실물화상기");
+                                }
                                 break;
 
                             case "youtube":

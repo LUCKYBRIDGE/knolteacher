@@ -12,10 +12,15 @@ using DirectShowLib;
 using OpenCvSharp;
 using OpenCvSharp.WpfExtensions;
 
+using KnolTeacher.Desktop.Services;
+
 namespace KnolTeacher.Desktop.Views.Windows;
 
 public partial class VisualizerWindow : System.Windows.Window
 {
+    private readonly IDisplayManager? _displayManager;
+    private int _currentMonitorIndex = 1;
+
     private VideoCapture? _capture;
     private CancellationTokenSource? _cts;
 
@@ -26,10 +31,41 @@ public partial class VisualizerWindow : System.Windows.Window
     private bool _isDocEnhance = false;
     private Mat? _frozenFrame;
 
-    public VisualizerWindow()
+    public VisualizerWindow(IDisplayManager? displayManager = null)
     {
+        _displayManager = displayManager ?? (Application.Current as App)?.Services?.GetService(typeof(IDisplayManager)) as IDisplayManager;
         InitializeComponent();
-        Loaded += (s, e) => RefreshCameras();
+        Loaded += (s, e) =>
+        {
+            RefreshCameras();
+            PositionToDefaultMonitor();
+        };
+    }
+
+    public void PositionToDefaultMonitor()
+    {
+        if (_displayManager != null)
+        {
+            _currentMonitorIndex = _displayManager.RecommendedStudentMonitorIndex;
+            _displayManager.MoveToStudentMonitor(this, maximize: false);
+            UpdateMonitorButtonText();
+        }
+    }
+
+    private void UpdateMonitorButtonText()
+    {
+        if (BtnSwitchMonitor != null)
+        {
+            BtnSwitchMonitor.Content = _currentMonitorIndex == 1 ? "📺 모니터 2 (학생용)" : "💻 모니터 1 (메인)";
+        }
+    }
+
+    private void BtnSwitchMonitor_Click(object sender, RoutedEventArgs e)
+    {
+        if (_displayManager == null || _displayManager.ScreenCount < 2) return;
+        _currentMonitorIndex = _currentMonitorIndex == 1 ? 0 : 1;
+        _displayManager.MoveWindowToScreen(this, _currentMonitorIndex, maximize: false);
+        UpdateMonitorButtonText();
     }
 
     private void RefreshCameras()

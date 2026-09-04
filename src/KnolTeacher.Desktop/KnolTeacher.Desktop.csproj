@@ -16,9 +16,9 @@
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <ApplicationIcon>assets\app_icon.ico</ApplicationIcon>
-    <Version>2.8.5</Version>
-    <AssemblyVersion>2.8.5.0</AssemblyVersion>
-    <FileVersion>2.8.5.0</FileVersion>
+    <Version>2.9.0</Version>
+    <AssemblyVersion>2.9.0.0</AssemblyVersion>
+    <FileVersion>2.9.0.0</FileVersion>
     <Product>놀티쳐 (KnolTeacher)</Product>
     <Description>스마트 교사용 올인원 수업 도구</Description>
   </PropertyGroup>

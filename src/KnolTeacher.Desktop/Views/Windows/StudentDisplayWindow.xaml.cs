@@ -20,6 +20,8 @@ public partial class StudentDisplayWindow : Window
     private readonly INeisService _neisService;
     private readonly IConfigService _configService;
     private readonly IQrCodeService _qrCodeService;
+    private readonly IDisplayManager? _displayManager;
+    private int _currentMonitorIndex = 1;
 
     private readonly Stack<Stroke> _undoStack = new();
     private readonly DispatcherTimer _clockTimer;
@@ -31,7 +33,8 @@ public partial class StudentDisplayWindow : Window
         ITimetableService timetableService,
         INeisService neisService,
         IConfigService configService,
-        IQrCodeService qrCodeService)
+        IQrCodeService qrCodeService,
+        IDisplayManager? displayManager = null)
     {
         _soundService = soundService;
         _studentService = studentService;
@@ -39,6 +42,7 @@ public partial class StudentDisplayWindow : Window
         _neisService = neisService;
         _configService = configService;
         _qrCodeService = qrCodeService;
+        _displayManager = displayManager ?? (Application.Current as App)?.Services?.GetService(typeof(IDisplayManager)) as IDisplayManager;
 
         InitializeComponent();
 
@@ -63,7 +67,11 @@ public partial class StudentDisplayWindow : Window
         BoardInkCanvas.StrokeCollected += (s, e) => _undoStack.Clear();
 
         _isReady = true;
-        Loaded += (s, e) => ApplyPresetTools();
+        Loaded += (s, e) =>
+        {
+            PositionToDefaultMonitor();
+            ApplyPresetTools();
+        };
     }
 
     private bool _isReady = false;
@@ -134,10 +142,37 @@ public partial class StudentDisplayWindow : Window
     {
         if (_pinballWindow == null)
         {
-            _pinballWindow = new StudentPickerWindow(_studentService, _soundService);
+            _pinballWindow = new StudentPickerWindow(_studentService, _soundService, _displayManager);
         }
+        _displayManager?.MoveToStudentMonitor(_pinballWindow, maximize: false);
         _pinballWindow.Show();
         _pinballWindow.Activate();
+    }
+
+    public void PositionToDefaultMonitor()
+    {
+        if (_displayManager != null)
+        {
+            _currentMonitorIndex = _displayManager.RecommendedStudentMonitorIndex;
+            _displayManager.MoveToStudentMonitor(this, maximize: true);
+            UpdateMonitorButtonText();
+        }
+    }
+
+    private void UpdateMonitorButtonText()
+    {
+        if (BtnSwitchBoardMonitor != null)
+        {
+            BtnSwitchBoardMonitor.Content = _currentMonitorIndex == 1 ? "📺 모니터 2 (학생용)" : "💻 모니터 1 (메인)";
+        }
+    }
+
+    private void BtnSwitchBoardMonitor_Click(object sender, RoutedEventArgs e)
+    {
+        if (_displayManager == null || _displayManager.ScreenCount < 2) return;
+        _currentMonitorIndex = _currentMonitorIndex == 1 ? 0 : 1;
+        _displayManager.MoveWindowToScreen(this, _currentMonitorIndex, maximize: true);
+        UpdateMonitorButtonText();
     }
 
     private RulerToolControl? _boardRuler;

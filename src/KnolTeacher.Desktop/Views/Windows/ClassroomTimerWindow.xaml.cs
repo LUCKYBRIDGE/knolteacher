@@ -10,14 +10,17 @@ namespace KnolTeacher.Desktop.Views.Windows;
 public partial class ClassroomTimerWindow : Window
 {
     private readonly ISoundService _soundService;
+    private readonly IDisplayManager? _displayManager;
     private readonly DispatcherTimer _timer;
     private int _remainingSeconds = 300; // 5 mins
     private int _initialSeconds = 300;
     private bool _isRunning = false;
+    private int _currentMonitorIndex = 1;
 
-    public ClassroomTimerWindow(ISoundService soundService)
+    public ClassroomTimerWindow(ISoundService soundService, IDisplayManager? displayManager = null)
     {
         _soundService = soundService;
+        _displayManager = displayManager ?? (Application.Current as App)?.Services?.GetService(typeof(IDisplayManager)) as IDisplayManager;
         InitializeComponent();
 
         _timer = new DispatcherTimer
@@ -26,7 +29,35 @@ public partial class ClassroomTimerWindow : Window
         };
         _timer.Tick += Timer_Tick;
 
+        Loaded += (s, e) => PositionToDefaultMonitor();
+
         UpdateDisplay();
+    }
+
+    public void PositionToDefaultMonitor()
+    {
+        if (_displayManager != null)
+        {
+            _currentMonitorIndex = _displayManager.RecommendedStudentMonitorIndex;
+            _displayManager.MoveToStudentMonitor(this, maximize: false);
+            UpdateMonitorButtonText();
+        }
+    }
+
+    private void UpdateMonitorButtonText()
+    {
+        if (BtnSwitchMonitor != null)
+        {
+            BtnSwitchMonitor.Content = _currentMonitorIndex == 1 ? "📺 모니터 2 (학생용)" : "💻 모니터 1 (메인)";
+        }
+    }
+
+    private void BtnSwitchMonitor_Click(object sender, RoutedEventArgs e)
+    {
+        if (_displayManager == null || _displayManager.ScreenCount < 2) return;
+        _currentMonitorIndex = _currentMonitorIndex == 1 ? 0 : 1;
+        _displayManager.MoveWindowToScreen(this, _currentMonitorIndex, maximize: false);
+        UpdateMonitorButtonText();
     }
 
     private void Timer_Tick(object? sender, EventArgs e)

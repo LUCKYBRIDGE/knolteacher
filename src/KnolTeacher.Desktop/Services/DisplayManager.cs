@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
@@ -12,6 +13,7 @@ public interface IDisplayManager
     int RecommendedStudentMonitorIndex { get; }
     List<ScreenInfo> GetScreens();
     void MoveWindowToScreen(Window window, int screenIndex, bool maximize = false);
+    void MoveToStudentMonitor(Window window, bool maximize = false);
 }
 
 public class ScreenInfo
@@ -31,8 +33,8 @@ public class DisplayManager : IDisplayManager
 
     public List<ScreenInfo> GetScreens()
     {
-        var screens = new List<ScreenInfo>();
-        int index = 0;
+        var rawScreens = new List<ScreenInfo>();
+        int rawIndex = 0;
 
         NativeMethods.EnumDisplayMonitors(IntPtr.Zero, IntPtr.Zero,
             (IntPtr hMonitor, IntPtr hdcMonitor, ref NativeMethods.RECT lprcMonitor, IntPtr dwData) =>
@@ -42,10 +44,10 @@ public class DisplayManager : IDisplayManager
 
                 if (NativeMethods.GetMonitorInfo(hMonitor, ref mi))
                 {
-                    screens.Add(new ScreenInfo
+                    rawScreens.Add(new ScreenInfo
                     {
-                        Index = index++,
-                        DeviceName = mi.szDevice ?? $"Monitor {index}",
+                        Index = rawIndex++,
+                        DeviceName = mi.szDevice ?? $"Monitor {rawIndex}",
                         IsPrimary = (mi.dwFlags & NativeMethods.MONITORINFOF_PRIMARY) != 0,
                         Bounds = new Rect(mi.rcMonitor.Left, mi.rcMonitor.Top,
                                           mi.rcMonitor.Right - mi.rcMonitor.Left,
@@ -58,7 +60,15 @@ public class DisplayManager : IDisplayManager
                 return true;
             }, IntPtr.Zero);
 
-        return screens;
+        // Sort so that Primary monitor is index 0 (선생님 메인 PC),
+        // and secondary monitor is index 1 (학생용 전자칠판/TV 권장).
+        var sorted = rawScreens.OrderByDescending(s => s.IsPrimary).ToList();
+        for (int i = 0; i < sorted.Count; i++)
+        {
+            sorted[i].Index = i;
+        }
+
+        return sorted;
     }
 
     public void MoveWindowToScreen(Window window, int screenIndex, bool maximize = false)
@@ -87,8 +97,21 @@ public class DisplayManager : IDisplayManager
         }
         else
         {
-            window.Left = area.Left + (area.Width - window.Width) / 2;
-            window.Top = area.Top + (area.Height - window.Height) / 2;
+            if (window.WindowState == WindowState.Maximized)
+            {
+                window.WindowState = WindowState.Normal;
+            }
+
+            double w = !double.IsNaN(window.Width) && window.Width > 0 ? window.Width : (window.ActualWidth > 0 ? window.ActualWidth : 520);
+            double h = !double.IsNaN(window.Height) && window.Height > 0 ? window.Height : (window.ActualHeight > 0 ? window.ActualHeight : 420);
+
+            window.Left = area.Left + (area.Width - w) / 2;
+            window.Top = area.Top + (area.Height - h) / 2;
         }
+    }
+
+    public void MoveToStudentMonitor(Window window, bool maximize = false)
+    {
+        MoveWindowToScreen(window, RecommendedStudentMonitorIndex, maximize);
     }
 }
