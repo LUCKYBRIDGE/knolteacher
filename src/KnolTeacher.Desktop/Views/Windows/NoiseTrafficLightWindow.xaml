@@ -1,0 +1,194 @@
+<Window x:Class="KnolTeacher.Desktop.Views.Windows.NoiseTrafficLightWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="🚦 교실 소음 신호등 - 놀티쳐"
+        Height="720" Width="560"
+        MinWidth="460" MinHeight="600"
+        WindowStartupLocation="CenterScreen"
+        Background="#0F172A">
+
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <!-- 1. Header & Presets -->
+            <RowDefinition Height="Auto"/>
+            <!-- 2. Traffic Light Housing -->
+            <RowDefinition Height="*"/>
+            <!-- 3. Status & Live Meter -->
+            <RowDefinition Height="Auto"/>
+            <!-- 4. Warning Counter -->
+            <RowDefinition Height="Auto"/>
+            <!-- 5. Controls & Thresholds -->
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- 1. Header & Presets -->
+        <Grid Grid.Row="0" Margin="0,0,0,14">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="🚦" FontSize="20" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="교실 소음 신호등" FontSize="18" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
+                </StackPanel>
+                <TextBlock Text="실시간 교실 소음(dB)을 감지하여 학생들의 자기주도 소음 관리를 유도합니다." FontSize="11" Foreground="#94A3B8" Margin="0,2,0,0"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                <Button x:Name="BtnSwitchMonitor" Content="📺 모니터 2" Click="BtnSwitchMonitor_Click" Padding="10,6" Margin="0,0,6,0" Background="#1E293B" Foreground="#38BDF8" BorderBrush="#0284C7" BorderThickness="1" FontSize="11" FontWeight="Bold" Cursor="Hand" ToolTip="학생용 화면(TV/프로젝터)으로 신호등 이동">
+                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                </Button>
+                <Button x:Name="BtnFullscreen" Content="⛶ 전체화면" Click="BtnFullscreen_Click" Padding="10,6" Background="#1E293B" Foreground="#94A3B8" BorderBrush="#334155" BorderThickness="1" FontSize="11" Cursor="Hand">
+                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <!-- 2. Traffic Light Housing (Vertical Pod) -->
+        <Border Grid.Row="1" Background="#1E293B" BorderBrush="#334155" BorderThickness="2" CornerRadius="28" Padding="16,14" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="24" Opacity="0.4" ShadowDepth="6" Color="#000000"/>
+            </Border.Effect>
+            <StackPanel HorizontalAlignment="Center">
+                <!-- Red Light -->
+                <Border x:Name="LightRed" Width="105" Height="105" CornerRadius="53" Background="#3B1818" BorderBrush="#7F1D1D" BorderThickness="3" Margin="0,0,0,12">
+                    <Border.Effect>
+                        <DropShadowEffect x:Name="GlowRed" BlurRadius="25" Color="#EF4444" Opacity="0"/>
+                    </Border.Effect>
+                    <TextBlock Text="🔴" FontSize="42" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.4" x:Name="IconRed"/>
+                </Border>
+
+                <!-- Yellow Light -->
+                <Border x:Name="LightYellow" Width="105" Height="105" CornerRadius="53" Background="#3A2C10" BorderBrush="#78350F" BorderThickness="3" Margin="0,0,0,12">
+                    <Border.Effect>
+                        <DropShadowEffect x:Name="GlowYellow" BlurRadius="25" Color="#F59E0B" Opacity="0"/>
+                    </Border.Effect>
+                    <TextBlock Text="🟡" FontSize="42" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.4" x:Name="IconYellow"/>
+                </Border>
+
+                <!-- Green Light -->
+                <Border x:Name="LightGreen" Width="105" Height="105" CornerRadius="53" Background="#102E20" BorderBrush="#064E3B" BorderThickness="3">
+                    <Border.Effect>
+                        <DropShadowEffect x:Name="GlowGreen" BlurRadius="25" Color="#10B981" Opacity="1"/>
+                    </Border.Effect>
+                    <TextBlock Text="🟢" FontSize="42" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="1.0" x:Name="IconGreen"/>
+                </Border>
+            </StackPanel>
+        </Border>
+
+        <!-- 3. Status & Live Meter -->
+        <Border Grid.Row="2" Background="#1E293B" BorderBrush="#334155" BorderThickness="1" CornerRadius="12" Padding="14,10" Margin="0,12,0,8">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Status Text -->
+                <TextBlock x:Name="TxtStatusMessage" Grid.Row="0" Text="🟢 참 잘하고 있어요! (정숙 유지 중)" FontSize="15" FontWeight="Bold" Foreground="#10B981" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+
+                <!-- Live Decibel Bar -->
+                <Grid Grid.Row="1" Height="18" Margin="0,0,0,6">
+                    <Border Background="#0F172A" CornerRadius="9"/>
+                    <Border x:Name="BarDecibelFill" Background="#10B981" CornerRadius="9" HorizontalAlignment="Left" Width="120"/>
+                </Grid>
+
+                <!-- Live dB Text Readout -->
+                <Grid Grid.Row="2">
+                    <TextBlock Text="0 dB (완전 조용)" FontSize="10" Foreground="#64748B" HorizontalAlignment="Left"/>
+                    <TextBlock x:Name="TxtLiveDb" Text="42.5 dB" FontSize="15" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center"/>
+                    <TextBlock Text="100 dB (매우 시끄러움)" FontSize="10" Foreground="#64748B" HorizontalAlignment="Right"/>
+                </Grid>
+            </Grid>
+        </Border>
+
+        <!-- 4. Warning Counter Bar -->
+        <Border Grid.Row="3" Background="#1E293B" BorderBrush="#334155" BorderThickness="1" CornerRadius="10" Padding="12,8" Margin="0,0,0,8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="🚨 경고 누적: " FontSize="13" FontWeight="SemiBold" Foreground="#94A3B8" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="TxtWarningCount" Text="0 회" FontSize="16" FontWeight="Bold" Foreground="#EF4444" VerticalAlignment="Center"/>
+                    <TextBlock Text=" (빨간불 1.2초 지속 시 1회 누적)" FontSize="11" Foreground="#64748B" VerticalAlignment="Center" Margin="6,0,0,0"/>
+                </StackPanel>
+                <Button Grid.Column="1" Content="🔄 카운트 리셋" Click="BtnResetWarnings_Click" Padding="10,4" Background="#334155" Foreground="White" BorderThickness="0" FontSize="11" FontWeight="SemiBold" Cursor="Hand">
+                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                </Button>
+            </Grid>
+        </Border>
+
+        <!-- 5. Controls & Threshold Presets -->
+        <Border Grid.Row="4" Background="#1E293B" BorderBrush="#334155" BorderThickness="1" CornerRadius="12" Padding="14,10">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Row 0: Mode Presets & Mic Toggle -->
+                <Grid Grid.Row="0" Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Column="0" Text="상황별 기준:" FontSize="12" Foreground="#94A3B8" VerticalAlignment="Center" Margin="0,0,8,0"/>
+
+                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                        <Button Content="🤫 자습/시험 (45dB)" Click="BtnPresetQuiet_Click" Padding="8,4" Margin="0,0,4,0" Background="#334155" Foreground="White" BorderThickness="0" FontSize="11" Cursor="Hand">
+                            <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                        </Button>
+                        <Button Content="👥 모둠토의 (65dB)" Click="BtnPresetDiscussion_Click" Padding="8,4" Margin="0,0,4,0" Background="#334155" Foreground="White" BorderThickness="0" FontSize="11" Cursor="Hand">
+                            <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                        </Button>
+                        <Button Content="🎨 자유활동 (78dB)" Click="BtnPresetActive_Click" Padding="8,4" Margin="0,0,4,0" Background="#334155" Foreground="White" BorderThickness="0" FontSize="11" Cursor="Hand">
+                            <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                        </Button>
+                    </StackPanel>
+
+                    <Button x:Name="BtnToggleMic" Grid.Column="2" Content="🎙️ 감지 일시정지" Click="BtnToggleMic_Click" Padding="10,5" Background="#B45309" Foreground="White" FontWeight="Bold" BorderThickness="0" FontSize="11" Cursor="Hand">
+                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                    </Button>
+                </Grid>
+
+                <!-- Row 1: Fine-Tuning Sliders & Sound Option -->
+                <Grid Grid.Row="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0">
+                        <Grid Margin="0,0,12,2">
+                            <TextBlock Text="노랑(주의) 기준치" FontSize="11" Foreground="#F59E0B"/>
+                            <TextBlock x:Name="TxtYellowVal" Text="55 dB" FontSize="11" FontWeight="Bold" Foreground="#F59E0B" HorizontalAlignment="Right"/>
+                        </Grid>
+                        <Slider x:Name="SliderYellow" Minimum="35" Maximum="80" Value="55" Margin="0,0,12,6" ValueChanged="SliderThreshold_ValueChanged"/>
+
+                        <Grid Margin="0,0,12,2">
+                            <TextBlock Text="빨강(경고) 기준치" FontSize="11" Foreground="#EF4444"/>
+                            <TextBlock x:Name="TxtRedVal" Text="75 dB" FontSize="11" FontWeight="Bold" Foreground="#EF4444" HorizontalAlignment="Right"/>
+                        </Grid>
+                        <Slider x:Name="SliderRed" Minimum="45" Maximum="95" Value="75" Margin="0,0,12,0" ValueChanged="SliderThreshold_ValueChanged"/>
+                    </StackPanel>
+
+                    <!-- Mic select and Sound toggle -->
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Width="140">
+                        <CheckBox x:Name="ChkSoundAlarm" Content="경고 알림음 울리기" IsChecked="True" Foreground="#CBD5E1" FontSize="11" Margin="0,0,0,6"/>
+                        <ComboBox x:Name="ComboMics" Height="26" FontSize="10" Background="#0F172A" Foreground="White" SelectionChanged="ComboMics_SelectionChanged" ToolTip="입력 마이크 장치 선택"/>
+                    </StackPanel>
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

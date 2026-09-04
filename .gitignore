@@ -33,3 +33,7 @@ dist-net/
 .idea/
 .vscode/
 *.swp
+
+# Temporary publish & scratch
+publish/
+scratch/

@@ -2,6 +2,7 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Threading;
 using KnolTeacher.Desktop.Services;
 
@@ -15,6 +16,7 @@ public partial class ClassroomTimerWindow : Window
     private int _remainingSeconds = 300; // 5 mins
     private int _initialSeconds = 300;
     private bool _isRunning = false;
+    private bool _isPieMode = false;
     private int _currentMonitorIndex = 1;
 
     public ClassroomTimerWindow(ISoundService soundService, IDisplayManager? displayManager = null)
@@ -89,6 +91,8 @@ public partial class ClassroomTimerWindow : Window
             TbMinutes.Text = $"{min:D2}";
             TbSeconds.Text = $"{sec:D2}";
         }
+
+        UpdatePieGeometry();
     }
 
     private void BtnApplyManualTime_Click(object sender, RoutedEventArgs e)
@@ -165,6 +169,93 @@ public partial class ClassroomTimerWindow : Window
             _remainingSeconds = _initialSeconds;
             UpdateDisplay();
         }
+    }
+
+    private void BtnTogglePieMode_Click(object sender, RoutedEventArgs e)
+    {
+        _isPieMode = !_isPieMode;
+        if (PanelDigitalView != null) PanelDigitalView.Visibility = _isPieMode ? Visibility.Collapsed : Visibility.Visible;
+        if (PanelPieView != null) PanelPieView.Visibility = _isPieMode ? Visibility.Visible : Visibility.Collapsed;
+        if (BtnTogglePieMode != null)
+        {
+            BtnTogglePieMode.Content = _isPieMode ? "⏱️ 숫자 시계 모드" : "🥧 파이 시계 모드";
+        }
+        UpdatePieGeometry();
+    }
+
+    private void UpdatePieGeometry()
+    {
+        if (TxtPieTime != null)
+        {
+            int min = _remainingSeconds / 60;
+            int sec = _remainingSeconds % 60;
+            TxtPieTime.Text = $"{min:D2}:{sec:D2}";
+        }
+
+        if (PathPieSlice == null) return;
+
+        double total = Math.Max(1, _initialSeconds);
+        double fraction = Math.Clamp((double)_remainingSeconds / total, 0.0, 1.0);
+
+        // Color coding based on remaining time percentage
+        string colorHex = fraction switch
+        {
+            > 0.5 => "#38BDF8", // Sky blue (> 50%)
+            > 0.2 => "#F59E0B", // Amber warning (20% ~ 50%)
+            _ => "#EF4444"      // Red alert (< 20%)
+        };
+
+        try
+        {
+            PathPieSlice.Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString(colorHex));
+        }
+        catch
+        {
+            PathPieSlice.Fill = Brushes.SkyBlue;
+        }
+
+        if (fraction <= 0.001)
+        {
+            PathPieSlice.Data = null;
+            return;
+        }
+
+        double cx = 100;
+        double cy = 100;
+        double r = 96;
+
+        if (fraction >= 0.999)
+        {
+            PathPieSlice.Data = new EllipseGeometry(new Point(cx, cy), r, r);
+            return;
+        }
+
+        // Clockwise arc from 12 o'clock (0 rad)
+        // 12 o'clock is (cx, cy - r)
+        double angleRad = fraction * 2.0 * Math.PI;
+        double endX = cx + r * Math.Sin(angleRad);
+        double endY = cy - r * Math.Cos(angleRad);
+
+        var pathFigure = new PathFigure
+        {
+            StartPoint = new Point(cx, cy),
+            IsClosed = true,
+            IsFilled = true
+        };
+
+        pathFigure.Segments.Add(new LineSegment(new Point(cx, cy - r), true));
+        pathFigure.Segments.Add(new ArcSegment(
+            new Point(endX, endY),
+            new Size(r, r),
+            0,
+            angleRad > Math.PI, // Large arc if angle > 180 degrees
+            SweepDirection.Clockwise,
+            true
+        ));
+
+        var pathGeometry = new PathGeometry();
+        pathGeometry.Figures.Add(pathFigure);
+        PathPieSlice.Data = pathGeometry;
     }
 
     protected override void OnClosing(System.ComponentModel.CancelEventArgs e)

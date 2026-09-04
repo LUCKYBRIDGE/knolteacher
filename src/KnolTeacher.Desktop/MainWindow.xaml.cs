@@ -39,6 +39,12 @@ public partial class MainWindow : FluentWindow
     private readonly IQrCodeService _qrCodeService;
     private readonly INeisCommentBatchService _neisCommentBatchService;
     private readonly ISiteBookmarkService _siteBookmarkService;
+    private readonly SchoolScaleWindow _schoolScaleWindow;
+    private readonly NoiseTrafficLightWindow _noiseTrafficLightWindow;
+    private readonly IWeatherService _weatherService;
+    private readonly WorkdayCalculatorWindow _workdayCalculatorWindow;
+    private readonly SmartSeatShuffleWindow _smartSeatShuffleWindow;
+    private readonly ClassroomSoundboardWindow _soundboardWindow;
     private readonly DispatcherTimer _statusTimer;
     private readonly ObservableCollection<NeisStudentComment> _neisComments = new();
     private int _currentNeisIndex = 0;
@@ -54,6 +60,12 @@ public partial class MainWindow : FluentWindow
         ClassroomTimerWindow timerWindow,
         StudentPickerWindow pickerWindow,
         FloatingToolbarWindow dockWindow,
+        SchoolScaleWindow schoolScaleWindow,
+        NoiseTrafficLightWindow noiseTrafficLightWindow,
+        IWeatherService weatherService,
+        WorkdayCalculatorWindow workdayCalculatorWindow,
+        SmartSeatShuffleWindow smartSeatShuffleWindow,
+        ClassroomSoundboardWindow soundboardWindow,
         IDisplayManager displayManager,
         INeisService neisService,
         IDesktopCleanerService cleanerService,
@@ -74,6 +86,12 @@ public partial class MainWindow : FluentWindow
         _timerWindow = timerWindow;
         _pickerWindow = pickerWindow;
         _dockWindow = dockWindow;
+        _schoolScaleWindow = schoolScaleWindow;
+        _noiseTrafficLightWindow = noiseTrafficLightWindow;
+        _weatherService = weatherService;
+        _workdayCalculatorWindow = workdayCalculatorWindow;
+        _smartSeatShuffleWindow = smartSeatShuffleWindow;
+        _soundboardWindow = soundboardWindow;
         _displayManager = displayManager;
         _neisService = neisService;
         _cleanerService = cleanerService;
@@ -112,8 +130,10 @@ public partial class MainWindow : FluentWindow
             _timetableService.OnTimetableChanged += () => Dispatcher.Invoke(RefreshTimetable);
             _statusTimer.Start();
 
-            // 3. Load NEIS Lunch Menu
+            // 3. Load NEIS Lunch Menu & Weather
             await LoadNeisDataAsync();
+            InitWeatherRegions();
+            await LoadWeatherAsync();
 
             // 4. Load Bookmarks & Education Offices
             CbEducationOffice.ItemsSource = _siteBookmarkService.EducationOffices;
@@ -173,6 +193,65 @@ public partial class MainWindow : FluentWindow
             }
         }
         catch { }
+    }
+
+    private void InitWeatherRegions()
+    {
+        try
+        {
+            if (ComboWeatherRegion.Items.Count == 0)
+            {
+                foreach (var r in _weatherService.SupportedRegions)
+                {
+                    ComboWeatherRegion.Items.Add(r.Name);
+                }
+                ComboWeatherRegion.SelectedIndex = 0;
+            }
+        }
+        catch { }
+    }
+
+    private async Task LoadWeatherAsync()
+    {
+        try
+        {
+            string selRegion = ComboWeatherRegion.SelectedItem as string ?? "서울";
+            var w = await _weatherService.GetWeatherAndAirQualityAsync(selRegion);
+            if (w != null)
+            {
+                TxtWeatherIcon.Text = w.WeatherIcon;
+                TxtWeatherTemp.Text = $"{w.Temperature:0.0}°C";
+                TxtWeatherDesc.Text = w.WeatherDescription;
+                TxtWeatherApparent.Text = $"체감 {w.ApparentTemperature:0.0}° · 습도 {w.Humidity}%";
+
+                TxtPm10Val.Text = $"{w.Pm10Grade} {w.Pm10:0}";
+                BadgePm10.Background = (Brush)new BrushConverter().ConvertFromString(w.Pm10BadgeBg)!;
+                TxtPm10Val.Foreground = (Brush)new BrushConverter().ConvertFromString(w.Pm10BadgeFg)!;
+
+                TxtPm25Val.Text = $"{w.Pm25Grade} {w.Pm25:0}";
+                BadgePm25.Background = (Brush)new BrushConverter().ConvertFromString(w.Pm25BadgeBg)!;
+                TxtPm25Val.Foreground = (Brush)new BrushConverter().ConvertFromString(w.Pm25BadgeFg)!;
+
+                TxtOutdoorGuide.Text = w.OutdoorActivityGuide;
+                BadgeOutdoorGuide.Background = (Brush)new BrushConverter().ConvertFromString(w.OutdoorGuideBg)!;
+                TxtOutdoorGuide.Foreground = (Brush)new BrushConverter().ConvertFromString(w.OutdoorGuideFg)!;
+            }
+        }
+        catch { }
+    }
+
+    private async void ComboWeatherRegion_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (IsLoaded)
+        {
+            await LoadWeatherAsync();
+        }
+    }
+
+    private async void BtnRefreshWeather_Click(object sender, RoutedEventArgs e)
+    {
+        await LoadWeatherAsync();
+        HudNotificationWindow.Instance.ShowToast("⛅", "날씨 및 미세먼지 정보를 갱신했습니다.");
     }
 
     #region Timetable Handlers
@@ -481,6 +560,71 @@ public partial class MainWindow : FluentWindow
     {
         if (_dockWindow.IsVisible) _dockWindow.Hide();
         else { _dockWindow.Show(); _dockWindow.Activate(); }
+    }
+
+    private void BtnLaunchSchoolScale_Click(object sender, RoutedEventArgs e)
+    {
+        if (_schoolScaleWindow.IsVisible)
+        {
+            _schoolScaleWindow.Activate();
+        }
+        else
+        {
+            _schoolScaleWindow.Show();
+            _schoolScaleWindow.Activate();
+        }
+    }
+
+    private void BtnLaunchNoiseTrafficLight_Click(object sender, RoutedEventArgs e)
+    {
+        if (_noiseTrafficLightWindow.IsVisible)
+        {
+            _noiseTrafficLightWindow.Activate();
+        }
+        else
+        {
+            _noiseTrafficLightWindow.Show();
+            _noiseTrafficLightWindow.Activate();
+        }
+    }
+
+    private void BtnLaunchWorkdayCalculator_Click(object sender, RoutedEventArgs e)
+    {
+        if (_workdayCalculatorWindow.IsVisible)
+        {
+            _workdayCalculatorWindow.Activate();
+        }
+        else
+        {
+            _workdayCalculatorWindow.Show();
+            _workdayCalculatorWindow.Activate();
+        }
+    }
+
+    private void BtnLaunchSeatShuffle_Click(object sender, RoutedEventArgs e)
+    {
+        if (_smartSeatShuffleWindow.IsVisible)
+        {
+            _smartSeatShuffleWindow.Activate();
+        }
+        else
+        {
+            _smartSeatShuffleWindow.Show();
+            _smartSeatShuffleWindow.Activate();
+        }
+    }
+
+    private void BtnLaunchSoundboard_Click(object sender, RoutedEventArgs e)
+    {
+        if (_soundboardWindow.IsVisible)
+        {
+            _soundboardWindow.Activate();
+        }
+        else
+        {
+            _soundboardWindow.Show();
+            _soundboardWindow.Activate();
+        }
     }
 
     private void BtnOpenPeriodAlarmSettings_Click(object sender, RoutedEventArgs e)

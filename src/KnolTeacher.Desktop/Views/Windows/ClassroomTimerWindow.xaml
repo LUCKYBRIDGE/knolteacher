@@ -24,18 +24,37 @@
 
         <!-- Header -->
         <Grid Grid.Row="0" Margin="0,0,0,10">
+            <Button x:Name="BtnTogglePieMode" Content="🥧 파이 시계 모드" Click="BtnTogglePieMode_Click" HorizontalAlignment="Left" VerticalAlignment="Center" Padding="8,3" Background="#1E293B" Foreground="#F59E0B" BorderBrush="#78350F" BorderThickness="1" FontSize="10" FontWeight="Bold" Cursor="Hand" ToolTip="시각적 원형 파이 타이머 ↔ 디지털 숫자 타이머 전환"/>
             <TextBlock Text="⏱️ 교실 집중 타이머" FontSize="16" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
             <Button x:Name="BtnSwitchMonitor" Content="📺 모니터 2" Click="BtnSwitchMonitor_Click" HorizontalAlignment="Right" VerticalAlignment="Center" Padding="8,3" Background="#1E293B" Foreground="#38BDF8" BorderBrush="#0284C7" BorderThickness="1" FontSize="10" FontWeight="Bold" Cursor="Hand" ToolTip="타이머를 모니터 1 ↔ 모니터 2로 즉시 이동"/>
         </Grid>
 
-        <!-- Main Digits (Viewbox Auto-Scaling) -->
+        <!-- Main Display: Digital & Pie Mode Switchable -->
         <Border Grid.Row="1" Background="#1E293B" CornerRadius="16" BorderBrush="#38BDF8" BorderThickness="2" Margin="0,0,0,10" Padding="14">
             <Border.Effect>
                 <DropShadowEffect BlurRadius="16" Opacity="0.3" ShadowDepth="4" Color="#000000"/>
             </Border.Effect>
-            <Viewbox Stretch="Uniform">
-                <TextBlock x:Name="TxtTime" Text="05:00" FontFamily="Consolas, Malgun Gothic" FontSize="64" FontWeight="Bold" Foreground="#38BDF8" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-            </Viewbox>
+            <Grid>
+                <!-- Digital Viewbox Mode -->
+                <Viewbox x:Name="PanelDigitalView" Stretch="Uniform">
+                    <TextBlock x:Name="TxtTime" Text="05:00" FontFamily="Consolas, Malgun Gothic" FontSize="64" FontWeight="Bold" Foreground="#38BDF8" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Viewbox>
+
+                <!-- Visual Pie Timer Mode -->
+                <Viewbox x:Name="PanelPieView" Stretch="Uniform" Visibility="Collapsed">
+                    <Grid Width="200" Height="200">
+                        <!-- Outer Rim Dial -->
+                        <Ellipse Width="196" Height="196" Stroke="#334155" StrokeThickness="4" Fill="#0F172A"/>
+
+                        <!-- Pie Slice Path -->
+                        <Path x:Name="PathPieSlice" Fill="#38BDF8" Opacity="0.85"/>
+
+                        <!-- Center Hub with Digital Time -->
+                        <Ellipse Width="94" Height="94" Fill="#1E293B" Stroke="#334155" StrokeThickness="2"/>
+                        <TextBlock x:Name="TxtPieTime" Text="05:00" FontFamily="Consolas, Malgun Gothic" FontSize="20" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Grid>
+                </Viewbox>
+            </Grid>
         </Border>
 
         <!-- Manual Numeric Input & Fine Tuning -->

@@ -210,6 +210,46 @@
                                 </StackPanel>
                             </Button>
 
+                            <Button Click="BtnLaunchSchoolScale_Click" Background="Transparent" Foreground="{DynamicResource BeigeTextSub}" Height="32" HorizontalContentAlignment="Left" Padding="12,0" Margin="0,0,0,2" BorderThickness="0" Cursor="Hand" ToolTip="전국 학교 규모·학급수·과밀 통계 조회">
+                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="🏫" FontSize="13" Margin="0,0,8,0"/>
+                                    <TextBlock Text="학교 규모 · 통계" FontSize="12" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+
+                            <Button Click="BtnLaunchNoiseTrafficLight_Click" Background="Transparent" Foreground="{DynamicResource BeigeTextSub}" Height="32" HorizontalContentAlignment="Left" Padding="12,0" Margin="0,0,0,2" BorderThickness="0" Cursor="Hand" ToolTip="교실 소음 실시간 감지 및 신호등">
+                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="🚦" FontSize="13" Margin="0,0,8,0"/>
+                                    <TextBlock Text="교실 소음 신호등" FontSize="12" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+
+                            <Button Click="BtnLaunchWorkdayCalculator_Click" Background="Transparent" Foreground="{DynamicResource BeigeTextSub}" Height="32" HorizontalContentAlignment="Left" Padding="12,0" Margin="0,0,0,2" BorderThickness="0" Cursor="Hand" ToolTip="교원 월 15일 복무·수당 출근일수 계산기">
+                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="🧮" FontSize="13" Margin="0,0,8,0"/>
+                                    <TextBlock Text="월 15일 복무 계산기" FontSize="12" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+
+                            <Button Click="BtnLaunchSeatShuffle_Click" Background="Transparent" Foreground="{DynamicResource BeigeTextSub}" Height="32" HorizontalContentAlignment="Left" Padding="12,0" Margin="0,0,0,2" BorderThickness="0" Cursor="Hand" ToolTip="스마트 자리 바꾸기 &amp; 동물 아바타 책상 셔플">
+                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="🪑" FontSize="13" Margin="0,0,8,0"/>
+                                    <TextBlock Text="스마트 자리 바꾸기" FontSize="12" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+
+                            <Button Click="BtnLaunchSoundboard_Click" Background="Transparent" Foreground="{DynamicResource BeigeTextSub}" Height="32" HorizontalContentAlignment="Left" Padding="12,0" Margin="0,0,0,2" BorderThickness="0" Cursor="Hand" ToolTip="원터치 교실 효과음 &amp; 사운드보드">
+                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="🔔" FontSize="13" Margin="0,0,8,0"/>
+                                    <TextBlock Text="교실 효과음 보드" FontSize="12" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+
                             <Button Click="BtnOpenHotkeySettings_Click" Background="Transparent" Foreground="{DynamicResource BeigeTextSub}" Height="32" HorizontalContentAlignment="Left" Padding="12,0" Margin="0,0,0,2" BorderThickness="0" Cursor="Hand">
                                 <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
                                 <StackPanel Orientation="Horizontal">
@@ -338,32 +378,105 @@
                                 </Grid>
                             </Border>
 
-                            <!-- Right: Lunch Meal Card -->
-                            <Border Grid.Column="1" Background="{DynamicResource BeigeLunchBg}" BorderBrush="{DynamicResource BeigeLunchBorder}" BorderThickness="1" CornerRadius="12" Padding="16">
-                                <Grid>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto" />
-                                        <RowDefinition Height="*" />
-                                        <RowDefinition Height="Auto" />
-                                    </Grid.RowDefinitions>
-                                    <StackPanel Grid.Row="0" Margin="0,0,0,12">
-                                        <TextBlock Text="🍱 오늘의 점심 식단표" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource BeigeLunchText}"/>
-                                        <TextBlock Text="교육부 나이스 영양·급식 정보" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}" Margin="0,2,0,0"/>
-                                    </StackPanel>
-                                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-                                        <TextBlock x:Name="TxtMealMenu" Text="식단 불러오는 중..." FontSize="14" LineHeight="24" Foreground="{DynamicResource BeigeTextMain}" FontWeight="SemiBold" TextWrapping="Wrap"/>
-                                    </ScrollViewer>
-                                    <Border Grid.Row="2" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="6" Padding="10,6" Margin="0,10,0,0">
-                                        <TextBlock x:Name="TxtMealCalorie" Text="열량: 계산 중" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BeigeLunchText}" HorizontalAlignment="Right"/>
-                                    </Border>
-                                </Grid>
-                            </Border>
+                            <!-- Right: Weather & Air Quality Card + Lunch Meal Card -->
+                            <Grid Grid.Column="1">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+
+                                <!-- ⛅ Weather & Fine Dust Card (Row 0) -->
+                                <Border Grid.Row="0" Margin="0,0,0,10" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="14,10">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+
+                                        <!-- Header: Title + Region dropdown + Refresh -->
+                                        <Grid Grid.Row="0" Margin="0,0,0,8">
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                <TextBlock Text="⛅" FontSize="14" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                                <TextBlock Text="오늘의 날씨 &amp; 미세먼지" FontWeight="Bold" FontSize="13" Foreground="{DynamicResource BeigeTextMain}" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                                <ComboBox x:Name="ComboWeatherRegion" Height="24" FontSize="11" SelectionChanged="ComboWeatherRegion_SelectionChanged" Padding="6,1" Margin="0,0,4,0"/>
+                                                <Button Content="🔄" Click="BtnRefreshWeather_Click" Width="24" Height="24" Padding="0" Background="Transparent" BorderThickness="0" Cursor="Hand" ToolTip="날씨 새로고침"/>
+                                            </StackPanel>
+                                        </Grid>
+
+                                        <!-- Metrics: Temp & PM10/PM2.5 -->
+                                        <Grid Grid.Row="1" Margin="0,0,0,8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <!-- Left: Temp & Weather Icon -->
+                                            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                                <TextBlock x:Name="TxtWeatherIcon" Text="☀️" FontSize="26" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                                <StackPanel VerticalAlignment="Center">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock x:Name="TxtWeatherTemp" Text="--.-°C" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource BeigeTextMain}"/>
+                                                        <TextBlock x:Name="TxtWeatherDesc" Text="확인 중" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}" VerticalAlignment="Center" Margin="6,0,0,0"/>
+                                                    </StackPanel>
+                                                    <TextBlock x:Name="TxtWeatherApparent" Text="체감 --.-° · 습도 --%" FontSize="10" Foreground="{DynamicResource BeigeTextMuted}"/>
+                                                </StackPanel>
+                                            </StackPanel>
+
+                                            <!-- Right: Fine Dust PM10 & PM2.5 -->
+                                            <StackPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,3">
+                                                    <TextBlock Text="미세(PM10) " FontSize="10" Foreground="{DynamicResource BeigeTextMuted}" VerticalAlignment="Center"/>
+                                                    <Border x:Name="BadgePm10" Background="#DCFCE7" CornerRadius="4" Padding="5,1">
+                                                        <TextBlock x:Name="TxtPm10Val" Text="확인 중" FontSize="10" FontWeight="Bold" Foreground="#166534"/>
+                                                    </Border>
+                                                </StackPanel>
+                                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                                    <TextBlock Text="초미세(PM2.5) " FontSize="10" Foreground="{DynamicResource BeigeTextMuted}" VerticalAlignment="Center"/>
+                                                    <Border x:Name="BadgePm25" Background="#DCFCE7" CornerRadius="4" Padding="5,1">
+                                                        <TextBlock x:Name="TxtPm25Val" Text="확인 중" FontSize="10" FontWeight="Bold" Foreground="#166534"/>
+                                                    </Border>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </Grid>
+
+                                        <!-- Outdoor Safety Guide Badge -->
+                                        <Border x:Name="BadgeOutdoorGuide" Grid.Row="2" Background="#DCFCE7" BorderBrush="#BBF7D0" BorderThickness="1" CornerRadius="6" Padding="8,4">
+                                            <TextBlock x:Name="TxtOutdoorGuide" Text="🏃 실외활동 및 체육수업 정상 가능 (교육부 미세먼지 매뉴얼)" FontSize="11" FontWeight="Bold" Foreground="#166534" HorizontalAlignment="Center"/>
+                                        </Border>
+                                    </Grid>
+                                </Border>
+
+                                <!-- 🍱 Lunch Meal Card (Row 1) -->
+                                <Border Grid.Row="1" Background="{DynamicResource BeigeLunchBg}" BorderBrush="{DynamicResource BeigeLunchBorder}" BorderThickness="1" CornerRadius="12" Padding="16">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="*" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <StackPanel Grid.Row="0" Margin="0,0,0,12">
+                                            <TextBlock Text="🍱 오늘의 점심 식단표" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource BeigeLunchText}"/>
+                                            <TextBlock Text="교육부 나이스 영양·급식 정보" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}" Margin="0,2,0,0"/>
+                                        </StackPanel>
+                                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                                            <TextBlock x:Name="TxtMealMenu" Text="식단 불러오는 중..." FontSize="14" LineHeight="24" Foreground="{DynamicResource BeigeTextMain}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                                        </ScrollViewer>
+                                        <Border Grid.Row="2" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="6" Padding="10,6" Margin="0,10,0,0">
+                                            <TextBlock x:Name="TxtMealCalorie" Text="열량: 계산 중" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BeigeLunchText}" HorizontalAlignment="Right"/>
+                                        </Border>
+                                    </Grid>
+                                </Border>
+                            </Grid>
                         </Grid>
                     </TabItem>
 
                     <!-- TAB 1: 수업 진행 도구 (Classroom Tools) -->
                     <TabItem>
-                        <UniformGrid Columns="3" Margin="0,6,0,0">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <UniformGrid Columns="3" Margin="0,6,0,0">
                             <!-- Tool 1: Board -->
                             <Border Margin="6" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="18" Cursor="Hand" MouseLeftButtonUp="BtnLaunchBoard_Click">
                                 <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -444,7 +557,53 @@
                                     <TextBlock Text="Alt+1~9 즉각 실행 &amp; 커스텀" FontSize="12" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
                                 </StackPanel>
                             </Border>
+
+                            <!-- Tool 10: School Scale & Statistics -->
+                            <Border Margin="6" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="18" Cursor="Hand" MouseLeftButtonUp="BtnLaunchSchoolScale_Click">
+                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <TextBlock Text="🏫" FontSize="38" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                    <TextBlock Text="전국 학교 규모 · 통계" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="학생수·교원수·학급수·과밀 조회" FontSize="12" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Tool 11: Noise Traffic Light -->
+                            <Border Margin="6" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="18" Cursor="Hand" MouseLeftButtonUp="BtnLaunchNoiseTrafficLight_Click">
+                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <TextBlock Text="🚦" FontSize="38" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                    <TextBlock Text="교실 소음 신호등" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="마이크 실시간 dB 감지 &amp; 신호등" FontSize="12" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Tool 12: Workday & Allowance Calculator -->
+                            <Border Margin="6" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="18" Cursor="Hand" MouseLeftButtonUp="BtnLaunchWorkdayCalculator_Click">
+                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <TextBlock Text="🧮" FontSize="38" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                    <TextBlock Text="월 15일 복무 계산기" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="교직수당·급식비 15일 충족 및 연가 한도" FontSize="12" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Tool 13: Smart Seat Shuffle -->
+                            <Border Margin="6" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="18" Cursor="Hand" MouseLeftButtonUp="BtnLaunchSeatShuffle_Click">
+                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <TextBlock Text="🪑" FontSize="38" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                    <TextBlock Text="스마트 자리 바꾸기" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="32종 동물 아바타 연동 책상 셔플" FontSize="12" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Tool 14: Classroom Soundboard -->
+                            <Border Margin="6" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="18" Cursor="Hand" MouseLeftButtonUp="BtnLaunchSoundboard_Click">
+                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <TextBlock Text="🔔" FontSize="38" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                    <TextBlock Text="원터치 교실 효과음" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="딩동댕·오답 버저·환호·박수 8종 사운드" FontSize="12" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Border>
                         </UniformGrid>
+                        </ScrollViewer>
                     </TabItem>
 
                     <!-- TAB 2: 스마트 예약 센터 (Schedule) -->

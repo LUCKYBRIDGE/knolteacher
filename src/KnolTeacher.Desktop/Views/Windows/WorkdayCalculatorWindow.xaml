@@ -1,0 +1,219 @@
+<Window x:Class="KnolTeacher.Desktop.Views.Windows.WorkdayCalculatorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="🧮 교원 '월 15일' 복무·수당 출근일수 계산기 - 놀티쳐"
+        Height="650" Width="760"
+        MinWidth="700" MinHeight="560"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource BeigeAppBg}">
+
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <!-- 1. Header -->
+            <RowDefinition Height="Auto"/>
+            <!-- 2. Main Content (Inputs + Results) -->
+            <RowDefinition Height="*"/>
+            <!-- 3. Bottom Guidance & Copy Button -->
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- 1. Header with Month Navigator -->
+        <Border Grid.Row="0" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="10" Padding="14,10" Margin="0,0,0,14">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="🧮" FontSize="20" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="교원 '월 15일' 복무 · 수당 출근일수 계산기" FontSize="17" FontWeight="Bold" Foreground="{DynamicResource BeigeTextMain}" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <TextBlock Text="공무원보수규정 기준 정액급식비·교직수당·시간외근무수당 정액분(15일) 달성 여부 산정" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}" Margin="0,2,0,0"/>
+                </StackPanel>
+
+                <!-- Month Selector -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Content="◀ 이전 달" Click="BtnPrevMonth_Click" Padding="8,4" Background="{DynamicResource BeigeCardInner}" Foreground="{DynamicResource BeigeTextSub}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="11" Cursor="Hand">
+                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                    </Button>
+                    <TextBlock x:Name="TxtCurrentYearMonth" Text="2026년 09월" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource BeigeAccent}" Margin="10,0,10,0" VerticalAlignment="Center"/>
+                    <Button Content="다음 달 ▶" Click="BtnNextMonth_Click" Padding="8,4" Background="{DynamicResource BeigeCardInner}" Foreground="{DynamicResource BeigeTextSub}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="11" Cursor="Hand">
+                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- 2. Main 2-Column Layout -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="340"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Left: Inputs Card -->
+            <Border Grid.Column="0" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="10" Padding="14" Margin="0,0,12,0">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <TextBlock Text="📝 이번 달 복무 내역 입력" FontWeight="Bold" FontSize="13" Foreground="{DynamicResource BeigeTextMain}" Margin="0,0,0,12"/>
+
+                        <!-- Total Weekdays (Auto calculated) -->
+                        <Border Background="{DynamicResource BeigeCardInner}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="6" Padding="10,8" Margin="0,0,0,10">
+                            <Grid>
+                                <TextBlock Text="📅 해당 월 총 평일 수 (월~금)" FontSize="12" Foreground="{DynamicResource BeigeTextSub}" VerticalAlignment="Center"/>
+                                <TextBlock x:Name="TxtTotalWeekdays" Text="21 일" FontWeight="Bold" FontSize="13" Foreground="{DynamicResource BeigeAccent}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- Holidays -->
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="70"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                <TextBlock Text="🔴 법정 공휴일 (평일)" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource BeigeTextMain}"/>
+                                <TextBlock Text="추석, 설날, 개천절 등" FontSize="10" Foreground="{DynamicResource BeigeTextMuted}"/>
+                            </StackPanel>
+                            <TextBox x:Name="TbHolidays" Grid.Column="1" Text="2" Height="32" FontSize="13" FontWeight="Bold" TextAlignment="Center" VerticalContentAlignment="Center" Background="{DynamicResource BeigeCardInner}" BorderBrush="{DynamicResource BeigeCardBorder}" TextChanged="Input_TextChanged"/>
+                        </Grid>
+
+                        <!-- Vacations / Discretionary Holidays -->
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="70"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                <TextBlock Text="🏖️ 방학 / 재량휴업일 (평일)" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource BeigeTextMain}"/>
+                                <TextBlock Text="방학 중 비근무일, 개교기념일" FontSize="10" Foreground="{DynamicResource BeigeTextMuted}"/>
+                            </StackPanel>
+                            <TextBox x:Name="TbVacations" Grid.Column="1" Text="0" Height="32" FontSize="13" FontWeight="Bold" TextAlignment="Center" VerticalContentAlignment="Center" Background="{DynamicResource BeigeCardInner}" BorderBrush="{DynamicResource BeigeCardBorder}" TextChanged="Input_TextChanged"/>
+                        </Grid>
+
+                        <!-- Full Leave Days (연가, 병가, 특별휴가) -->
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="70"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                <TextBlock Text="🌴 전일 연가 · 병가 (일)" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource BeigeTextMain}"/>
+                                <TextBlock Text="1일 단위 사용 복무 합계" FontSize="10" Foreground="{DynamicResource BeigeTextMuted}"/>
+                            </StackPanel>
+                            <TextBox x:Name="TbLeaveDays" Grid.Column="1" Text="1" Height="32" FontSize="13" FontWeight="Bold" TextAlignment="Center" VerticalContentAlignment="Center" Background="{DynamicResource BeigeCardInner}" BorderBrush="{DynamicResource BeigeCardBorder}" TextChanged="Input_TextChanged"/>
+                        </Grid>
+
+                        <!-- Partial Hours (조퇴, 지각, 외출) -->
+                        <Grid Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="70"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                <TextBlock Text="⏱️ 조퇴·지각·외출 (누적 시간)" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource BeigeTextMain}"/>
+                                <TextBlock Text="8시간 누적 시 연가 1일 차감" FontSize="10" Foreground="{DynamicResource BeigeTextMuted}"/>
+                            </StackPanel>
+                            <TextBox x:Name="TbPartialHours" Grid.Column="1" Text="3" Height="32" FontSize="13" FontWeight="Bold" TextAlignment="Center" VerticalContentAlignment="Center" Background="{DynamicResource BeigeCardInner}" BorderBrush="{DynamicResource BeigeCardBorder}" TextChanged="Input_TextChanged"/>
+                        </Grid>
+
+                        <!-- Helper Tip Box -->
+                        <Border Background="{DynamicResource BeigeAccentSoft}" BorderBrush="#FDE68A" BorderThickness="1" CornerRadius="6" Padding="10,8">
+                            <TextBlock Text="💡 관내/관외 출장은 '근무일'로 인정되어 차감되지 않습니다. 연가·병가·특별휴가·결근만 출근일수에서 제외됩니다." FontSize="11" Foreground="#92400E" TextWrapping="Wrap" LineHeight="16"/>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
+            <!-- Right: Results & Allowance Decision Card -->
+            <Border Grid.Column="1" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="10" Padding="16">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <!-- Decision Banner -->
+                        <Border x:Name="BorderDecision" Background="#DCFCE7" BorderBrush="#86EFAC" BorderThickness="1" CornerRadius="10" Padding="14,12" Margin="0,0,0,14">
+                            <StackPanel HorizontalAlignment="Center">
+                                <TextBlock x:Name="TxtDecisionTitle" Text="🎉 15일 기준 달성! (수당 전액 100% 지급)" FontSize="16" FontWeight="Bold" Foreground="#166534" HorizontalAlignment="Center"/>
+                                <TextBlock x:Name="TxtDecisionSub" Text="이번 달 실제 인정 출근일수가 15일 이상이므로 교직수당·정액급식비 등이 전액 지급됩니다." FontSize="11" Foreground="#15803D" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Big Number Meter: Net Workdays -->
+                        <Border Background="{DynamicResource BeigeCardInner}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="10" Padding="16,12" Margin="0,0,0,14">
+                            <StackPanel>
+                                <Grid Margin="0,0,0,6">
+                                    <TextBlock Text="실제 인정 출근일수" FontSize="12" Foreground="{DynamicResource BeigeTextMuted}" FontWeight="SemiBold"/>
+                                    <TextBlock Text="기준: 15일 이상" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Right"/>
+                                </Grid>
+
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,4,0,8">
+                                    <TextBlock x:Name="TxtNetWorkdays" Text="18" FontSize="36" FontWeight="Bold" Foreground="{DynamicResource BeigeAccent}"/>
+                                    <TextBlock Text=" / 15 일" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource BeigeTextMuted}" VerticalAlignment="Bottom" Margin="4,0,0,6"/>
+                                </StackPanel>
+
+                                <!-- Visual Bar -->
+                                <Grid Height="16">
+                                    <Border Background="#E7DAC7" CornerRadius="8"/>
+                                    <Border x:Name="BarWorkdayProgress" Background="{DynamicResource BeigeAccent}" CornerRadius="8" HorizontalAlignment="Left" Width="200"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Key Question: Remaining Usable Leave -->
+                        <Border Background="#FEF3C7" BorderBrush="#FDE68A" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,0,0,14">
+                            <StackPanel>
+                                <TextBlock Text="⭐ 수당 감액 없이 더 쓸 수 있는 연가 한도" FontSize="11" FontWeight="Bold" Foreground="#92400E"/>
+                                <TextBlock x:Name="TxtUsableLeave" Text="이번 달 최대 3일 더 연가 사용 가능!" FontSize="15" FontWeight="Bold" Foreground="#B45309" Margin="0,4,0,0"/>
+                                <TextBlock Text="15일 출근 기준선을 지키면서 자유롭게 복무를 신청하실 수 있습니다." FontSize="10" Foreground="#78350F" Margin="0,2,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Detailed Breakdown List -->
+                        <Border Background="{DynamicResource BeigeCardInner}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,0,0,14">
+                            <StackPanel>
+                                <TextBlock Text="📊 복무 정산 세부 내역" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BeigeTextMain}" Margin="0,0,0,8"/>
+
+                                <Grid Margin="0,2,0,2">
+                                    <TextBlock Text="총 평일(월~금)" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}"/>
+                                    <TextBlock x:Name="TxtSummaryTotal" Text="+21일" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Right"/>
+                                </Grid>
+                                <Grid Margin="0,2,0,2">
+                                    <TextBlock Text="법정 공휴일 차감" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}"/>
+                                    <TextBlock x:Name="TxtSummaryHolidays" Text="-2일" FontSize="11" FontWeight="SemiBold" Foreground="#EF4444" HorizontalAlignment="Right"/>
+                                </Grid>
+                                <Grid Margin="0,2,0,2">
+                                    <TextBlock Text="방학/재량휴업 차감" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}"/>
+                                    <TextBlock x:Name="TxtSummaryVacations" Text="-0일" FontSize="11" FontWeight="SemiBold" Foreground="#EF4444" HorizontalAlignment="Right"/>
+                                </Grid>
+                                <Grid Margin="0,2,0,2">
+                                    <TextBlock Text="전일 연가/병가 차감" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}"/>
+                                    <TextBlock x:Name="TxtSummaryLeave" Text="-1일" FontSize="11" FontWeight="SemiBold" Foreground="#EF4444" HorizontalAlignment="Right"/>
+                                </Grid>
+                                <Grid Margin="0,2,0,2">
+                                    <TextBlock Text="시간단위 복무 환산 차감" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}"/>
+                                    <TextBlock x:Name="TxtSummaryPartial" Text="-0일 (3시간 잔여)" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource BeigeTextSub}" HorizontalAlignment="Right"/>
+                                </Grid>
+                                <Separator Margin="0,6,0,6" Background="{DynamicResource BeigeCardBorder}"/>
+                                <Grid>
+                                    <TextBlock Text="최종 인정 출근일수" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BeigeTextMain}"/>
+                                    <TextBlock x:Name="TxtSummaryFinal" Text="= 18일 (충족)" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BeigeAccent}" HorizontalAlignment="Right"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Action Buttons -->
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button Content="📋 정산 결과 복사" Click="BtnCopyReport_Click" Padding="12,6" Background="{DynamicResource BeigeAccentSoft}" Foreground="{DynamicResource BeigeAccent}" BorderBrush="{DynamicResource BeigeAccent}" BorderThickness="1" FontWeight="Bold" FontSize="11" Cursor="Hand">
+                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                            </Button>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>

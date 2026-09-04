@@ -56,6 +56,10 @@ public partial class App : Application
                 services.AddSingleton<ISiteBookmarkService, SiteBookmarkService>();
                 services.AddSingleton<IQrCodeService, QrCodeService>();
                 services.AddSingleton<INeisCommentBatchService, NeisCommentBatchService>();
+                services.AddSingleton<ISchoolScaleService, SchoolScaleService>();
+                services.AddSingleton<INoiseMeterService, NoiseMeterService>();
+                services.AddSingleton<IWeatherService, WeatherService>();
+                services.AddSingleton<IWorkdayCalculatorService, WorkdayCalculatorService>();
 
                 // ViewModels
                 services.AddSingleton<MainViewModel>();
@@ -68,6 +72,11 @@ public partial class App : Application
                 services.AddSingleton<ClassroomTimerWindow>();
                 services.AddSingleton<StudentPickerWindow>();
                 services.AddSingleton<FloatingToolbarWindow>();
+                services.AddSingleton<SchoolScaleWindow>();
+                services.AddSingleton<NoiseTrafficLightWindow>();
+                services.AddSingleton<WorkdayCalculatorWindow>();
+                services.AddSingleton<SmartSeatShuffleWindow>();
+                services.AddSingleton<ClassroomSoundboardWindow>();
             })
             .Build();
     }
