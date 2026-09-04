@@ -80,13 +80,9 @@
                         <TextBlock Text="🚀 핀볼 발사 챔버 (대기 중)" FontSize="12" FontWeight="Bold" Foreground="#38BDF8" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
 
-                    <!-- Side Slanted Deflector Rails (Left) -->
-                    <Path Data="M 0,0 L 70,0 L 0,380 Z" Fill="#1E293B" Stroke="#334155" StrokeThickness="2" Canvas.Left="0" Canvas.Top="60"/>
-                    <Path Data="M 0,550 L 80,720 L 0,720 Z" Fill="#1E293B" Stroke="#334155" StrokeThickness="2" Canvas.Left="0" Canvas.Top="0"/>
-
-                    <!-- Side Slanted Deflector Rails (Right) -->
-                    <Path Data="M 800,0 L 730,0 L 800,380 Z" Fill="#1E293B" Stroke="#334155" StrokeThickness="2" Canvas.Left="0" Canvas.Top="60"/>
-                    <Path Data="M 800,550 L 720,720 L 800,720 Z" Fill="#1E293B" Stroke="#334155" StrokeThickness="2" Canvas.Left="0" Canvas.Top="0"/>
+                    <!-- Bottom Inward Funnel Guides (channeling into Champion Cup) -->
+                    <Path Data="M 0,560 L 300,730 L 300,750 L 0,750 Z" Fill="#1E293B" Stroke="#38BDF8" StrokeThickness="2"/>
+                    <Path Data="M 800,560 L 500,730 L 500,750 L 800,750 Z" Fill="#1E293B" Stroke="#38BDF8" StrokeThickness="2"/>
 
                     <!-- Bottom Goal Gate: Golden Champion Cup -->
                     <Border Canvas.Left="300" Canvas.Top="730" Width="200" Height="110" CornerRadius="18" Background="#1A2E05" BorderBrush="#EAB308" BorderThickness="3">

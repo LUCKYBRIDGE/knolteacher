@@ -109,6 +109,12 @@ public partial class StudentDisplayWindow : Window
 
     public void ToggleWidget(string key)
     {
+        if (key == "pinball")
+        {
+            OpenPinballWindow();
+            return;
+        }
+
         var existing = _widgets.Find(w => w.WidgetType == key);
         if (existing != null)
         {
@@ -122,8 +128,93 @@ public partial class StudentDisplayWindow : Window
         }
     }
 
+    private StudentPickerWindow? _pinballWindow;
+
+    public void OpenPinballWindow()
+    {
+        if (_pinballWindow == null)
+        {
+            _pinballWindow = new StudentPickerWindow(_studentService, _soundService);
+        }
+        _pinballWindow.Show();
+        _pinballWindow.Activate();
+    }
+
+    private RulerToolControl? _boardRuler;
+    private TriangleRulerToolControl? _boardTriangle;
+    private ProtractorToolControl? _boardProtractor;
+
+    private void BtnToggleRuler_Click(object sender, RoutedEventArgs e)
+    {
+        if (_boardRuler == null)
+        {
+            _boardRuler = new RulerToolControl();
+            _boardRuler.CloseRequested += () =>
+            {
+                BoardToolsCanvas.Children.Remove(_boardRuler);
+                _boardRuler = null;
+            };
+            Canvas.SetLeft(_boardRuler, Math.Max(40, (BoardContainer.ActualWidth - 460) / 2));
+            Canvas.SetTop(_boardRuler, Math.Max(40, (BoardContainer.ActualHeight - 80) / 2));
+            BoardToolsCanvas.Children.Add(_boardRuler);
+        }
+        else
+        {
+            BoardToolsCanvas.Children.Remove(_boardRuler);
+            _boardRuler = null;
+        }
+    }
+
+    private void BtnToggleTriangle_Click(object sender, RoutedEventArgs e)
+    {
+        if (_boardTriangle == null)
+        {
+            _boardTriangle = new TriangleRulerToolControl();
+            _boardTriangle.CloseRequested += () =>
+            {
+                BoardToolsCanvas.Children.Remove(_boardTriangle);
+                _boardTriangle = null;
+            };
+            Canvas.SetLeft(_boardTriangle, Math.Max(40, (BoardContainer.ActualWidth - 320) / 2));
+            Canvas.SetTop(_boardTriangle, Math.Max(40, (BoardContainer.ActualHeight - 260) / 2));
+            BoardToolsCanvas.Children.Add(_boardTriangle);
+        }
+        else
+        {
+            BoardToolsCanvas.Children.Remove(_boardTriangle);
+            _boardTriangle = null;
+        }
+    }
+
+    private void BtnToggleProtractor_Click(object sender, RoutedEventArgs e)
+    {
+        if (_boardProtractor == null)
+        {
+            _boardProtractor = new ProtractorToolControl();
+            _boardProtractor.CloseRequested += () =>
+            {
+                BoardToolsCanvas.Children.Remove(_boardProtractor);
+                _boardProtractor = null;
+            };
+            Canvas.SetLeft(_boardProtractor, Math.Max(40, (BoardContainer.ActualWidth - 380) / 2));
+            Canvas.SetTop(_boardProtractor, Math.Max(40, (BoardContainer.ActualHeight - 210) / 2));
+            BoardToolsCanvas.Children.Add(_boardProtractor);
+        }
+        else
+        {
+            BoardToolsCanvas.Children.Remove(_boardProtractor);
+            _boardProtractor = null;
+        }
+    }
+
     public BoardWidgetHost? SpawnWidget(string tag, double? x = null, double? y = null)
     {
+        if (tag == "pinball")
+        {
+            OpenPinballWindow();
+            return null;
+        }
+
         double nextX = x ?? (40 + (_widgets.Count * 30) % 360);
         double nextY = y ?? (40 + (_widgets.Count * 30) % 240);
 
@@ -148,6 +239,7 @@ public partial class StudentDisplayWindow : Window
         if (!_isReady) return;
 
         UpdateBtnState(BtnToolTimer, "timer");
+        UpdateBtnState(BtnToolPinball, "pinball");
         UpdateBtnState(BtnToolPicker, "picker");
         UpdateBtnState(BtnToolDice, "dice");
         UpdateBtnState(BtnToolWheel, "wheel");

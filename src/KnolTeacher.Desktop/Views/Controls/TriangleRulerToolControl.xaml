@@ -1,0 +1,61 @@
+<UserControl x:Class="KnolTeacher.Desktop.Views.Controls.TriangleRulerToolControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Width="320" Height="260"
+             Cursor="SizeAll"
+             MouseLeftButtonDown="Triangle_MouseLeftButtonDown"
+             MouseMove="Triangle_MouseMove"
+             MouseLeftButtonUp="Triangle_MouseLeftButtonUp">
+    <UserControl.RenderTransform>
+        <TransformGroup>
+            <RotateTransform x:Name="TriRotate" Angle="0" CenterX="160" CenterY="130"/>
+        </TransformGroup>
+    </UserControl.RenderTransform>
+
+    <Grid>
+        <!-- Triangle Acrylic Shape -->
+        <Polygon Points="20,240 20,20 300,240"
+                 Fill="#E6EFF6FF"
+                 Stroke="#3B82F6"
+                 StrokeThickness="2">
+            <Polygon.Effect>
+                <DropShadowEffect BlurRadius="16" Opacity="0.4" ShadowDepth="4"/>
+            </Polygon.Effect>
+        </Polygon>
+
+        <!-- Inner Cutout Triangle -->
+        <Polygon Points="60,200 60,100 200,200"
+                 Fill="#80FFFFFF"
+                 Stroke="#93C5FD"
+                 StrokeThickness="1"/>
+
+        <!-- Center Right-Angle Symbol -->
+        <Polyline Points="20,215 45,215 45,240"
+                  Stroke="#1D4ED8" StrokeThickness="1.5"/>
+
+        <!-- Angle Badges -->
+        <TextBlock Text="90°" Canvas.Left="30" Canvas.Top="220" Margin="26,0,0,26" VerticalAlignment="Bottom" FontSize="10" FontWeight="Bold" Foreground="#1D4ED8"/>
+        <TextBlock Text="45°" Margin="26,24,0,0" FontSize="10" FontWeight="Bold" Foreground="#1D4ED8"/>
+        <TextBlock Text="45°" Margin="0,0,30,26" HorizontalAlignment="Right" VerticalAlignment="Bottom" FontSize="10" FontWeight="Bold" Foreground="#1D4ED8"/>
+
+        <!-- Controls Toolbar inside Triangle -->
+        <Border HorizontalAlignment="Left" VerticalAlignment="Top" Margin="70,115,0,0" Background="#CCFFFFFF" CornerRadius="6" Padding="6,4">
+            <StackPanel Orientation="Vertical">
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                    <TextBlock Text="📐 삼각자" FontWeight="Bold" FontSize="11" Foreground="#1E40AF" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <Border Background="#2563EB" CornerRadius="4" Padding="4,1">
+                        <TextBlock x:Name="TxtAngle" Text="0°" FontSize="10" FontWeight="Bold" Foreground="White"/>
+                    </Border>
+                    <Button Content="✕" Click="BtnClose_Click" Width="18" Height="18" Margin="6,0,0,0" Background="#EF4444" Foreground="White" BorderThickness="0" FontWeight="Bold" Cursor="Hand">
+                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="9"/></Style></Button.Resources>
+                    </Button>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <Button Content="↺ -15°" Click="BtnRotateCCW_Click" Height="20" Padding="4,0" Margin="0,0,3,0" Background="#E2E8F0" Foreground="#1E293B" BorderThickness="0" FontSize="9" Cursor="Hand"/>
+                    <Button Content="↻ +15°" Click="BtnRotateCW_Click" Height="20" Padding="4,0" Margin="0,0,3,0" Background="#E2E8F0" Foreground="#1E293B" BorderThickness="0" FontSize="9" Cursor="Hand"/>
+                    <Button Content="0°" Click="BtnResetAngle_Click" Height="20" Padding="4,0" Background="#E2E8F0" Foreground="#1E293B" BorderThickness="0" FontSize="9" Cursor="Hand"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

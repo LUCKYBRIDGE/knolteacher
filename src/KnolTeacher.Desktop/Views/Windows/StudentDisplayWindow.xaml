@@ -56,6 +56,7 @@
                         <ComboBox x:Name="CbAddWidget" Width="136" Height="32" MinHeight="32" FontSize="11" Padding="6,2" VerticalContentAlignment="Center" Margin="0,0,12,0" SelectionChanged="CbAddWidget_SelectionChanged">
                             <ComboBoxItem Content="위젯 선택..." IsSelected="True"/>
                             <ComboBoxItem Content="⏱️ 수업 타이머" Tag="timer"/>
+                            <ComboBoxItem Content="🎰 핀볼 뽑기" Tag="pinball"/>
                             <ComboBoxItem Content="🎯 발표자 추첨" Tag="picker"/>
                             <ComboBoxItem Content="🎲 스마트 주사위" Tag="dice"/>
                             <ComboBoxItem Content="🎡 돌려돌려 돌림판" Tag="wheel"/>
@@ -95,7 +96,14 @@
                             <Button Width="18" Height="18" Background="#F472B6" Click="BtnColor_Click" Tag="#F472B6" Margin="0,0,3,0" Cursor="Hand"/>
                             <Button Width="18" Height="18" Background="#38BDF8" Click="BtnColor_Click" Tag="#38BDF8" Margin="0,0,8,0" Cursor="Hand"/>
                             <Button Content="↩" Click="BtnUndo_Click" Padding="6,2" Margin="0,0,3,0" Background="#475569" Foreground="White" FontSize="11" Cursor="Hand"/>
-                            <Button Content="🗑" Click="BtnClear_Click" Padding="6,2" Background="#EF4444" Foreground="White" FontSize="11" Cursor="Hand"/>
+                            <Button Content="🗑" Click="BtnClear_Click" Padding="6,2" Margin="0,0,8,0" Background="#EF4444" Foreground="White" FontSize="11" Cursor="Hand"/>
+
+                            <Separator Margin="0,2,8,2" Width="1" Background="#475569"/>
+
+                            <!-- Math 교구 Tools -->
+                            <Button Content="📏 자" Click="BtnToggleRuler_Click" Padding="6,2" Margin="0,0,3,0" Background="#334155" Foreground="#38BDF8" FontWeight="Bold" FontSize="11" Cursor="Hand" ToolTip="0~20cm 직선자"/>
+                            <Button Content="📐 삼각자" Click="BtnToggleTriangle_Click" Padding="6,2" Margin="0,0,3,0" Background="#334155" Foreground="#38BDF8" FontWeight="Bold" FontSize="11" Cursor="Hand" ToolTip="45°-45°-90° 삼각자"/>
+                            <Button Content="🧭 각도기" Click="BtnToggleProtractor_Click" Padding="6,2" Margin="0,0,4,0" Background="#334155" Foreground="#FDE047" FontWeight="Bold" FontSize="11" Cursor="Hand" ToolTip="180° 반원 각도기"/>
                         </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
@@ -122,6 +130,11 @@
                        Background="Transparent"
                        Visibility="Collapsed"
                        IsHitTestVisible="False"/>
+
+            <!-- Math Tools Canvas (Ruler, Triangle, Protractor) -->
+            <Canvas x:Name="BoardToolsCanvas"
+                    Background="Transparent"
+                    IsHitTestVisible="True"/>
         </Grid>
 
         <!-- 3. Bottom Dock Toolbar (파이썬 놀티쳐 완벽 계승 9대 도구 스위치 & 자동 정렬) -->
@@ -153,9 +166,10 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
 
-                        <!-- Left: 9 Widget Toggle Buttons -->
+                        <!-- Left: 9 Widget Toggle Buttons + Pinball Button -->
                         <WrapPanel Grid.Column="0" VerticalAlignment="Center">
                             <Button x:Name="BtnToolTimer" Content="⏱️ 타이머" Click="DockToolBtn_Click" Tag="timer" Height="32" Padding="10,0" Margin="0,2,6,2" Background="#1E293B" Foreground="#94A3B8" BorderBrush="#334155" BorderThickness="1" FontSize="11" Cursor="Hand"/>
+                            <Button x:Name="BtnToolPinball" Content="🎰 핀볼 뽑기" Click="DockToolBtn_Click" Tag="pinball" Height="32" Padding="10,0" Margin="0,2,6,2" Background="#1E293B" Foreground="#38BDF8" BorderBrush="#0284C7" BorderThickness="1.5" FontSize="11" FontWeight="Bold" Cursor="Hand" ToolTip="32종 동물 아바타 아케이드 물리 핀볼 추첨기"/>
                             <Button x:Name="BtnToolPicker" Content="🎯 발표자 추첨" Click="DockToolBtn_Click" Tag="picker" Height="32" Padding="10,0" Margin="0,2,6,2" Background="#1E293B" Foreground="#94A3B8" BorderBrush="#334155" BorderThickness="1" FontSize="11" Cursor="Hand"/>
                             <Button x:Name="BtnToolDice" Content="🎲 주사위·통계" Click="DockToolBtn_Click" Tag="dice" Height="32" Padding="10,0" Margin="0,2,6,2" Background="#1E293B" Foreground="#94A3B8" BorderBrush="#334155" BorderThickness="1" FontSize="11" Cursor="Hand"/>
                             <Button x:Name="BtnToolWheel" Content="🎡 돌림판" Click="DockToolBtn_Click" Tag="wheel" Height="32" Padding="10,0" Margin="0,2,6,2" Background="#1E293B" Foreground="#94A3B8" BorderBrush="#334155" BorderThickness="1" FontSize="11" Cursor="Hand"/>

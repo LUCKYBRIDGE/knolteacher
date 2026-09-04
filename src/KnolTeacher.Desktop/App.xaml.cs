@@ -75,7 +75,9 @@ public partial class App : Application
     {
         try
         {
-            var logPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "knol_boot.log");
+            string appData = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "KnolTeacher");
+            System.IO.Directory.CreateDirectory(appData);
+            var logPath = System.IO.Path.Combine(appData, "knol_boot.log");
             System.IO.File.AppendAllText(logPath, $"[{DateTime.Now:HH:mm:ss.fff}] {msg}\r\n");
         }
         catch { }

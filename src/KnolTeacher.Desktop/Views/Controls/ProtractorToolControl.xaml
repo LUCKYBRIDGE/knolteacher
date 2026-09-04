@@ -1,0 +1,59 @@
+<UserControl x:Class="KnolTeacher.Desktop.Views.Controls.ProtractorToolControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Width="380" Height="210"
+             Cursor="SizeAll"
+             MouseLeftButtonDown="Protractor_MouseLeftButtonDown"
+             MouseMove="Protractor_MouseMove"
+             MouseLeftButtonUp="Protractor_MouseLeftButtonUp">
+    <UserControl.RenderTransform>
+        <TransformGroup>
+            <RotateTransform x:Name="ProtractorRotate" Angle="0" CenterX="190" CenterY="190"/>
+        </TransformGroup>
+    </UserControl.RenderTransform>
+
+    <Grid>
+        <!-- Outer Semicircle Path -->
+        <Path Data="M 10,190 A 180,180 0 0,1 370,190 Z"
+              Fill="#E6FEF3C7"
+              Stroke="#F59E0B"
+              StrokeThickness="2">
+            <Path.Effect>
+                <DropShadowEffect BlurRadius="16" Opacity="0.4" ShadowDepth="4"/>
+            </Path.Effect>
+        </Path>
+
+        <!-- Inner Cutout Semicircle -->
+        <Path Data="M 90,190 A 100,100 0 0,1 290,190 Z"
+              Fill="#B3FFFFFF"
+              Stroke="#FDE68A"
+              StrokeThickness="1"/>
+
+        <!-- Degree Ticks Canvas -->
+        <Canvas x:Name="CanvasDegreeTicks" Width="380" Height="210"/>
+
+        <!-- Center Crosshair Marker (+) -->
+        <Line X1="180" Y1="190" X2="200" Y2="190" Stroke="#B45309" StrokeThickness="2"/>
+        <Line X1="190" Y1="180" X2="190" Y2="200" Stroke="#B45309" StrokeThickness="2"/>
+
+        <!-- Controls Toolbar inside Center Cutout -->
+        <Border HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,16" Background="#EEFFFFFF" CornerRadius="8" Padding="8,4" BorderBrush="#FCD34D" BorderThickness="1">
+            <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,4">
+                    <TextBlock Text="🧭 각도기 (0°~180°)" FontWeight="Bold" FontSize="11" Foreground="#B45309" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <Border Background="#D97706" CornerRadius="4" Padding="5,1">
+                        <TextBlock x:Name="TxtAngle" Text="0°" FontSize="10" FontWeight="Bold" Foreground="White"/>
+                    </Border>
+                    <Button Content="✕" Click="BtnClose_Click" Width="18" Height="18" Margin="6,0,0,0" Background="#EF4444" Foreground="White" BorderThickness="0" FontWeight="Bold" Cursor="Hand">
+                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="9"/></Style></Button.Resources>
+                    </Button>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Button Content="↺ -15°" Click="BtnRotateCCW_Click" Height="20" Padding="5,0" Margin="0,0,3,0" Background="#FEF3C7" Foreground="#78350F" BorderThickness="0" FontSize="9" Cursor="Hand"/>
+                    <Button Content="↻ +15°" Click="BtnRotateCW_Click" Height="20" Padding="5,0" Margin="0,0,3,0" Background="#FEF3C7" Foreground="#78350F" BorderThickness="0" FontSize="9" Cursor="Hand"/>
+                    <Button Content="0°" Click="BtnResetAngle_Click" Height="20" Padding="5,0" Background="#FEF3C7" Foreground="#78350F" BorderThickness="0" FontSize="9" Cursor="Hand"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

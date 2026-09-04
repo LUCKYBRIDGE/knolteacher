@@ -41,6 +41,10 @@ public partial class MainWindow : FluentWindow
     private readonly ISiteBookmarkService _siteBookmarkService;
     private readonly DispatcherTimer _statusTimer;
     private readonly ObservableCollection<NeisStudentComment> _neisComments = new();
+    private int _currentNeisIndex = 0;
+    private bool _isSplitScreen = false;
+    private double _prevLeft, _prevTop, _prevWidth, _prevHeight;
+    private WindowState _prevWindowState;
 
     public MainWindow(
         MainViewModel viewModel,
@@ -120,6 +124,10 @@ public partial class MainWindow : FluentWindow
                 ListBookmarks.ItemsSource = null;
                 ListBookmarks.ItemsSource = _siteBookmarkService.Bookmarks;
             });
+
+            // 5. Bind NEIS Student Comments DataGrid
+            GridNeisComments.ItemsSource = _neisComments;
+            UpdateCurrentTargetDisplay();
         }
         catch (Exception ex)
         {
@@ -621,6 +629,119 @@ public partial class MainWindow : FluentWindow
         TxtNeisSummary.Text = over > 0 
             ? $"등록된 학생: {total}명 (⚠️ {over}명 바이트 초과)" 
             : $"등록된 학생: {total}명 (모두 정상)";
+        UpdateCurrentTargetDisplay();
+    }
+
+    private void UpdateCurrentTargetDisplay()
+    {
+        if (_neisComments.Count == 0)
+        {
+            TxtCurrentTargetBadge.Text = "🎯 현재 대상: 없음";
+            TxtCurrentTargetPreview.Text = "엑셀 파일을 열거나 복사내용을 붙여넣어 주세요.";
+            return;
+        }
+
+        if (_currentNeisIndex < 0) _currentNeisIndex = 0;
+        if (_currentNeisIndex >= _neisComments.Count) _currentNeisIndex = _neisComments.Count - 1;
+
+        var student = _neisComments[_currentNeisIndex];
+        TxtCurrentTargetBadge.Text = $"🎯 대상: {student.StudentNumber}번 {student.StudentName} ({_currentNeisIndex + 1}/{_neisComments.Count})";
+        string preview = string.IsNullOrWhiteSpace(student.CommentText) ? "(작성된 평어 없음)" : student.CommentText;
+        TxtCurrentTargetPreview.Text = preview;
+
+        GridNeisComments.SelectedIndex = _currentNeisIndex;
+        GridNeisComments.ScrollIntoView(student);
+    }
+
+    private void BtnNeisSplitScreen_Click(object sender, RoutedEventArgs e)
+    {
+        var workArea = SystemParameters.WorkArea;
+        if (!_isSplitScreen)
+        {
+            _prevWindowState = WindowState;
+            WindowState = WindowState.Normal;
+            _prevLeft = Left;
+            _prevTop = Top;
+            _prevWidth = Width;
+            _prevHeight = Height;
+
+            // Snap right half of screen and pin topmost
+            Left = workArea.Left + (workArea.Width / 2.0);
+            Top = workArea.Top;
+            Width = workArea.Width / 2.0;
+            Height = workArea.Height;
+            Topmost = true;
+            _isSplitScreen = true;
+
+            BtnNeisSplitScreen.Content = "🪟 원래 크기 복원";
+            HudNotificationWindow.Instance.ShowToast("🪟 분할화면 모드", "화면 우측에 고정되었습니다.\n좌측에 나이스를 띄워두고 작업하세요!");
+        }
+        else
+        {
+            Left = _prevLeft;
+            Top = _prevTop;
+            Width = _prevWidth;
+            Height = _prevHeight;
+            WindowState = _prevWindowState;
+            Topmost = false;
+            _isSplitScreen = false;
+
+            BtnNeisSplitScreen.Content = "🪟 나이스 좌우 분할 맞춤";
+            HudNotificationWindow.Instance.ShowToast("🪟 화면 복원", "원래 창 크기와 위치로 복원되었습니다.");
+        }
+    }
+
+    private void BtnNeisPrev_Click(object sender, RoutedEventArgs e)
+    {
+        if (_neisComments.Count == 0) return;
+        if (_currentNeisIndex > 0)
+        {
+            _currentNeisIndex--;
+            UpdateCurrentTargetDisplay();
+        }
+    }
+
+    private void BtnNeisNext_Click(object sender, RoutedEventArgs e)
+    {
+        if (_neisComments.Count == 0) return;
+        if (_currentNeisIndex < _neisComments.Count - 1)
+        {
+            _currentNeisIndex++;
+            UpdateCurrentTargetDisplay();
+        }
+    }
+
+    private void BtnNeisCopyAndNext_Click(object sender, RoutedEventArgs e)
+    {
+        if (_neisComments.Count == 0)
+        {
+            System.Windows.MessageBox.Show("복사할 학생 평어가 없습니다.", "알림", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var student = _neisComments[_currentNeisIndex];
+        string text = student.CommentText ?? string.Empty;
+        Clipboard.SetText(text);
+
+        HudNotificationWindow.Instance.ShowToast("📋 복사완료", $"{student.StudentNumber}번 {student.StudentName} 평어 복사됨!\n나이스 칸에 Ctrl+V 하세요.");
+
+        if (_currentNeisIndex < _neisComments.Count - 1)
+        {
+            _currentNeisIndex++;
+        }
+        UpdateCurrentTargetDisplay();
+    }
+
+    private void BtnRowCopy_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement fe && fe.Tag is NeisStudentComment student)
+        {
+            string text = student.CommentText ?? string.Empty;
+            Clipboard.SetText(text);
+            _currentNeisIndex = _neisComments.IndexOf(student);
+            UpdateCurrentTargetDisplay();
+            HudNotificationWindow.Instance.ShowToast("📋 개별 복사", $"{student.StudentNumber}번 {student.StudentName} 평어가 복사되었습니다.");
+        }
     }
 
     private void BtnDownloadNeisTemplate_Click(object sender, RoutedEventArgs e)
@@ -661,6 +782,7 @@ public partial class MainWindow : FluentWindow
                 var parsed = _neisCommentBatchService.ParseExcelFile(ofd.FileName);
                 _neisComments.Clear();
                 foreach (var c in parsed) _neisComments.Add(c);
+                _currentNeisIndex = 0;
                 UpdateNeisSummary();
                 HudNotificationWindow.Instance.ShowToast("📂", $"{_neisComments.Count}명의 학생 평어를 불러왔습니다.");
             }
@@ -691,6 +813,7 @@ public partial class MainWindow : FluentWindow
 
             _neisComments.Clear();
             foreach (var c in parsed) _neisComments.Add(c);
+            _currentNeisIndex = 0;
             UpdateNeisSummary();
             HudNotificationWindow.Instance.ShowToast("📋", $"엑셀 복사 데이터로부터 {parsed.Count}명의 평어를 붙여넣었습니다.");
         }
@@ -705,6 +828,7 @@ public partial class MainWindow : FluentWindow
         if (_neisComments.Count > 0 && System.Windows.MessageBox.Show("등록된 학생 평어 목록을 모두 비우시겠습니까?", "목록 비우기", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
         {
             _neisComments.Clear();
+            _currentNeisIndex = 0;
             UpdateNeisSummary();
         }
     }
@@ -748,25 +872,11 @@ public partial class MainWindow : FluentWindow
 
     private void BtnNeisHelp_Click(object sender, RoutedEventArgs e)
     {
-        System.Windows.MessageBox.Show(
-            "📖 【나이스 평어 일괄 입력 상세 가이드】\n\n" +
-            "1️⃣ 엑셀 준비 및 불러오기\n" +
-            " • [📥 표준 엑셀 양식 다운로드]를 받아 작성하거나,\n" +
-            " • 기존 엑셀 표(번호, 성명, 평어)를 Ctrl+C 복사 후 [📋 엑셀에서 복사한 내용 바로 붙여넣기]를 클릭합니다.\n\n" +
-            "2️⃣ 글자수 / 바이트 자동 검사\n" +
-            " • 4세대 나이스 규격(한글 3바이트)에 맞추어 실시간 계산됩니다.\n" +
-            " • 1,500 Byte를 초과하는 학생은 ⚠️ 경고로 표시되어 나이스 저장 거부를 방지합니다.\n\n" +
-            "3️⃣ 나이스 입력하기 (2가지 방법 중 선택)\n" +
-            " • [방식 1] 🚀 나이스 1초 일괄입력 코드 복사 (추천!)\n" +
-            "   - 나이스 화면에서 F12 누르고 Console 탭에 Ctrl+V 붙여넣기 후 Enter!\n" +
-            "   - 전교생 평어가 학생 번호 1:1 매칭으로 1초 만에 입력됩니다 (밀림 0%).\n\n" +
-            " • [방식 2] 🖱️ 플로팅 순차 입력 도우미 실행\n" +
-            "   - 나이스 창 위에 작은 미니 창이 항상 뜹니다.\n" +
-            "   - 나이스 칸을 클릭하고 스페이스바 또는 복사 버튼만 누르면 1번부터 차례대로 쏙쏙 복사됩니다.\n\n" +
-            "4️⃣ 마지막으로 나이스 상단의 [저장] 버튼을 누르면 끝!",
-            "나이스 평어 일괄입력 사용방법 안내",
-            MessageBoxButton.OK,
-            MessageBoxImage.Information);
+        var dlg = new NeisHelpDialog
+        {
+            Owner = this
+        };
+        dlg.ShowDialog();
     }
 
     #endregion

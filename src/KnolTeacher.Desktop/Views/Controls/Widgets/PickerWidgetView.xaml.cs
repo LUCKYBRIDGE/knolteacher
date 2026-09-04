@@ -7,6 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using KnolTeacher.Desktop.Services;
+using KnolTeacher.Desktop.Views.Windows;
 
 namespace KnolTeacher.Desktop.Views.Controls.Widgets;
 
@@ -24,6 +25,16 @@ public partial class PickerWidgetView : UserControl
         _soundService = soundService;
         InitializeComponent();
         _isReady = true;
+    }
+
+    private void BtnOpenPinball_Click(object sender, RoutedEventArgs e)
+    {
+        if (_studentService != null && _soundService != null)
+        {
+            var win = new StudentPickerWindow(_studentService, _soundService);
+            win.Show();
+            win.Activate();
+        }
     }
 
     private void ResetDisplay()

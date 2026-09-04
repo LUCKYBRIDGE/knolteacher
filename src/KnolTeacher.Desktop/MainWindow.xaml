@@ -7,7 +7,7 @@
         xmlns:vm="clr-namespace:KnolTeacher.Desktop.ViewModels"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance vm:MainViewModel}"
-        Title="놀티쳐 (KnolTeacher v2.5.0 - 스마트 교사용 올인원 도구)"
+        Title="놀티쳐 (KnolTeacher v2.8.5 - 스마트 교사용 올인원 도구)"
         Icon="/assets/app_icon.ico"
         Height="830" Width="1220"
         MinHeight="680" MinWidth="940"
@@ -24,7 +24,7 @@
         </Grid.RowDefinitions>
 
         <!-- Top Title Bar -->
-        <ui:TitleBar Grid.Row="0" Title="놀티쳐 (KnolTeacher v2.5.0)">
+        <ui:TitleBar Grid.Row="0" Title="놀티쳐 (KnolTeacher v2.8.5)">
             <ui:TitleBar.Header>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,0,0">
                     <Image Source="/assets/app_icon.png" Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,8,0"/>
@@ -181,8 +181,8 @@
                             <Button Click="BtnLaunchPicker_Click" Background="Transparent" Foreground="{DynamicResource BeigeTextSub}" Height="32" HorizontalContentAlignment="Left" Padding="12,0" Margin="0,0,0,2" BorderThickness="0" Cursor="Hand">
                                 <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="🎲" FontSize="13" Margin="0,0,8,0"/>
-                                    <TextBlock Text="발표자 추첨 (Alt+8)" FontSize="12" VerticalAlignment="Center"/>
+                                    <TextBlock Text="🎰" FontSize="13" Margin="0,0,8,0"/>
+                                    <TextBlock Text="핀볼 뽑기 (Alt+8)" FontSize="12" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
 
@@ -251,7 +251,7 @@
                             <Button Content="📱 QR 생성기" Click="BtnQuickQr_Click" Padding="12,6" Margin="0,0,8,0" Background="{DynamicResource BeigeCardInner}" Foreground="{DynamicResource BeigeTextMain}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="11" FontWeight="Bold" Cursor="Hand">
                                 <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
                             </Button>
-                            <Button Content="🔄 최신 상태 확인 (v2.7.0)" Click="BtnUpdate_Click" Padding="12,6" Background="{DynamicResource BeigeCardInner}" Foreground="{DynamicResource BeigeAccent}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="11" FontWeight="Bold" Cursor="Hand">
+                            <Button Content="🔄 최신 상태 확인 (v2.8.5)" Click="BtnUpdate_Click" Padding="12,6" Background="{DynamicResource BeigeCardInner}" Foreground="{DynamicResource BeigeAccent}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="11" FontWeight="Bold" Cursor="Hand">
                                 <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
                             </Button>
                         </StackPanel>
@@ -391,12 +391,12 @@
                                 </StackPanel>
                             </Border>
 
-                            <!-- Tool 4: Picker -->
+                            <!-- Tool 4: Pinball Picker -->
                             <Border Margin="6" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="18" Cursor="Hand" MouseLeftButtonUp="BtnLaunchPicker_Click">
                                 <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                    <TextBlock Text="🎲" FontSize="38" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                    <TextBlock Text="발표자 추첨기" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="학생 명렬표 공정 추첨 (Alt+8)" FontSize="12" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                    <TextBlock Text="🎰" FontSize="38" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                    <TextBlock Text="핀볼 뽑기" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="32종 동물 아바타 레이스 (Alt+8)" FontSize="12" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
                                 </StackPanel>
                             </Border>
 
@@ -724,7 +724,7 @@
                             </Grid>
                         </Border>
                     </TabItem>
-                                    <!-- TAB 5: 나이스 평어 일괄입력 도구 (NEIS Comment Batch Tool) -->
+                    <!-- TAB 5: 나이스 평어 일괄입력 도구 (NEIS Comment Batch Tool) -->
                     <TabItem x:Name="TabNeis">
                         <Border Padding="16">
                             <Grid>
@@ -733,9 +733,11 @@
                                     <RowDefinition Height="Auto"/>
                                     <!-- 2. Actions & Template Download Bar -->
                                     <RowDefinition Height="Auto"/>
-                                    <!-- 3. Student Comments DataGrid -->
+                                    <!-- 3. Sequential Copy Controller Bar -->
+                                    <RowDefinition Height="Auto"/>
+                                    <!-- 4. Student Comments DataGrid -->
                                     <RowDefinition Height="*"/>
-                                    <!-- 4. Bottom Batch Actions Bar -->
+                                    <!-- 5. Bottom Batch Actions Bar -->
                                     <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
 
@@ -753,9 +755,10 @@
                                             </StackPanel>
                                             <TextBlock Text="엑셀에 작성해 둔 학생 평어를 한 번에 불러와 학생 번호 1:1 매칭으로 나이스 화면에 1초 만에 안전하게 채워넣습니다." FontSize="11" Foreground="#3B82F6" Margin="0,3,0,0"/>
                                         </StackPanel>
-                                        <Button Grid.Column="1" Content="❓ 상세 사용방법 안내" Click="BtnNeisHelp_Click" Padding="12,6" Background="#2563EB" Foreground="White" FontWeight="Bold" FontSize="11" BorderThickness="0" Cursor="Hand">
-                                            <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
-                                        </Button>
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Button x:Name="BtnNeisSplitScreen" Content="🪟 나이스 좌우 분할 맞춤" Click="BtnNeisSplitScreen_Click" Padding="11,6" Margin="0,0,6,0" Background="#3B82F6" Foreground="White" FontWeight="Bold" FontSize="11" BorderThickness="0" Cursor="Hand" ToolTip="놀티쳐 창을 화면 우측 절반에 배치하고 항상 위로 고정하여 나이스 화면과 나란히 작업합니다."/>
+                                            <Button Content="❓ 상세 사용방법 안내" Click="BtnNeisHelp_Click" Padding="12,6" Background="#2563EB" Foreground="White" FontWeight="Bold" FontSize="11" BorderThickness="0" Cursor="Hand"/>
+                                        </StackPanel>
                                     </Grid>
                                 </Border>
 
@@ -790,20 +793,47 @@
                                     </Grid>
                                 </Border>
 
-                                <!-- 3. Student Comments DataGrid -->
-                                <Border Grid.Row="2" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="10" Padding="8" Margin="0,0,0,10">
+                                <!-- 3. Sequential Copy Controller Bar -->
+                                <Border Grid.Row="2" Margin="0,0,0,10" Background="{DynamicResource BeigeCardInner}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="10" Padding="12,8">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Border Grid.Column="0" Background="{DynamicResource BeigeAccentSoft}" CornerRadius="6" Padding="8,4" Margin="0,0,10,0">
+                                            <TextBlock x:Name="TxtCurrentTargetBadge" Text="🎯 현재 대상: 없음" FontWeight="Bold" FontSize="12" Foreground="{DynamicResource BeigeAccent}"/>
+                                        </Border>
+                                        <TextBlock x:Name="TxtCurrentTargetPreview" Grid.Column="1" Text="엑셀 파일을 열거나 복사내용을 붙여넣어 주세요." FontSize="11" Foreground="{DynamicResource BeigeTextMain}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Button Content="◀ 이전" Click="BtnNeisPrev_Click" Padding="8,4" Margin="0,0,4,0" Background="{DynamicResource BeigeCardBg}" Foreground="{DynamicResource BeigeTextMain}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="11" Cursor="Hand"/>
+                                            <Button x:Name="BtnNeisCopyAndNext" Content="📋 현재 평어 복사 &amp; 다음 ▶" Click="BtnNeisCopyAndNext_Click" Padding="12,4" Margin="0,0,4,0" Background="{DynamicResource BeigeAccent}" Foreground="White" FontWeight="Bold" FontSize="11" BorderThickness="0" Cursor="Hand" ToolTip="현재 선택된 학생의 평어를 복사하고 다음 번호로 이동합니다."/>
+                                            <Button Content="다음 ▶" Click="BtnNeisNext_Click" Padding="8,4" Background="{DynamicResource BeigeCardBg}" Foreground="{DynamicResource BeigeTextMain}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="11" Cursor="Hand"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+
+                                <!-- 4. Student Comments DataGrid -->
+                                <Border Grid.Row="3" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="10" Padding="8" Margin="0,0,0,10">
                                     <DataGrid x:Name="GridNeisComments" AutoGenerateColumns="False" CanUserAddRows="True" GridLinesVisibility="Horizontal" HeadersVisibility="Column" Background="Transparent" RowBackground="Transparent" AlternatingRowBackground="{DynamicResource BeigeCardInner}" BorderThickness="0" FontSize="12" Foreground="{DynamicResource BeigeTextMain}">
                                         <DataGrid.Columns>
-                                            <DataGridTextColumn Header="번호" Binding="{Binding StudentNumber}" Width="60"/>
-                                            <DataGridTextColumn Header="성명" Binding="{Binding StudentName}" Width="90"/>
+                                            <DataGridTextColumn Header="번호" Binding="{Binding StudentNumber}" Width="50"/>
+                                            <DataGridTextColumn Header="성명" Binding="{Binding StudentName}" Width="80"/>
                                             <DataGridTextColumn Header="행동특성 및 종합의견 / 학기말 평어 내용" Binding="{Binding CommentText}" Width="*"/>
-                                            <DataGridTextColumn Header="글자수/바이트" Binding="{Binding StatusDisplay}" Width="150" IsReadOnly="True"/>
+                                            <DataGridTextColumn Header="글자수/바이트" Binding="{Binding StatusDisplay}" Width="140" IsReadOnly="True"/>
+                                            <DataGridTemplateColumn Header="개별 복사" Width="80">
+                                                <DataGridTemplateColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <Button Content="📋 복사" Click="BtnRowCopy_Click" Tag="{Binding}" Padding="6,2" Background="{DynamicResource BeigeAccentSoft}" Foreground="{DynamicResource BeigeAccent}" FontWeight="Bold" FontSize="11" BorderThickness="0" Cursor="Hand" ToolTip="이 학생의 평어만 클립보드에 복사"/>
+                                                    </DataTemplate>
+                                                </DataGridTemplateColumn.CellTemplate>
+                                            </DataGridTemplateColumn>
                                         </DataGrid.Columns>
                                     </DataGrid>
                                 </Border>
 
-                                <!-- 4. Bottom Batch Actions Bar -->
-                                <Border Grid.Row="3" Background="{DynamicResource BeigeCardInner}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="10" Padding="12,10">
+                                <!-- 5. Bottom Batch Actions Bar -->
+                                <Border Grid.Row="4" Background="{DynamicResource BeigeCardInner}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="10" Padding="12,10">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
@@ -814,14 +844,14 @@
                                         <StackPanel Grid.Column="0" VerticalAlignment="Center">
                                             <TextBlock Text="💡 나이스 입력 2가지 방식 중 편한 방법을 선택하세요:" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource BeigeTextMain}"/>
                                             <TextBlock Text="① [1초 완성 스크립트 복사]: 나이스 F12 콘솔에서 붙여넣으면 전교생 1초 일괄 입력 (추천)" FontSize="10" Foreground="{DynamicResource BeigeTextSub}" Margin="0,2,0,0"/>
-                                            <TextBlock Text="② [플로팅 순차 도우미]: 나이스 창 위에 작은 도우미를 띄워 단축키/클릭으로 쏙쏙 입력" FontSize="10" Foreground="{DynamicResource BeigeTextSub}"/>
+                                            <TextBlock Text="② [플로팅 도우미]: 나이스 화면 위에 띄우고 F8 단축키 1초 자동입력 &amp; 자동연속 입력" FontSize="10" Foreground="{DynamicResource BeigeTextSub}"/>
                                         </StackPanel>
 
                                         <Button Grid.Column="1" Content="🚀 [방식 1] 나이스 1초 일괄입력 코드 복사" Click="BtnCopyNeisScript_Click" Height="38" Padding="14,0" Margin="0,0,8,0" Background="#2563EB" Foreground="White" FontWeight="Bold" FontSize="12" BorderThickness="0" Cursor="Hand">
                                             <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></Button.Resources>
                                         </Button>
 
-                                        <Button Grid.Column="2" Content="🖱️ [방식 2] 플로팅 순차 입력 도우미 실행" Click="BtnOpenFloatingPaster_Click" Height="38" Padding="14,0" Background="#059669" Foreground="White" FontWeight="Bold" FontSize="12" BorderThickness="0" Cursor="Hand">
+                                        <Button Grid.Column="2" Content="🖱️ [방식 2] 플로팅 도우미 실행 (F8 자동입력)" Click="BtnOpenFloatingPaster_Click" Height="38" Padding="14,0" Background="#059669" Foreground="White" FontWeight="Bold" FontSize="12" BorderThickness="0" Cursor="Hand">
                                             <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></Button.Resources>
                                         </Button>
                                     </Grid>

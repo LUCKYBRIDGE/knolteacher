@@ -156,12 +156,18 @@ public partial class StudentPickerWindow : Window
     {
         if (_isPlaying) return;
 
-        // Clear existing balls
+        // Clear existing balls & confetti
         foreach (var b in _balls)
         {
             PinballCanvas.Children.Remove(b.Visual);
         }
         _balls.Clear();
+
+        foreach (var c in _confetti)
+        {
+            PinballCanvas.Children.Remove(c.Visual);
+        }
+        _confetti.Clear();
 
         bool exclude = ChkExcludePicked.IsChecked == true;
         var eligible = exclude
@@ -384,6 +390,23 @@ public partial class StudentPickerWindow : Window
                     b.Vy -= p * ny * 0.7;
                     o.Vx += p * nx * 0.7;
                     o.Vy += p * ny * 0.7;
+                }
+            }
+
+            // 4.5 Bottom Inward Funnel Guides (channeling towards Champion Cup between Y=560 and Y=730)
+            if (b.Y >= 560 && b.Y < 730)
+            {
+                double leftSlope = (b.Y - 560) * (300.0 / 170.0);
+                if (b.X - b.Radius < leftSlope)
+                {
+                    b.X = leftSlope + b.Radius;
+                    b.Vx = Math.Abs(b.Vx) * 0.7 + 35;
+                }
+                double rightSlope = 800 - (b.Y - 560) * (300.0 / 170.0);
+                if (b.X + b.Radius > rightSlope)
+                {
+                    b.X = rightSlope - b.Radius;
+                    b.Vx = -Math.Abs(b.Vx) * 0.7 - 35;
                 }
             }
 
@@ -624,7 +647,7 @@ public class PinballBall
     public double Radius { get; }
     public bool IsSettled { get; set; } = false;
 
-    public Border Visual { get; }
+    public Grid Visual { get; }
 
     public PinballBall(StudentItem student, double x, double y, double radius)
     {
@@ -633,43 +656,43 @@ public class PinballBall
         Y = y;
         Radius = radius;
 
-        // Container Border
-        Visual = new Border
+        Visual = new Grid
+        {
+            Width = radius * 2,
+            Height = radius * 2
+        };
+
+        // Circular Avatar Ellipse with neon border
+        var ellipse = new Ellipse
         {
             Width = radius * 2,
             Height = radius * 2,
-            CornerRadius = new CornerRadius(radius),
-            BorderThickness = new Thickness(2),
-            BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#38BDF8")),
-            Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#1E293B")),
-            ClipToBounds = true
+            Stroke = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#38BDF8")),
+            StrokeThickness = 2.5
         };
 
-        var grid = new Grid();
-        // Animal Avatar Image
         try
         {
-            var img = new Image
+            ellipse.Fill = new ImageBrush(new BitmapImage(new Uri(student.AvatarUri, UriKind.RelativeOrAbsolute)))
             {
-                Source = new BitmapImage(new Uri(student.AvatarUri, UriKind.RelativeOrAbsolute)),
-                Width = radius * 2,
-                Height = radius * 2,
                 Stretch = Stretch.UniformToFill
             };
-            RenderOptions.SetBitmapScalingMode(img, BitmapScalingMode.HighQuality);
-            grid.Children.Add(img);
         }
-        catch { }
+        catch
+        {
+            ellipse.Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#1E293B"));
+        }
+        Visual.Children.Add(ellipse);
 
         // Number Badge
         var badge = new Border
         {
-            Background = new SolidColorBrush(Color.FromArgb(200, 15, 23, 42)),
+            Background = new SolidColorBrush(Color.FromArgb(220, 15, 23, 42)),
             CornerRadius = new CornerRadius(6),
-            Padding = new Thickness(3, 1, 3, 1),
+            Padding = new Thickness(4, 1, 4, 1),
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Bottom,
-            Margin = new Thickness(0, 0, 0, 2)
+            Margin = new Thickness(0, 0, 0, 1)
         };
         badge.Child = new TextBlock
         {
@@ -679,9 +702,8 @@ public class PinballBall
             Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FDE047")),
             HorizontalAlignment = HorizontalAlignment.Center
         };
-        grid.Children.Add(badge);
+        Visual.Children.Add(badge);
 
-        Visual.Child = grid;
         UpdateVisual();
     }
 

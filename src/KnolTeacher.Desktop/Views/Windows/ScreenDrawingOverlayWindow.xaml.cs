@@ -8,6 +8,7 @@ using System.Windows.Ink;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
 using KnolTeacher.Desktop.Services;
+using KnolTeacher.Desktop.Views.Controls;
 
 namespace KnolTeacher.Desktop.Views.Windows;
 
@@ -90,11 +91,88 @@ public partial class ScreenDrawingOverlayWindow : Window
         }
     }
 
+    private RulerToolControl? _ruler;
+    private TriangleRulerToolControl? _triangle;
+    private ProtractorToolControl? _protractor;
+
     public void CloseOverlay()
     {
         OverlayInkCanvas.Strokes.Clear();
+        OverlayToolsCanvas.Children.Clear();
+        _ruler = null;
+        _triangle = null;
+        _protractor = null;
         FreezeImage.Source = null;
         Hide();
+    }
+
+    private void BtnToggleRuler_Click(object sender, RoutedEventArgs e)
+    {
+        if (_ruler == null)
+        {
+            _ruler = new RulerToolControl();
+            _ruler.CloseRequested += () =>
+            {
+                OverlayToolsCanvas.Children.Remove(_ruler);
+                _ruler = null;
+            };
+            double x = Math.Max(40, (ActualWidth - 460) / 2);
+            double y = Math.Max(100, (ActualHeight - 80) / 2);
+            Canvas.SetLeft(_ruler, x);
+            Canvas.SetTop(_ruler, y);
+            OverlayToolsCanvas.Children.Add(_ruler);
+        }
+        else
+        {
+            OverlayToolsCanvas.Children.Remove(_ruler);
+            _ruler = null;
+        }
+    }
+
+    private void BtnToggleTriangle_Click(object sender, RoutedEventArgs e)
+    {
+        if (_triangle == null)
+        {
+            _triangle = new TriangleRulerToolControl();
+            _triangle.CloseRequested += () =>
+            {
+                OverlayToolsCanvas.Children.Remove(_triangle);
+                _triangle = null;
+            };
+            double x = Math.Max(40, (ActualWidth - 320) / 2);
+            double y = Math.Max(100, (ActualHeight - 260) / 2);
+            Canvas.SetLeft(_triangle, x);
+            Canvas.SetTop(_triangle, y);
+            OverlayToolsCanvas.Children.Add(_triangle);
+        }
+        else
+        {
+            OverlayToolsCanvas.Children.Remove(_triangle);
+            _triangle = null;
+        }
+    }
+
+    private void BtnToggleProtractor_Click(object sender, RoutedEventArgs e)
+    {
+        if (_protractor == null)
+        {
+            _protractor = new ProtractorToolControl();
+            _protractor.CloseRequested += () =>
+            {
+                OverlayToolsCanvas.Children.Remove(_protractor);
+                _protractor = null;
+            };
+            double x = Math.Max(40, (ActualWidth - 380) / 2);
+            double y = Math.Max(100, (ActualHeight - 210) / 2);
+            Canvas.SetLeft(_protractor, x);
+            Canvas.SetTop(_protractor, y);
+            OverlayToolsCanvas.Children.Add(_protractor);
+        }
+        else
+        {
+            OverlayToolsCanvas.Children.Remove(_protractor);
+            _protractor = null;
+        }
     }
 
     private void Toolbar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)

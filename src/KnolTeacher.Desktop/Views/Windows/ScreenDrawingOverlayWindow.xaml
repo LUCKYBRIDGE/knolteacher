@@ -18,6 +18,11 @@
         <InkCanvas x:Name="OverlayInkCanvas"
                    Background="Transparent" />
 
+        <!-- Overlay Tools Canvas for Ruler, Triangle, Protractor -->
+        <Canvas x:Name="OverlayToolsCanvas"
+                Background="Transparent"
+                IsHitTestVisible="True" />
+
         <!-- Floating Top Toolbar (Draggable) -->
         <Border HorizontalAlignment="Center" VerticalAlignment="Top"
                 Margin="0,16,0,0"
@@ -41,7 +46,14 @@
                 <Button Width="20" Height="20" Background="#FDE047" Click="BtnColor_Click" Tag="#FDE047" Margin="0,0,4,0" ToolTip="노랑"/>
                 <Button Width="20" Height="20" Background="#38BDF8" Click="BtnColor_Click" Tag="#38BDF8" Margin="0,0,4,0" ToolTip="파랑"/>
                 <Button Width="20" Height="20" Background="#22C55E" Click="BtnColor_Click" Tag="#22C55E" Margin="0,0,4,0" ToolTip="초록"/>
-                <Button Width="20" Height="20" Background="#FFFFFF" Click="BtnColor_Click" Tag="#FFFFFF" Margin="0,0,12,0" ToolTip="흰색"/>
+                <Button Width="20" Height="20" Background="#FFFFFF" Click="BtnColor_Click" Tag="#FFFFFF" Margin="0,0,10,0" ToolTip="흰색"/>
+
+                <Separator Margin="0,2,8,2" Width="1" Background="#475569"/>
+
+                <!-- Math 교구 Tools -->
+                <Button Content="📏 자" Click="BtnToggleRuler_Click" Margin="0,0,4,0" Padding="8,3" Background="#334155" Foreground="#38BDF8" FontWeight="Bold" BorderThickness="0" Cursor="Hand" ToolTip="0~20cm 직선자 (각도 회전 및 측정)"/>
+                <Button Content="📐 삼각자" Click="BtnToggleTriangle_Click" Margin="0,0,4,0" Padding="8,3" Background="#334155" Foreground="#38BDF8" FontWeight="Bold" BorderThickness="0" Cursor="Hand" ToolTip="45°-45°-90° 삼각자"/>
+                <Button Content="🧭 각도기" Click="BtnToggleProtractor_Click" Margin="0,0,10,0" Padding="8,3" Background="#334155" Foreground="#FDE047" FontWeight="Bold" BorderThickness="0" Cursor="Hand" ToolTip="180° 반원 각도기"/>
 
                 <!-- Actions -->
                 <Button Content="↩ 실행취소" Click="BtnUndo_Click" Margin="0,0,6,0" Padding="8,3" Background="#334155" Foreground="White" BorderThickness="0"/>
