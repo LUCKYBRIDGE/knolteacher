@@ -1,32 +1,61 @@
 @echo off
+setlocal
 chcp 65001 > nul
+
 echo ========================================================
-echo   [놀티쳐 .NET] 차세대 초고속 단일 실행 파일 빌드 시작
+echo   [놀티쳐 .NET] Windows x64 단일 실행 파일 빌드
 echo ========================================================
 echo.
 
-set DOTNET_EXE="C:\Program Files\dotnet\dotnet.exe"
-set PROJ_PATH=src\KnolTeacher.Desktop\KnolTeacher.Desktop.csproj
-set OUT_DIR=dist-net
-
-echo [0/2] 기존 실행 중인 프로세스 종료 중...
-powershell -Command "Get-Process -Name 'KnolTeacher.Desktop' -ErrorAction SilentlyContinue | Stop-Process -Force"
-
-if not exist %OUT_DIR% (
-    mkdir %OUT_DIR%
+where dotnet >nul 2>nul
+if errorlevel 1 (
+    echo [오류] dotnet CLI를 찾을 수 없습니다.
+    echo .NET 8 SDK 설치 및 PATH 설정을 확인해 주세요.
+    exit /b 1
 )
 
-echo [1/2] Release Single-File ReadyToRun 빌드 진행 중...
-%DOTNET_EXE% publish %PROJ_PATH% -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:IncludeNativeLibrariesForSelfExtract=true -o %OUT_DIR%
+set "PROJ_PATH=src\KnolTeacher.Desktop\KnolTeacher.Desktop.csproj"
+set "OUT_DIR=dist-net"
+set "RAW_EXE=%OUT_DIR%\KnolTeacher.Desktop.exe"
+set "FINAL_EXE=%OUT_DIR%\놀티쳐.exe"
 
-if %ERRORLEVEL% equ 0 (
+echo [0/3] 실행 중인 놀티쳐 프로세스 종료...
+powershell -NoProfile -Command "Get-Process -Name 'KnolTeacher.Desktop','놀티쳐' -ErrorAction SilentlyContinue | Stop-Process -Force"
+
+echo [1/3] 기존 배포 폴더 정리...
+if exist "%OUT_DIR%" rmdir /s /q "%OUT_DIR%"
+mkdir "%OUT_DIR%"
+
+echo [2/3] Release / win-x64 / self-contained / single-file publish...
+dotnet publish "%PROJ_PATH%" ^
+  -c Release ^
+  -r win-x64 ^
+  --self-contained true ^
+  -p:PublishSingleFile=true ^
+  -p:PublishReadyToRun=true ^
+  -p:IncludeNativeLibrariesForSelfExtract=true ^
+  -p:EnableCompressionInSingleFile=true ^
+  -o "%OUT_DIR%"
+
+if errorlevel 1 (
     echo.
-    echo ========================================================
-    echo   [빌드 성공!]
-    echo   출력 파일: %OUT_DIR%\KnolTeacher.Desktop.exe
-    echo ========================================================
-) else (
-    echo.
-    echo [빌드 실패] 에러 코드를 확인해 주세요.
+    echo [빌드 실패] dotnet publish 오류를 확인해 주세요.
+    exit /b 1
 )
-pause
+
+if not exist "%RAW_EXE%" (
+    echo.
+    echo [빌드 실패] 예상 실행 파일을 찾을 수 없습니다: %RAW_EXE%
+    exit /b 1
+)
+
+move /Y "%RAW_EXE%" "%FINAL_EXE%" >nul
+
+echo [3/3] 사용자용 실행 파일명 정리 완료
+echo.
+echo ========================================================
+echo   [빌드 성공]
+echo   출력 파일: %FINAL_EXE%
+echo ========================================================
+
+exit /b 0
