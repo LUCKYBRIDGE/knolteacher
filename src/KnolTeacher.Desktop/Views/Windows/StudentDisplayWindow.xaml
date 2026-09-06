@@ -65,8 +65,28 @@
                             <ComboBoxItem Content="📅 오늘의 시간표" Tag="timetable"/>
                             <ComboBoxItem Content="🍱 오늘의 급식" Tag="meal"/>
                             <ComboBoxItem Content="📝 학급 알림장" Tag="memo"/>
+                            <ComboBoxItem Content="📋 과제 체크리스트" Tag="checklist"/>
                             <ComboBoxItem Content="📱 실시간 QR코드" Tag="qr"/>
                         </ComboBox>
+
+                        <!-- Lock & Opacity Tools -->
+                        <ToggleButton x:Name="ToggleLockWidgets" Content="🔓 위치 고정" Checked="ToggleLockWidgets_Checked" Unchecked="ToggleLockWidgets_Unchecked" Padding="8,4" Margin="0,0,4,0" Background="#334155" Foreground="White" FontSize="11" FontWeight="Bold" Cursor="Hand" ToolTip="보드 위 모든 위젯의 위치와 크기 조절 잠금">
+                            <ToggleButton.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></ToggleButton.Resources>
+                        </ToggleButton>
+
+                        <!-- Card Opacity Popup -->
+                        <Button x:Name="BtnOpacityPopup" Content="💧 투명도" Click="BtnOpacityPopup_Click" Padding="8,4" Margin="0,0,10,0" Background="#334155" Foreground="#38BDF8" FontSize="11" FontWeight="Bold" BorderThickness="0" Cursor="Hand" ToolTip="위젯 카드 배경 투명도 조절">
+                            <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                        </Button>
+                        <Popup x:Name="PopupOpacity" PlacementTarget="{Binding ElementName=BtnOpacityPopup}" Placement="Bottom" StaysOpen="False" AllowsTransparency="True">
+                            <Border Background="#1E293B" BorderBrush="#38BDF8" BorderThickness="1.5" CornerRadius="8" Padding="12,10" Width="180">
+                                <StackPanel>
+                                    <TextBlock Text="카드 배경 투명도" Foreground="White" FontSize="11" FontWeight="Bold" Margin="0,0,0,6"/>
+                                    <Slider x:Name="SliderCardOpacity" Minimum="0.2" Maximum="1.0" Value="0.95" ValueChanged="SliderCardOpacity_ValueChanged" SmallChange="0.05" LargeChange="0.1"/>
+                                    <TextBlock x:Name="TxtOpacityValue" Text="95%" Foreground="#38BDF8" FontSize="11" HorizontalAlignment="Right" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Border>
+                        </Popup>
 
                         <Separator Margin="0,8,12,8" Background="#475569"/>
 
@@ -181,6 +201,7 @@
                             <Button x:Name="BtnToolTimetable" Content="📅 시간표" Click="DockToolBtn_Click" Tag="timetable" Height="32" Padding="10,0" Margin="0,2,6,2" Background="#1E293B" Foreground="#94A3B8" BorderBrush="#334155" BorderThickness="1" FontSize="11" Cursor="Hand"/>
                             <Button x:Name="BtnToolMeal" Content="🍱 급식" Click="DockToolBtn_Click" Tag="meal" Height="32" Padding="10,0" Margin="0,2,6,2" Background="#1E293B" Foreground="#94A3B8" BorderBrush="#334155" BorderThickness="1" FontSize="11" Cursor="Hand"/>
                             <Button x:Name="BtnToolMemo" Content="📝 알림장" Click="DockToolBtn_Click" Tag="memo" Height="32" Padding="10,0" Margin="0,2,6,2" Background="#1E293B" Foreground="#94A3B8" BorderBrush="#334155" BorderThickness="1" FontSize="11" Cursor="Hand"/>
+                            <Button x:Name="BtnToolChecklist" Content="📋 체크리스트" Click="DockToolBtn_Click" Tag="checklist" Height="32" Padding="10,0" Margin="0,2,6,2" Background="#1E293B" Foreground="#94A3B8" BorderBrush="#334155" BorderThickness="1" FontSize="11" Cursor="Hand" ToolTip="학생 제출물·과제 번호별 완료 체크"/>
                             <Button x:Name="BtnToolQr" Content="📱 QR코드" Click="DockToolBtn_Click" Tag="qr" Height="32" Padding="10,0" Margin="0,2,6,2" Background="#1E293B" Foreground="#94A3B8" BorderBrush="#334155" BorderThickness="1" FontSize="11" Cursor="Hand" ToolTip="수업 링크 및 자료 실시간 QR코드 생성 &amp; 학생 공유"/>
                         </WrapPanel>
 

@@ -299,6 +299,13 @@ public partial class StudentPickerWindow : Window
             b.X += b.Vx * dt;
             b.Y += b.Vy * dt;
 
+            // Anti-jam / Anti-peg-perch mechanic
+            if (b.Y > 180 && b.Y < 680 && Math.Abs(b.Vx) < 8 && Math.Abs(b.Vy) < 18)
+            {
+                b.Vx += (rand.NextDouble() - 0.5) * 60;
+                b.Vy += 25;
+            }
+
             // 1. Boundary Collisions (Walls)
             double leftWall = 30;
             double rightWall = 770;
@@ -511,11 +518,7 @@ public partial class StudentPickerWindow : Window
 
         // Display Winner Card
         TxtWinnerTitle.Text = $"{winner.Number}번 {winner.Name} ({winner.AvatarName})";
-        try
-        {
-            ImgWinnerAvatar.Source = new BitmapImage(new Uri(winner.AvatarUri, UriKind.RelativeOrAbsolute));
-        }
-        catch { }
+        ImgWinnerAvatar.Source = AnimalAvatarCatalog.GetAvatarBitmap(winner.EffectiveAvatarId);
 
         GridCelebration.Visibility = Visibility.Visible;
     }
@@ -571,6 +574,7 @@ public partial class StudentPickerWindow : Window
         else
         {
             GridClassicMode.Visibility = Visibility.Collapsed;
+            if (BorderClassicAvatar != null) BorderClassicAvatar.Visibility = Visibility.Collapsed;
             TxtBtnLaunchLabel.Text = "🚀 핀볼 일제 발사! (추첨)";
         }
     }
@@ -606,6 +610,8 @@ public partial class StudentPickerWindow : Window
             var temp = _studentService.Students[rndIndex];
             TxtClassicWinnerNumber.Text = $"{temp.Number}번";
             TxtClassicWinnerName.Text = $"{temp.Name} ({temp.AvatarName})";
+            if (BorderClassicAvatar != null) BorderClassicAvatar.Visibility = Visibility.Visible;
+            if (ImgClassicAvatar != null) ImgClassicAvatar.Source = AnimalAvatarCatalog.GetAvatarBitmap(temp.EffectiveAvatarId);
         }
 
         if (_classicShuffleCount > 18)
@@ -617,6 +623,8 @@ public partial class StudentPickerWindow : Window
             {
                 TxtClassicWinnerNumber.Text = $"🎉 {_classicFinalPicked.Number}번 🎉";
                 TxtClassicWinnerName.Text = $"{_classicFinalPicked.Name} ({_classicFinalPicked.AvatarName})";
+                if (BorderClassicAvatar != null) BorderClassicAvatar.Visibility = Visibility.Visible;
+                if (ImgClassicAvatar != null) ImgClassicAvatar.Source = AnimalAvatarCatalog.GetAvatarBitmap(_classicFinalPicked.EffectiveAvatarId);
             }
 
             if (_soundEnabled) _soundService.PlayChime();
@@ -701,14 +709,15 @@ public class PinballBall
             StrokeThickness = 2.5
         };
 
-        try
+        var avatarBmp = AnimalAvatarCatalog.GetAvatarBitmap(student.EffectiveAvatarId);
+        if (avatarBmp != null)
         {
-            ellipse.Fill = new ImageBrush(new BitmapImage(new Uri(student.AvatarUri, UriKind.RelativeOrAbsolute)))
+            ellipse.Fill = new ImageBrush(avatarBmp)
             {
                 Stretch = Stretch.UniformToFill
             };
         }
-        catch
+        else
         {
             ellipse.Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#1E293B"));
         }

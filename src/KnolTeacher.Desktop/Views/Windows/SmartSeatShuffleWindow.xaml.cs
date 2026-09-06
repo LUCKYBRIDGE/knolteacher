@@ -217,15 +217,7 @@ public partial class SmartSeatShuffleWindow : Window
                 Stretch = Stretch.Uniform
             };
 
-            try
-            {
-                string avatarPath = student.AvatarUri;
-                img.Source = new BitmapImage(new Uri($"pack://application:,,,{avatarPath}", UriKind.Absolute));
-            }
-            catch
-            {
-                // Fallback icon
-            }
+            img.Source = AnimalAvatarCatalog.GetAvatarBitmap(student.EffectiveAvatarId);
 
             imgBorder.Child = img;
             Grid.SetRow(imgBorder, 1);

@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using KnolTeacher.Desktop.Models;
 using KnolTeacher.Desktop.Services;
 using KnolTeacher.Desktop.Views.Windows;
 
@@ -86,14 +87,14 @@ public partial class PickerWidgetView : UserControl
             ? allStudents.Where(s => s.Gender == genderFilter).ToList() 
             : allStudents;
 
-        List<(string Display, string? AvatarUri)> candidates = new();
+        List<(string Display, string? AvatarId)> candidates = new();
 
         if (isName && students.Count > 0)
         {
             foreach (var s in students)
             {
                 string tag = s.Gender == "남" ? " 👦" : (s.Gender == "여" ? " 👧" : "");
-                candidates.Add(($"{s.Number}번 {s.Name}{tag}", s.AvatarUri));
+                candidates.Add(($"{s.Number}번 {s.Name}{tag}", s.EffectiveAvatarId));
             }
         }
         else
@@ -103,7 +104,7 @@ public partial class PickerWidgetView : UserControl
             for (int i = start; i <= end; i++)
             {
                 var matchedStudent = allStudents.FirstOrDefault(s => s.Number == i);
-                candidates.Add(($"{i}번", matchedStudent?.AvatarUri));
+                candidates.Add(($"{i}번", matchedStudent?.EffectiveAvatarId ?? $"avatar_{(i - 1) % 32 + 1:D2}"));
             }
         }
 
@@ -126,17 +127,11 @@ public partial class PickerWidgetView : UserControl
             var temp = candidates[rng.Next(candidates.Count)];
             TxtWinner.Text = temp.Display;
             TxtWinner.Foreground = Brushes.White;
-            if (!string.IsNullOrEmpty(temp.AvatarUri) && BorderWinnerAvatar != null && ImgWinnerAvatar != null)
+            var tempBmp = AnimalAvatarCatalog.GetAvatarBitmap(temp.AvatarId);
+            if (tempBmp != null && BorderWinnerAvatar != null && ImgWinnerAvatar != null)
             {
-                try
-                {
-                    ImgWinnerAvatar.ImageSource = new BitmapImage(new Uri(temp.AvatarUri, UriKind.RelativeOrAbsolute));
-                    BorderWinnerAvatar.Visibility = Visibility.Visible;
-                }
-                catch
-                {
-                    BorderWinnerAvatar.Visibility = Visibility.Collapsed;
-                }
+                ImgWinnerAvatar.ImageSource = tempBmp;
+                BorderWinnerAvatar.Visibility = Visibility.Visible;
             }
             else if (BorderWinnerAvatar != null)
             {
@@ -150,17 +145,11 @@ public partial class PickerWidgetView : UserControl
 
         TxtWinner.Text = winner.Display;
         TxtWinner.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#10B981"));
-        if (!string.IsNullOrEmpty(winner.AvatarUri) && BorderWinnerAvatar != null && ImgWinnerAvatar != null)
+        var winnerBmp = AnimalAvatarCatalog.GetAvatarBitmap(winner.AvatarId);
+        if (winnerBmp != null && BorderWinnerAvatar != null && ImgWinnerAvatar != null)
         {
-            try
-            {
-                ImgWinnerAvatar.ImageSource = new BitmapImage(new Uri(winner.AvatarUri, UriKind.RelativeOrAbsolute));
-                BorderWinnerAvatar.Visibility = Visibility.Visible;
-            }
-            catch
-            {
-                BorderWinnerAvatar.Visibility = Visibility.Collapsed;
-            }
+            ImgWinnerAvatar.ImageSource = winnerBmp;
+            BorderWinnerAvatar.Visibility = Visibility.Visible;
         }
         else if (BorderWinnerAvatar != null)
         {

@@ -20,12 +20,15 @@ public partial class StudentDisplayWindow : Window
     private readonly INeisService _neisService;
     private readonly IConfigService _configService;
     private readonly IQrCodeService _qrCodeService;
+    private readonly ITtsService? _ttsService;
     private readonly IDisplayManager? _displayManager;
     private int _currentMonitorIndex = 1;
 
     private readonly Stack<Stroke> _undoStack = new();
     private readonly DispatcherTimer _clockTimer;
     private readonly List<BoardWidgetHost> _widgets = new();
+    private bool _isWidgetsLocked = false;
+    private double _currentCardOpacity = 0.95;
 
     public StudentDisplayWindow(
         ISoundService soundService,
@@ -34,6 +37,7 @@ public partial class StudentDisplayWindow : Window
         INeisService neisService,
         IConfigService configService,
         IQrCodeService qrCodeService,
+        ITtsService? ttsService = null,
         IDisplayManager? displayManager = null)
     {
         _soundService = soundService;
@@ -42,6 +46,7 @@ public partial class StudentDisplayWindow : Window
         _neisService = neisService;
         _configService = configService;
         _qrCodeService = qrCodeService;
+        _ttsService = ttsService ?? (Application.Current as App)?.Services?.GetService(typeof(ITtsService)) as ITtsService;
         _displayManager = displayManager ?? (Application.Current as App)?.Services?.GetService(typeof(IDisplayManager)) as IDisplayManager;
 
         InitializeComponent();
@@ -96,7 +101,9 @@ public partial class StudentDisplayWindow : Window
             Title = title,
             WidgetContent = view,
             Width = w,
-            Height = h
+            Height = h,
+            IsLocked = _isWidgetsLocked,
+            CardOpacity = _currentCardOpacity
         };
 
         Canvas.SetLeft(host, x);
@@ -263,7 +270,8 @@ public partial class StudentDisplayWindow : Window
             "drawing" => AddWidget("drawing", "✏️ 칠판 판서장", new DrawingWidgetView(), nextX, nextY, 400, 310),
             "timetable" => AddWidget("timetable", "📅 오늘의 시간표", new TimetableWidgetView(_timetableService), nextX, nextY, 320, 440),
             "meal" => AddWidget("meal", "🍱 오늘의 급식", new MealWidgetView(_neisService), nextX, nextY, 320, 440),
-            "memo" => AddWidget("memo", "📝 학급 알림장", new MemoWidgetView(_configService), nextX, nextY, 360, 340),
+            "memo" => AddWidget("memo", "📝 학급 알림장", new MemoWidgetView(_configService, _ttsService), nextX, nextY, 360, 340),
+            "checklist" => AddWidget("checklist", "📋 과제 체크리스트", new ChecklistWidgetView(_configService, _studentService), nextX, nextY, 360, 360),
             "qr" => AddWidget("qr", "📱 실시간 수업 QR코드", new QrWidgetView(_qrCodeService), nextX, nextY, 320, 360),
             _ => null
         };
@@ -283,6 +291,7 @@ public partial class StudentDisplayWindow : Window
         UpdateBtnState(BtnToolTimetable, "timetable");
         UpdateBtnState(BtnToolMeal, "meal");
         UpdateBtnState(BtnToolMemo, "memo");
+        UpdateBtnState(BtnToolChecklist, "checklist");
         UpdateBtnState(BtnToolQr, "qr");
     }
 
@@ -429,7 +438,7 @@ public partial class StudentDisplayWindow : Window
         // 2. Meal
         AddWidget("meal", "🍱 오늘의 급식", new MealWidgetView(_neisService), 390, 30, 330, 480);
         // 3. Memo
-        AddWidget("memo", "📝 학급 알림장", new MemoWidgetView(_configService), 750, 30, 380, 480);
+        AddWidget("memo", "📝 학급 알림장", new MemoWidgetView(_configService, _ttsService), 750, 30, 380, 480);
     }
 
     private void ApplyPresetSplit()
@@ -564,6 +573,56 @@ public partial class StudentDisplayWindow : Window
         {
             BoardInkCanvas.Strokes.Clear();
             _undoStack.Clear();
+        }
+    }
+
+    #endregion
+
+    #region Lock & Opacity Controls
+
+    private void ToggleLockWidgets_Checked(object sender, RoutedEventArgs e)
+    {
+        _isWidgetsLocked = true;
+        ApplyLockState();
+    }
+
+    private void ToggleLockWidgets_Unchecked(object sender, RoutedEventArgs e)
+    {
+        _isWidgetsLocked = false;
+        ApplyLockState();
+    }
+
+    private void ApplyLockState()
+    {
+        if (ToggleLockWidgets != null)
+        {
+            ToggleLockWidgets.Content = _isWidgetsLocked ? "🔒 위치 잠김" : "🔓 위치 고정";
+            ToggleLockWidgets.Background = _isWidgetsLocked
+                ? new SolidColorBrush((Color)ColorConverter.ConvertFromString("#EF4444"))
+                : new SolidColorBrush((Color)ColorConverter.ConvertFromString("#334155"));
+        }
+
+        foreach (var w in _widgets)
+        {
+            w.IsLocked = _isWidgetsLocked;
+        }
+    }
+
+    private void BtnOpacityPopup_Click(object sender, RoutedEventArgs e)
+    {
+        PopupOpacity.IsOpen = !PopupOpacity.IsOpen;
+    }
+
+    private void SliderCardOpacity_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        _currentCardOpacity = e.NewValue;
+        if (TxtOpacityValue != null)
+        {
+            TxtOpacityValue.Text = $"{(_currentCardOpacity * 100):0}%";
+        }
+        foreach (var w in _widgets)
+        {
+            w.CardOpacity = _currentCardOpacity;
         }
     }
 

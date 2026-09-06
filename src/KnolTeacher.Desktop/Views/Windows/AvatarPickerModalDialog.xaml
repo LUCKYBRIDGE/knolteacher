@@ -62,7 +62,7 @@
                                 </Style>
                             </Border.Style>
                             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                <Image Source="{Binding ImageUri}" Width="68" Height="68" Margin="0,0,0,6" RenderOptions.BitmapScalingMode="HighQuality"/>
+                                <Image Source="{Binding AvatarBitmap}" Width="68" Height="68" Margin="0,0,0,6" RenderOptions.BitmapScalingMode="HighQuality"/>
                                 <TextBlock Text="{Binding NameKo}" FontWeight="Bold" FontSize="13" Foreground="White" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Border>

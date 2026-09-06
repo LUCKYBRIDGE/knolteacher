@@ -50,33 +50,42 @@
         </Grid>
 
         <!-- 2. Traffic Light Housing (Vertical Pod) -->
-        <Border Grid.Row="1" Background="#1E293B" BorderBrush="#334155" BorderThickness="2" CornerRadius="28" Padding="16,14" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <Border Grid.Row="1" Background="#1E293B" BorderBrush="#334155" BorderThickness="2" CornerRadius="28" Padding="18,14" HorizontalAlignment="Center" VerticalAlignment="Center">
             <Border.Effect>
                 <DropShadowEffect BlurRadius="24" Opacity="0.4" ShadowDepth="6" Color="#000000"/>
             </Border.Effect>
             <StackPanel HorizontalAlignment="Center">
                 <!-- Red Light -->
-                <Border x:Name="LightRed" Width="105" Height="105" CornerRadius="53" Background="#3B1818" BorderBrush="#7F1D1D" BorderThickness="3" Margin="0,0,0,12">
+                <Border x:Name="LightRed" Width="110" Height="110" CornerRadius="55" Background="#3B1818" BorderBrush="#7F1D1D" BorderThickness="3" Margin="0,0,0,12">
                     <Border.Effect>
                         <DropShadowEffect x:Name="GlowRed" BlurRadius="25" Color="#EF4444" Opacity="0"/>
                     </Border.Effect>
-                    <TextBlock Text="🔴" FontSize="42" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.4" x:Name="IconRed"/>
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <TextBlock Text="😨" FontSize="42" HorizontalAlignment="Center" Opacity="0.4" x:Name="IconRed"/>
+                        <TextBlock Text="쉿! 조용히" FontSize="10" FontWeight="Bold" Foreground="#FCA5A5" HorizontalAlignment="Center" x:Name="LabelRed" Opacity="0.4"/>
+                    </StackPanel>
                 </Border>
 
                 <!-- Yellow Light -->
-                <Border x:Name="LightYellow" Width="105" Height="105" CornerRadius="53" Background="#3A2C10" BorderBrush="#78350F" BorderThickness="3" Margin="0,0,0,12">
+                <Border x:Name="LightYellow" Width="110" Height="110" CornerRadius="55" Background="#3A2C10" BorderBrush="#78350F" BorderThickness="3" Margin="0,0,0,12">
                     <Border.Effect>
                         <DropShadowEffect x:Name="GlowYellow" BlurRadius="25" Color="#F59E0B" Opacity="0"/>
                     </Border.Effect>
-                    <TextBlock Text="🟡" FontSize="42" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.4" x:Name="IconYellow"/>
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <TextBlock Text="😐" FontSize="42" HorizontalAlignment="Center" Opacity="0.4" x:Name="IconYellow"/>
+                        <TextBlock Text="조금 커져요" FontSize="10" FontWeight="Bold" Foreground="#FDE68A" HorizontalAlignment="Center" x:Name="LabelYellow" Opacity="0.4"/>
+                    </StackPanel>
                 </Border>
 
                 <!-- Green Light -->
-                <Border x:Name="LightGreen" Width="105" Height="105" CornerRadius="53" Background="#102E20" BorderBrush="#064E3B" BorderThickness="3">
+                <Border x:Name="LightGreen" Width="110" Height="110" CornerRadius="55" Background="#102E20" BorderBrush="#064E3B" BorderThickness="3">
                     <Border.Effect>
                         <DropShadowEffect x:Name="GlowGreen" BlurRadius="25" Color="#10B981" Opacity="1"/>
                     </Border.Effect>
-                    <TextBlock Text="🟢" FontSize="42" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="1.0" x:Name="IconGreen"/>
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <TextBlock Text="😊" FontSize="42" HorizontalAlignment="Center" Opacity="1.0" x:Name="IconGreen"/>
+                        <TextBlock Text="참 좋아요!" FontSize="10" FontWeight="Bold" Foreground="#A7F3D0" HorizontalAlignment="Center" x:Name="LabelGreen" Opacity="1.0"/>
+                    </StackPanel>
                 </Border>
             </StackPanel>
         </Border>
@@ -132,6 +141,7 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
                 <!-- Row 0: Mode Presets & Mic Toggle -->
@@ -156,13 +166,43 @@
                         </Button>
                     </StackPanel>
 
-                    <Button x:Name="BtnToggleMic" Grid.Column="2" Content="🎙️ 감지 일시정지" Click="BtnToggleMic_Click" Padding="10,5" Background="#B45309" Foreground="White" FontWeight="Bold" BorderThickness="0" FontSize="11" Cursor="Hand">
+                    <Button x:Name="BtnToggleMic" Grid.Column="2" Content="🎙️ 감지 끄기" Click="BtnToggleMic_Click" Padding="10,5" Background="#B45309" Foreground="White" FontWeight="Bold" BorderThickness="0" FontSize="11" Cursor="Hand">
                         <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
                     </Button>
                 </Grid>
 
+                <!-- Row 0.5: Smart Quick Pause (발표·칭찬·활동 중 스마트 멈춤) -->
+                <Border Grid.Row="1" Background="#0F172A" CornerRadius="8" Padding="8,6" Margin="0,0,0,10">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="⏱️ 퀵 일시정지:" FontSize="11" FontWeight="Bold" Foreground="#38BDF8" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                            <Button Content="30초" Click="BtnQuickPause_Click" Tag="30" Padding="6,2" Margin="0,0,4,0" Background="#1E293B" Foreground="White" FontSize="10" FontWeight="Bold" BorderThickness="0" Cursor="Hand">
+                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
+                            </Button>
+                            <Button Content="1분" Click="BtnQuickPause_Click" Tag="60" Padding="6,2" Margin="0,0,4,0" Background="#1E293B" Foreground="White" FontSize="10" FontWeight="Bold" BorderThickness="0" Cursor="Hand">
+                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
+                            </Button>
+                            <Button Content="5분" Click="BtnQuickPause_Click" Tag="300" Padding="6,2" Margin="0,0,4,0" Background="#1E293B" Foreground="White" FontSize="10" FontWeight="Bold" BorderThickness="0" Cursor="Hand">
+                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
+                            </Button>
+                        </StackPanel>
+
+                        <TextBlock x:Name="TxtPauseCountdown" Grid.Column="1" Text="" Foreground="#F59E0B" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
+                        <Button x:Name="BtnResumeNow" Grid.Column="2" Content="▶️ 즉시 재개" Click="BtnResumeNow_Click" Visibility="Collapsed" Padding="8,2" Background="#10B981" Foreground="White" FontSize="10" FontWeight="Bold" BorderThickness="0" Cursor="Hand">
+                            <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
+                        </Button>
+                    </Grid>
+                </Border>
+
                 <!-- Row 1: Fine-Tuning Sliders & Sound Option -->
-                <Grid Grid.Row="1">
+                <Grid Grid.Row="2">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>

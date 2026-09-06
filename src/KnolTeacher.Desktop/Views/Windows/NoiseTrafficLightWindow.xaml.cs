@@ -22,6 +22,8 @@ public partial class NoiseTrafficLightWindow : Window
     private static readonly Brush BrushYellowDim = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#3A2C10"));
     private static readonly Brush BrushRedActive = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#EF4444"));
     private static readonly Brush BrushRedDim = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#3B1818"));
+    private readonly System.Windows.Threading.DispatcherTimer _quickPauseTimer;
+    private int _pauseRemainingSeconds = 0;
 
     public NoiseTrafficLightWindow(
         INoiseMeterService noiseMeter,
@@ -36,10 +38,14 @@ public partial class NoiseTrafficLightWindow : Window
         _noiseMeter.NoiseUpdated += OnNoiseUpdated;
         _noiseMeter.RedWarningTriggered += OnRedWarningTriggered;
 
+        _quickPauseTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+        _quickPauseTimer.Tick += QuickPauseTimer_Tick;
+
         Loaded += NoiseTrafficLightWindow_Loaded;
         Closing += (s, e) =>
         {
             e.Cancel = true;
+            _quickPauseTimer.Stop();
             _noiseMeter.Stop();
             Hide();
         };
@@ -98,18 +104,24 @@ public partial class NoiseTrafficLightWindow : Window
                     LightGreen.Background = BrushGreenActive;
                     GlowGreen.Opacity = 1.0;
                     IconGreen.Opacity = 1.0;
+                    LabelGreen.Opacity = 1.0;
                     // Yellow OFF
                     LightYellow.Background = BrushYellowDim;
                     GlowYellow.Opacity = 0.0;
                     IconYellow.Opacity = 0.3;
+                    LabelYellow.Opacity = 0.3;
                     // Red OFF
                     LightRed.Background = BrushRedDim;
                     GlowRed.Opacity = 0.0;
                     IconRed.Opacity = 0.3;
+                    LabelRed.Opacity = 0.3;
 
                     BarDecibelFill.Background = BrushGreenActive;
-                    TxtStatusMessage.Text = "🟢 참 잘하고 있어요! (정숙 유지 중)";
-                    TxtStatusMessage.Foreground = BrushGreenActive;
+                    if (_pauseRemainingSeconds == 0)
+                    {
+                        TxtStatusMessage.Text = "🟢 참 잘하고 있어요! (정숙 유지 중)";
+                        TxtStatusMessage.Foreground = BrushGreenActive;
+                    }
                     break;
 
                 case NoiseState.Yellow:
@@ -117,18 +129,24 @@ public partial class NoiseTrafficLightWindow : Window
                     LightGreen.Background = BrushGreenDim;
                     GlowGreen.Opacity = 0.0;
                     IconGreen.Opacity = 0.3;
+                    LabelGreen.Opacity = 0.3;
                     // Yellow ON
                     LightYellow.Background = BrushYellowActive;
                     GlowYellow.Opacity = 1.0;
                     IconYellow.Opacity = 1.0;
+                    LabelYellow.Opacity = 1.0;
                     // Red OFF
                     LightRed.Background = BrushRedDim;
                     GlowRed.Opacity = 0.0;
                     IconRed.Opacity = 0.3;
+                    LabelRed.Opacity = 0.3;
 
                     BarDecibelFill.Background = BrushYellowActive;
-                    TxtStatusMessage.Text = "🟡 목소리를 조금만 낮춰볼까요? (주의)";
-                    TxtStatusMessage.Foreground = BrushYellowActive;
+                    if (_pauseRemainingSeconds == 0)
+                    {
+                        TxtStatusMessage.Text = "🟡 목소리를 조금만 낮춰볼까요? (주의)";
+                        TxtStatusMessage.Foreground = BrushYellowActive;
+                    }
                     break;
 
                 case NoiseState.Red:
@@ -136,18 +154,24 @@ public partial class NoiseTrafficLightWindow : Window
                     LightGreen.Background = BrushGreenDim;
                     GlowGreen.Opacity = 0.0;
                     IconGreen.Opacity = 0.3;
+                    LabelGreen.Opacity = 0.3;
                     // Yellow OFF
                     LightYellow.Background = BrushYellowDim;
                     GlowYellow.Opacity = 0.0;
                     IconYellow.Opacity = 0.3;
+                    LabelYellow.Opacity = 0.3;
                     // Red ON
                     LightRed.Background = BrushRedActive;
                     GlowRed.Opacity = 1.0;
                     IconRed.Opacity = 1.0;
+                    LabelRed.Opacity = 1.0;
 
                     BarDecibelFill.Background = BrushRedActive;
-                    TxtStatusMessage.Text = "🔴 쉿! 교실이 너무 시끄러워요! (경고)";
-                    TxtStatusMessage.Foreground = BrushRedActive;
+                    if (_pauseRemainingSeconds == 0)
+                    {
+                        TxtStatusMessage.Text = "🔴 쉿! 교실이 너무 시끄러워요! (경고)";
+                        TxtStatusMessage.Foreground = BrushRedActive;
+                    }
                     break;
             }
         });
@@ -155,6 +179,8 @@ public partial class NoiseTrafficLightWindow : Window
 
     private void OnRedWarningTriggered()
     {
+        if (_pauseRemainingSeconds > 0) return;
+
         Dispatcher.Invoke(() =>
         {
             if (ChkSoundAlarm.IsChecked == true)
@@ -170,7 +196,7 @@ public partial class NoiseTrafficLightWindow : Window
 
     private void SliderThreshold_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
-        if (SliderYellow == null || SliderRed == null) return;
+        if (SliderYellow == null || SliderRed == null || TxtYellowVal == null || TxtRedVal == null || _noiseMeter == null) return;
 
         // Ensure Red >= Yellow + 5
         if (SliderRed.Value < SliderYellow.Value + 5)
@@ -270,4 +296,57 @@ public partial class NoiseTrafficLightWindow : Window
             BtnFullscreen.Content = "⛶ 전체화면";
         }
     }
+
+    #region Smart Quick Pause
+
+    private void BtnQuickPause_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && int.TryParse(btn.Tag?.ToString(), out int seconds))
+        {
+            _pauseRemainingSeconds = seconds;
+            _quickPauseTimer.Start();
+            UpdatePauseUI();
+        }
+    }
+
+    private void BtnResumeNow_Click(object sender, RoutedEventArgs e)
+    {
+        _pauseRemainingSeconds = 0;
+        _quickPauseTimer.Stop();
+        UpdatePauseUI();
+    }
+
+    private void QuickPauseTimer_Tick(object? sender, EventArgs e)
+    {
+        if (_pauseRemainingSeconds > 0)
+        {
+            _pauseRemainingSeconds--;
+            UpdatePauseUI();
+        }
+        else
+        {
+            _quickPauseTimer.Stop();
+            UpdatePauseUI();
+        }
+    }
+
+    private void UpdatePauseUI()
+    {
+        if (_pauseRemainingSeconds > 0)
+        {
+            int min = _pauseRemainingSeconds / 60;
+            int sec = _pauseRemainingSeconds % 60;
+            TxtPauseCountdown.Text = $"⏸️ 멈춤 중 ({min:D2}:{sec:D2})";
+            BtnResumeNow.Visibility = Visibility.Visible;
+            TxtStatusMessage.Text = $"⏸️ 발표·활동 중 ({min:D2}:{sec:D2} 후 자동 재개)";
+            TxtStatusMessage.Foreground = (Brush)new BrushConverter().ConvertFromString("#38BDF8")!;
+        }
+        else
+        {
+            TxtPauseCountdown.Text = "";
+            BtnResumeNow.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    #endregion
 }

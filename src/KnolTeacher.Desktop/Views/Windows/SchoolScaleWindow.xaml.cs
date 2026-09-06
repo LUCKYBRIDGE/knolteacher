@@ -110,7 +110,7 @@ public partial class SchoolScaleWindow : Window
 
         _currentSchool = item;
         PanelEmptyState.Visibility = Visibility.Collapsed;
-        ScrollDetailContent.Visibility = Visibility.Collapsed;
+        GridDetailView.Visibility = Visibility.Collapsed;
         PanelLoading.Visibility = Visibility.Visible;
 
         var detail = await _scaleService.GetSchoolScaleDetailAsync(item);
@@ -124,7 +124,9 @@ public partial class SchoolScaleWindow : Window
 
         _currentDetail = detail;
         PopulateDetail(detail);
-        ScrollDetailContent.Visibility = Visibility.Visible;
+        GridDetailView.Visibility = Visibility.Visible;
+        SwitchToStatsView();
+        _ = UpdateMapForCurrentSchoolAsync();
     }
 
     private void PopulateDetail(SchoolScaleDetail detail)
@@ -315,5 +317,242 @@ public partial class SchoolScaleWindow : Window
             UpdateApiKeyBadge();
             MessageBox.Show("나이스 API 인증키가 안전하게 저장되었습니다!", "API 키 설정 완료", MessageBoxButton.OK, MessageBoxImage.Information);
         }
+    }
+
+    private void BtnTabStats_Click(object sender, RoutedEventArgs e)
+    {
+        SwitchToStatsView();
+    }
+
+    private void BtnTabMap_Click(object sender, RoutedEventArgs e)
+    {
+        SwitchToMapView();
+        _ = UpdateMapForCurrentSchoolAsync();
+    }
+
+    private void SwitchToStatsView()
+    {
+        if (ScrollDetailContent != null) ScrollDetailContent.Visibility = Visibility.Visible;
+        if (PanelMapView != null) PanelMapView.Visibility = Visibility.Collapsed;
+        if (BtnTabStats != null)
+        {
+            BtnTabStats.Background = (Brush)FindResource("BeigeAccent");
+            BtnTabStats.Foreground = Brushes.White;
+        }
+        if (BtnTabMap != null)
+        {
+            BtnTabMap.Background = (Brush)FindResource("BeigeCardInner");
+            BtnTabMap.Foreground = (Brush)FindResource("BeigeTextMain");
+        }
+    }
+
+    private void SwitchToMapView()
+    {
+        if (ScrollDetailContent != null) ScrollDetailContent.Visibility = Visibility.Collapsed;
+        if (PanelMapView != null) PanelMapView.Visibility = Visibility.Visible;
+        if (BtnTabMap != null)
+        {
+            BtnTabMap.Background = (Brush)FindResource("BeigeAccent");
+            BtnTabMap.Foreground = Brushes.White;
+        }
+        if (BtnTabStats != null)
+        {
+            BtnTabStats.Background = (Brush)FindResource("BeigeCardInner");
+            BtnTabStats.Foreground = (Brush)FindResource("BeigeTextMain");
+        }
+    }
+
+    private void BtnOpenKakaoMap_Click(object sender, RoutedEventArgs e)
+    {
+        if (_currentSchool == null) return;
+        string query = Uri.EscapeDataString($"{_currentSchool.SchoolName} {_currentSchool.RoadAddress}".Trim());
+        try
+        {
+            Process.Start(new ProcessStartInfo { FileName = $"https://map.kakao.com/link/search/{query}", UseShellExecute = true });
+        }
+        catch { }
+    }
+
+    private void BtnOpenNaverMap_Click(object sender, RoutedEventArgs e)
+    {
+        if (_currentSchool == null) return;
+        string query = Uri.EscapeDataString($"{_currentSchool.SchoolName}".Trim());
+        try
+        {
+            Process.Start(new ProcessStartInfo { FileName = $"https://map.naver.com/v5/search/{query}", UseShellExecute = true });
+        }
+        catch { }
+    }
+
+    private async Task UpdateMapForCurrentSchoolAsync()
+    {
+        if (_currentSchool == null || MapWebView == null) return;
+
+        try
+        {
+            await MapWebView.EnsureCoreWebView2Async();
+        }
+        catch { return; }
+
+        double lat = 37.5665;
+        double lon = 126.9780;
+
+        // Fallback coordinates by Education Office Code
+        lat = _currentSchool.OfficeCode switch
+        {
+            "B10" => 37.5665, // 서울
+            "C10" => 35.1796, // 부산
+            "D10" => 35.8714, // 대구
+            "E10" => 37.4563, // 인천
+            "F10" => 35.1595, // 광주
+            "G10" => 36.3504, // 대전
+            "H10" => 35.5384, // 울산
+            "I10" => 36.4800, // 세종
+            "J10" => 37.2636, // 경기
+            "K10" => 37.8854, // 강원
+            "M10" => 36.6424, // 충북
+            "N10" => 36.6588, // 충남
+            "P10" => 35.8242, // 전북
+            "Q10" => 34.8161, // 전남
+            "R10" => 36.5760, // 경북
+            "S10" => 35.2383, // 경남
+            "T10" => 33.4996, // 제주
+            _ => 37.5665
+        };
+
+        lon = _currentSchool.OfficeCode switch
+        {
+            "B10" => 126.9780,
+            "C10" => 129.0756,
+            "D10" => 128.6014,
+            "E10" => 126.7052,
+            "F10" => 126.8526,
+            "G10" => 127.3845,
+            "H10" => 129.3114,
+            "I10" => 127.2890,
+            "J10" => 127.0286,
+            "K10" => 127.7298,
+            "M10" => 127.4890,
+            "N10" => 126.6728,
+            "P10" => 127.1480,
+            "Q10" => 126.4629,
+            "R10" => 128.5056,
+            "S10" => 128.6922,
+            "T10" => 126.5312,
+            _ => 126.9780
+        };
+
+        // Try geocoding with OpenStreetMap Nominatim
+        if (!string.IsNullOrWhiteSpace(_currentSchool.RoadAddress))
+        {
+            try
+            {
+                using var client = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(2) };
+                client.DefaultRequestHeaders.UserAgent.ParseAdd("KnolTeacher/3.0");
+                string query = Uri.EscapeDataString(_currentSchool.RoadAddress);
+                string geoJson = await client.GetStringAsync($"https://nominatim.openstreetmap.org/search?q={query}&format=json&limit=1");
+                using var doc = System.Text.Json.JsonDocument.Parse(geoJson);
+                if (doc.RootElement.GetArrayLength() > 0)
+                {
+                    var first = doc.RootElement[0];
+                    if (first.TryGetProperty("lat", out var latProp) && double.TryParse(latProp.GetString(), out double parsedLat))
+                    {
+                        lat = parsedLat;
+                    }
+                    if (first.TryGetProperty("lon", out var lonProp) && double.TryParse(lonProp.GetString(), out double parsedLon))
+                    {
+                        lon = parsedLon;
+                    }
+                }
+            }
+            catch { }
+        }
+
+        string schoolName = System.Web.HttpUtility.HtmlEncode(_currentSchool.SchoolName);
+        string address = System.Web.HttpUtility.HtmlEncode(_currentSchool.RoadAddress);
+        string tel = System.Web.HttpUtility.HtmlEncode(_currentSchool.TelNo);
+        string scaleCategory = _currentDetail != null ? System.Web.HttpUtility.HtmlEncode(_currentDetail.ScaleCategory) : "";
+        string totalClasses = _currentDetail != null ? _currentDetail.TotalClassCount.ToString() : "";
+        string students = _currentDetail != null ? System.Web.HttpUtility.HtmlEncode(_currentDetail.EstimatedStudentsText) : "";
+
+        string html = $@"<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <link rel='stylesheet' href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css' />
+    <script src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'></script>
+    <style>
+        html, body, #map {{ height: 100%; margin: 0; padding: 0; font-family: 'Malgun Gothic', sans-serif; }}
+        .custom-pin {{
+            background-color: #0284C7;
+            color: white;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+            border: 2px solid white;
+        }}
+        .popup-box {{
+            padding: 4px;
+            font-size: 12px;
+            line-height: 1.6;
+        }}
+        .popup-title {{
+            font-size: 15px;
+            font-weight: bold;
+            color: #0F172A;
+            margin-bottom: 4px;
+        }}
+        .badge {{
+            display: inline-block;
+            background: #E0F2FE;
+            color: #0369A1;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 11px;
+            margin-right: 4px;
+        }}
+    </style>
+</head>
+<body>
+    <div id='map'></div>
+    <script>
+        var map = L.map('map').setView([{lat}, {lon}], 16);
+        L.tileLayer('https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+        }}).addTo(map);
+
+        var pin = L.divIcon({{
+            className: 'custom-pin',
+            html: '🏫',
+            iconSize: [36, 36],
+            iconAnchor: [18, 18]
+        }});
+
+        var marker = L.marker([{lat}, {lon}], {{ icon: pin }}).addTo(map);
+        marker.bindPopup(`
+            <div class='popup-box'>
+                <div class='popup-title'>{schoolName}</div>
+                <div style='margin-bottom:6px;'>
+                    <span class='badge'>{scaleCategory}</span>
+                    <span class='badge'>총 {totalClasses}학급</span>
+                </div>
+                <div><b>예상 학생수:</b> {students}</div>
+                <div><b>주소:</b> {address}</div>
+                <div><b>전화:</b> {tel}</div>
+            </div>
+        `).openPopup();
+    </script>
+</body>
+</html>";
+
+        MapWebView.NavigateToString(html);
     }
 }

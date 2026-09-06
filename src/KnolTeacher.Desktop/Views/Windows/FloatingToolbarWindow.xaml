@@ -99,6 +99,7 @@
                 <Image Source="/assets/app_icon.png" Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,10,0"/>
 
                 <!-- Quick Tool Buttons -->
+                <!-- Quick Tool Buttons -->
                 <Button x:Name="BtnBoard" Style="{StaticResource DockAccentButtonStyle}" Click="BtnBoard_Click" ToolTip="놀보드 열기 (F2)">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="📺 " FontSize="12"/>
@@ -120,6 +121,13 @@
                     </StackPanel>
                 </Button>
 
+                <Button x:Name="BtnPicker" Style="{StaticResource DockButtonStyle}" Click="BtnPicker_Click" ToolTip="동물 핀볼 발표자 추첨기 (Alt+8)">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="🎰 " FontSize="12"/>
+                        <TextBlock Text="핀볼"/>
+                    </StackPanel>
+                </Button>
+
                 <Button x:Name="BtnVisualizer" Style="{StaticResource DockButtonStyle}" Click="BtnVisualizer_Click" ToolTip="스마트 실물화상기">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="📷 " FontSize="12"/>
@@ -127,17 +135,38 @@
                     </StackPanel>
                 </Button>
 
-                <Button x:Name="BtnPicker" Style="{StaticResource DockButtonStyle}" Click="BtnPicker_Click" ToolTip="발표자 추첨기 (Alt+8)">
+                <Button x:Name="BtnNoise" Style="{StaticResource DockButtonStyle}" Click="BtnNoise_Click" ToolTip="교실 소음 신호등 (Alt+N)">
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="🎲 " FontSize="12"/>
-                        <TextBlock Text="추첨"/>
+                        <TextBlock Text="🚦 " FontSize="12"/>
+                        <TextBlock Text="소음"/>
                     </StackPanel>
                 </Button>
 
-                <Button x:Name="BtnQr" Style="{StaticResource DockButtonStyle}" Click="BtnQr_Click" ToolTip="QR코드 생성기">
+                <Button x:Name="BtnSoundboard" Style="{StaticResource DockButtonStyle}" Click="BtnSoundboard_Click" ToolTip="원터치 교실 효과음 사운드보드 (Alt+B)">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="🔔 " FontSize="12"/>
+                        <TextBlock Text="효과음"/>
+                    </StackPanel>
+                </Button>
+
+                <Button x:Name="BtnSignature" Style="{StaticResource DockButtonStyle}" Click="BtnSignature_Click" ToolTip="전자서명 &amp; 도장 생성기 (Alt+S)">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="🔏 " FontSize="12"/>
+                        <TextBlock Text="서명"/>
+                    </StackPanel>
+                </Button>
+
+                <Button x:Name="BtnSeat" Style="{StaticResource DockButtonStyle}" Click="BtnSeat_Click" ToolTip="스마트 자리 바꾸기 &amp; 동물 아바타">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="🪑 " FontSize="12"/>
+                        <TextBlock Text="자리"/>
+                    </StackPanel>
+                </Button>
+
+                <Button x:Name="BtnQr" Style="{StaticResource DockButtonStyle}" Click="BtnQr_Click" ToolTip="QR코드 생성기 (Alt+Q)">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="📱 " FontSize="12"/>
-                        <TextBlock Text="QR코드"/>
+                        <TextBlock Text="QR"/>
                     </StackPanel>
                 </Button>
 

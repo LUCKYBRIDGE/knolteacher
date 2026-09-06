@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text.Json.Serialization;
+using System.Windows.Media.Imaging;
 
 namespace KnolTeacher.Desktop.Models;
 
@@ -9,11 +11,15 @@ public class AnimalAvatarInfo
 {
     public string Id { get; set; } = string.Empty;
     public string NameKo { get; set; } = string.Empty;
-    public string ImageUri => $"/assets/avatars/{Id}.png";
+    public string ImageUri => $"pack://application:,,,/assets/avatars/{Id}.png";
+    public BitmapImage? AvatarBitmap => AnimalAvatarCatalog.GetAvatarBitmap(Id);
 }
 
 public static class AnimalAvatarCatalog
 {
+    private static readonly Dictionary<string, BitmapImage> _avatarCache = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly object _cacheLock = new();
+
     public static readonly List<AnimalAvatarInfo> Avatars = new()
     {
         new() { Id = "avatar_01", NameKo = "곰" },
@@ -54,6 +60,84 @@ public static class AnimalAvatarCatalog
     {
         return Avatars.FirstOrDefault(a => a.Id == id)?.NameKo ?? "동물";
     }
+
+    /// <summary>
+    /// Thread-safe cached high-performance loader for 32 animal avatar bitmaps.
+    /// Supports WPF Pack URI with fallback to local BaseDirectory/assets/avatars.
+    /// </summary>
+    public static BitmapImage? GetAvatarBitmap(string? avatarId)
+    {
+        if (string.IsNullOrWhiteSpace(avatarId)) avatarId = "avatar_01";
+        if (!avatarId.StartsWith("avatar_", StringComparison.OrdinalIgnoreCase))
+        {
+            avatarId = "avatar_01";
+        }
+
+        lock (_cacheLock)
+        {
+            if (_avatarCache.TryGetValue(avatarId, out var cached))
+            {
+                return cached;
+            }
+
+            // 1. Try WPF Pack URI
+            try
+            {
+                var packUri = new Uri($"pack://application:,,,/assets/avatars/{avatarId}.png", UriKind.Absolute);
+                var bmp = new BitmapImage();
+                bmp.BeginInit();
+                bmp.UriSource = packUri;
+                bmp.CacheOption = BitmapCacheOption.OnLoad;
+                bmp.EndInit();
+                bmp.Freeze();
+                _avatarCache[avatarId] = bmp;
+                return bmp;
+            }
+            catch
+            {
+                // Pack URI failed, try next
+            }
+
+            // 2. Try Local File System
+            try
+            {
+                string localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assets", "avatars", $"{avatarId}.png");
+                if (File.Exists(localPath))
+                {
+                    var bmp = new BitmapImage();
+                    bmp.BeginInit();
+                    bmp.UriSource = new Uri(localPath, UriKind.Absolute);
+                    bmp.CacheOption = BitmapCacheOption.OnLoad;
+                    bmp.EndInit();
+                    bmp.Freeze();
+                    _avatarCache[avatarId] = bmp;
+                    return bmp;
+                }
+            }
+            catch
+            {
+                // Local file failed
+            }
+
+            // 3. Try Component Pack URI
+            try
+            {
+                var packUri = new Uri($"pack://application:,,,/KnolTeacher.Desktop;component/assets/avatars/{avatarId}.png", UriKind.Absolute);
+                var bmp = new BitmapImage();
+                bmp.BeginInit();
+                bmp.UriSource = packUri;
+                bmp.CacheOption = BitmapCacheOption.OnLoad;
+                bmp.EndInit();
+                bmp.Freeze();
+                _avatarCache[avatarId] = bmp;
+                return bmp;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+    }
 }
 
 public class StudentItem
@@ -82,7 +166,10 @@ public class StudentItem
     }
 
     [JsonIgnore]
-    public string AvatarUri => $"/assets/avatars/{EffectiveAvatarId}.png";
+    public string AvatarUri => $"pack://application:,,,/assets/avatars/{EffectiveAvatarId}.png";
+
+    [JsonIgnore]
+    public BitmapImage? AvatarBitmap => AnimalAvatarCatalog.GetAvatarBitmap(EffectiveAvatarId);
 
     [JsonIgnore]
     public string AvatarName => AnimalAvatarCatalog.GetAnimalName(EffectiveAvatarId);

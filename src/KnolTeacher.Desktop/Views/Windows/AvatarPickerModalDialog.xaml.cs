@@ -19,11 +19,7 @@ public partial class AvatarPickerModalDialog : Window
             TxtHeaderTitle.Text = $"[{student.Number}번 {student.Name}] 동물 아바타 선택";
             TxtStudentDesc.Text = "아래 32종의 동물 중 마음에 드는 아바타를 클릭하면 즉시 적용됩니다.";
             SelectedAvatarId = student.EffectiveAvatarId;
-            try
-            {
-                ImgCurrentAvatar.Source = new BitmapImage(new Uri(student.AvatarUri, UriKind.RelativeOrAbsolute));
-            }
-            catch { }
+            ImgCurrentAvatar.Source = AnimalAvatarCatalog.GetAvatarBitmap(student.EffectiveAvatarId);
         }
         else
         {

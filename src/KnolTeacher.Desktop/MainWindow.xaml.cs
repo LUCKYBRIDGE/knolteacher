@@ -45,12 +45,24 @@ public partial class MainWindow : FluentWindow
     private readonly WorkdayCalculatorWindow _workdayCalculatorWindow;
     private readonly SmartSeatShuffleWindow _smartSeatShuffleWindow;
     private readonly ClassroomSoundboardWindow _soundboardWindow;
+    private readonly IAcademicCalendarService _academicCalendarService;
+    private readonly ITrayService _trayService;
+    private readonly DigitalSignatureWindow _signatureWindow;
+    private readonly IEarlyLeaveCalculatorService _earlyLeaveCalculatorService;
+    private readonly IUpdateService _updateService;
     private readonly DispatcherTimer _statusTimer;
+    private readonly DispatcherTimer _clockTimer;
     private readonly ObservableCollection<NeisStudentComment> _neisComments = new();
     private int _currentNeisIndex = 0;
     private bool _isSplitScreen = false;
     private double _prevLeft, _prevTop, _prevWidth, _prevHeight;
     private WindowState _prevWindowState;
+
+    private int _calYear = DateTime.Today.Year;
+    private int _calMonth = DateTime.Today.Month;
+    private DateTime _selectedCalDate = DateTime.Today;
+    private List<AcademicScheduleItem> _monthScheduleEvents = new();
+    private DateTime _selectedMealDate = DateTime.Today;
 
     public MainWindow(
         MainViewModel viewModel,
@@ -66,6 +78,11 @@ public partial class MainWindow : FluentWindow
         WorkdayCalculatorWindow workdayCalculatorWindow,
         SmartSeatShuffleWindow smartSeatShuffleWindow,
         ClassroomSoundboardWindow soundboardWindow,
+        IAcademicCalendarService academicCalendarService,
+        ITrayService trayService,
+        DigitalSignatureWindow signatureWindow,
+        IEarlyLeaveCalculatorService earlyLeaveCalculatorService,
+        IUpdateService updateService,
         IDisplayManager displayManager,
         INeisService neisService,
         IDesktopCleanerService cleanerService,
@@ -92,6 +109,11 @@ public partial class MainWindow : FluentWindow
         _workdayCalculatorWindow = workdayCalculatorWindow;
         _smartSeatShuffleWindow = smartSeatShuffleWindow;
         _soundboardWindow = soundboardWindow;
+        _academicCalendarService = academicCalendarService;
+        _trayService = trayService;
+        _signatureWindow = signatureWindow;
+        _earlyLeaveCalculatorService = earlyLeaveCalculatorService;
+        _updateService = updateService;
         _displayManager = displayManager;
         _neisService = neisService;
         _cleanerService = cleanerService;
@@ -110,6 +132,9 @@ public partial class MainWindow : FluentWindow
         _statusTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(10) };
         _statusTimer.Tick += (s, e) => UpdatePeriodStatus();
 
+        _clockTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+        _clockTimer.Tick += (s, e) => UpdateBigClock();
+
         Loaded += MainWindow_Loaded;
         Closing += (s, e) => App.BootLog($"MainWindow Closing: Cancel={e.Cancel}");
         Closed += (s, e) => App.BootLog("MainWindow Closed");
@@ -119,23 +144,38 @@ public partial class MainWindow : FluentWindow
     {
         try
         {
-            // 1. Bind Schedules
+            // 0. Initialize System Tray & Background Minimization
+            _trayService.Initialize(
+                this,
+                openMapAction: () => BtnLaunchSchoolScale_Click(this, new RoutedEventArgs()),
+                openSignatureAction: () => BtnLaunchSignature_Click(this, new RoutedEventArgs())
+            );
+
+            // 1. Start Big Modern Clock
+            _clockTimer.Start();
+            UpdateBigClock();
+
+            // 2. Bind Schedules
             if (_configService.RecurringSchedules != null)
             {
                 ListSchedules.ItemsSource = _configService.RecurringSchedules;
             }
 
-            // 2. Load Timetable & Status
+            // 3. Load Timetable & Status
             RefreshTimetable();
             _timetableService.OnTimetableChanged += () => Dispatcher.Invoke(RefreshTimetable);
             _statusTimer.Start();
 
-            // 3. Load NEIS Lunch Menu & Weather
-            await LoadNeisDataAsync();
+            // 4. Load Academic Calendar & Upcoming D-Days (NEIS)
+            _ = LoadCalendarAsync();
+            _ = LoadUpcomingDDaysAsync();
+
+            // 5. Load NEIS Lunch Menu & Weather
+            _ = LoadNeisDataAsync(_selectedMealDate);
             InitWeatherRegions();
             await LoadWeatherAsync();
 
-            // 4. Load Bookmarks & Education Offices
+            // 6. Load Bookmarks & Education Offices
             CbEducationOffice.ItemsSource = _siteBookmarkService.EducationOffices;
             CbEducationOffice.SelectedValue = _siteBookmarkService.SelectedRegionCode;
             ListBookmarks.ItemsSource = _siteBookmarkService.Bookmarks;
@@ -145,7 +185,7 @@ public partial class MainWindow : FluentWindow
                 ListBookmarks.ItemsSource = _siteBookmarkService.Bookmarks;
             });
 
-            // 5. Bind NEIS Student Comments DataGrid
+            // 7. Bind NEIS Student Comments DataGrid
             GridNeisComments.ItemsSource = _neisComments;
             UpdateCurrentTargetDisplay();
         }
@@ -153,6 +193,16 @@ public partial class MainWindow : FluentWindow
         {
             System.Diagnostics.Debug.WriteLine($"MainWindow_Loaded note: {ex.Message}");
         }
+    }
+
+    private void UpdateBigClock()
+    {
+        try
+        {
+            TxtBigClockTime.Text = DateTime.Now.ToString("HH:mm:ss");
+            TxtBigClockDate.Text = DateTime.Now.ToString("yyyy년 M월 d일 (ddd)");
+        }
+        catch { }
     }
 
     private void RefreshTimetable()
@@ -173,27 +223,248 @@ public partial class MainWindow : FluentWindow
         {
             TxtCurrentPeriodStatus.Text = $"🟢 현재: {cur.Name} ({cur.Subject}) - 잔여 {rem}분";
             TxtCurrentPeriodStatus.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#059669"));
+            TxtMiniClockPeriod.Text = cur.Name;
         }
         else
         {
             TxtCurrentPeriodStatus.Text = "☕ 현재: 쉬는 시간 / 수업 준비 중";
             TxtCurrentPeriodStatus.Foreground = (SolidColorBrush)FindResource("BeigeAccent");
+            TxtMiniClockPeriod.Text = "쉬는 시간";
         }
     }
 
-    private async Task LoadNeisDataAsync()
+    #region Classroom Banner & Sound Handlers
+
+    private void BtnEditBanner_Click(object sender, RoutedEventArgs e)
+    {
+        var dlg = new PromptInputDialog("오늘의 학급 안내 / 목표 수정", "학생들에게 상단 배너로 띄워줄 안내 문구를 입력하세요:", TxtClassBanner.Text) { Owner = this };
+        if (dlg.ShowDialog() == true && !string.IsNullOrWhiteSpace(dlg.InputText))
+        {
+            TxtClassBanner.Text = dlg.InputText.Trim();
+            HudNotificationWindow.Instance.ShowToast("📢", "학급 안내 문구가 변경되었습니다.");
+        }
+    }
+
+    private void BtnBannerChime_Click(object sender, RoutedEventArgs e)
+    {
+        _soundService.PlayChime();
+        HudNotificationWindow.Instance.ShowToast("🔔", "집중 차임벨이 울렸습니다.");
+    }
+
+    #endregion
+
+    #region Academic Calendar & D-Days
+
+    private async Task LoadCalendarAsync(bool force = false)
     {
         try
         {
-            var meal = await _neisService.GetMealAsync();
+            TxtCalMonthYear.Text = $"{_calYear}년 {_calMonth}월";
+            _monthScheduleEvents = await _academicCalendarService.GetScheduleForMonthAsync(_calYear, _calMonth, force);
+            var cells = _academicCalendarService.GenerateMonthGrid(_calYear, _calMonth, _monthScheduleEvents, _selectedCalDate);
+            ListCalendarCells.ItemsSource = cells;
+            UpdateSelectedDayDetail(_selectedCalDate);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"LoadCalendarAsync error: {ex.Message}");
+        }
+    }
+
+    private async Task LoadUpcomingDDaysAsync()
+    {
+        try
+        {
+            var ddays = await _academicCalendarService.GetUpcomingDDayEventsAsync(6);
+            ListUpcomingDDays.ItemsSource = ddays;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"LoadUpcomingDDaysAsync error: {ex.Message}");
+        }
+    }
+
+    private void UpdateSelectedDayDetail(DateTime date, List<AcademicScheduleItem>? dayEvents = null)
+    {
+        TxtCalSelectedDate.Text = date.ToString("M월 d일 (ddd)");
+        var evs = dayEvents ?? _monthScheduleEvents.Where(e => e.Date?.Date == date.Date).ToList();
+        if (evs.Count > 0)
+        {
+            string summary = string.Join(" · ", evs.Select(e => e.EventName));
+            TxtCalSelectedEvent.Text = summary;
+            TxtCalSelectedEvent.Foreground = evs.Any(e => e.IsHoliday)
+                ? new SolidColorBrush((Color)ColorConverter.ConvertFromString("#EF4444"))
+                : (SolidColorBrush)FindResource("BeigeTextMain");
+        }
+        else
+        {
+            TxtCalSelectedEvent.Text = "등록된 학사일정이 없습니다.";
+            TxtCalSelectedEvent.Foreground = (SolidColorBrush)FindResource("BeigeTextMuted");
+        }
+    }
+
+    private void BtnCalPrev_Click(object sender, RoutedEventArgs e)
+    {
+        if (_calMonth == 1) { _calYear--; _calMonth = 12; }
+        else { _calMonth--; }
+        _ = LoadCalendarAsync();
+    }
+
+    private void BtnCalNext_Click(object sender, RoutedEventArgs e)
+    {
+        if (_calMonth == 12) { _calYear++; _calMonth = 1; }
+        else { _calMonth++; }
+        _ = LoadCalendarAsync();
+    }
+
+    private void BtnCalToday_Click(object sender, RoutedEventArgs e)
+    {
+        _calYear = DateTime.Today.Year;
+        _calMonth = DateTime.Today.Month;
+        _selectedCalDate = DateTime.Today;
+        _ = LoadCalendarAsync();
+    }
+
+    private void BtnRefreshAcademicCalendar_Click(object sender, RoutedEventArgs e)
+    {
+        _ = LoadCalendarAsync(force: true);
+        _ = LoadUpcomingDDaysAsync();
+        HudNotificationWindow.Instance.ShowToast("🔄", "학사일정을 새로고침했습니다.");
+    }
+
+    private void CalDay_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is FrameworkElement elem && elem.Tag is CalendarDayCell cell)
+        {
+            _selectedCalDate = cell.Date;
+            var cells = _academicCalendarService.GenerateMonthGrid(_calYear, _calMonth, _monthScheduleEvents, _selectedCalDate);
+            ListCalendarCells.ItemsSource = cells;
+            UpdateSelectedDayDetail(cell.Date, cell.Events);
+        }
+    }
+
+    private void TxtClassNoticeMemo_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        // Keep notice memo in local state
+    }
+
+    private void BtnEarlyLeaveQuickCalc_Click(object sender, RoutedEventArgs e)
+    {
+        var result = _earlyLeaveCalculatorService.Calculate(_calYear, _calMonth, _monthScheduleEvents);
+
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine($"🏖️ [{_calYear}년 {_calMonth}월 교원 15일 복무·조퇴 간편 계산기]");
+        sb.AppendLine("───────────────────────────");
+        sb.AppendLine($"• 해당 월 총 일수: {result.TotalCalendarDays}일");
+        sb.AppendLine($"• 주말(토·일): {result.WeekendDays}일");
+        sb.AppendLine($"• 방학/공휴일/재량휴업일: {result.HolidayAndVacationDays}일");
+        sb.AppendLine($"• ⭐️ 실 근무 소정일수: {result.NetWorkDays}일 (기준: {result.RequiredWorkDays}일)");
+        sb.AppendLine("───────────────────────────");
+        if (result.IsEligibleForEarlyLeave)
+        {
+            sb.AppendLine($"✅ [조퇴/연가 여유]: 수당 전액 수령 가능");
+            sb.AppendLine($"   15일 기준보다 {result.MarginDays}일의 여유가 있습니다.");
+            sb.AppendLine($"   (최대 {result.MarginDays}일간 연가·조퇴·지각을 사용해도 15일 소정일수 충족)");
+        }
+        else
+        {
+            int deficit = Math.Abs(result.MarginDays);
+            sb.AppendLine($"⚠️ [주의]: 15일 기준 {deficit}일 부족");
+            sb.AppendLine($"   이 달은 방학·휴업 등으로 실 근무 가능일수({result.NetWorkDays}일)가 15일 미만입니다.");
+            sb.AppendLine($"   정액급식비 및 직급보조비 일할계산 여부를 확인하세요.");
+        }
+        sb.AppendLine("───────────────────────────");
+        sb.AppendLine("※ 자세한 일자별 계산 및 세부 설정은 빠른 도구의 '월 15일 복무 계산기'를 이용하세요.");
+
+        System.Windows.MessageBox.Show(sb.ToString(), $"{_calYear}년 {_calMonth}월 복무·조퇴 가능일수 분석", MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+
+    #endregion
+
+    #region Lunch Meal with Date Navigation
+
+    private async Task LoadNeisDataAsync(DateTime? date = null)
+    {
+        var targetDate = date ?? _selectedMealDate;
+        try
+        {
+            TxtMealDate.Text = targetDate.Date == DateTime.Today ? "오늘" : targetDate.ToString("M/d (ddd)");
+            TxtMealMenu.Text = "식단 불러오는 중...";
+            var meal = await _neisService.GetMealAsync(targetDate);
             if (meal != null)
             {
                 TxtMealMenu.Text = meal.MenuText;
                 TxtMealCalorie.Text = $"열량: {meal.Calorie}";
             }
+            else
+            {
+                TxtMealMenu.Text = "등록된 급식 정보가 없습니다.";
+                TxtMealCalorie.Text = "열량: 0 kcal";
+            }
         }
-        catch { }
+        catch
+        {
+            TxtMealMenu.Text = "식단 정보를 불러올 수 없습니다.";
+        }
     }
+
+    private void BtnMealPrev_Click(object sender, RoutedEventArgs e)
+    {
+        _selectedMealDate = _selectedMealDate.AddDays(-1);
+        _ = LoadNeisDataAsync(_selectedMealDate);
+    }
+
+    private void BtnMealNext_Click(object sender, RoutedEventArgs e)
+    {
+        _selectedMealDate = _selectedMealDate.AddDays(1);
+        _ = LoadNeisDataAsync(_selectedMealDate);
+    }
+
+    private void BtnMealToday_Click(object sender, RoutedEventArgs e)
+    {
+        _selectedMealDate = DateTime.Today;
+        _ = LoadNeisDataAsync(_selectedMealDate);
+    }
+
+    #endregion
+
+    #region Signature & Hotkey Guide Launchers
+
+    private void BtnLaunchSignature_Click(object sender, RoutedEventArgs e)
+    {
+        if (_signatureWindow.IsVisible)
+        {
+            _signatureWindow.Activate();
+        }
+        else
+        {
+            _signatureWindow.Show();
+            _signatureWindow.Activate();
+        }
+    }
+
+    private void BtnShowHotkeyGuide_Click(object sender, RoutedEventArgs e)
+    {
+        string guide =
+            "✨ [놀티쳐 백그라운드 상주 & 전역 단축키 가이드]\n\n" +
+            "놀티쳐 창 우측 상단의 닫기(X)를 누르면 앱이 종료되지 않고\n" +
+            "작업표시줄 우측 '시스템 트레이(숨김 아이콘)'에 안전하게 들어갑니다.\n\n" +
+            "어떤 프로그램(PPT, 한글, 브라우저, 나이스 등)을 사용 중이어도 언제든 즉시 실행:\n\n" +
+            "• F2: 놀보드 (전자 칠판 & 판서 화면 열기/숨기기)\n" +
+            "• Alt + 1: 메인 놀티쳐 창 보이기 / 숨기기\n" +
+            "• Alt + 2: 4K 화면 전체 판서 (0ms 실시간 화면 프리즈)\n" +
+            "• Alt + 3: 교실 집중 타이머 (카운트다운 & 차임벨)\n" +
+            "• Alt + 8: 핀볼 발표자 추첨기\n" +
+            "• Alt + 9: 스마트 플로팅 독 리모컨 (화면 상단 슬림바)\n" +
+            "• Alt + S: 🔏 디지털 전자서명 & 공문서 직인 도장 생성기\n" +
+            "• Alt + N: 🚦 실시간 교실 소음 신호등\n" +
+            "• Alt + B: 🔔 원터치 교실 효과음 사운드보드\n" +
+            "• Alt + Q: 📱 빠른 웹페이지/텍스트 QR코드 생성기\n\n" +
+            "※ 작업표시줄 트레이 아이콘을 우클릭하면 수업도구 바로가기 메뉴 및 완전 종료가 가능합니다.";
+        System.Windows.MessageBox.Show(guide, "놀티쳐 전역 단축키 & 트레이 모드 안내", MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+
+    #endregion
 
     private void InitWeatherRegions()
     {
@@ -454,45 +725,59 @@ public partial class MainWindow : FluentWindow
 
     private async void BtnUpdate_Click(object sender, RoutedEventArgs e)
     {
-        string currentVersion = "v2.6.0";
         try
         {
-            using var client = new System.Net.Http.HttpClient();
-            client.DefaultRequestHeaders.UserAgent.ParseAdd("KnolTeacherApp");
-            client.Timeout = TimeSpan.FromSeconds(3);
-            var resp = await client.GetAsync("https://api.github.com/repos/LUCKYBRIDGE/knolteacher/releases/latest");
-            if (resp.IsSuccessStatusCode)
+            if (BtnCheckVersion != null)
             {
-                string json = await resp.Content.ReadAsStringAsync();
-                using var doc = System.Text.Json.JsonDocument.Parse(json);
-                string latestTag = doc.RootElement.GetProperty("tag_name").GetString() ?? currentVersion;
-                string htmlUrl = doc.RootElement.GetProperty("html_url").GetString() ?? "https://github.com/LUCKYBRIDGE/knolteacher/releases";
+                BtnCheckVersion.IsEnabled = false;
+                BtnCheckVersion.Content = "⏳ 버전 확인 중...";
+            }
 
-                if (latestTag != currentVersion)
+            var updateInfo = await _updateService.CheckForUpdatesAsync();
+
+            if (updateInfo.HasUpdate)
+            {
+                // Show in-app update dialog without external browser redirect!
+                var dialog = new AppUpdateDialog(_updateService, updateInfo)
                 {
-                    var res = System.Windows.MessageBox.Show(
-                        $"새로운 최신 버전({latestTag})이 출시되었습니다!\n(현재 버전: {currentVersion})\n\n지금 다운로드 페이지로 이동하시겠습니까?",
-                        "새로운 업데이트 발견",
-                        System.Windows.MessageBoxButton.YesNo,
-                        System.Windows.MessageBoxImage.Information);
-                    if (res == System.Windows.MessageBoxResult.Yes)
-                    {
-                        Process.Start(new ProcessStartInfo(htmlUrl) { UseShellExecute = true });
-                    }
-                    return;
-                }
+                    Owner = this
+                };
+                dialog.ShowDialog();
+            }
+            else
+            {
+                string msg =
+                    $"🎉 현재 최신 버전({_updateService.CurrentVersion})을 사용 중입니다!\n\n" +
+                    "• 학생 제출물 & 과제 체크리스트 위젯 (바둑판 1~30, 다중 탭)\n" +
+                    "• 시간대별 알림장 자동 안내 문구 & 세트 묶음 관리\n" +
+                    "• 48pt 대형 공지 확대경 & 한국어 TTS 음성 낭독\n" +
+                    "• 놀보드 위젯 위치 잠금 🔒 & 카드 투명도(20~100%) 조절\n" +
+                    "• 교실 소음 신호등 3단계 표정 & 스마트 퀵 일시정지\n" +
+                    "• 학사일정 연계 교원 월 15일 복무·조퇴 자동 계산기\n\n" +
+                    "모든 최신 기능과 시스템 안정성이 완벽하게 유지되고 있습니다.";
+
+                System.Windows.MessageBox.Show(
+                    msg,
+                    $"놀티쳐 최신 버전 확인 ({_updateService.CurrentVersion})",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
             }
         }
-        catch { }
-
-        var confirm = System.Windows.MessageBox.Show(
-            $"놀티쳐 {currentVersion} 최신 버전을 사용 중입니다.\n(최신 기능 및 안정성이 완벽히 유지되고 있습니다)\n\nGitHub 공식 릴리스 페이지를 확인하시겠습니까?",
-            "최신 버전 확인 (v2.6.0)",
-            System.Windows.MessageBoxButton.YesNo,
-            System.Windows.MessageBoxImage.Information);
-        if (confirm == System.Windows.MessageBoxResult.Yes)
+        catch (Exception ex)
         {
-            try { Process.Start(new ProcessStartInfo("https://github.com/LUCKYBRIDGE/knolteacher/releases") { UseShellExecute = true }); } catch { }
+            System.Windows.MessageBox.Show(
+                $"버전 확인 중 문제가 발생했습니다:\n{ex.Message}",
+                "버전 확인 안내",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+        finally
+        {
+            if (BtnCheckVersion != null)
+            {
+                BtnCheckVersion.IsEnabled = true;
+                BtnCheckVersion.Content = $"🚀 버전 확인 ({_updateService.CurrentVersion})";
+            }
         }
     }
 
@@ -586,6 +871,17 @@ public partial class MainWindow : FluentWindow
             _noiseTrafficLightWindow.Show();
             _noiseTrafficLightWindow.Activate();
         }
+    }
+
+    private void BtnLaunchChecklist_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_studentDisplayWindow.IsVisible)
+        {
+            _displayManager.MoveToStudentMonitor(_studentDisplayWindow, maximize: true);
+            _studentDisplayWindow.Show();
+        }
+        _studentDisplayWindow.Activate();
+        _studentDisplayWindow.ToggleWidget("checklist");
     }
 
     private void BtnLaunchWorkdayCalculator_Click(object sender, RoutedEventArgs e)

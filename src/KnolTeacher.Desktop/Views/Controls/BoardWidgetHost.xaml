@@ -60,7 +60,10 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
-                    <TextBlock Grid.Column="0" Text="⋮⋮" Foreground="#64748B" FontSize="13" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0">
+                        <TextBlock x:Name="TxtLockIcon" Text="🔒" FontSize="11" VerticalAlignment="Center" Margin="0,0,4,0" Visibility="Collapsed"/>
+                        <TextBlock x:Name="TxtDragGrip" Text="⋮⋮" Foreground="#64748B" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
+                    </StackPanel>
                     <TextBlock Grid.Column="1" x:Name="TxtTitle" Text="위젯 제목" Foreground="White" FontSize="12" FontWeight="Bold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
 
                     <!-- Font Zoom Controls & Close Button -->
@@ -107,7 +110,7 @@
 
             <!-- 3. Bottom Resize Grip -->
             <Grid Grid.Row="2">
-                <Thumb HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                <Thumb x:Name="ResizeThumb" HorizontalAlignment="Right" VerticalAlignment="Bottom"
                        Style="{StaticResource ResizeThumbStyle}"
                        DragDelta="ResizeThumb_DragDelta"/>
             </Grid>

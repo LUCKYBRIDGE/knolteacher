@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
         mc:Ignorable="d"
         Title="🏫 전국 학교 규모·통계 조회기 - 놀티쳐"
         Height="700" Width="920"
@@ -182,11 +183,42 @@
                         <TextBlock Text="학교 학급 규모 및 통계를 집계하고 있습니다..." FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BeigeAccent}" HorizontalAlignment="Center"/>
                     </StackPanel>
 
-                    <!-- Detail Content -->
-                    <ScrollViewer x:Name="ScrollDetailContent" VerticalScrollBarVisibility="Auto" Visibility="Collapsed">
-                        <StackPanel>
-                            <!-- Top: School Header + Scale Badge -->
-                            <Grid Margin="0,0,0,14">
+                    <!-- Detail Content Container -->
+                    <Grid x:Name="GridDetailView" Visibility="Collapsed">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- View Switcher Tabs: Stats vs Map -->
+                        <Grid Grid.Row="0" Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Orientation="Horizontal">
+                                <Button x:Name="BtnTabStats" Content="📊 학급 규모 &amp; 통계" Click="BtnTabStats_Click" Padding="12,6" Margin="0,0,6,0" Background="{DynamicResource BeigeAccent}" Foreground="White" FontWeight="Bold" FontSize="11" BorderThickness="0" Cursor="Hand">
+                                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                                </Button>
+                                <Button x:Name="BtnTabMap" Content="🗺️ 지도 위치 &amp; 주변 (OpenStreetMap)" Click="BtnTabMap_Click" Padding="12,6" Background="{DynamicResource BeigeCardInner}" Foreground="{DynamicResource BeigeTextMain}" FontWeight="Bold" FontSize="11" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" Cursor="Hand">
+                                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                                </Button>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button Content="📍 카카오맵 로드뷰" Click="BtnOpenKakaoMap_Click" Padding="8,5" Margin="0,0,6,0" Background="#FEE500" Foreground="#3C1E1E" FontWeight="Bold" FontSize="10" BorderThickness="0" Cursor="Hand" ToolTip="카카오맵에서 고화질 로드뷰 및 길찾기 보기"/>
+                                <Button Content="🌐 네이버 지도" Click="BtnOpenNaverMap_Click" Padding="8,5" Background="#03C75A" Foreground="White" FontWeight="Bold" FontSize="10" BorderThickness="0" Cursor="Hand" ToolTip="네이버 지도에서 보기"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Row 1: Detail Content (Stats) OR Map View -->
+                        <Grid Grid.Row="1">
+                            <!-- Stats View -->
+                            <ScrollViewer x:Name="ScrollDetailContent" VerticalScrollBarVisibility="Auto">
+                                <StackPanel>
+                                    <!-- Top: School Header + Scale Badge -->
+                                    <Grid Margin="0,0,0,14">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
@@ -331,7 +363,14 @@
                                 </Button>
                             </StackPanel>
                         </StackPanel>
-                    </ScrollViewer>
+                            </ScrollViewer>
+
+                            <!-- Map View -->
+                            <Border x:Name="PanelMapView" Background="White" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="8" Visibility="Collapsed" ClipToBounds="True">
+                                <wv2:WebView2 x:Name="MapWebView" />
+                            </Border>
+                        </Grid>
+                    </Grid>
                 </Grid>
             </Border>
         </Grid>

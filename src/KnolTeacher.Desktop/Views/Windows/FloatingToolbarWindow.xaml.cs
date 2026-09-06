@@ -13,6 +13,10 @@ public partial class FloatingToolbarWindow : Window
     private readonly StudentPickerWindow _pickerWindow;
     private readonly IQrCodeService _qrCodeService;
     private readonly IDesktopCleanerService _cleanerService;
+    private readonly DigitalSignatureWindow _signatureWindow;
+    private readonly NoiseTrafficLightWindow _noiseWindow;
+    private readonly ClassroomSoundboardWindow _soundboardWindow;
+    private readonly SmartSeatShuffleWindow _seatWindow;
     private readonly IDisplayManager? _displayManager;
 
     public FloatingToolbarWindow(
@@ -23,6 +27,10 @@ public partial class FloatingToolbarWindow : Window
         StudentPickerWindow pickerWindow,
         IQrCodeService qrCodeService,
         IDesktopCleanerService cleanerService,
+        DigitalSignatureWindow signatureWindow,
+        NoiseTrafficLightWindow noiseWindow,
+        ClassroomSoundboardWindow soundboardWindow,
+        SmartSeatShuffleWindow seatWindow,
         IDisplayManager? displayManager = null)
     {
         _studentBoard = studentBoard;
@@ -32,6 +40,10 @@ public partial class FloatingToolbarWindow : Window
         _pickerWindow = pickerWindow;
         _qrCodeService = qrCodeService;
         _cleanerService = cleanerService;
+        _signatureWindow = signatureWindow;
+        _noiseWindow = noiseWindow;
+        _soundboardWindow = soundboardWindow;
+        _seatWindow = seatWindow;
         _displayManager = displayManager;
 
         InitializeComponent();
@@ -42,7 +54,7 @@ public partial class FloatingToolbarWindow : Window
     {
         UpdateLayout();
         double screenWidth = SystemParameters.PrimaryScreenWidth;
-        double w = ActualWidth > 0 ? ActualWidth : 580;
+        double w = ActualWidth > 0 ? ActualWidth : 760;
         Left = Math.Max(20, (screenWidth - w) / 2);
         Top = 16;
     }
@@ -102,6 +114,46 @@ public partial class FloatingToolbarWindow : Window
             _displayManager?.MoveToStudentMonitor(_pickerWindow, maximize: false);
             _pickerWindow.Show();
             _pickerWindow.Activate();
+        }
+    }
+
+    private void BtnNoise_Click(object sender, RoutedEventArgs e)
+    {
+        if (_noiseWindow.IsVisible) _noiseWindow.Hide();
+        else
+        {
+            _noiseWindow.Show();
+            _noiseWindow.Activate();
+        }
+    }
+
+    private void BtnSoundboard_Click(object sender, RoutedEventArgs e)
+    {
+        if (_soundboardWindow.IsVisible) _soundboardWindow.Hide();
+        else
+        {
+            _soundboardWindow.Show();
+            _soundboardWindow.Activate();
+        }
+    }
+
+    private void BtnSignature_Click(object sender, RoutedEventArgs e)
+    {
+        if (_signatureWindow.IsVisible) _signatureWindow.Hide();
+        else
+        {
+            _signatureWindow.Show();
+            _signatureWindow.Activate();
+        }
+    }
+
+    private void BtnSeat_Click(object sender, RoutedEventArgs e)
+    {
+        if (_seatWindow.IsVisible) _seatWindow.Hide();
+        else
+        {
+            _seatWindow.Show();
+            _seatWindow.Activate();
         }
     }
 

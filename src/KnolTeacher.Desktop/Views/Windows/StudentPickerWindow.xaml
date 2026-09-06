@@ -109,11 +109,14 @@
 
                 <!-- Classic Mode Overlay (Hidden by default) -->
                 <Grid x:Name="GridClassicMode" Visibility="Collapsed" Background="#F0080C14">
-                    <Border Background="#1E293B" CornerRadius="20" BorderBrush="#38BDF8" BorderThickness="2" Width="520" Height="360" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="20">
+                    <Border Background="#1E293B" CornerRadius="20" BorderBrush="#38BDF8" BorderThickness="2" Width="520" Height="410" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="20">
                         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                            <TextBlock Text="🎡" FontSize="44" HorizontalAlignment="Center" Margin="0,0,0,10"/>
+                            <TextBlock Text="🎡" FontSize="38" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                            <Border x:Name="BorderClassicAvatar" CornerRadius="45" BorderBrush="#38BDF8" BorderThickness="3" Width="90" Height="90" HorizontalAlignment="Center" Margin="0,0,0,10" Background="#0F172A" Visibility="Collapsed">
+                                <Image x:Name="ImgClassicAvatar" Width="82" Height="82" RenderOptions.BitmapScalingMode="HighQuality"/>
+                            </Border>
                             <TextBlock x:Name="TxtClassicWinnerNumber" Text="준비 완료" FontSize="20" FontWeight="Bold" Foreground="#38BDF8" HorizontalAlignment="Center"/>
-                            <TextBlock x:Name="TxtClassicWinnerName" Text="발표자 뽑기를 눌러주세요" FontSize="36" FontWeight="Bold" Foreground="#FDE047" HorizontalAlignment="Center" Margin="0,10,0,16"/>
+                            <TextBlock x:Name="TxtClassicWinnerName" Text="발표자 뽑기를 눌러주세요" FontSize="30" FontWeight="Bold" Foreground="#FDE047" HorizontalAlignment="Center" Margin="0,8,0,14"/>
                             <TextBlock x:Name="TxtClassicRemaining" Text="남은 학생: 25명" FontSize="14" Foreground="#94A3B8" HorizontalAlignment="Center"/>
                         </StackPanel>
                     </Border>

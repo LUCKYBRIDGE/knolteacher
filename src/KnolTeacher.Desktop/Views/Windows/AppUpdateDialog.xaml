@@ -1,0 +1,111 @@
+<Window x:Class="KnolTeacher.Desktop.Views.Windows.AppUpdateDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="놀티쳐 자동 업데이트"
+        Height="480" Width="520"
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ResizeMode="NoResize"
+        ShowInTaskbar="True">
+    <Border Background="#1E293B" BorderBrush="#38BDF8" BorderThickness="2" CornerRadius="16">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="30" Color="#000000" Opacity="0.6" ShadowDepth="8"/>
+        </Border.Effect>
+        <Grid Margin="24">
+            <Grid.RowDefinitions>
+                <!-- 0: Header & Version Badges -->
+                <RowDefinition Height="Auto"/>
+                <!-- 1: Release Notes Card -->
+                <RowDefinition Height="*"/>
+                <!-- 2: Progress Section -->
+                <RowDefinition Height="Auto"/>
+                <!-- 3: Action Buttons -->
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- 0: Header -->
+            <Grid Grid.Row="0" Margin="0,0,0,16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="🚀" FontSize="24" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="새로운 놀티쳐 업데이트 발견" FontSize="18" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                        <Border Background="#334155" CornerRadius="6" Padding="8,3" Margin="0,0,8,0">
+                            <TextBlock x:Name="TxtCurrentVersion" Text="현재 버전: v3.0.0" FontSize="11" Foreground="#94A3B8" FontWeight="SemiBold"/>
+                        </Border>
+                        <TextBlock Text="➔" FontSize="12" Foreground="#38BDF8" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <Border Background="#0284C7" CornerRadius="6" Padding="8,3">
+                            <TextBlock x:Name="TxtLatestVersion" Text="최신 버전: v3.1.0" FontSize="11" Foreground="White" FontWeight="Bold"/>
+                        </Border>
+                    </StackPanel>
+                </StackPanel>
+
+                <Button Grid.Column="1" Click="BtnClose_Click" Width="28" Height="28" Background="Transparent" Foreground="#64748B" BorderThickness="0" Cursor="Hand" ToolTip="닫기">
+                    <TextBlock Text="✕" FontSize="14" FontWeight="Bold"/>
+                </Button>
+            </Grid>
+
+            <!-- 1: Release Notes Card -->
+            <Border Grid.Row="1" Background="#0F172A" BorderBrush="#334155" BorderThickness="1" CornerRadius="10" Padding="14,12" Margin="0,0,0,16">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock x:Name="TxtReleaseTitle" Grid.Row="0" Text="놀티쳐 업데이트 내역" FontSize="13" FontWeight="Bold" Foreground="#38BDF8" Margin="0,0,0,8" TextTrimming="CharacterEllipsis"/>
+
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                        <TextBlock x:Name="TxtReleaseNotes" Text="업데이트 내용을 불러오는 중입니다..." FontSize="12" LineHeight="18" Foreground="#CBD5E1" TextWrapping="Wrap"/>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+
+            <!-- 2: Progress Section -->
+            <StackPanel Grid.Row="2" Margin="0,0,0,16">
+                <Grid Margin="0,0,0,6">
+                    <TextBlock x:Name="TxtStatus" Text="사이트 이동 없이 원클릭으로 최신버전을 즉시 다운로드하여 설치합니다." FontSize="11" Foreground="#94A3B8" HorizontalAlignment="Left"/>
+                    <TextBlock x:Name="TxtProgressPercent" Text="0%" FontSize="11" FontWeight="Bold" Foreground="#38BDF8" HorizontalAlignment="Right" Visibility="Collapsed"/>
+                </Grid>
+
+                <ProgressBar x:Name="ProgressBarUpdate" Height="10" Minimum="0" Maximum="100" Value="0" Background="#0F172A" Foreground="#0284C7" BorderThickness="0" Visibility="Collapsed">
+                    <ProgressBar.Resources>
+                        <Style TargetType="Border">
+                            <Setter Property="CornerRadius" Value="5"/>
+                        </Style>
+                    </ProgressBar.Resources>
+                </ProgressBar>
+
+                <TextBlock x:Name="TxtDownloadDetails" Text="" FontSize="10" Foreground="#64748B" HorizontalAlignment="Right" Margin="0,4,0,0" Visibility="Collapsed"/>
+            </StackPanel>
+
+            <!-- 3: Action Buttons -->
+            <Grid Grid.Row="3">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Text="※ 사이트 이동 없이 안전하게 인앱 자동 설치됩니다." FontSize="10" Foreground="#64748B" VerticalAlignment="Center"/>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button x:Name="BtnLater" Content="나중에 하기" Click="BtnLater_Click" Height="38" Padding="14,0" Background="#334155" Foreground="#CBD5E1" FontSize="12" FontWeight="SemiBold" BorderThickness="0" Margin="0,0,8,0" Cursor="Hand">
+                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></Button.Resources>
+                    </Button>
+                    <Button x:Name="BtnStartUpdate" Content="🚀 지금 바로 자동 업데이트" Click="BtnStartUpdate_Click" Height="38" Padding="16,0" Background="#0284C7" Foreground="White" FontSize="12" FontWeight="Bold" BorderThickness="0" Cursor="Hand">
+                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></Button.Resources>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

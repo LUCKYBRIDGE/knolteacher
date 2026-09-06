@@ -15,6 +15,9 @@ public interface IConfigService
     List<HotkeyItem> Hotkeys { get; set; }
 
     PeriodAlarmSystemConfig PeriodAlarmConfig { get; set; }
+    ChecklistStore ChecklistStore { get; set; }
+    AutoNoticePreset AutoNoticePreset { get; set; }
+    BoardSetStore BoardSetStore { get; set; }
 
     void LoadAll();
     void SaveNeisConfig();
@@ -22,6 +25,9 @@ public interface IConfigService
     void SaveRecurringSchedules();
     void SaveHotkeys();
     void SavePeriodAlarmConfig();
+    void SaveChecklistStore();
+    void SaveAutoNoticePreset();
+    void SaveBoardSetStore();
 }
 
 public class ConfigService : IConfigService
@@ -39,6 +45,9 @@ public class ConfigService : IConfigService
     public List<RecurringScheduleItem> RecurringSchedules { get; set; } = new();
     public List<HotkeyItem> Hotkeys { get; set; } = new();
     public PeriodAlarmSystemConfig PeriodAlarmConfig { get; set; } = PeriodAlarmSystemConfig.CreateDefault();
+    public ChecklistStore ChecklistStore { get; set; } = new();
+    public AutoNoticePreset AutoNoticePreset { get; set; } = new();
+    public BoardSetStore BoardSetStore { get; set; } = new();
 
     public ConfigService()
     {
@@ -60,6 +69,9 @@ public class ConfigService : IConfigService
         LoadRecurringSchedules();
         LoadHotkeys();
         LoadPeriodAlarmConfig();
+        LoadChecklistStore();
+        LoadAutoNoticePreset();
+        LoadBoardSetStore();
     }
 
     private void LoadNeisConfig()
@@ -242,6 +254,102 @@ public class ConfigService : IConfigService
         {
             string path = Path.Combine(ConfigDir, "period_countdown_settings.json");
             string json = JsonSerializer.Serialize(PeriodAlarmConfig, _jsonOptions);
+            File.WriteAllText(path, json);
+        }
+        catch { }
+    }
+
+    private void LoadChecklistStore()
+    {
+        string path = Path.Combine(ConfigDir, "checklist_store.json");
+        if (File.Exists(path))
+        {
+            try
+            {
+                string json = File.ReadAllText(path);
+                var store = JsonSerializer.Deserialize<ChecklistStore>(json, _jsonOptions);
+                if (store != null)
+                {
+                    ChecklistStore = store;
+                    return;
+                }
+            }
+            catch { }
+        }
+        ChecklistStore = new ChecklistStore();
+        SaveChecklistStore();
+    }
+
+    public void SaveChecklistStore()
+    {
+        try
+        {
+            string path = Path.Combine(ConfigDir, "checklist_store.json");
+            string json = JsonSerializer.Serialize(ChecklistStore, _jsonOptions);
+            File.WriteAllText(path, json);
+        }
+        catch { }
+    }
+
+    private void LoadAutoNoticePreset()
+    {
+        string path = Path.Combine(ConfigDir, "auto_notice_preset.json");
+        if (File.Exists(path))
+        {
+            try
+            {
+                string json = File.ReadAllText(path);
+                var preset = JsonSerializer.Deserialize<AutoNoticePreset>(json, _jsonOptions);
+                if (preset != null)
+                {
+                    AutoNoticePreset = preset;
+                    return;
+                }
+            }
+            catch { }
+        }
+        AutoNoticePreset = new AutoNoticePreset();
+        SaveAutoNoticePreset();
+    }
+
+    public void SaveAutoNoticePreset()
+    {
+        try
+        {
+            string path = Path.Combine(ConfigDir, "auto_notice_preset.json");
+            string json = JsonSerializer.Serialize(AutoNoticePreset, _jsonOptions);
+            File.WriteAllText(path, json);
+        }
+        catch { }
+    }
+
+    private void LoadBoardSetStore()
+    {
+        string path = Path.Combine(ConfigDir, "board_set_store.json");
+        if (File.Exists(path))
+        {
+            try
+            {
+                string json = File.ReadAllText(path);
+                var store = JsonSerializer.Deserialize<BoardSetStore>(json, _jsonOptions);
+                if (store != null)
+                {
+                    BoardSetStore = store;
+                    return;
+                }
+            }
+            catch { }
+        }
+        BoardSetStore = new BoardSetStore();
+        SaveBoardSetStore();
+    }
+
+    public void SaveBoardSetStore()
+    {
+        try
+        {
+            string path = Path.Combine(ConfigDir, "board_set_store.json");
+            string json = JsonSerializer.Serialize(BoardSetStore, _jsonOptions);
             File.WriteAllText(path, json);
         }
         catch { }

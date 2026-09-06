@@ -1,0 +1,286 @@
+<Window x:Class="KnolTeacher.Desktop.Views.Windows.DigitalSignatureWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="🔏 전자서명 &amp; 도장·직인 생성기 - 놀티쳐"
+        Height="620" Width="800"
+        MinWidth="720" MinHeight="540"
+        WindowStartupLocation="CenterScreen"
+        Topmost="True"
+        Background="#F8FAFC">
+
+    <Window.Resources>
+        <!-- Checkerboard brush for transparent canvas preview -->
+        <DrawingBrush x:Key="CheckerboardBrush" Viewport="0,0,16,16" ViewportUnits="Absolute" TileMode="Tile">
+            <DrawingBrush.Drawing>
+                <DrawingGroup>
+                    <GeometryDrawing Brush="#FFFFFF">
+                        <GeometryDrawing.Geometry>
+                            <RectangleGeometry Rect="0,0,16,16" />
+                        </GeometryDrawing.Geometry>
+                    </GeometryDrawing>
+                    <GeometryDrawing Brush="#E2E8F0">
+                        <GeometryDrawing.Geometry>
+                            <GeometryGroup>
+                                <RectangleGeometry Rect="0,0,8,8" />
+                                <RectangleGeometry Rect="8,8,8,8" />
+                            </GeometryGroup>
+                        </GeometryDrawing.Geometry>
+                    </GeometryDrawing>
+                </DrawingGroup>
+            </DrawingBrush.Drawing>
+        </DrawingBrush>
+    </Window.Resources>
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <!-- 1. Header -->
+            <RowDefinition Height="Auto"/>
+            <!-- 2. Main Workspace (Controls + Preview) -->
+            <RowDefinition Height="*"/>
+            <!-- 3. Bottom Action Bar -->
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- 1. Header -->
+        <Grid Grid.Row="0" Margin="0,0,0,16">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="🔏" FontSize="22" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="전자서명 &amp; 도장·직인 생성기" FontSize="18" FontWeight="Bold" Foreground="#0F172A" VerticalAlignment="Center"/>
+                    <Border Background="#EFF6FF" BorderBrush="#BFDBFE" BorderThickness="1" CornerRadius="6" Padding="8,2" Margin="10,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="투명 배경 PNG 1초 클립보드 복사" FontSize="11" FontWeight="Bold" Foreground="#1D4ED8"/>
+                    </Border>
+                </StackPanel>
+                <TextBlock Text="가정통신문, 상장, 학생 확인서, 한글(HWP), 엑셀, 나이스에 날인할 정갈한 전통 도장과 자필 전자서명을 제작합니다." FontSize="12" Foreground="#64748B" Margin="0,3,0,0"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- 2. Main Workspace -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <!-- Left: Configuration Controls -->
+                <ColumnDefinition Width="340"/>
+                <!-- Right: Visual Preview & Canvas -->
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Left Panel: Mode Switch & Options -->
+            <Border Grid.Column="0" Margin="0,0,16,0" Background="White" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="12" Padding="16">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <!-- Mode Tabs -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Mode Content -->
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Tabs: Text Stamp vs Handwritten Signature -->
+                    <Grid Grid.Row="0" Margin="0,0,0,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Button x:Name="BtnModeStamp" Grid.Column="0" Content="🔴 텍스트 인장/도장" Click="BtnModeStamp_Click" Margin="0,0,4,0" Padding="0,10" Background="#0284C7" Foreground="White" FontWeight="Bold" FontSize="12" BorderThickness="0" Cursor="Hand">
+                            <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></Button.Resources>
+                        </Button>
+                        <Button x:Name="BtnModeSignature" Grid.Column="1" Content="✍️ 자필 서명 그리기" Click="BtnModeSignature_Click" Margin="4,0,0,0" Padding="0,10" Background="#F1F5F9" Foreground="#475569" FontWeight="Bold" FontSize="12" BorderThickness="0" Cursor="Hand">
+                            <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></Button.Resources>
+                        </Button>
+                    </Grid>
+
+                    <!-- Panel 1: Text Stamp Options -->
+                    <ScrollViewer x:Name="PanelStampOptions" Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <!-- Input Text -->
+                            <TextBlock Text="도장/직인 문구 입력" FontWeight="Bold" FontSize="13" Foreground="#1E293B" Margin="0,0,0,6"/>
+                            <TextBox x:Name="TbStampText" Text="홍길동인" Height="34" FontSize="14" FontWeight="Bold" Padding="8,4" VerticalContentAlignment="Center" Background="#F8FAFC" BorderBrush="#CBD5E1" TextChanged="StampOptionChanged"/>
+                            <TextBlock Text="* 2~4글자 권장 (예: 홍길동, 김선생인, ○○초등학교장인)" FontSize="10" Foreground="#94A3B8" Margin="2,4,0,14"/>
+
+                            <!-- Stamp Shape -->
+                            <TextBlock Text="인장 형태 (모양)" FontWeight="Bold" FontSize="13" Foreground="#1E293B" Margin="0,0,0,6"/>
+                            <UniformGrid Columns="3" Margin="0,0,0,14">
+                                <RadioButton x:Name="RbShapeCircle" Content="원형 (○)" IsChecked="True" Checked="StampOptionChanged" FontWeight="SemiBold" FontSize="12" Cursor="Hand"/>
+                                <RadioButton x:Name="RbShapeOval" Content="타원형 (0)" Checked="StampOptionChanged" FontWeight="SemiBold" FontSize="12" Cursor="Hand"/>
+                                <RadioButton x:Name="RbShapeSquare" Content="사각직인 (□)" Checked="StampOptionChanged" FontWeight="SemiBold" FontSize="12" Cursor="Hand"/>
+                            </UniformGrid>
+
+                            <!-- Stamp Font Style -->
+                            <TextBlock Text="서체 스타일" FontWeight="Bold" FontSize="13" Foreground="#1E293B" Margin="0,0,0,6"/>
+                            <ComboBox x:Name="ComboStampFont" SelectedIndex="0" Height="32" Margin="0,0,0,14" SelectionChanged="StampOptionChanged">
+                                <ComboBoxItem Content="궁서체 (전통 붓글씨 인장)" Tag="Gungsuh"/>
+                                <ComboBoxItem Content="바탕체 (정갈한 공공 관인)" Tag="Batang"/>
+                                <ComboBoxItem Content="돋움체 (단정한 현대 스타일)" Tag="Dotum"/>
+                            </ComboBox>
+
+                            <!-- Ink Color -->
+                            <TextBlock Text="인주 색상" FontWeight="Bold" FontSize="13" Foreground="#1E293B" Margin="0,0,0,6"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+                                <RadioButton x:Name="RbColorBrightRed" IsChecked="True" Checked="StampOptionChanged" Margin="0,0,12,0" Cursor="Hand">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Border Width="16" Height="16" CornerRadius="8" Background="#DC2626" Margin="0,0,6,0"/>
+                                        <TextBlock Text="선홍색" FontSize="12" FontWeight="SemiBold"/>
+                                    </StackPanel>
+                                </RadioButton>
+                                <RadioButton x:Name="RbColorDarkRed" Checked="StampOptionChanged" Margin="0,0,12,0" Cursor="Hand">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Border Width="16" Height="16" CornerRadius="8" Background="#991B1B" Margin="0,0,6,0"/>
+                                        <TextBlock Text="심홍색" FontSize="12" FontWeight="SemiBold"/>
+                                    </StackPanel>
+                                </RadioButton>
+                                <RadioButton x:Name="RbColorBlack" Checked="StampOptionChanged" Cursor="Hand">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Border Width="16" Height="16" CornerRadius="8" Background="#0F172A" Margin="0,0,6,0"/>
+                                        <TextBlock Text="검정먹" FontSize="12" FontWeight="SemiBold"/>
+                                    </StackPanel>
+                                </RadioButton>
+                            </StackPanel>
+
+                            <!-- Layout Orientation -->
+                            <TextBlock Text="글자 배열" FontWeight="Bold" FontSize="13" Foreground="#1E293B" Margin="0,0,0,6"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+                                <RadioButton x:Name="RbAlignVertical" Content="전통 세로 배열 (우→좌)" IsChecked="True" Checked="StampOptionChanged" Margin="0,0,12,0" FontSize="12" FontWeight="SemiBold" Cursor="Hand"/>
+                                <RadioButton x:Name="RbAlignHorizontal" Content="현대 가로 배열" Checked="StampOptionChanged" FontSize="12" FontWeight="SemiBold" Cursor="Hand"/>
+                            </StackPanel>
+
+                            <!-- Border Thickness -->
+                            <TextBlock Text="인장 테두리 두께" FontWeight="Bold" FontSize="13" Foreground="#1E293B" Margin="0,0,0,6"/>
+                            <Slider x:Name="SliderBorderThickness" Minimum="2" Maximum="8" Value="4" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="StampOptionChanged" Margin="0,0,0,4"/>
+                            <TextBlock Text="도장 테두리 굵기를 조절하여 관인 느낌을 조정합니다." FontSize="10" Foreground="#94A3B8"/>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <!-- Panel 2: Handwritten Signature Options -->
+                    <ScrollViewer x:Name="PanelSignatureOptions" Grid.Row="1" VerticalScrollBarVisibility="Auto" Visibility="Collapsed">
+                        <StackPanel>
+                            <!-- Pen Thickness -->
+                            <TextBlock Text="펜 굵기" FontWeight="Bold" FontSize="13" Foreground="#1E293B" Margin="0,0,0,6"/>
+                            <UniformGrid Columns="4" Margin="0,0,0,14">
+                                <RadioButton x:Name="RbPenThin" Content="1.5 pt" Checked="PenOptionChanged" FontSize="12" FontWeight="SemiBold" Cursor="Hand"/>
+                                <RadioButton x:Name="RbPenMedium" Content="2.5 pt" IsChecked="True" Checked="PenOptionChanged" FontSize="12" FontWeight="SemiBold" Cursor="Hand"/>
+                                <RadioButton x:Name="RbPenThick" Content="4.0 pt" Checked="PenOptionChanged" FontSize="12" FontWeight="SemiBold" Cursor="Hand"/>
+                                <RadioButton x:Name="RbPenBold" Content="6.0 pt" Checked="PenOptionChanged" FontSize="12" FontWeight="SemiBold" Cursor="Hand"/>
+                            </UniformGrid>
+
+                            <!-- Ink Color -->
+                            <TextBlock Text="서명 잉크 색상" FontWeight="Bold" FontSize="13" Foreground="#1E293B" Margin="0,0,0,6"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+                                <RadioButton x:Name="RbInkBlack" IsChecked="True" Checked="PenOptionChanged" Margin="0,0,12,0" Cursor="Hand">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Border Width="16" Height="16" CornerRadius="8" Background="#0F172A" Margin="0,0,6,0"/>
+                                        <TextBlock Text="만년필 흑색" FontSize="12" FontWeight="SemiBold"/>
+                                    </StackPanel>
+                                </RadioButton>
+                                <RadioButton x:Name="RbInkBlue" Checked="PenOptionChanged" Margin="0,0,12,0" Cursor="Hand">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Border Width="16" Height="16" CornerRadius="8" Background="#1D4ED8" Margin="0,0,6,0"/>
+                                        <TextBlock Text="딥 블루" FontSize="12" FontWeight="SemiBold"/>
+                                    </StackPanel>
+                                </RadioButton>
+                                <RadioButton x:Name="RbInkRed" Checked="PenOptionChanged" Cursor="Hand">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Border Width="16" Height="16" CornerRadius="8" Background="#DC2626" Margin="0,0,6,0"/>
+                                        <TextBlock Text="인주 적색" FontSize="12" FontWeight="SemiBold"/>
+                                    </StackPanel>
+                                </RadioButton>
+                            </StackPanel>
+
+                            <!-- Eraser / Clear Tools -->
+                            <TextBlock Text="캔버스 지우개 &amp; 편집" FontWeight="Bold" FontSize="13" Foreground="#1E293B" Margin="0,0,0,6"/>
+                            <Grid Margin="0,0,0,14">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Button x:Name="BtnToggleEraser" Grid.Column="0" Content="🧹 부분 지우개" Click="BtnToggleEraser_Click" Margin="0,0,4,0" Padding="0,8" Background="#F1F5F9" Foreground="#334155" FontWeight="Bold" FontSize="11" BorderThickness="0" Cursor="Hand">
+                                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                                </Button>
+                                <Button Content="🗑️ 전체 지우기" Click="BtnClearSignature_Click" Grid.Column="1" Margin="4,0,0,0" Padding="0,8" Background="#FEE2E2" Foreground="#B91C1C" FontWeight="Bold" FontSize="11" BorderThickness="0" Cursor="Hand">
+                                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                                </Button>
+                            </Grid>
+
+                            <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Padding="12">
+                                <TextBlock Text="💡 전자칠판이나 마우스로 우측 캔버스에 직접 서명하세요. 획의 압력과 곡선이 부드럽게 보정되어 자연스러운 서명이 완성됩니다." FontSize="11" Foreground="#64748B" TextWrapping="Wrap" LineHeight="16"/>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+
+            <!-- Right Panel: Visual Preview Area -->
+            <Border Grid.Column="1" Background="White" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="12" Padding="16">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <!-- Header with Background Toggle -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Interactive Canvas / Stamp Display -->
+                        <RowDefinition Height="*"/>
+                        <!-- Tip / Dimensions -->
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Preview Header -->
+                    <Grid Grid.Row="0" Margin="0,0,0,12">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="🖼️ 실시간 미리보기" FontWeight="Bold" FontSize="14" Foreground="#1E293B" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="TxtPreviewSubtitle" Text="(투명 배경 적용)" FontSize="11" Foreground="#64748B" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button x:Name="BtnToggleBgGrid" Content="🏁 투명 격자 배경" Click="BtnToggleBgGrid_Click" Padding="8,4" Background="#F1F5F9" Foreground="#475569" FontSize="11" FontWeight="SemiBold" BorderThickness="0" Cursor="Hand">
+                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Canvas Area -->
+                    <Border x:Name="PreviewContainer" Grid.Row="1" Background="{StaticResource CheckerboardBrush}" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="8" ClipToBounds="True">
+                        <Grid>
+                            <!-- Stamp View Area (Rendered via Border & TextBlocks) -->
+                            <Viewbox x:Name="ViewboxStamp" Stretch="Uniform" Margin="20" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <Border x:Name="StampBorder" Width="140" Height="140" BorderThickness="4" BorderBrush="#DC2626" Background="Transparent" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <Grid x:Name="GridStampContent" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                        <!-- Dynamic layout generated in code-behind -->
+                                    </Grid>
+                                </Border>
+                            </Viewbox>
+
+                            <!-- Signature InkCanvas Mode -->
+                            <InkCanvas x:Name="SignatureCanvas" Background="Transparent" Visibility="Collapsed" EditingMode="Ink"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Tip -->
+                    <TextBlock Grid.Row="2" Text="* 클립보드에 복사된 이미지는 투명 배경 PNG로 저장되어 한글(HWP) 및 워드 문서의 글자 위에 자연스럽게 겹쳐 날인됩니다." FontSize="11" Foreground="#94A3B8" Margin="0,8,0,0" HorizontalAlignment="Center"/>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- 3. Bottom Action Bar -->
+        <Grid Grid.Row="2" Margin="0,16,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="💡 복사 후 한글(HWP) 문서에서 " FontSize="12" Foreground="#64748B"/>
+                <Border Background="#F1F5F9" CornerRadius="4" Padding="4,1">
+                    <TextBlock Text="Ctrl + V" FontWeight="Bold" FontSize="11" Foreground="#0284C7"/>
+                </Border>
+                <TextBlock Text="를 누르면 바로 날인됩니다." FontSize="12" Foreground="#64748B"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <Button Content="💾 PNG 파일로 저장" Click="BtnSavePng_Click" Padding="14,10" Margin="0,0,8,0" Background="#F1F5F9" Foreground="#334155" FontWeight="Bold" FontSize="13" BorderThickness="0" Cursor="Hand">
+                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></Button.Resources>
+                </Button>
+                <Button Content="📋 투명 배경 클립보드 복사" Click="BtnCopyClipboard_Click" Padding="18,10" Background="#0284C7" Foreground="White" FontWeight="Bold" FontSize="13" BorderThickness="0" Cursor="Hand">
+                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></Button.Resources>
+                </Button>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>

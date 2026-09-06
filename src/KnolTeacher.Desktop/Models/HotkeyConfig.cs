@@ -41,5 +41,8 @@ public static class DefaultHotkeys
         new() { Id = 9, Action = "dock", Name = "스마트 플로팅 독", Description = "화면 상단 미니 리모컨 토글", Modifier = "Alt", Key = "9", Enabled = true },
         new() { Id = 10, Action = "board_f2", Name = "놀보드 (F2)", Description = "놀보드 1초 원클릭 실행", Modifier = "None", Key = "F2", Enabled = true },
         new() { Id = 11, Action = "qr", Name = "QR코드 생성기", Description = "학생 태블릿 스캔용 QR 생성기 (Alt+Q)", Modifier = "Alt", Key = "Q", Enabled = true },
+        new() { Id = 12, Action = "signature", Name = "전자서명 & 도장", Description = "전자서명 및 직인 생성기 (Alt+S)", Modifier = "Alt", Key = "S", Enabled = true },
+        new() { Id = 13, Action = "noise", Name = "교실 소음 신호등", Description = "실시간 교실 마이크 소음 신호등 (Alt+N)", Modifier = "Alt", Key = "N", Enabled = true },
+        new() { Id = 14, Action = "soundboard", Name = "교실 효과음 보드", Description = "원터치 교실 효과음 사운드보드 (Alt+B)", Modifier = "Alt", Key = "B", Enabled = true },
     };
 }

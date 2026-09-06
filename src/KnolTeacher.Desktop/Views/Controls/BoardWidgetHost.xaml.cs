@@ -17,6 +17,26 @@ public partial class BoardWidgetHost : UserControl
 
     private bool _isDragging = false;
     private Point _dragStartPoint;
+    private bool _isLocked = false;
+
+    public bool IsLocked
+    {
+        get => _isLocked;
+        set
+        {
+            _isLocked = value;
+            TitleBar.Cursor = _isLocked ? Cursors.Arrow : Cursors.SizeAll;
+            ResizeThumb.Visibility = _isLocked ? Visibility.Collapsed : Visibility.Visible;
+            TxtLockIcon.Visibility = _isLocked ? Visibility.Visible : Visibility.Collapsed;
+            TxtDragGrip.Visibility = _isLocked ? Visibility.Collapsed : Visibility.Visible;
+        }
+    }
+
+    public double CardOpacity
+    {
+        get => OuterBorder.Opacity;
+        set => OuterBorder.Opacity = Math.Clamp(value, 0.2, 1.0);
+    }
 
     public string Title
     {
@@ -45,6 +65,8 @@ public partial class BoardWidgetHost : UserControl
     private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         BringToFront();
+        if (_isLocked) return;
+
         if (VisualParent is Canvas)
         {
             _isDragging = true;
@@ -84,6 +106,7 @@ public partial class BoardWidgetHost : UserControl
 
     private void ResizeThumb_DragDelta(object sender, DragDeltaEventArgs e)
     {
+        if (_isLocked) return;
         BringToFront();
 
         double newWidth = ActualWidth + e.HorizontalChange;

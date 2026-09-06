@@ -60,6 +60,11 @@ public partial class App : Application
                 services.AddSingleton<INoiseMeterService, NoiseMeterService>();
                 services.AddSingleton<IWeatherService, WeatherService>();
                 services.AddSingleton<IWorkdayCalculatorService, WorkdayCalculatorService>();
+                services.AddSingleton<IAcademicCalendarService, AcademicCalendarService>();
+                services.AddSingleton<ITrayService, TrayService>();
+                services.AddSingleton<ITtsService, TtsService>();
+                services.AddSingleton<IEarlyLeaveCalculatorService, EarlyLeaveCalculatorService>();
+                services.AddSingleton<IUpdateService, UpdateService>();
 
                 // ViewModels
                 services.AddSingleton<MainViewModel>();
@@ -77,6 +82,7 @@ public partial class App : Application
                 services.AddSingleton<WorkdayCalculatorWindow>();
                 services.AddSingleton<SmartSeatShuffleWindow>();
                 services.AddSingleton<ClassroomSoundboardWindow>();
+                services.AddSingleton<DigitalSignatureWindow>();
             })
             .Build();
     }
@@ -257,6 +263,51 @@ public partial class App : Application
                                 qrDlg.Activate();
                                 HudNotificationWindow.Instance.ShowToast("📱", "QR코드 생성기 (Alt+Q)");
                                 break;
+
+                            case "signature":
+                                var sigWin = _host.Services.GetRequiredService<DigitalSignatureWindow>();
+                                if (sigWin.IsVisible)
+                                {
+                                    sigWin.Hide();
+                                    HudNotificationWindow.Instance.ShowToast("🔏", "전자서명 숨김");
+                                }
+                                else
+                                {
+                                    sigWin.Show();
+                                    sigWin.Activate();
+                                    HudNotificationWindow.Instance.ShowToast("🔏", "전자서명 & 도장 (Alt+S)");
+                                }
+                                break;
+
+                            case "noise":
+                                var noiseWin = _host.Services.GetRequiredService<NoiseTrafficLightWindow>();
+                                if (noiseWin.IsVisible)
+                                {
+                                    noiseWin.Hide();
+                                    HudNotificationWindow.Instance.ShowToast("🚦", "소음 신호등 숨김");
+                                }
+                                else
+                                {
+                                    noiseWin.Show();
+                                    noiseWin.Activate();
+                                    HudNotificationWindow.Instance.ShowToast("🚦", "교실 소음 신호등 (Alt+N)");
+                                }
+                                break;
+
+                            case "soundboard":
+                                var soundWin = _host.Services.GetRequiredService<ClassroomSoundboardWindow>();
+                                if (soundWin.IsVisible)
+                                {
+                                    soundWin.Hide();
+                                    HudNotificationWindow.Instance.ShowToast("🔔", "효과음 보드 숨김");
+                                }
+                                else
+                                {
+                                    soundWin.Show();
+                                    soundWin.Activate();
+                                    HudNotificationWindow.Instance.ShowToast("🔔", "교실 효과음 보드 (Alt+B)");
+                                }
+                                break;
                         }
                     });
                 };
@@ -296,6 +347,9 @@ public partial class App : Application
         {
             var hotkeyService = _host.Services.GetService<IGlobalHotkeyService>();
             hotkeyService?.Dispose();
+
+            var trayService = _host.Services.GetService<ITrayService>();
+            trayService?.Dispose();
 
             await _host.StopAsync();
             _host.Dispose();

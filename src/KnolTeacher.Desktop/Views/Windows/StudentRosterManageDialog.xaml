@@ -80,7 +80,7 @@
                                     <!-- Avatar button -->
                                     <Button Grid.Column="0" Click="BtnChangeAvatar_Click" Tag="{Binding}" Background="Transparent" BorderThickness="0" Cursor="Hand" ToolTip="클릭하여 동물 아바타 변경">
                                         <Border CornerRadius="24" BorderBrush="#38BDF8" BorderThickness="1.5" Width="48" Height="48" Background="#1E293B">
-                                            <Image Source="{Binding AvatarUri}" Width="44" Height="44" RenderOptions.BitmapScalingMode="HighQuality"/>
+                                            <Image Source="{Binding AvatarBitmap}" Width="44" Height="44" RenderOptions.BitmapScalingMode="HighQuality"/>
                                         </Border>
                                     </Button>
 
