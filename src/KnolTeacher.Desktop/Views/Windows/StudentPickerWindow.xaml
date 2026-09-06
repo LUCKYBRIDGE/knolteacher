@@ -64,8 +64,14 @@
         </Border>
 
         <!-- 2. Tall forest playfield -->
-        <Viewbox Grid.Row="1" Stretch="Uniform" Margin="10,8">
-            <Grid Width="680" Height="1120">
+        <Grid Grid.Row="1" x:Name="PinballViewport" Margin="10,8" ClipToBounds="True"
+              SizeChanged="PinballViewport_SizeChanged" Background="#07120E">
+            <Grid x:Name="PinballWorld" Width="680" Height="1120"
+                  HorizontalAlignment="Left" VerticalAlignment="Top"
+                  RenderTransformOrigin="0,0">
+                <Grid.RenderTransform>
+                    <MatrixTransform x:Name="PinballWorldTransform"/>
+                </Grid.RenderTransform>
                 <Border CornerRadius="32" BorderBrush="#315A3C" BorderThickness="4">
                     <Border.Background>
                         <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
@@ -169,6 +175,8 @@
                     </Border>
                 </Canvas>
 
+            </Grid>
+
                 <!-- Classic Mode Overlay -->
                 <Grid x:Name="GridClassicMode" Visibility="Collapsed" Background="#E808180F">
                     <Border Background="#173725" CornerRadius="22" BorderBrush="#78B77E" BorderThickness="2" Width="510" Height="360" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="20">
@@ -206,7 +214,36 @@
                     </Border>
                 </Grid>
             </Grid>
-        </Viewbox>
+
+            <!-- Fixed camera HUD: stays readable while the world scrolls underneath -->
+            <Border HorizontalAlignment="Left" VerticalAlignment="Top" Margin="18"
+                    Background="#D9142B1D" BorderBrush="#6A9166" BorderThickness="1"
+                    CornerRadius="14" Padding="12,8" IsHitTestVisible="False">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="👑 " FontSize="15"/>
+                        <TextBlock x:Name="TxtRaceLeader" Text="선두: 출발 대기" Foreground="#FFF2A8"
+                                   FontSize="13" FontWeight="Bold"/>
+                    </StackPanel>
+                    <TextBlock x:Name="TxtRaceZone" Text="🌲 숲속 출발 나무집" Foreground="#B9D7BE"
+                               FontSize="11" Margin="0,3,0,0"/>
+                </StackPanel>
+            </Border>
+
+            <Border HorizontalAlignment="Right" VerticalAlignment="Stretch" Width="44" Margin="0,18,16,18"
+                    Background="#B3102418" BorderBrush="#49694E" BorderThickness="1"
+                    CornerRadius="18" Padding="7" IsHitTestVisible="False">
+                <Grid>
+                    <ProgressBar x:Name="RaceProgress" Orientation="Vertical" Minimum="0" Maximum="100"
+                                 Value="0" Width="12" Margin="0,22,0,22"
+                                 Foreground="#F0C95A" Background="#294633"/>
+                    <TextBlock Text="START" FontSize="8" Foreground="#A9C5AE"
+                               HorizontalAlignment="Center" VerticalAlignment="Top"/>
+                    <TextBlock Text="GOAL" FontSize="8" Foreground="#FFF2A8"
+                               HorizontalAlignment="Center" VerticalAlignment="Bottom"/>
+                </Grid>
+            </Border>
+        </Grid>
 
         <!-- 3. Bottom Control Bar -->
         <Border Grid.Row="2" Background="#102219" BorderBrush="#294D35" BorderThickness="0,1,0,0" Padding="20,12">
