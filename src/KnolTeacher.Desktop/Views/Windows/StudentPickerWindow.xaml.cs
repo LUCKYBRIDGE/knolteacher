@@ -40,19 +40,17 @@ public partial class StudentPickerWindow : Window
 
     // Responsive camera state for the tall 680x1120 forest course.
     private const double PinballMapWidth = 680.0;
-    private const double PinballMapHeight = 1120.0;
-    private const double PinballGoalY = 1038.0;
-    private const double CameraVisibleWorldHeight = 620.0;
+    private const double PinballMapHeight = 2280.0;
+    private const double PinballGoalY = 2168.0;
 
-    // Race pacing: the forest course should feel like a short event, not an instant draw.
-    private const double MinimumRaceDurationSeconds = 15.0;
-    private const double RaceGravity = 95.0;
-    private const double MaxHorizontalSpeed = 170.0;
+    // The race lasts because the course is genuinely long, not because gravity is artificially tiny.
+    private const double RaceGravity = 260.0;
+    private const double MaxHorizontalSpeed = 220.0;
     private DateTime _raceStartedAt = DateTime.MinValue;
 
-    private double _cameraOffsetY = 0;
     private double _cameraScale = 1;
     private PinballBall? _cameraLeader;
+    private DateTime _cameraFollowPausedUntil = DateTime.MinValue;
 
     public StudentPickerWindow(IStudentManagerService studentService, ISoundService soundService, IDisplayManager? displayManager = null)
     {
@@ -142,6 +140,17 @@ public partial class StudentPickerWindow : Window
         UpdateCameraAndLeader(0, force: true);
     }
 
+    private void PinballScrollViewer_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        // Manual exploration wins temporarily; automatic leader-follow resumes shortly after.
+        _cameraFollowPausedUntil = DateTime.UtcNow.AddSeconds(4);
+    }
+
+    private void PinballScrollViewer_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+    {
+        _cameraFollowPausedUntil = DateTime.UtcNow.AddSeconds(4);
+    }
+
     private void ResetRaceCamera()
     {
         if (_cameraLeader != null)
@@ -150,26 +159,33 @@ public partial class StudentPickerWindow : Window
             _cameraLeader = null;
         }
 
-        _cameraOffsetY = 0;
         RaceProgress.Value = 0;
         TxtRaceLeader.Text = "선두: 출발 대기";
         TxtRaceZone.Text = "🌲 숲속 출발 나무집";
+        _cameraFollowPausedUntil = DateTime.MinValue;
+
+        if (PinballScrollViewer != null)
+        {
+            PinballScrollViewer.ScrollToVerticalOffset(0);
+        }
+
         UpdateCameraAndLeader(0, force: true);
     }
 
     private void UpdateCameraAndLeader(double dt, bool force = false)
     {
-        if (PinballViewport == null || PinballWorldTransform == null) return;
+        if (PinballViewport == null || PinballScrollViewer == null || PinballWorldScale == null) return;
 
         double viewportWidth = PinballViewport.ActualWidth;
         double viewportHeight = PinballViewport.ActualHeight;
         if (viewportWidth <= 1 || viewportHeight <= 1) return;
 
-        // Fit the full course width whenever possible, but guarantee enough vertical
-        // context to see the leader plus the obstacles immediately ahead.
-        double widthScale = viewportWidth / PinballMapWidth;
-        double contextScale = viewportHeight / CameraVisibleWorldHeight;
-        _cameraScale = Math.Max(0.1, Math.Min(widthScale, contextScale));
+        // Fit the course width to the current window while preserving a true vertical
+        // document that remains scrollable. Large displays are capped to avoid over-zooming.
+        double usableWidth = Math.Max(480, viewportWidth - 34);
+        _cameraScale = Math.Clamp(usableWidth / PinballMapWidth, 0.72, 1.60);
+        PinballWorldScale.ScaleX = _cameraScale;
+        PinballWorldScale.ScaleY = _cameraScale;
 
         PinballBall? leader = null;
         if (_lastWinner != null)
@@ -193,44 +209,6 @@ public partial class StudentPickerWindow : Window
             _cameraLeader?.SetLeader(true);
         }
 
-        double scaledWorldHeight = PinballMapHeight * _cameraScale;
-        double targetOffsetY;
-
-        if (scaledWorldHeight <= viewportHeight)
-        {
-            targetOffsetY = (viewportHeight - scaledWorldHeight) / 2.0;
-        }
-        else if (leader == null)
-        {
-            targetOffsetY = 0;
-        }
-        else
-        {
-            // Keep the current first-place animal around the upper 38% of the
-            // viewport. This leaves more screen below it for upcoming obstacles.
-            double leaderScreenAnchor = viewportHeight * 0.38;
-            targetOffsetY = leaderScreenAnchor - leader.Y * _cameraScale;
-            double minimumOffset = viewportHeight - scaledWorldHeight;
-            targetOffsetY = Math.Clamp(targetOffsetY, minimumOffset, 0);
-        }
-
-        if (force)
-        {
-            _cameraOffsetY = targetOffsetY;
-        }
-        else
-        {
-            // Exponential smoothing avoids visible camera snaps when the lead changes.
-            double alpha = 1.0 - Math.Exp(-6.5 * Math.Max(dt, 0.001));
-            _cameraOffsetY += (targetOffsetY - _cameraOffsetY) * alpha;
-        }
-
-        double offsetX = (viewportWidth - PinballMapWidth * _cameraScale) / 2.0;
-        PinballWorldTransform.Matrix = new Matrix(
-            _cameraScale, 0,
-            0, _cameraScale,
-            offsetX, _cameraOffsetY);
-
         if (leader != null)
         {
             double progress = Math.Clamp((leader.Y - 60.0) / (PinballGoalY - 60.0) * 100.0, 0, 100);
@@ -240,6 +218,28 @@ public partial class StudentPickerWindow : Window
             TxtRaceZone.Text = _isPlaying
                 ? $"{GetRaceZoneLabel(leader.Y)} · {elapsed:0.0}초"
                 : GetRaceZoneLabel(leader.Y);
+
+            bool manualViewing = DateTime.UtcNow < _cameraFollowPausedUntil;
+            if (!manualViewing || force)
+            {
+                // Leader sits around 38% from the top so upcoming obstacles remain visible.
+                double target = leader.Y * _cameraScale - viewportHeight * 0.38;
+                double maxOffset = Math.Max(0, PinballMapHeight * _cameraScale - viewportHeight);
+                target = Math.Clamp(target, 0, maxOffset);
+
+                double current = PinballScrollViewer.VerticalOffset;
+                double next;
+                if (force)
+                {
+                    next = target;
+                }
+                else
+                {
+                    double alpha = 1.0 - Math.Exp(-5.5 * Math.Max(dt, 0.001));
+                    next = current + (target - current) * alpha;
+                }
+                PinballScrollViewer.ScrollToVerticalOffset(next);
+            }
         }
         else
         {
@@ -252,11 +252,15 @@ public partial class StudentPickerWindow : Window
     private static string GetRaceZoneLabel(double y)
     {
         if (y < 170) return "🌲 출발 나무집";
-        if (y < 330) return "🌰 ① 도토리 갈림길";
-        if (y < 530) return "🍄 ② 버섯 숲";
-        if (y < 750) return "🪵 ③ 쓰러진 통나무 길";
-        if (y < 900) return "💧 ④ 돌개울 징검다리";
-        if (y < 1020) return "🌱 ⑤ 뿌리 미로";
+        if (y < 340) return "🌰 ① 도토리 갈림길";
+        if (y < 550) return "🍄 ② 버섯 숲";
+        if (y < 760) return "🪵 ③ 쓰러진 통나무 길";
+        if (y < 980) return "💧 ④ 돌개울 징검다리";
+        if (y < 1210) return "🌿 ⑤ 덩굴 협곡";
+        if (y < 1440) return "🕳️ ⑥ 고목 터널";
+        if (y < 1670) return "🌰 ⑦ 솔방울 회전숲";
+        if (y < 1910) return "🪨 ⑧ 바위 계곡";
+        if (y < 2140) return "🌱 ⑨ 거대 뿌리 미로";
         return "🏕️ 숲속 캠프 골인 구간";
     }
 
@@ -268,13 +272,17 @@ public partial class StudentPickerWindow : Window
 
     private static double GetZoneMaxDownSpeed(double y)
     {
-        // Slightly different pace by section keeps the run visually varied.
-        if (y < 330) return 82.0;   // acorn fork
-        if (y < 530) return 72.0;   // mushroom grove
-        if (y < 750) return 76.0;   // fallen logs
-        if (y < 900) return 68.0;   // creek stones
-        if (y < 1020) return 74.0;  // root maze
-        return 70.0;                // final camp approach
+        // Fast enough to look lively, slow enough for a ~2,100px obstacle course.
+        if (y < 340) return 160.0;
+        if (y < 550) return 145.0;
+        if (y < 760) return 155.0;
+        if (y < 980) return 142.0;
+        if (y < 1210) return 150.0;
+        if (y < 1440) return 158.0;
+        if (y < 1670) return 148.0;
+        if (y < 1910) return 154.0;
+        if (y < 2140) return 145.0;
+        return 150.0;
     }
 
     #endregion
@@ -309,7 +317,12 @@ public partial class StudentPickerWindow : Window
             (185, 265, 8), (295, 275, 8), (390, 270, 8), (505, 275, 8),
             (265, 405, 7), (415, 420, 7),
             (155, 485, 7), (340, 510, 8), (525, 485, 7),
-            (225, 865, 8), (455, 870, 8)
+            (225, 865, 8), (455, 870, 8),
+            (180, 1065, 8), (335, 1105, 9), (500, 1060, 8),
+            (235, 1275, 8), (445, 1285, 8),
+            (155, 1480, 8), (340, 1515, 9), (525, 1485, 8),
+            (220, 1710, 8), (455, 1725, 8),
+            (165, 1905, 8), (340, 1940, 9), (510, 1905, 8)
         };
 
         foreach (var p in pegLayout)
@@ -329,6 +342,13 @@ public partial class StudentPickerWindow : Window
         _bumpers.Add(new PinballBumper(335, 820, 27, "#71857A", "●"));
         _bumpers.Add(new PinballBumper(510, 785, 24, "#64786B", "●"));
 
+        _bumpers.Add(new PinballBumper(210, 1110, 27, "#4E7B48", "🌿"));
+        _bumpers.Add(new PinballBumper(470, 1165, 27, "#4E7B48", "🌿"));
+        _bumpers.Add(new PinballBumper(335, 1545, 31, "#7A5635", "🌰"));
+        _bumpers.Add(new PinballBumper(185, 1790, 25, "#65716E", "●"));
+        _bumpers.Add(new PinballBumper(500, 1805, 25, "#65716E", "●"));
+        _bumpers.Add(new PinballBumper(340, 2000, 29, "#6C5438", "🌱"));
+
         foreach (var bumper in _bumpers)
         {
             PinballCanvas.Children.Add(bumper.Visual);
@@ -341,12 +361,23 @@ public partial class StudentPickerWindow : Window
         _rails.Add(new PinballRail(105, 685, 286, 728, 10, "#93643A", "나뭇가지"));
         _rails.Add(new PinballRail(575, 700, 450, 738, 9, "#896039", "나뭇가지"));
 
-        // Lower root maze. The last pair works like pinball inlanes and gently
-        // channels racers toward the central camp goal.
-        _rails.Add(new PinballRail(76, 900, 250, 958, 11, "#684328", "뿌리"));
-        _rails.Add(new PinballRail(604, 900, 430, 958, 11, "#684328", "뿌리"));
-        _rails.Add(new PinballRail(245, 965, 302, 1018, 10, "#795032", "뿌리"));
-        _rails.Add(new PinballRail(435, 965, 378, 1018, 10, "#795032", "뿌리"));
+        // Long-course ramps: each region changes direction without closing the route.
+        _rails.Add(new PinballRail(78, 990, 280, 1050, 10, "#5B7A3E", "나뭇가지"));
+        _rails.Add(new PinballRail(602, 1080, 415, 1135, 10, "#58733A", "나뭇가지"));
+        _rails.Add(new PinballRail(95, 1195, 300, 1248, 12, "#7B522F", "통나무"));
+        _rails.Add(new PinballRail(585, 1305, 390, 1360, 12, "#734B2C", "통나무"));
+        _rails.Add(new PinballRail(82, 1415, 270, 1468, 10, "#8A5E37", "나뭇가지"));
+        _rails.Add(new PinballRail(598, 1500, 405, 1555, 10, "#825833", "나뭇가지"));
+        _rails.Add(new PinballRail(92, 1635, 285, 1695, 11, "#65503B", "뿌리"));
+        _rails.Add(new PinballRail(588, 1715, 405, 1770, 11, "#65503B", "뿌리"));
+        _rails.Add(new PinballRail(80, 1840, 265, 1900, 12, "#67442A", "통나무"));
+        _rails.Add(new PinballRail(600, 1915, 415, 1970, 12, "#67442A", "통나무"));
+
+        // Final giant-root inlanes gently converge toward the camp.
+        _rails.Add(new PinballRail(72, 1985, 250, 2070, 12, "#684328", "뿌리"));
+        _rails.Add(new PinballRail(608, 1985, 430, 2070, 12, "#684328", "뿌리"));
+        _rails.Add(new PinballRail(245, 2070, 305, 2145, 11, "#795032", "뿌리"));
+        _rails.Add(new PinballRail(435, 2070, 375, 2145, 11, "#795032", "뿌리"));
 
         foreach (var rail in _rails)
         {
@@ -420,8 +451,8 @@ public partial class StudentPickerWindow : Window
             var student = toDrop[i];
             double x = startX + (i % 7) * (spawnWidth / 6.0) + (rand.NextDouble() * 8 - 4);
             double y = 52 - (i / 7) * 50; // stacked inside/above the tree-house gate
-            double vx = (rand.NextDouble() - 0.5) * 46;
-            double vy = 12 + rand.NextDouble() * 16;
+            double vx = (rand.NextDouble() - 0.5) * 70;
+            double vy = 28 + rand.NextDouble() * 34;
 
             var ball = new PinballBall(student, x, y, 21)
             {
@@ -461,9 +492,8 @@ public partial class StudentPickerWindow : Window
         _lastFrameTime = now;
         if (dt > 0.05) dt = 0.05; // clamp delta time for stability
 
-        double damp = 0.997;
+        double damp = 0.995;
         var rand = new Random();
-        double elapsedRaceSeconds = GetRaceElapsedSeconds();
 
         // Update Peg flashes
         foreach (var peg in _pegs)
@@ -489,11 +519,10 @@ public partial class StudentPickerWindow : Window
             b.Vx *= damp;
             b.Vy *= damp;
 
-            // A capped terminal velocity is the main pacing control. The ball still
-            // accelerates, rebounds and overtakes others, but cannot free-fall through
-            // the entire tall course in a few seconds.
+            // Speed limits prevent tunneling through thin obstacles, while the long
+            // map—not artificial slow motion—creates the race duration.
             b.Vx = Math.Clamp(b.Vx, -MaxHorizontalSpeed, MaxHorizontalSpeed);
-            b.Vy = Math.Clamp(b.Vy, -115.0, GetZoneMaxDownSpeed(b.Y));
+            b.Vy = Math.Clamp(b.Vy, -180.0, GetZoneMaxDownSpeed(b.Y));
 
             b.X += b.Vx * dt;
             b.Y += b.Vy * dt;
@@ -578,9 +607,9 @@ public partial class StudentPickerWindow : Window
                     double dot = b.Vx * nx + b.Vy * ny;
                     if (dot < 0)
                     {
-                        double bumperBoost = 1.18;
-                        b.Vx = (-dot * nx * bumperBoost) + (rand.NextDouble() - 0.5) * 34;
-                        b.Vy = (-dot * ny * bumperBoost) - 42;
+                        double bumperBoost = 1.28;
+                        b.Vx = (-dot * nx * bumperBoost) + (rand.NextDouble() - 0.5) * 46;
+                        b.Vy = (-dot * ny * bumperBoost) - 66;
                         bumper.Flash();
                         if (_soundEnabled) _soundService.PlayBeep();
                     }
@@ -661,48 +690,27 @@ public partial class StudentPickerWindow : Window
                 }
             }
 
-            // 5. Forest camp goal detection.
-            // The camp gate opens at 15 seconds. A very lucky straight run therefore
-            // still has a short final scramble instead of ending the draw immediately.
-            if (b.Y + b.Radius >= 1038 && b.X >= 255 && b.X <= 425)
+            // 5. Forest camp goal detection at the end of the genuinely long course.
+            if (b.Y + b.Radius >= 2172 && b.X >= 245 && b.X <= 435)
             {
-                if (elapsedRaceSeconds >= MinimumRaceDurationSeconds)
-                {
-                    b.IsSettled = true;
-                    b.Vx = 0;
-                    b.Vy = 0;
-                    b.Y = 1065;
+                b.IsSettled = true;
+                b.Vx = 0;
+                b.Vy = 0;
+                b.Y = 2200;
 
-                    if (_lastWinner == null)
-                    {
-                        _lastWinner = b.Student;
-                        TriggerWinnerCelebration(b.Student);
-                    }
-                }
-                else
+                if (_lastWinner == null)
                 {
-                    b.Y = 1008;
-                    b.Vy = -52 - rand.NextDouble() * 24;
-                    b.Vx += (rand.NextDouble() - 0.5) * 48;
+                    _lastWinner = b.Student;
+                    TriggerWinnerCelebration(b.Student);
                 }
             }
-            else if (b.Y > 1085)
+            else if (b.Y > 2245)
             {
-                if (elapsedRaceSeconds >= MinimumRaceDurationSeconds)
-                {
-                    // Side clearing: completed the run, but not first through the camp gate.
-                    b.IsSettled = true;
-                    b.Vx = 0;
-                    b.Vy = 0;
-                    b.Y = 1070;
-                }
-                else
-                {
-                    // Keep early finishers in the final clearing until the camp gate opens.
-                    b.Y = 1055;
-                    b.Vy = -58 - rand.NextDouble() * 18;
-                    b.Vx += (rand.NextDouble() - 0.5) * 42;
-                }
+                // Side clearing: completed the course but missed the center winner gate.
+                b.IsSettled = true;
+                b.Vx = 0;
+                b.Vy = 0;
+                b.Y = 2220;
             }
 
             b.UpdateVisual();
@@ -724,7 +732,7 @@ public partial class StudentPickerWindow : Window
         }
 
         // Check if all balls settled without winner
-        if (_balls.Count > 0 && _balls.All(b => b.IsSettled) && elapsedRaceSeconds >= MinimumRaceDurationSeconds)
+        if (_balls.Count > 0 && _balls.All(b => b.IsSettled))
         {
             if (_lastWinner == null && _balls.Count > 0)
             {
@@ -750,7 +758,7 @@ public partial class StudentPickerWindow : Window
         }
 
         // Spawn Confetti Particles
-        SpawnConfetti(340, 1040, 75);
+        SpawnConfetti(340, 2190, 75);
 
         // Display Winner Card
         TxtWinnerTitle.Text = $"{winner.Number}번 {winner.Name} ({winner.AvatarName})";
