@@ -43,6 +43,13 @@ public partial class StudentPickerWindow : Window
     private const double PinballMapHeight = 1120.0;
     private const double PinballGoalY = 1038.0;
     private const double CameraVisibleWorldHeight = 620.0;
+
+    // Race pacing: the forest course should feel like a short event, not an instant draw.
+    private const double MinimumRaceDurationSeconds = 15.0;
+    private const double RaceGravity = 95.0;
+    private const double MaxHorizontalSpeed = 170.0;
+    private DateTime _raceStartedAt = DateTime.MinValue;
+
     private double _cameraOffsetY = 0;
     private double _cameraScale = 1;
     private PinballBall? _cameraLeader;
@@ -229,7 +236,10 @@ public partial class StudentPickerWindow : Window
             double progress = Math.Clamp((leader.Y - 60.0) / (PinballGoalY - 60.0) * 100.0, 0, 100);
             RaceProgress.Value = progress;
             TxtRaceLeader.Text = $"선두: {leader.Student.Number}번 {leader.Student.Name} ({leader.Student.AvatarName})";
-            TxtRaceZone.Text = GetRaceZoneLabel(leader.Y);
+            double elapsed = GetRaceElapsedSeconds();
+            TxtRaceZone.Text = _isPlaying
+                ? $"{GetRaceZoneLabel(leader.Y)} · {elapsed:0.0}초"
+                : GetRaceZoneLabel(leader.Y);
         }
         else
         {
@@ -248,6 +258,23 @@ public partial class StudentPickerWindow : Window
         if (y < 900) return "💧 ④ 돌개울 징검다리";
         if (y < 1020) return "🌱 ⑤ 뿌리 미로";
         return "🏕️ 숲속 캠프 골인 구간";
+    }
+
+    private double GetRaceElapsedSeconds()
+    {
+        if (_raceStartedAt == DateTime.MinValue) return 0;
+        return Math.Max(0, (DateTime.UtcNow - _raceStartedAt).TotalSeconds);
+    }
+
+    private static double GetZoneMaxDownSpeed(double y)
+    {
+        // Slightly different pace by section keeps the run visually varied.
+        if (y < 330) return 82.0;   // acorn fork
+        if (y < 530) return 72.0;   // mushroom grove
+        if (y < 750) return 76.0;   // fallen logs
+        if (y < 900) return 68.0;   // creek stones
+        if (y < 1020) return 74.0;  // root maze
+        return 70.0;                // final camp approach
     }
 
     #endregion
@@ -393,8 +420,8 @@ public partial class StudentPickerWindow : Window
             var student = toDrop[i];
             double x = startX + (i % 7) * (spawnWidth / 6.0) + (rand.NextDouble() * 8 - 4);
             double y = 52 - (i / 7) * 50; // stacked inside/above the tree-house gate
-            double vx = (rand.NextDouble() - 0.5) * 60;
-            double vy = 40 + rand.NextDouble() * 80;
+            double vx = (rand.NextDouble() - 0.5) * 46;
+            double vy = 12 + rand.NextDouble() * 16;
 
             var ball = new PinballBall(student, x, y, 21)
             {
@@ -409,9 +436,10 @@ public partial class StudentPickerWindow : Window
         _isPlaying = true;
         BtnLaunch.IsEnabled = false;
         _lastWinner = null;
+        _raceStartedAt = DateTime.UtcNow;
         ResetRaceCamera();
         TxtBtnLaunchLabel.Text = "동물들이 숲길을 달리는 중...";
-        _lastFrameTime = DateTime.UtcNow;
+        _lastFrameTime = _raceStartedAt;
 
         if (_soundEnabled) _soundService.PlayBeep();
 
@@ -433,9 +461,9 @@ public partial class StudentPickerWindow : Window
         _lastFrameTime = now;
         if (dt > 0.05) dt = 0.05; // clamp delta time for stability
 
-        double gravity = 710; // slightly calmer for the taller forest course
-        double damp = 0.993;
+        double damp = 0.997;
         var rand = new Random();
+        double elapsedRaceSeconds = GetRaceElapsedSeconds();
 
         // Update Peg flashes
         foreach (var peg in _pegs)
@@ -457,9 +485,15 @@ public partial class StudentPickerWindow : Window
             var b = _balls[i];
             if (b.IsSettled) continue;
 
-            b.Vy += gravity * dt;
+            b.Vy += RaceGravity * dt;
             b.Vx *= damp;
             b.Vy *= damp;
+
+            // A capped terminal velocity is the main pacing control. The ball still
+            // accelerates, rebounds and overtakes others, but cannot free-fall through
+            // the entire tall course in a few seconds.
+            b.Vx = Math.Clamp(b.Vx, -MaxHorizontalSpeed, MaxHorizontalSpeed);
+            b.Vy = Math.Clamp(b.Vy, -115.0, GetZoneMaxDownSpeed(b.Y));
 
             b.X += b.Vx * dt;
             b.Y += b.Vy * dt;
@@ -516,7 +550,7 @@ public partial class StudentPickerWindow : Window
                     double dot = b.Vx * nx + b.Vy * ny;
                     if (dot < 0)
                     {
-                        double restitution = 0.72;
+                        double restitution = 0.76;
                         b.Vx -= (1 + restitution) * dot * nx + (rand.NextDouble() - 0.5) * 20;
                         b.Vy -= (1 + restitution) * dot * ny;
                         peg.Flash();
@@ -544,9 +578,9 @@ public partial class StudentPickerWindow : Window
                     double dot = b.Vx * nx + b.Vy * ny;
                     if (dot < 0)
                     {
-                        double bumperBoost = 1.35; // extra bouncy!
-                        b.Vx = (-dot * nx * bumperBoost) + (rand.NextDouble() - 0.5) * 40;
-                        b.Vy = (-dot * ny * bumperBoost) - 80;
+                        double bumperBoost = 1.18;
+                        b.Vx = (-dot * nx * bumperBoost) + (rand.NextDouble() - 0.5) * 34;
+                        b.Vy = (-dot * ny * bumperBoost) - 42;
                         bumper.Flash();
                         if (_soundEnabled) _soundService.PlayBeep();
                     }
@@ -627,27 +661,48 @@ public partial class StudentPickerWindow : Window
                 }
             }
 
-            // 5. Forest camp goal detection
+            // 5. Forest camp goal detection.
+            // The camp gate opens at 15 seconds. A very lucky straight run therefore
+            // still has a short final scramble instead of ending the draw immediately.
             if (b.Y + b.Radius >= 1038 && b.X >= 255 && b.X <= 425)
             {
-                b.IsSettled = true;
-                b.Vx = 0;
-                b.Vy = 0;
-                b.Y = 1065;
-
-                if (_lastWinner == null)
+                if (elapsedRaceSeconds >= MinimumRaceDurationSeconds)
                 {
-                    _lastWinner = b.Student;
-                    TriggerWinnerCelebration(b.Student);
+                    b.IsSettled = true;
+                    b.Vx = 0;
+                    b.Vy = 0;
+                    b.Y = 1065;
+
+                    if (_lastWinner == null)
+                    {
+                        _lastWinner = b.Student;
+                        TriggerWinnerCelebration(b.Student);
+                    }
+                }
+                else
+                {
+                    b.Y = 1008;
+                    b.Vy = -52 - rand.NextDouble() * 24;
+                    b.Vx += (rand.NextDouble() - 0.5) * 48;
                 }
             }
             else if (b.Y > 1085)
             {
-                // Side clearing: completed the run, but not first through the camp gate.
-                b.IsSettled = true;
-                b.Vx = 0;
-                b.Vy = 0;
-                b.Y = 1070;
+                if (elapsedRaceSeconds >= MinimumRaceDurationSeconds)
+                {
+                    // Side clearing: completed the run, but not first through the camp gate.
+                    b.IsSettled = true;
+                    b.Vx = 0;
+                    b.Vy = 0;
+                    b.Y = 1070;
+                }
+                else
+                {
+                    // Keep early finishers in the final clearing until the camp gate opens.
+                    b.Y = 1055;
+                    b.Vy = -58 - rand.NextDouble() * 18;
+                    b.Vx += (rand.NextDouble() - 0.5) * 42;
+                }
             }
 
             b.UpdateVisual();
@@ -669,7 +724,7 @@ public partial class StudentPickerWindow : Window
         }
 
         // Check if all balls settled without winner
-        if (_balls.Count > 0 && _balls.All(b => b.IsSettled))
+        if (_balls.Count > 0 && _balls.All(b => b.IsSettled) && elapsedRaceSeconds >= MinimumRaceDurationSeconds)
         {
             if (_lastWinner == null && _balls.Count > 0)
             {
