@@ -38,6 +38,15 @@ public partial class StudentPickerWindow : Window
     private StudentItem? _lastWinner = null;
     private DateTime _lastFrameTime = DateTime.UtcNow;
 
+    // Responsive camera state for the tall 680x1120 forest course.
+    private const double PinballMapWidth = 680.0;
+    private const double PinballMapHeight = 1120.0;
+    private const double PinballGoalY = 1038.0;
+    private const double CameraVisibleWorldHeight = 620.0;
+    private double _cameraOffsetY = 0;
+    private double _cameraScale = 1;
+    private PinballBall? _cameraLeader;
+
     public StudentPickerWindow(IStudentManagerService studentService, ISoundService soundService, IDisplayManager? displayManager = null)
     {
         _studentService = studentService;
@@ -50,6 +59,7 @@ public partial class StudentPickerWindow : Window
             SetupPegsAndBumpers();
             UpdateStatus();
             PositionToDefaultMonitor();
+            UpdateCameraAndLeader(0, force: true);
         };
 
         KeyDown += Window_KeyDown;
@@ -117,6 +127,130 @@ public partial class StudentPickerWindow : Window
         TxtStatus.Text = $"남은 학생: {remaining}명 / 총 {total}명";
         TxtClassicRemaining.Text = $"남은 학생: {remaining}명 / 총 {total}명";
     }
+
+    #region Responsive Race Camera
+
+    private void PinballViewport_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        UpdateCameraAndLeader(0, force: true);
+    }
+
+    private void ResetRaceCamera()
+    {
+        if (_cameraLeader != null)
+        {
+            _cameraLeader.SetLeader(false);
+            _cameraLeader = null;
+        }
+
+        _cameraOffsetY = 0;
+        RaceProgress.Value = 0;
+        TxtRaceLeader.Text = "선두: 출발 대기";
+        TxtRaceZone.Text = "🌲 숲속 출발 나무집";
+        UpdateCameraAndLeader(0, force: true);
+    }
+
+    private void UpdateCameraAndLeader(double dt, bool force = false)
+    {
+        if (PinballViewport == null || PinballWorldTransform == null) return;
+
+        double viewportWidth = PinballViewport.ActualWidth;
+        double viewportHeight = PinballViewport.ActualHeight;
+        if (viewportWidth <= 1 || viewportHeight <= 1) return;
+
+        // Fit the full course width whenever possible, but guarantee enough vertical
+        // context to see the leader plus the obstacles immediately ahead.
+        double widthScale = viewportWidth / PinballMapWidth;
+        double contextScale = viewportHeight / CameraVisibleWorldHeight;
+        _cameraScale = Math.Max(0.1, Math.Min(widthScale, contextScale));
+
+        PinballBall? leader = null;
+        if (_lastWinner != null)
+        {
+            leader = _balls.FirstOrDefault(b => b.Student.Number == _lastWinner.Number);
+        }
+
+        leader ??= _balls
+            .Where(b => !b.IsSettled)
+            .OrderByDescending(b => b.Y)
+            .FirstOrDefault();
+
+        leader ??= _balls
+            .OrderByDescending(b => b.Y)
+            .FirstOrDefault();
+
+        if (!ReferenceEquals(_cameraLeader, leader))
+        {
+            _cameraLeader?.SetLeader(false);
+            _cameraLeader = leader;
+            _cameraLeader?.SetLeader(true);
+        }
+
+        double scaledWorldHeight = PinballMapHeight * _cameraScale;
+        double targetOffsetY;
+
+        if (scaledWorldHeight <= viewportHeight)
+        {
+            targetOffsetY = (viewportHeight - scaledWorldHeight) / 2.0;
+        }
+        else if (leader == null)
+        {
+            targetOffsetY = 0;
+        }
+        else
+        {
+            // Keep the current first-place animal around the upper 38% of the
+            // viewport. This leaves more screen below it for upcoming obstacles.
+            double leaderScreenAnchor = viewportHeight * 0.38;
+            targetOffsetY = leaderScreenAnchor - leader.Y * _cameraScale;
+            double minimumOffset = viewportHeight - scaledWorldHeight;
+            targetOffsetY = Math.Clamp(targetOffsetY, minimumOffset, 0);
+        }
+
+        if (force)
+        {
+            _cameraOffsetY = targetOffsetY;
+        }
+        else
+        {
+            // Exponential smoothing avoids visible camera snaps when the lead changes.
+            double alpha = 1.0 - Math.Exp(-6.5 * Math.Max(dt, 0.001));
+            _cameraOffsetY += (targetOffsetY - _cameraOffsetY) * alpha;
+        }
+
+        double offsetX = (viewportWidth - PinballMapWidth * _cameraScale) / 2.0;
+        PinballWorldTransform.Matrix = new Matrix(
+            _cameraScale, 0,
+            0, _cameraScale,
+            offsetX, _cameraOffsetY);
+
+        if (leader != null)
+        {
+            double progress = Math.Clamp((leader.Y - 60.0) / (PinballGoalY - 60.0) * 100.0, 0, 100);
+            RaceProgress.Value = progress;
+            TxtRaceLeader.Text = $"선두: {leader.Student.Number}번 {leader.Student.Name} ({leader.Student.AvatarName})";
+            TxtRaceZone.Text = GetRaceZoneLabel(leader.Y);
+        }
+        else
+        {
+            RaceProgress.Value = 0;
+            TxtRaceLeader.Text = "선두: 출발 대기";
+            TxtRaceZone.Text = "🌲 숲속 출발 나무집";
+        }
+    }
+
+    private static string GetRaceZoneLabel(double y)
+    {
+        if (y < 170) return "🌲 출발 나무집";
+        if (y < 330) return "🌰 ① 도토리 갈림길";
+        if (y < 530) return "🍄 ② 버섯 숲";
+        if (y < 750) return "🪵 ③ 쓰러진 통나무 길";
+        if (y < 900) return "💧 ④ 돌개울 징검다리";
+        if (y < 1020) return "🌱 ⑤ 뿌리 미로";
+        return "🏕️ 숲속 캠프 골인 구간";
+    }
+
+    #endregion
 
     #region Physics Field Setup
 
@@ -274,6 +408,7 @@ public partial class StudentPickerWindow : Window
 
         _isPlaying = true;
         BtnLaunch.IsEnabled = false;
+        ResetRaceCamera();
         TxtBtnLaunchLabel.Text = "동물들이 숲길을 달리는 중...";
         _lastWinner = null;
         _lastFrameTime = DateTime.UtcNow;
@@ -518,6 +653,9 @@ public partial class StudentPickerWindow : Window
             b.UpdateVisual();
         }
 
+        // Camera follows the live leader after every physics step.
+        UpdateCameraAndLeader(dt);
+
         // Update Confetti
         for (int i = _confetti.Count - 1; i >= 0; i--)
         {
@@ -557,7 +695,7 @@ public partial class StudentPickerWindow : Window
         }
 
         // Spawn Confetti Particles
-        SpawnConfetti(340, 620, 75);
+        SpawnConfetti(340, 1040, 75);
 
         // Display Winner Card
         TxtWinnerTitle.Text = $"{winner.Number}번 {winner.Name} ({winner.AvatarName})";
@@ -728,6 +866,7 @@ public class PinballBall
     public bool IsSettled { get; set; } = false;
 
     public Grid Visual { get; }
+    private readonly Ellipse _leaderRing;
 
     public PinballBall(StudentItem student, double x, double y, double radius)
     {
@@ -764,6 +903,17 @@ public class PinballBall
         }
         Visual.Children.Add(ellipse);
 
+        _leaderRing = new Ellipse
+        {
+            Width = radius * 2,
+            Height = radius * 2,
+            Stroke = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FFF2A8")),
+            StrokeThickness = 4,
+            Visibility = Visibility.Collapsed,
+            IsHitTestVisible = false
+        };
+        Visual.Children.Add(_leaderRing);
+
         // Number Badge
         var badge = new Border
         {
@@ -785,6 +935,12 @@ public class PinballBall
         Visual.Children.Add(badge);
 
         UpdateVisual();
+    }
+
+    public void SetLeader(bool isLeader)
+    {
+        _leaderRing.Visibility = isLeader ? Visibility.Visible : Visibility.Collapsed;
+        Panel.SetZIndex(Visual, isLeader ? 50 : 10);
     }
 
     public void UpdateVisual()
