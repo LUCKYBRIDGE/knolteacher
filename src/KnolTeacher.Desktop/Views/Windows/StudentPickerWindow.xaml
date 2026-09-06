@@ -213,7 +213,6 @@
                         </StackPanel>
                     </Border>
                 </Grid>
-            </Grid>
 
             <!-- Fixed camera HUD: stays readable while the world scrolls underneath -->
             <Border HorizontalAlignment="Left" VerticalAlignment="Top" Margin="18"
