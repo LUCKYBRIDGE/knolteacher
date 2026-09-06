@@ -408,9 +408,9 @@ public partial class StudentPickerWindow : Window
 
         _isPlaying = true;
         BtnLaunch.IsEnabled = false;
+        _lastWinner = null;
         ResetRaceCamera();
         TxtBtnLaunchLabel.Text = "동물들이 숲길을 달리는 중...";
-        _lastWinner = null;
         _lastFrameTime = DateTime.UtcNow;
 
         if (_soundEnabled) _soundService.PlayBeep();
