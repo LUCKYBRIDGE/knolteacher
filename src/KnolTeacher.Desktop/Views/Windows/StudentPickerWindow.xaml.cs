@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -25,6 +25,7 @@ public partial class StudentPickerWindow : Window
     private readonly List<RaceRacer> _racers = new();
     private readonly List<RaceBumper> _bumpers = new();
     private readonly List<RaceRail> _rails = new();
+    private readonly List<RotatingLog> _rotatingLogs = new();
 
     private DispatcherTimer? _gameTimer;
     private bool _isPlaying = false;
@@ -116,33 +117,60 @@ public partial class StudentPickerWindow : Window
 
     private void SetupCourseScenery()
     {
+        foreach (var b in _bumpers) RaceCanvas.Children.Remove(b.Visual);
+        foreach (var l in _rotatingLogs) RaceCanvas.Children.Remove(l.Visual);
         _bumpers.Clear();
         _rails.Clear();
+        _rotatingLogs.Clear();
 
-        // Zone 2 Slanted Bone Rails (Collision definition)
-        _rails.Add(new RaceRail(90, 350, 275, 470, 16));
-        _rails.Add(new RaceRail(590, 350, 405, 470, 16));
-        _rails.Add(new RaceRail(245, 570, 435, 570, 16));
+        // 1. Zone 2 Slanted Cartoon Wood Rails (Collision definition)
+        _rails.Add(new RaceRail(80, 310, 270, 410, 18));
+        _rails.Add(new RaceRail(600, 310, 410, 410, 18));
 
-        // Zone 3 Criss-Cross Log Rails
-        _rails.Add(new RaceRail(60, 1130, 260, 1200, 18));
-        _rails.Add(new RaceRail(620, 1130, 420, 1200, 18));
+        // 2. Zone 3 Mid-track Cartoon Wood Rails
+        _rails.Add(new RaceRail(50, 1110, 250, 1190, 18));
+        _rails.Add(new RaceRail(630, 1110, 430, 1190, 18));
 
-        // Zone 5 Funnel Banks
+        // 3. Zone 5 Waterfall Funnel Banks
         _rails.Add(new RaceRail(0, 1880, 230, 2030, 20));
         _rails.Add(new RaceRail(680, 1880, 450, 2030, 20));
         _rails.Add(new RaceRail(230, 2030, 230, 2200, 20));
         _rails.Add(new RaceRail(450, 2030, 450, 2200, 20));
 
-        // Zone 4 Bumpers: Rune Stones & Red Mushrooms
-        AddBumper(200, 1460, 30, "rune_stone.png");
-        AddBumper(480, 1460, 30, "rune_stone.png");
-        AddBumper(340, 1550, 34, "mushroom_red.png");
-        AddBumper(160, 1650, 34, "mushroom_red.png");
-        AddBumper(520, 1650, 34, "mushroom_red.png");
-        AddBumper(270, 1750, 30, "rune_stone.png");
-        AddBumper(410, 1750, 30, "rune_stone.png");
-        AddBumper(340, 1830, 34, "mushroom_red.png");
+        // 4. ROTATING LOGS (회전 통나무 동적 장애물!)
+        // Upper Slope: Clockwise Rotating Log in center
+        AddRotatingLog(340, 520, 220, 34, 2.2, 15);
+
+        // Mid-Course Twin Shuffling Logs: counter-rotating to create exciting pinball channels!
+        AddRotatingLog(220, 880, 180, 32, -2.5, -30);
+        AddRotatingLog(460, 880, 180, 32, 2.5, 30);
+
+        // Lower Mushroom Forest: Slower Heavy Rotating Log
+        AddRotatingLog(340, 1460, 210, 36, -1.8, 0);
+
+        // 5. CARTOON BUMPERS (통통 튀는 만화풍 버섯 & 별)
+        // Zone 2 Upper side bumpers
+        AddBumper(150, 640, 32, "cartoon_mushroom_yellow.png");
+        AddBumper(530, 640, 32, "cartoon_mushroom_yellow.png");
+
+        // Zone 3 Star Bouncer in center
+        AddBumper(340, 1060, 36, "cartoon_star_bumper.png");
+
+        // Zone 4 Enchanted Mushroom Forest
+        AddBumper(190, 1320, 34, "cartoon_mushroom_red.png");
+        AddBumper(490, 1320, 34, "cartoon_mushroom_red.png");
+        AddBumper(160, 1600, 34, "cartoon_mushroom_purple.png");
+        AddBumper(520, 1600, 34, "cartoon_mushroom_purple.png");
+        AddBumper(260, 1720, 34, "cartoon_mushroom_red.png");
+        AddBumper(420, 1720, 34, "cartoon_mushroom_red.png");
+        AddBumper(340, 1830, 36, "cartoon_mushroom_yellow.png");
+    }
+
+    private void AddRotatingLog(double x, double y, double length, double thickness, double angularVelocity, double initialAngleDeg)
+    {
+        var log = new RotatingLog(x, y, length, thickness, angularVelocity, initialAngleDeg);
+        _rotatingLogs.Add(log);
+        RaceCanvas.Children.Add(log.Visual);
     }
 
     private void AddBumper(double x, double y, double radius, string assetName)
@@ -274,10 +302,14 @@ public partial class StudentPickerWindow : Window
         double damp = 0.995;
         var rand = new Random();
 
-        // 1. Update Bumpers
+        // 1. Update Bumpers & Rotating Logs
         foreach (var bumper in _bumpers)
         {
             bumper.Update(dt);
+        }
+        foreach (var log in _rotatingLogs)
+        {
+            log.Update(dt);
         }
 
         // 2. Update Racers
@@ -356,6 +388,18 @@ public partial class StudentPickerWindow : Window
                         // Slide tangent nudge
                         r.Vx += -ny * ((rand.NextDouble() - 0.5) * 20);
                         r.Vy += nx * ((rand.NextDouble() - 0.5) * 20);
+                    }
+                }
+            }
+
+            // Collisions with Rotating Logs (회전 통나무 동적 충돌 & 회전력 튕김!)
+            foreach (var log in _rotatingLogs)
+            {
+                if (log.CheckAndResolveCollision(r, rand, out bool collided))
+                {
+                    if (collided && _soundEnabled)
+                    {
+                        _soundService.PlayBeep();
                     }
                 }
             }
@@ -913,7 +957,134 @@ public class RaceBumper
     }
 }
 
+public class RotatingLog
+{
+    public double X { get; }
+    public double Y { get; }
+    public double Length { get; }
+    public double Thickness { get; }
+    public double AngularVelocity { get; set; } // rad/s
+    public double Angle { get; private set; } // radians
 
+    public Grid Visual { get; }
+    private readonly RotateTransform _rotateTransform;
 
+    public RotatingLog(double x, double y, double length, double thickness, double angularVelocity, double initialAngleDeg = 0)
+    {
+        X = x;
+        Y = y;
+        Length = length;
+        Thickness = thickness;
+        AngularVelocity = angularVelocity;
+        Angle = initialAngleDeg * Math.PI / 180.0;
+
+        Visual = new Grid
+        {
+            Width = length,
+            Height = thickness * (100.0 / 56.0),
+        };
+
+        _rotateTransform = new RotateTransform(initialAngleDeg);
+        Visual.RenderTransformOrigin = new Point(0.5, 0.5);
+        Visual.RenderTransform = _rotateTransform;
+
+        var img = new Image
+        {
+            Width = length,
+            Height = Visual.Height,
+            Source = new BitmapImage(new Uri("pack://application:,,,/assets/race/cartoon_log_rotating.png")),
+        };
+        RenderOptions.SetBitmapScalingMode(img, BitmapScalingMode.HighQuality);
+        Visual.Children.Add(img);
+
+        Canvas.SetLeft(Visual, X - Visual.Width / 2.0);
+        Canvas.SetTop(Visual, Y - Visual.Height / 2.0);
+    }
+
+    public void Update(double dt)
+    {
+        Angle += AngularVelocity * dt;
+        while (Angle > Math.PI) Angle -= 2 * Math.PI;
+        while (Angle < -Math.PI) Angle += 2 * Math.PI;
+        _rotateTransform.Angle = Angle * 180.0 / Math.PI;
+    }
+
+    public bool CheckAndResolveCollision(RaceRacer r, Random rand, out bool collided)
+    {
+        collided = false;
+        double halfL = Length * 0.44;
+        double halfT = Thickness * 0.5;
+
+        double cosA = Math.Cos(Angle);
+        double sinA = Math.Sin(Angle);
+
+        double p1x = X - halfL * cosA;
+        double p1y = Y - halfL * sinA;
+        double p2x = X + halfL * cosA;
+        double p2y = Y + halfL * sinA;
+
+        double sx = p2x - p1x;
+        double sy = p2y - p1y;
+        double lenSq = sx * sx + sy * sy;
+        if (lenSq < 0.001) return false;
+
+        double t = ((r.X - p1x) * sx + (r.Y - p1y) * sy) / lenSq;
+        t = Math.Clamp(t, 0.0, 1.0);
+
+        double cx = p1x + t * sx;
+        double cy = p1y + t * sy;
+
+        double dx = r.X - cx;
+        double dy = r.Y - cy;
+        double dist = Math.Sqrt(dx * dx + dy * dy);
+        double minDist = r.Radius + halfT;
+
+        if (dist < minDist)
+        {
+            collided = true;
+            double nx, ny;
+            if (dist > 0.001)
+            {
+                nx = dx / dist;
+                ny = dy / dist;
+            }
+            else
+            {
+                nx = -sinA;
+                ny = cosA;
+            }
+
+            // Push out
+            double overlap = minDist - dist + 1.0;
+            r.X += nx * overlap;
+            r.Y += ny * overlap;
+
+            // Rotational linear velocity at contact point (cx, cy)
+            double rx = cx - X;
+            double ry = cy - Y;
+            double logVx = -AngularVelocity * ry;
+            double logVy = AngularVelocity * rx;
+
+            // Relative velocity
+            double relVx = r.Vx - logVx;
+            double relVy = r.Vy - logVy;
+
+            double normVel = relVx * nx + relVy * ny;
+            if (normVel < 0)
+            {
+                double restitution = 1.35; // energetic cartoon bounce
+                double impulse = -(1.0 + restitution) * normVel;
+                double newRelVx = relVx + impulse * nx;
+                double newRelVy = relVy + impulse * ny;
+
+                r.Vx = logVx + newRelVx + (rand.NextDouble() - 0.5) * 40;
+                r.Vy = logVy + newRelVy + 15;
+            }
+            return true;
+        }
+        return false;
+    }
+}
 
 #endregion
+
