@@ -136,7 +136,7 @@ public partial class StudentPickerWindow : Window
         foreach (var bub in _bubbles) RaceCanvas.Children.Remove(bub.Visual);
         foreach (var sq in _squirrels)
         {
-            RaceCanvas.Children.Remove(sq.TreeHoleVisual);
+            RaceCanvas.Children.Remove(sq.BranchVisual);
             RaceCanvas.Children.Remove(sq.SquirrelVisual);
         }
         foreach (var p in _projectiles) RaceCanvas.Children.Remove(p.Visual);
@@ -194,12 +194,12 @@ public partial class StudentPickerWindow : Window
         AddBubble(390, 1920, 28);
         AddBubble(340, 1985, 28);
 
-        // 7. POP-OUT SQUIRRELS (중간 코스에서 깜짝 튀어나와 도토리/솔방울을 던지는 장난꾸러기 청설모!)
-        // 1호 청설모: 좌측 벽 (Y = 780), 트랙 안쪽으로 도토리 투척!
-        AddSquirrel(x: 10, y: 780, targetX: 95, radius: 26, isFacingRight: true, startDelay: 0.8, projectileAsset: "cartoon_acorn.png");
+        // 7. PERCHED ANIMATED SQUIRRELS (나뭇가지에 앉아 주기적으로 솔방울을 던지는 2D 옆모습 청설모!)
+        // 1호 청설모: 좌측 절벽 나뭇가지 (Y = 740), 오른쪽으로 솔방울 투척!
+        AddSquirrel(x: 46, y: 740, radius: 26, isFacingRight: true, startDelay: 0.8, projectileAsset: "cartoon_pinecone.png");
 
-        // 2호 청설모: 우측 벽 (Y = 1360), 트랙 안쪽으로 솔방울 투척!
-        AddSquirrel(x: 670, y: 1360, targetX: 585, radius: 26, isFacingRight: false, startDelay: 2.5, projectileAsset: "cartoon_pinecone.png");
+        // 2호 청설모: 우측 절벽 나뭇가지 (Y = 1340), 왼쪽으로 솔방울 투척!
+        AddSquirrel(x: 634, y: 1340, radius: 26, isFacingRight: false, startDelay: 2.2, projectileAsset: "cartoon_pinecone.png");
     }
 
     private void AddRotatingLog(double x, double y, double length, double thickness, double angularVelocity, double initialAngleDeg)
@@ -223,9 +223,9 @@ public partial class StudentPickerWindow : Window
         RaceCanvas.Children.Add(bubble.Visual);
     }
 
-    private void AddSquirrel(double x, double y, double targetX, double radius, bool isFacingRight, double startDelay, string projectileAsset)
+    private void AddSquirrel(double x, double y, double radius, bool isFacingRight, double startDelay, string projectileAsset)
     {
-        var sq = new PopOutSquirrel(x, y, targetX, radius, isFacingRight, startDelay, projectileAsset);
+        var sq = new PopOutSquirrel(x, y, radius, isFacingRight, startDelay, projectileAsset);
         sq.OnThrowProjectile = (proj) =>
         {
             _projectiles.Add(proj);
@@ -233,7 +233,7 @@ public partial class StudentPickerWindow : Window
             if (_soundEnabled) _soundService.PlayBeep();
         };
         _squirrels.Add(sq);
-        RaceCanvas.Children.Add(sq.TreeHoleVisual);
+        RaceCanvas.Children.Add(sq.BranchVisual);
         RaceCanvas.Children.Add(sq.SquirrelVisual);
     }
 
@@ -1394,100 +1394,121 @@ public class PoppableBubble
 
 public class PopOutSquirrel
 {
-    public double BaseX { get; }
-    public double BaseY { get; }
-    public double TargetX { get; }
-    public double CurrentX { get; private set; }
-    public double CurrentY { get; private set; }
+    public double X { get; }
+    public double Y { get; }
+    public double CurrentX => X;
+    public double CurrentY => Y;
     public double Radius { get; }
     public bool IsFacingRight { get; }
-    public bool IsActive { get; private set; }
+    public bool IsActive => true;
 
-    public Grid TreeHoleVisual { get; }
+    public Grid BranchVisual { get; }
+    public Grid TreeHoleVisual => BranchVisual; // Backwards-compatible alias
     public Grid SquirrelVisual { get; }
 
     public string ProjectileAsset { get; }
     public Action<ThrownProjectile>? OnThrowProjectile { get; set; }
 
     private readonly ScaleTransform _scale;
+    private readonly Image _sqImg;
+    private readonly BitmapImage _frameIdle;
+    private readonly BitmapImage _frameWindup;
+    private readonly BitmapImage _frameThrow;
+    private readonly BitmapImage _frameCheer;
+
     private readonly double _startDelay;
     private double _stateTimer;
-    private int _state; // 0=Hidden, 1=Peeking, 2=PoppedOut, 3=Retreating
+    private int _state; // 0=Idle, 1=Windup, 2=Throw, 3=Cheer
     private double _bumpTimer;
+    private double _idleAnimTime;
     private bool _hasThrownThisCycle;
 
-    private const double DurationHidden = 2.6;
-    private const double DurationPeeking = 0.45;
-    private const double DurationPopped = 1.9;
-    private const double DurationRetreating = 0.35;
+    private const double DurationIdle = 2.6;
+    private const double DurationWindup = 0.35;
+    private const double DurationThrow = 0.22;
+    private const double DurationCheer = 0.45;
 
-    public PopOutSquirrel(double baseX, double baseY, double targetX, double radius, bool isFacingRight, double startDelay, string projectileAsset)
+    public PopOutSquirrel(double x, double y, double radius, bool isFacingRight, double startDelay, string projectileAsset)
     {
-        BaseX = baseX;
-        BaseY = baseY;
-        TargetX = targetX;
+        X = x;
+        Y = y;
         Radius = radius;
         IsFacingRight = isFacingRight;
         _startDelay = startDelay;
         ProjectileAsset = projectileAsset;
 
-        CurrentX = baseX;
-        CurrentY = baseY;
         _state = 0;
         _stateTimer = -startDelay;
-        IsActive = false;
-        _hasThrownThisCycle = false;
 
-        // Tree Hole
-        double holeSize = 64;
-        TreeHoleVisual = new Grid
+        // Load 4 2D side-profile animated sprite frames
+        _frameIdle = new BitmapImage(new Uri("pack://application:,,,/assets/race/cartoon_squirrel_idle.png"));
+        _frameWindup = new BitmapImage(new Uri("pack://application:,,,/assets/race/cartoon_squirrel_windup.png"));
+        _frameThrow = new BitmapImage(new Uri("pack://application:,,,/assets/race/cartoon_squirrel_throw.png"));
+        _frameCheer = new BitmapImage(new Uri("pack://application:,,,/assets/race/cartoon_squirrel_cheer.png"));
+
+        // 1. Wooden Branch Perch Visual (Cliff side footing)
+        double branchW = 86;
+        double branchH = 50;
+        BranchVisual = new Grid
         {
-            Width = holeSize,
-            Height = holeSize,
+            Width = branchW,
+            Height = branchH,
             IsHitTestVisible = false
         };
-        var holeImg = new Image
+        var branchImg = new Image
         {
-            Width = holeSize,
-            Height = holeSize,
-            Source = new BitmapImage(new Uri("pack://application:,,,/assets/race/cartoon_tree_hollow.png")),
+            Width = branchW,
+            Height = branchH,
+            Source = new BitmapImage(new Uri("pack://application:,,,/assets/race/cartoon_branch_perch.png"))
         };
-        RenderOptions.SetBitmapScalingMode(holeImg, BitmapScalingMode.HighQuality);
-        TreeHoleVisual.Children.Add(holeImg);
-        Canvas.SetLeft(TreeHoleVisual, isFacingRight ? baseX - 20 : baseX - 44);
-        Canvas.SetTop(TreeHoleVisual, baseY - holeSize / 2.0);
+        RenderOptions.SetBitmapScalingMode(branchImg, BitmapScalingMode.HighQuality);
+        BranchVisual.Children.Add(branchImg);
 
-        // Squirrel Visual
-        double sqSize = 60;
+        if (isFacingRight)
+        {
+            Canvas.SetLeft(BranchVisual, 0);
+            Canvas.SetTop(BranchVisual, y + 8);
+        }
+        else
+        {
+            BranchVisual.RenderTransformOrigin = new Point(0.5, 0.5);
+            BranchVisual.RenderTransform = new ScaleTransform(-1.0, 1.0);
+            Canvas.SetLeft(BranchVisual, 680 - branchW);
+            Canvas.SetTop(BranchVisual, y + 8);
+        }
+
+        // 2. Animated Squirrel Visual (Stationed on branch, always visible!)
+        double sqSize = 64;
         SquirrelVisual = new Grid
         {
             Width = sqSize,
             Height = sqSize,
-            RenderTransformOrigin = new Point(0.5, 0.5),
+            RenderTransformOrigin = new Point(0.5, 0.85),
             IsHitTestVisible = false,
-            Opacity = 0.0
+            Opacity = 1.0
         };
 
         _scale = new ScaleTransform(isFacingRight ? 1.0 : -1.0, 1.0);
         SquirrelVisual.RenderTransform = _scale;
 
-        var sqImg = new Image
+        _sqImg = new Image
         {
             Width = sqSize,
             Height = sqSize,
-            Source = new BitmapImage(new Uri("pack://application:,,,/assets/race/cartoon_squirrel.png")),
+            Source = _frameIdle
         };
-        RenderOptions.SetBitmapScalingMode(sqImg, BitmapScalingMode.HighQuality);
-        SquirrelVisual.Children.Add(sqImg);
+        RenderOptions.SetBitmapScalingMode(_sqImg, BitmapScalingMode.HighQuality);
+        SquirrelVisual.Children.Add(_sqImg);
 
-        UpdateVisualPosition();
+        Canvas.SetLeft(SquirrelVisual, X - sqSize / 2.0);
+        Canvas.SetTop(SquirrelVisual, Y - sqSize / 2.0);
     }
 
     public void Bump()
     {
         _bumpTimer = 0.25;
-        _scale.ScaleX = IsFacingRight ? 1.35 : -1.35;
-        _scale.ScaleY = 1.35;
+        _scale.ScaleX = (IsFacingRight ? 1.0 : -1.0) * 1.3;
+        _scale.ScaleY = 1.3;
     }
 
     public void Update(double dt)
@@ -1503,96 +1524,85 @@ public class PopOutSquirrel
         }
 
         _stateTimer += dt;
+        _idleAnimTime += dt;
 
         switch (_state)
         {
-            case 0: // Hidden
-                CurrentX = BaseX;
-                CurrentY = BaseY;
-                IsActive = false;
+            case 0: // Idle (holding pinecone, breathing gently)
+                if (_sqImg.Source != _frameIdle) _sqImg.Source = _frameIdle;
                 _hasThrownThisCycle = false;
-                SquirrelVisual.Opacity = 0.0;
-                if (_stateTimer >= DurationHidden)
+
+                if (_bumpTimer <= 0)
                 {
-                    _state = 1;
+                    _scale.ScaleY = 1.0 + 0.025 * Math.Sin(_idleAnimTime * 3.5);
+                }
+
+                if (_stateTimer >= DurationIdle)
+                {
+                    _state = 1; // Windup!
                     _stateTimer = 0;
+                    _sqImg.Source = _frameWindup;
                 }
                 break;
 
-            case 1: // Peeking (0.45s)
-                double peekRatio = Math.Clamp(_stateTimer / DurationPeeking, 0.0, 1.0);
-                CurrentX = BaseX + (TargetX - BaseX) * 0.25 * peekRatio;
-                CurrentY = BaseY;
-                IsActive = false;
-                SquirrelVisual.Opacity = 0.9;
-                if (_stateTimer >= DurationPeeking)
+            case 1: // Windup (cocking arm back with pinecone, aiming)
+                if (_sqImg.Source != _frameWindup) _sqImg.Source = _frameWindup;
+
+                if (_stateTimer >= DurationWindup)
                 {
-                    _state = 2;
+                    _state = 2; // Throw!
                     _stateTimer = 0;
+                    _sqImg.Source = _frameThrow;
+
+                    // Release the flying pinecone projectile!
+                    if (!_hasThrownThisCycle)
+                    {
+                        _hasThrownThisCycle = true;
+                        var rand = new Random();
+                        double throwX = IsFacingRight ? (X + 28) : (X - 28);
+                        double throwY = Y - 6;
+                        double vx = (IsFacingRight ? 1.0 : -1.0) * (150.0 + rand.NextDouble() * 50.0);
+                        double vy = 55.0 + rand.NextDouble() * 40.0;
+                        OnThrowProjectile?.Invoke(new ThrownProjectile(throwX, throwY, vx, vy, ProjectileAsset));
+                    }
                 }
                 break;
 
-            case 2: // Popped Out (1.9s)
-                double popRatio = Math.Clamp(_stateTimer / 0.15, 0.0, 1.0);
-                CurrentX = BaseX + (TargetX - BaseX) * (0.25 + 0.75 * popRatio);
-                CurrentY = BaseY + Math.Sin(_stateTimer * 6.0) * 2.5;
-                IsActive = true;
-                SquirrelVisual.Opacity = 1.0;
+            case 2: // Throw follow-through
+                if (_sqImg.Source != _frameThrow) _sqImg.Source = _frameThrow;
 
-                // Throw projectile towards the track center!
-                if (_stateTimer >= 0.22 && !_hasThrownThisCycle)
+                if (_stateTimer >= DurationThrow)
                 {
-                    _hasThrownThisCycle = true;
-                    var rand = new Random();
-                    double vx = (IsFacingRight ? 1.0 : -1.0) * (150.0 + rand.NextDouble() * 40.0);
-                    double vy = 70.0 + rand.NextDouble() * 40.0;
-                    OnThrowProjectile?.Invoke(new ThrownProjectile(CurrentX, CurrentY, vx, vy, ProjectileAsset));
-                }
-
-                if (_stateTimer >= DurationPopped)
-                {
-                    _state = 3;
+                    _state = 3; // Cheer!
                     _stateTimer = 0;
+                    _sqImg.Source = _frameCheer;
                 }
                 break;
 
-            case 3: // Retreating (0.35s)
-                double retRatio = Math.Clamp(_stateTimer / DurationRetreating, 0.0, 1.0);
-                CurrentX = TargetX + (BaseX - TargetX) * retRatio;
-                CurrentY = BaseY;
-                IsActive = false;
-                SquirrelVisual.Opacity = 1.0 - retRatio * 0.8;
-                if (_stateTimer >= DurationRetreating)
+            case 3: // Cheer & chuckle
+                if (_sqImg.Source != _frameCheer) _sqImg.Source = _frameCheer;
+
+                if (_stateTimer >= DurationCheer)
                 {
-                    _state = 0;
+                    _state = 0; // Back to Idle
                     _stateTimer = 0;
-                    SquirrelVisual.Opacity = 0.0;
+                    _sqImg.Source = _frameIdle;
                 }
                 break;
         }
-
-        UpdateVisualPosition();
-    }
-
-    private void UpdateVisualPosition()
-    {
-        Canvas.SetLeft(SquirrelVisual, CurrentX - SquirrelVisual.Width / 2.0);
-        Canvas.SetTop(SquirrelVisual, CurrentY - SquirrelVisual.Height / 2.0);
     }
 
     public void Reset()
     {
         _state = 0;
         _stateTimer = -_startDelay;
+        _idleAnimTime = 0;
         _bumpTimer = 0;
         _hasThrownThisCycle = false;
-        CurrentX = BaseX;
-        CurrentY = BaseY;
-        IsActive = false;
-        SquirrelVisual.Opacity = 0.0;
+        _sqImg.Source = _frameIdle;
         _scale.ScaleX = IsFacingRight ? 1.0 : -1.0;
         _scale.ScaleY = 1.0;
-        UpdateVisualPosition();
+        SquirrelVisual.Opacity = 1.0;
     }
 }
 
@@ -1608,7 +1618,7 @@ public class ThrownProjectile
     private readonly RotateTransform _rot;
     private double _angle;
     private double _lifeTimer;
-    private const double MaxLife = 3.8;
+    private const double MaxLife = 3.6;
 
     public ThrownProjectile(double x, double y, double vx, double vy, string assetName)
     {
@@ -1617,7 +1627,7 @@ public class ThrownProjectile
         Vx = vx;
         Vy = vy;
 
-        double size = 30;
+        double size = 32;
         Visual = new Grid
         {
             Width = size,
@@ -1647,34 +1657,34 @@ public class ThrownProjectile
         if (IsDestroyed) return;
 
         _lifeTimer += dt;
-        if (_lifeTimer >= MaxLife)
+        if (_lifeTimer >= MaxLife || Y > 2150)
         {
             Destroy();
             return;
         }
 
-        // Gravity & drag
-        Vy += 160.0 * dt;
-        Vx *= 0.993;
-        Vy *= 0.993;
+        // Realistic pinecone projectile physics: gravity arc & air drag
+        Vy += 170.0 * dt;
+        Vx *= 0.995;
+        Vy *= 0.995;
 
         X += Vx * dt;
         Y += Vy * dt;
 
-        // Wall bounce
-        if (X - Radius < 40)
+        // Ricochet / Wall bounce off canyon walls
+        if (X - Radius < 38)
         {
-            X = 40 + Radius;
-            Vx = Math.Abs(Vx) * 0.75 + 20;
+            X = 38 + Radius;
+            Vx = Math.Abs(Vx) * 0.75 + 15;
         }
-        else if (X + Radius > 640)
+        else if (X + Radius > 642)
         {
-            X = 640 - Radius;
-            Vx = -Math.Abs(Vx) * 0.75 - 20;
+            X = 642 - Radius;
+            Vx = -Math.Abs(Vx) * 0.75 - 15;
         }
 
-        // Spin
-        _angle += Vx * dt * 3.2;
+        // Rapid spin rotation as it flies
+        _angle += Vx * dt * 4.2;
         _rot.Angle = _angle;
 
         Canvas.SetLeft(Visual, X - Visual.Width / 2.0);
