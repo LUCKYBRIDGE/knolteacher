@@ -121,10 +121,10 @@
                     </StackPanel>
                 </Button>
 
-                <Button x:Name="BtnPicker" Style="{StaticResource DockButtonStyle}" Click="BtnPicker_Click" ToolTip="동물 핀볼 발표자 추첨기 (Alt+8)">
+                <Button x:Name="BtnPicker" Style="{StaticResource DockButtonStyle}" Click="BtnPicker_Click" ToolTip="동물 뽑기 레이스 (Alt+8)">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="🎰 " FontSize="12"/>
-                        <TextBlock Text="핀볼"/>
+                        <TextBlock Text="레이스"/>
                     </StackPanel>
                 </Button>
 

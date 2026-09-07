@@ -54,7 +54,7 @@ public class TrayService : ITrayService
         menu.Items.Add(new ToolStripSeparator());
 
         // 2. Direct tool shortcuts
-        menu.Items.Add(new ToolStripMenuItem("🎰 스마트 핀볼 추첨기 (Alt+8)", null, (s, e) =>
+        menu.Items.Add(new ToolStripMenuItem("🌱 동물 뽑기 레이스 (Alt+8)", null, (s, e) =>
         {
             Application.Current.Dispatcher.Invoke(() =>
             {

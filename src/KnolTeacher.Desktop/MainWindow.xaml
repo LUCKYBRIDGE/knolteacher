@@ -188,7 +188,7 @@
                                 <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="🎰" FontSize="13" Margin="0,0,8,0"/>
-                                    <TextBlock Text="핀볼 뽑기 (Alt+8)" FontSize="12" VerticalAlignment="Center"/>
+                                    <TextBlock Text="뽑기 레이스 (Alt+8)" FontSize="12" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
 
@@ -766,7 +766,7 @@
                             <Border Margin="6" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="18" Cursor="Hand" MouseLeftButtonUp="BtnLaunchPicker_Click">
                                 <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
                                     <TextBlock Text="🎰" FontSize="38" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                    <TextBlock Text="핀볼 뽑기" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="뽑기 레이스" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
                                     <TextBlock Text="32종 동물 아바타 레이스 (Alt+8)" FontSize="12" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
                                 </StackPanel>
                             </Border>

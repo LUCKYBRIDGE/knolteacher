@@ -4,346 +4,413 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="🌲 숲속 동물 핀볼 추첨기 (Alt+8)" Height="940" Width="980"
-        MinHeight="720" MinWidth="780"
-        WindowStartupLocation="Manual"
+        Title="🌱 뽑기 레이스 (Alt+8)" Height="780" Width="1240"
+        MinHeight="660" MinWidth="980"
+        WindowStartupLocation="CenterScreen"
         Topmost="True"
-        Background="#07120E">
+        Background="#1E1E24">
 
     <Grid>
         <Grid.RowDefinitions>
-            <!-- 1. Top Control & Status Toolbar -->
-            <RowDefinition Height="Auto" />
-            <!-- 2. Pinball Playfield (Responsive Viewport with ScrollViewer) -->
+            <!-- 1. Top Title & Options Bar -->
+            <RowDefinition Height="52" />
+            <!-- 2. Main 3-Column Playfield (Minimap | Race Track | Leaderboard) -->
             <RowDefinition Height="*" />
             <!-- 3. Bottom Control Bar -->
-            <RowDefinition Height="Auto" />
+            <RowDefinition Height="64" />
         </Grid.RowDefinitions>
 
-        <!-- 1. Top Control & Status Bar -->
-        <Border Grid.Row="0" Background="#102219" BorderBrush="#294D35" BorderThickness="0,0,0,1" Padding="14,10">
-            <Grid>
+        <!-- ========================================================= -->
+        <!-- 1. TOP HEADER & TOPIC BAR -->
+        <!-- ========================================================= -->
+        <Border Grid.Row="0" Background="#18181B" BorderBrush="#27272A" BorderThickness="0,0,0,1" Padding="14,0">
+            <Grid VerticalAlignment="Center">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
-                <!-- Left: Title & Mode Indicator -->
+                <!-- Left: App Identity -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="🌲" FontSize="24" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                    <StackPanel>
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="스마트 동물 핀볼 추첨기" FontWeight="Bold" FontSize="16" Foreground="#F7F3DF"/>
-                            <Border Background="#2F6B45" CornerRadius="4" Padding="6,2" Margin="8,0,0,0" VerticalAlignment="Center">
-                                <TextBlock Text="60 FPS 물리 엔진" FontSize="10" FontWeight="Bold" Foreground="White"/>
-                            </Border>
-                        </StackPanel>
-                        <TextBlock x:Name="TxtStatus" Text="남은 학생: 25명 / 총 25명" FontSize="11" Foreground="#A9C5AE" Margin="0,2,0,0"/>
-                    </StackPanel>
+                    <TextBlock Text="🌱" FontSize="20" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <TextBlock Text="뽑기 레이스" FontSize="16" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
                 </StackPanel>
 
-                <!-- Center: Modes -->
-                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <RadioButton x:Name="RbModeRace" Content="🏆 전원 숲길 레이스 (추천)" IsChecked="True" Foreground="#F6D365" FontWeight="Bold" FontSize="12" Margin="0,0,12,0" Checked="Mode_Checked"/>
-                    <RadioButton x:Name="RbModeSingle" Content="🎯 동물 한 마리" Foreground="#F7F3DF" FontSize="12" Margin="0,0,12,0" Checked="Mode_Checked"/>
-                    <RadioButton x:Name="RbModeClassic" Content="🎡 클래식 룰렛" Foreground="#A9C5AE" FontSize="12" Checked="Mode_Checked"/>
+                <!-- Center: Configurable Race Topic Banner -->
+                <StackPanel x:Name="PanelTitle" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBox x:Name="TbRaceTitle" Text="이번엔 1등, 꼴등이 받아요"
+                             FontSize="20" FontWeight="Bold" Foreground="White"
+                             Background="Transparent" BorderThickness="0"
+                             TextAlignment="Center" VerticalAlignment="Center"
+                             Cursor="IBeam" ToolTip="클릭하여 이번 뽑기 레이스 제목을 직접 수정할 수 있습니다"/>
+                    <Button x:Name="BtnHideTitle" Content="제목 숨기기" Click="BtnHideTitle_Click"
+                            Margin="12,0,0,0" Padding="8,4" FontSize="11"
+                            Background="#27272A" Foreground="#A1A1AA" BorderBrush="#3F3F46" BorderThickness="1" Cursor="Hand">
+                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                    </Button>
                 </StackPanel>
 
-                <!-- Right: Options & Avatar Manage -->
+                <!-- Right: Options & Window Controls -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Button x:Name="BtnSwitchMonitor" Content="📺 모니터 2" Click="BtnSwitchMonitor_Click" Padding="8,6" Margin="0,0,6,0"
-                            Background="#193628" Foreground="#8DE2A8" BorderBrush="#3D7A50" BorderThickness="1" FontWeight="Bold" FontSize="11" Cursor="Hand"
-                            ToolTip="핀볼 창을 모니터 1 ↔ 모니터 2로 즉시 이동">
+                    <!-- Target Winner Count Picker -->
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,0">
+                        <TextBlock Text="⭐ 순위" FontSize="12" FontWeight="Bold" Foreground="#E4E4E7" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <ComboBox x:Name="CbWinnerCount" Width="74" Height="28" FontSize="12" FontWeight="Bold"
+                                  Background="#27272A" Foreground="White" BorderBrush="#3F3F46" VerticalContentAlignment="Center">
+                            <ComboBoxItem Content="1명" IsSelected="True"/>
+                            <ComboBoxItem Content="2명"/>
+                            <ComboBoxItem Content="3명"/>
+                            <ComboBoxItem Content="4명"/>
+                            <ComboBoxItem Content="5명"/>
+                        </ComboBox>
+                    </StackPanel>
+
+                    <!-- View Results Button -->
+                    <Button x:Name="BtnViewResult" Content="결과 보기" Click="BtnViewResult_Click"
+                            Padding="12,6" Margin="0,0,10,0" Height="30"
+                            Background="#EA580C" Foreground="White" FontWeight="Bold" FontSize="12" BorderThickness="0" Cursor="Hand">
                         <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
                     </Button>
-                    <CheckBox x:Name="ChkExcludePicked" Content="뽑힌 학생 제외" IsChecked="True" Foreground="#D4E3D7" FontSize="12" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                    <Button Content="👥 학생 &amp; 동물 아바타" Click="BtnManageRoster_Click" Padding="10,6" Margin="0,0,6,0"
-                            Background="#193628" Foreground="#8DE2A8" BorderBrush="#365D42" BorderThickness="1" FontWeight="Bold" FontSize="11" Cursor="Hand" ToolTip="학생 명단 및 32종 동물 아바타 관리">
+
+                    <!-- Monitor Switcher -->
+                    <Button x:Name="BtnSwitchMonitor" Content="📺 모니터 2" Click="BtnSwitchMonitor_Click"
+                            Padding="10,6" Margin="0,0,8,0" Height="30"
+                            Background="#27272A" Foreground="#38BDF8" BorderBrush="#0284C7" BorderThickness="1" FontWeight="Bold" FontSize="11" Cursor="Hand">
                         <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
                     </Button>
-                    <Button Content="↺ 초기화" Click="BtnReset_Click" Padding="10,6" Background="#31513B" Foreground="White" FontSize="11" BorderThickness="0" Cursor="Hand" ToolTip="제외 목록 초기화">
-                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
-                    </Button>
+
+                    <!-- Exclude Picked Checkbox -->
+                    <CheckBox x:Name="ChkExcludePicked" Content="뽑힌 학생 제외" IsChecked="True" Foreground="#D4D4D8" FontSize="11" VerticalAlignment="Center" Margin="0,0,4,0"/>
                 </StackPanel>
             </Grid>
         </Border>
 
-        <!-- 2. Tall forest playfield: real scrollable world + responsive leader camera follow -->
-        <Grid Grid.Row="1" x:Name="PinballViewport" Margin="10,8" ClipToBounds="True"
-              SizeChanged="PinballViewport_SizeChanged" Background="#07120E">
+        <!-- ========================================================= -->
+        <!-- 2. MAIN 3-PANEL PLAYFIELD -->
+        <!-- ========================================================= -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <!-- Left: Minimap (180px) -->
+                <ColumnDefinition Width="180" />
+                <!-- Center: Main Race Camera Viewport (*) -->
+                <ColumnDefinition Width="*" />
+                <!-- Right: Leaderboard (210px) -->
+                <ColumnDefinition Width="210" />
+            </Grid.ColumnDefinitions>
 
-            <ScrollViewer x:Name="PinballScrollViewer"
-                          VerticalScrollBarVisibility="Visible"
-                          HorizontalScrollBarVisibility="Disabled"
-                          HorizontalContentAlignment="Center"
-                          VerticalContentAlignment="Top"
-                          PanningMode="VerticalOnly"
-                          PreviewMouseWheel="PinballScrollViewer_PreviewMouseWheel"
-                          PreviewMouseDown="PinballScrollViewer_PreviewMouseDown"
-                          Background="#07120E">
-                <Grid x:Name="PinballWorld" Width="680" Height="2280"
-                      HorizontalAlignment="Center" VerticalAlignment="Top">
-                    <Grid.LayoutTransform>
-                        <ScaleTransform x:Name="PinballWorldScale" ScaleX="1" ScaleY="1"/>
-                    </Grid.LayoutTransform>
+            <!-- 2-A. LEFT PANEL: 전체맵 (MINIMAP) -->
+            <Border Grid.Column="0" Background="#18181B" BorderBrush="#27272A" BorderThickness="0,0,1,0" Padding="12,10">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
 
-                    <Border CornerRadius="32" BorderBrush="#315A3C" BorderThickness="4">
-                        <Border.Background>
-                            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                <GradientStop Color="#214F31" Offset="0"/>
-                                <GradientStop Color="#143D28" Offset="0.30"/>
-                                <GradientStop Color="#102F21" Offset="0.63"/>
-                                <GradientStop Color="#092417" Offset="1"/>
-                            </LinearGradientBrush>
-                        </Border.Background>
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
+                        <TextBlock Text="🗺️" FontSize="14" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="전체맵" FontSize="13" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <!-- Minimap Box -->
+                    <Border Grid.Row="1" Background="#0F172A" CornerRadius="12" BorderBrush="#334155" BorderThickness="1.5" ClipToBounds="True">
+                        <Canvas x:Name="MinimapCanvas" Width="154" Height="620" ClipToBounds="True">
+                            <!-- Background preview image of the whole track -->
+                            <Rectangle x:Name="MinimapBg" Width="154" Height="620" Fill="#1E293B"/>
+
+                            <!-- Dynamic Stage Zones on Minimap -->
+                            <!-- Zone 1: Jungle Canopy -->
+                            <Rectangle Canvas.Left="0" Canvas.Top="0" Width="154" Height="78" Fill="#65A30D" Opacity="0.45"/>
+                            <!-- Zone 2: Slanted Valleys -->
+                            <Rectangle Canvas.Left="0" Canvas.Top="78" Width="154" Height="118" Fill="#4D7C0F" Opacity="0.4"/>
+                            <!-- Zone 3: Fossil Cross Earth -->
+                            <Rectangle Canvas.Left="0" Canvas.Top="196" Width="154" Height="180" Fill="#78350F" Opacity="0.5"/>
+                            <!-- Zone 4: Rune & Mushroom Forest -->
+                            <Rectangle Canvas.Left="0" Canvas.Top="376" Width="154" Height="154" Fill="#166534" Opacity="0.5"/>
+                            <!-- Zone 5: Blue Waterfall Chute -->
+                            <Rectangle Canvas.Left="0" Canvas.Top="530" Width="154" Height="90" Fill="#0284C7" Opacity="0.55"/>
+
+                            <!-- Live dots representing students on minimap -->
+                            <Canvas x:Name="MinimapDotsLayer" Width="154" Height="620"/>
+
+                            <!-- Current Camera Viewport Finder Box -->
+                            <Border x:Name="MinimapViewportBox" Canvas.Left="0" Canvas.Top="0" Width="154" Height="150"
+                                    BorderBrush="#FDE047" BorderThickness="2" Background="#20FDE047" IsHitTestVisible="False" CornerRadius="4"/>
+                        </Canvas>
                     </Border>
-
-                    <Canvas x:Name="PinballCanvas" Width="680" Height="2280" ClipToBounds="True">
-                        <Canvas.Background>
-                            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                <GradientStop Color="#244F31" Offset="0"/>
-                                <GradientStop Color="#163D29" Offset="0.27"/>
-                                <GradientStop Color="#153522" Offset="0.58"/>
-                                <GradientStop Color="#0B2819" Offset="1"/>
-                            </LinearGradientBrush>
-                        </Canvas.Background>
-
-                        <!-- Upper canopy -->
-                        <Ellipse Canvas.Left="-70" Canvas.Top="-35" Width="270" Height="190" Fill="#335F35" Opacity="0.72"/>
-                        <Ellipse Canvas.Left="70" Canvas.Top="-65" Width="300" Height="180" Fill="#42743F" Opacity="0.62"/>
-                        <Ellipse Canvas.Left="300" Canvas.Top="-55" Width="290" Height="190" Fill="#315F37" Opacity="0.70"/>
-                        <Ellipse Canvas.Left="500" Canvas.Top="-30" Width="250" Height="185" Fill="#284E31" Opacity="0.78"/>
-
-                        <!-- Long side trunks so the whole course reads as one continuous forest -->
-                        <Path Data="M 24,120 C 60,310 34,470 67,650 C 96,835 42,1010 78,1190 C 108,1390 44,1570 76,1750 C 96,1930 58,2110 44,2280 L 0,2280 L 0,0 L 48,0 Z"
-                              Fill="#4B3323" Stroke="#6F4A2B" StrokeThickness="3" Opacity="0.95"/>
-                        <Path Data="M 656,115 C 620,300 650,470 615,650 C 588,830 638,1015 602,1195 C 580,1390 640,1585 604,1760 C 584,1945 622,2115 636,2280 L 680,2280 L 680,0 L 632,0 Z"
-                              Fill="#4B3323" Stroke="#6F4A2B" StrokeThickness="3" Opacity="0.95"/>
-
-                        <!-- Forest depth bands -->
-                        <Path Data="M 0,450 C 120,405 210,505 335,455 C 470,405 555,480 680,430 L 680,800 C 550,845 455,775 335,820 C 215,865 105,790 0,835 Z"
-                              Fill="#0E2E1F" Opacity="0.36"/>
-                        <Path Data="M 0,930 C 115,885 215,965 335,920 C 455,875 570,955 680,910 L 680,1295 C 570,1335 465,1265 345,1310 C 220,1355 105,1280 0,1320 Z"
-                              Fill="#0A291B" Opacity="0.48"/>
-                        <Path Data="M 0,1470 C 105,1425 225,1505 345,1460 C 470,1415 570,1495 680,1450 L 680,1830 C 575,1870 455,1805 340,1845 C 220,1888 105,1815 0,1855 Z"
-                              Fill="#082519" Opacity="0.54"/>
-
-                        <!-- Start tree house -->
-                        <Border Canvas.Left="155" Canvas.Top="20" Width="370" Height="62" CornerRadius="18"
-                                Background="#6B4428" BorderBrush="#C89652" BorderThickness="2">
-                            <TextBlock Text="🌿  출발 대기선 (숲속 나무집)  🌿" FontSize="14" FontWeight="Bold"
-                                       Foreground="#FFF3CD" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <Path Data="M 210,82 L 270,145 L 410,145 L 470,82"
-                              Stroke="#B88750" StrokeThickness="10" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
-
-                        <!-- Zone labels -->
-                        <Border Canvas.Left="28" Canvas.Top="178" Background="#B52D5A36" CornerRadius="10" Padding="9,4">
-                            <TextBlock Text="① 도토리 갈림길" Foreground="#DDF3C4" FontSize="12" FontWeight="Bold"/>
-                        </Border>
-                        <Border Canvas.Left="477" Canvas.Top="385" Background="#B55F3A27" CornerRadius="10" Padding="9,4">
-                            <TextBlock Text="② 버섯 숲" Foreground="#FFE9C7" FontSize="12" FontWeight="Bold"/>
-                        </Border>
-                        <Border Canvas.Left="30" Canvas.Top="602" Background="#B55E4528" CornerRadius="10" Padding="9,4">
-                            <TextBlock Text="③ 쓰러진 통나무 길" Foreground="#FFE6B5" FontSize="12" FontWeight="Bold"/>
-                        </Border>
-                        <Border Canvas.Left="472" Canvas.Top="785" Background="#B52A4E49" CornerRadius="10" Padding="9,4">
-                            <TextBlock Text="④ 돌개울 징검다리" Foreground="#D9F4E9" FontSize="12" FontWeight="Bold"/>
-                        </Border>
-                        <Border Canvas.Left="30" Canvas.Top="1015" Background="#B5355030" CornerRadius="10" Padding="9,4">
-                            <TextBlock Text="⑤ 덩굴 협곡" Foreground="#E3F5D0" FontSize="12" FontWeight="Bold"/>
-                        </Border>
-                        <Border Canvas.Left="466" Canvas.Top="1245" Background="#B5573A27" CornerRadius="10" Padding="9,4">
-                            <TextBlock Text="⑥ 고목 터널" Foreground="#FFE6C9" FontSize="12" FontWeight="Bold"/>
-                        </Border>
-                        <Border Canvas.Left="30" Canvas.Top="1475" Background="#B5445731" CornerRadius="10" Padding="9,4">
-                            <TextBlock Text="⑦ 솔방울 회전숲" Foreground="#F2EDC9" FontSize="12" FontWeight="Bold"/>
-                        </Border>
-                        <Border Canvas.Left="474" Canvas.Top="1710" Background="#B53F4B49" CornerRadius="10" Padding="9,4">
-                            <TextBlock Text="⑧ 바위 계곡" Foreground="#E1F0ED" FontSize="12" FontWeight="Bold"/>
-                        </Border>
-                        <Border Canvas.Left="30" Canvas.Top="1935" Background="#B53F5529" CornerRadius="10" Padding="9,4">
-                            <TextBlock Text="⑨ 거대 뿌리 미로" Foreground="#E7F6C8" FontSize="12" FontWeight="Bold"/>
-                        </Border>
-
-                        <!-- Forest decorations -->
-                        <TextBlock Canvas.Left="54" Canvas.Top="118" Text="🍃" FontSize="30" Opacity="0.80"/>
-                        <TextBlock Canvas.Left="588" Canvas.Top="145" Text="🌿" FontSize="30" Opacity="0.80"/>
-                        <TextBlock Canvas.Left="70" Canvas.Top="330" Text="🌱" FontSize="28" Opacity="0.78"/>
-                        <TextBlock Canvas.Left="570" Canvas.Top="505" Text="🍂" FontSize="26" Opacity="0.72"/>
-                        <TextBlock Canvas.Left="76" Canvas.Top="820" Text="🌿" FontSize="28" Opacity="0.82"/>
-                        <TextBlock Canvas.Left="575" Canvas.Top="930" Text="🍃" FontSize="28" Opacity="0.82"/>
-                        <TextBlock Canvas.Left="70" Canvas.Top="1120" Text="🌾" FontSize="28" Opacity="0.78"/>
-                        <TextBlock Canvas.Left="575" Canvas.Top="1320" Text="🍁" FontSize="26" Opacity="0.76"/>
-                        <TextBlock Canvas.Left="76" Canvas.Top="1535" Text="🌲" FontSize="28" Opacity="0.76"/>
-                        <TextBlock Canvas.Left="570" Canvas.Top="1810" Text="🌿" FontSize="28" Opacity="0.82"/>
-                        <TextBlock Canvas.Left="75" Canvas.Top="2050" Text="🍂" FontSize="28" Opacity="0.82"/>
-
-                        <!-- Creek #1 -->
-                        <Path Data="M 88,760 C 185,720 230,800 330,770 C 430,738 500,814 594,775"
-                              Stroke="#4FA9A1" StrokeThickness="54" Opacity="0.30" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
-                        <Path Data="M 88,760 C 185,720 230,800 330,770 C 430,738 500,814 594,775"
-                              Stroke="#83D5C9" StrokeThickness="5" Opacity="0.65" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
-
-                        <!-- Vine canyon -->
-                        <Path Data="M 72,1080 C 185,1025 240,1115 340,1075 C 445,1030 520,1110 607,1068"
-                              Stroke="#3B6C3F" StrokeThickness="18" Opacity="0.70"/>
-                        <Path Data="M 75,1150 C 175,1095 250,1180 345,1140 C 445,1098 530,1178 605,1138"
-                              Stroke="#4C7D49" StrokeThickness="11" Opacity="0.70"/>
-
-                        <!-- Hollow log tunnel -->
-                        <Border Canvas.Left="120" Canvas.Top="1280" Width="440" Height="80" CornerRadius="38"
-                                Background="#5F4028" BorderBrush="#A87848" BorderThickness="4" Opacity="0.78"/>
-                        <Border Canvas.Left="155" Canvas.Top="1300" Width="370" Height="40" CornerRadius="20"
-                                Background="#182719" BorderBrush="#2F4B32" BorderThickness="2" Opacity="0.92"/>
-
-                        <!-- Pine-cone grove backdrop -->
-                        <Ellipse Canvas.Left="120" Canvas.Top="1515" Width="75" Height="95" Fill="#6B4A2D" Opacity="0.55"/>
-                        <Ellipse Canvas.Left="300" Canvas.Top="1575" Width="80" Height="100" Fill="#725036" Opacity="0.55"/>
-                        <Ellipse Canvas.Left="490" Canvas.Top="1510" Width="75" Height="95" Fill="#6B4A2D" Opacity="0.55"/>
-
-                        <!-- Rocky ravine creek #2 -->
-                        <Path Data="M 75,1760 C 170,1715 230,1810 335,1765 C 445,1718 520,1815 605,1770"
-                              Stroke="#315F61" StrokeThickness="70" Opacity="0.28" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
-                        <Path Data="M 75,1760 C 170,1715 230,1810 335,1765 C 445,1718 520,1815 605,1770"
-                              Stroke="#78C7BE" StrokeThickness="5" Opacity="0.58" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
-
-                        <!-- Final root maze funnel -->
-                        <Path Data="M 64,1965 C 130,2010 150,2065 230,2115 L 230,2195 L 52,2195 Z"
-                              Fill="#173A22" Stroke="#6D8C3E" StrokeThickness="3"/>
-                        <Path Data="M 616,1965 C 550,2010 530,2065 450,2115 L 450,2195 L 628,2195 Z"
-                              Fill="#173A22" Stroke="#6D8C3E" StrokeThickness="3"/>
-
-                        <!-- Final camp: Champion finish gate -->
-                        <Border Canvas.Left="235" Canvas.Top="2155" Width="210" Height="90" CornerRadius="26"
-                                Background="#4A3C18" BorderBrush="#F0C95A" BorderThickness="3">
-                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                                <TextBlock Text="🏕️  결승점 (숲속 캠프)" FontWeight="Bold" FontSize="16" Foreground="#FFF2A8" HorizontalAlignment="Center"/>
-                                <TextBlock Text="1등 완주 동물이 당첨!" FontSize="11" Foreground="#F3E4A5" HorizontalAlignment="Center" Margin="0,4,0,0"/>
-                            </StackPanel>
-                        </Border>
-                        <Border Canvas.Left="55" Canvas.Top="2185" Width="155" Height="58" CornerRadius="16"
-                                Background="#243426" BorderBrush="#476348" BorderThickness="2">
-                            <TextBlock Text="도전 완료 💫" FontSize="11" Foreground="#B9CFB9" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <Border Canvas.Left="470" Canvas.Top="2185" Width="155" Height="58" CornerRadius="16"
-                                Background="#243426" BorderBrush="#476348" BorderThickness="2">
-                            <TextBlock Text="도전 완료 💫" FontSize="11" Foreground="#B9CFB9" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                    </Canvas>
                 </Grid>
-            </ScrollViewer>
-
-            <!-- Classic Mode Overlay (Hidden by default) -->
-            <Grid x:Name="GridClassicMode" Visibility="Collapsed" Background="#F008180F">
-                <Border Background="#173725" CornerRadius="22" BorderBrush="#78B77E" BorderThickness="2"
-                        Width="520" Height="410" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="20">
-                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                        <TextBlock Text="🎡" FontSize="38" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                        <Border x:Name="BorderClassicAvatar" CornerRadius="45" BorderBrush="#78B77E" BorderThickness="3" Width="90" Height="90" HorizontalAlignment="Center" Margin="0,0,0,10" Background="#102219" Visibility="Collapsed">
-                            <Image x:Name="ImgClassicAvatar" Width="82" Height="82" RenderOptions.BitmapScalingMode="HighQuality"/>
-                        </Border>
-                        <TextBlock x:Name="TxtClassicWinnerNumber" Text="준비 완료" FontSize="20" FontWeight="Bold" Foreground="#9BE4A5" HorizontalAlignment="Center"/>
-                        <TextBlock x:Name="TxtClassicWinnerName" Text="발표자 뽑기를 눌러주세요" FontSize="30" FontWeight="Bold" Foreground="#F6D365" HorizontalAlignment="Center" Margin="0,8,0,14"/>
-                        <TextBlock x:Name="TxtClassicRemaining" Text="남은 학생: 25명" FontSize="14" Foreground="#A9C5AE" HorizontalAlignment="Center"/>
-                    </StackPanel>
-                </Border>
-            </Grid>
-
-            <!-- Celebration Card Overlay (Shown when winner arrives) -->
-            <Grid x:Name="GridCelebration" Visibility="Collapsed" Background="#CC04110A">
-                <Border Background="#173725" CornerRadius="26" BorderBrush="#F0C95A" BorderThickness="3"
-                        Width="520" Height="430" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="24">
-                    <Border.Effect>
-                        <DropShadowEffect BlurRadius="40" Color="#F0C95A" Opacity="0.8"/>
-                    </Border.Effect>
-                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                        <TextBlock Text="🎉 1등 완주! 당첨을 축하합니다! 🎉" FontWeight="Bold" FontSize="18" Foreground="#FFF2A8" HorizontalAlignment="Center" Margin="0,0,0,14"/>
-                        <Border CornerRadius="64" BorderBrush="#F0C95A" BorderThickness="4" Width="128" Height="128"
-                                HorizontalAlignment="Center" Margin="0,0,0,12" Background="#102219">
-                            <Image x:Name="ImgWinnerAvatar" Width="118" Height="118" RenderOptions.BitmapScalingMode="HighQuality"/>
-                        </Border>
-                        <TextBlock x:Name="TxtWinnerTitle" Text="7번 김민준 (판다)" FontWeight="Bold" FontSize="29" Foreground="White" HorizontalAlignment="Center" Margin="0,0,0,6"/>
-                        <TextBlock Text="오늘의 멋진 발표자입니다! 👏" FontSize="15" Foreground="#B6CDBA" HorizontalAlignment="Center" Margin="0,0,0,20"/>
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                            <Button Content="확인 / 계속하기" Click="BtnDismissCelebration_Click" Width="140" Height="42"
-                                    Background="#2F6B45" Foreground="White" FontWeight="Bold" FontSize="14" BorderThickness="0" Cursor="Hand" Margin="0,0,10,0">
-                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="10"/></Style></Button.Resources>
-                            </Button>
-                            <Button Content="🌲 다음 숲길 레이스" Click="BtnNextLaunch_Click" Width="150" Height="42"
-                                    Background="#A46D28" Foreground="White" FontWeight="Bold" FontSize="14" BorderThickness="0" Cursor="Hand">
-                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="10"/></Style></Button.Resources>
-                            </Button>
-                        </StackPanel>
-                    </StackPanel>
-                </Border>
-            </Grid>
-
-            <!-- Fixed race HUD (Top Left) -->
-            <Border HorizontalAlignment="Left" VerticalAlignment="Top" Margin="18"
-                    Background="#D9142B1D" BorderBrush="#6A9166" BorderThickness="1"
-                    CornerRadius="14" Padding="12,8" IsHitTestVisible="False">
-                <StackPanel>
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="👑 " FontSize="15"/>
-                        <TextBlock x:Name="TxtRaceLeader" Text="선두: 출발 대기" Foreground="#FFF2A8" FontSize="13" FontWeight="Bold"/>
-                    </StackPanel>
-                    <TextBlock x:Name="TxtRaceZone" Text="🌲 숲속 출발 대기선" Foreground="#B9D7BE" FontSize="11" Margin="0,3,0,0"/>
-                    <TextBlock Text="휠/스크롤바로 전체 맵을 직접 볼 수 있습니다" Foreground="#7FA68A" FontSize="9.5" Margin="0,3,0,0"/>
-                </StackPanel>
             </Border>
 
-            <!-- Fixed Race Progress Bar (Right) -->
-            <Border HorizontalAlignment="Right" VerticalAlignment="Stretch" Width="44" Margin="0,18,34,18"
-                    Background="#B3102418" BorderBrush="#49694E" BorderThickness="1"
-                    CornerRadius="18" Padding="7" IsHitTestVisible="False">
+            <!-- 2-B. CENTER PANEL: MAIN RACE CAMERA VIEWPORT -->
+            <Grid Grid.Column="1" x:Name="RaceViewport" ClipToBounds="True" Background="#0D1520" SizeChanged="RaceViewport_SizeChanged">
+                <ScrollViewer x:Name="RaceScrollViewer"
+                              VerticalScrollBarVisibility="Hidden"
+                              HorizontalScrollBarVisibility="Disabled"
+                              HorizontalContentAlignment="Center"
+                              VerticalContentAlignment="Top"
+                              PanningMode="VerticalOnly"
+                              PreviewMouseWheel="RaceScrollViewer_PreviewMouseWheel">
+
+                    <Grid x:Name="RaceWorld" Width="680" Height="2200" HorizontalAlignment="Center">
+                        <Grid.LayoutTransform>
+                            <ScaleTransform x:Name="RaceWorldScale" ScaleX="1" ScaleY="1"/>
+                        </Grid.LayoutTransform>
+
+                        <!-- Main Playfield Canvas -->
+                        <Canvas x:Name="RaceCanvas" Width="680" Height="2200" ClipToBounds="True">
+
+                            <!-- ================================================= -->
+                            <!-- ZONE 1: 🌴 정글 캐노피 출발선 (Y = 0 ~ 300) -->
+                            <!-- ================================================= -->
+                            <Rectangle Canvas.Left="0" Canvas.Top="0" Width="680" Height="300">
+                                <Rectangle.Fill>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                        <GradientStop Color="#A3E635" Offset="0"/>
+                                        <GradientStop Color="#65A30D" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Rectangle.Fill>
+                            </Rectangle>
+
+                            <!-- Palm Foliage Accents -->
+                            <Path Data="M 0,0 C 90,80 140,160 0,220 Z" Fill="#4D7C0F" Opacity="0.75"/>
+                            <Path Data="M 680,0 C 590,80 540,160 680,220 Z" Fill="#4D7C0F" Opacity="0.75"/>
+
+                            <!-- Wooden Start Gate Platform Line -->
+                            <Border Canvas.Left="40" Canvas.Top="170" Width="600" Height="16" CornerRadius="8" Background="#78350F" BorderBrush="#B45309" BorderThickness="2"/>
+
+                            <!-- ================================================= -->
+                            <!-- ZONE 2: 🦴 언덕 슬로프 & 뼈다귀 분기로 (Y = 300 ~ 720) -->
+                            <!-- ================================================= -->
+                            <Rectangle Canvas.Left="0" Canvas.Top="300" Width="680" Height="420" Fill="#4D7C0F"/>
+
+                            <!-- V-shaped funnel grass hills redirecting racers into channels -->
+                            <Path Data="M 0,300 L 220,440 L 0,560 Z" Fill="#365314"/>
+                            <Path Data="M 680,300 L 460,440 L 680,560 Z" Fill="#365314"/>
+                            <!-- Center Ridge -->
+                            <Polygon Points="340,380 410,510 270,510" Fill="#365314"/>
+
+                            <!-- Slanted Bone Obstacle Rails (Zone 2) -->
+                            <Image Canvas.Left="90" Canvas.Top="350" Width="190" Height="48"
+                                   Source="pack://application:,,,/assets/race/bone_rail.png" RenderTransformOrigin="0.5,0.5">
+                                <Image.RenderTransform><RotateTransform Angle="32"/></Image.RenderTransform>
+                            </Image>
+                            <Image Canvas.Left="400" Canvas.Top="350" Width="190" Height="48"
+                                   Source="pack://application:,,,/assets/race/bone_rail.png" RenderTransformOrigin="0.5,0.5">
+                                <Image.RenderTransform><RotateTransform Angle="-32"/></Image.RenderTransform>
+                            </Image>
+                            <Image Canvas.Left="245" Canvas.Top="570" Width="190" Height="48"
+                                   Source="pack://application:,,,/assets/race/bone_rail.png"/>
+
+                            <!-- ================================================= -->
+                            <!-- ZONE 3: 🦕 황토 흙길 & 공룡 화석 교차로 (Y = 720 ~ 1360) -->
+                            <!-- ================================================= -->
+                            <Rectangle Canvas.Left="0" Canvas.Top="720" Width="680" Height="640">
+                                <Rectangle.Fill>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                        <GradientStop Color="#92400E" Offset="0"/>
+                                        <GradientStop Color="#78350F" Offset="0.5"/>
+                                        <GradientStop Color="#451A03" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Rectangle.Fill>
+                            </Rectangle>
+
+                            <!-- Dinosaur Fossil in center -->
+                            <Image Canvas.Left="240" Canvas.Top="870" Width="200" Height="200" Opacity="0.55"
+                                   Source="pack://application:,,,/assets/race/dino_fossil.png"/>
+
+                            <!-- Criss-cross earth guide paths -->
+                            <Path Data="M 120,720 C 180,920 480,1060 560,1360" Stroke="#B45309" StrokeThickness="34" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Opacity="0.6"/>
+                            <Path Data="M 560,720 C 500,920 200,1060 120,1360" Stroke="#B45309" StrokeThickness="34" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Opacity="0.6"/>
+
+                            <!-- Log obstacle rails on sides -->
+                            <Image Canvas.Left="60" Canvas.Top="1130" Width="200" Height="65"
+                                   Source="pack://application:,,,/assets/race/fallen_log.png" RenderTransformOrigin="0.5,0.5">
+                                <Image.RenderTransform><RotateTransform Angle="20"/></Image.RenderTransform>
+                            </Image>
+                            <Image Canvas.Left="420" Canvas.Top="1130" Width="200" Height="65"
+                                   Source="pack://application:,,,/assets/race/fallen_log_right.png" RenderTransformOrigin="0.5,0.5">
+                                <Image.RenderTransform><RotateTransform Angle="-20"/></Image.RenderTransform>
+                            </Image>
+
+                            <!-- ================================================= -->
+                            <!-- ZONE 4: 🍄 룬스톤 & 버섯 숲 바운스존 (Y = 1360 ~ 1880) -->
+                            <!-- ================================================= -->
+                            <Rectangle Canvas.Left="0" Canvas.Top="1360" Width="680" Height="520">
+                                <Rectangle.Fill>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                        <GradientStop Color="#166534" Offset="0"/>
+                                        <GradientStop Color="#14532D" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Rectangle.Fill>
+                            </Rectangle>
+
+                            <!-- Ancient Rune Stones & Red Mushroom Bumpers (Dynamic visual layers managed in CS) -->
+
+                            <!-- ================================================= -->
+                            <!-- ZONE 5: 🌊 결승 워터 슬라이드 (Y = 1880 ~ 2200) -->
+                            <!-- ================================================= -->
+                            <!-- Funnel banks -->
+                            <Path Data="M 0,1880 L 230,2030 L 230,2200 L 0,2200 Z" Fill="#1E293B"/>
+                            <Path Data="M 680,1880 L 450,2030 L 450,2200 L 680,2200 Z" Fill="#1E293B"/>
+
+                            <!-- Flowing Blue Waterfall Chute -->
+                            <Rectangle Canvas.Left="230" Canvas.Top="1980" Width="220" Height="220">
+                                <Rectangle.Fill>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                        <GradientStop Color="#38BDF8" Offset="0"/>
+                                        <GradientStop Color="#0284C7" Offset="0.7"/>
+                                        <GradientStop Color="#0369A1" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Rectangle.Fill>
+                            </Rectangle>
+
+                            <!-- Water Flow Ripples -->
+                            <Path Data="M 240,2030 Q 340,2010 440,2030 M 240,2090 Q 340,2070 440,2090 M 240,2150 Q 340,2130 440,2150"
+                                  Stroke="White" StrokeThickness="3" Opacity="0.7" StrokeDashArray="4,4"/>
+
+                            <!-- Finish Line Splash Indicator -->
+                            <Border Canvas.Left="245" Canvas.Top="2040" Width="190" Height="50" CornerRadius="12" Background="#D90369A1" BorderBrush="#38BDF8" BorderThickness="2">
+                                <TextBlock Text="🌊 결승 워터 슬라이드 🏁" FontWeight="Bold" FontSize="14" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+
+                            <!-- Finish trays for side settling -->
+                            <Border Canvas.Left="35" Canvas.Top="2080" Width="160" Height="70" CornerRadius="14" Background="#1E293B" BorderBrush="#475569" BorderThickness="2">
+                                <TextBlock Text="도전 완료 💫" FontSize="12" Foreground="#94A3B8" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <Border Canvas.Left="485" Canvas.Top="2080" Width="160" Height="70" CornerRadius="14" Background="#1E293B" BorderBrush="#475569" BorderThickness="2">
+                                <TextBlock Text="도전 완료 💫" FontSize="12" Foreground="#94A3B8" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+
+                            <!-- DYNAMIC PHYSICS PARTICLES & BALLS & BUMPERS ARE ADDED HERE -->
+                        </Canvas>
+                    </Grid>
+                </ScrollViewer>
+
+                <!-- Winner Celebration Overlay -->
+                <Grid x:Name="GridCelebration" Visibility="Collapsed" Background="#D9000000">
+                    <Border Background="#18181B" CornerRadius="24" BorderBrush="#EA580C" BorderThickness="3"
+                            Width="520" Height="420" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="24">
+                        <Border.Effect>
+                            <DropShadowEffect BlurRadius="40" Color="#EA580C" Opacity="0.8"/>
+                        </Border.Effect>
+                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <TextBlock Text="🎉 1등 골인! 당첨을 축하합니다! 🎉" FontWeight="Bold" FontSize="20" Foreground="#FDE047" HorizontalAlignment="Center" Margin="0,0,0,16"/>
+
+                            <!-- Big Winner Avatar (frameless) -->
+                            <Border Width="130" Height="130" HorizontalAlignment="Center" Margin="0,0,0,14">
+                                <Image x:Name="ImgWinnerAvatar" Width="120" Height="120" RenderOptions.BitmapScalingMode="HighQuality"/>
+                            </Border>
+
+                            <TextBlock x:Name="TxtWinnerTitle" Text="7번 김민준 (판다)" FontWeight="Bold" FontSize="28" Foreground="White" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                            <TextBlock Text="오늘의 멋진 발표자입니다! 👏" FontSize="15" Foreground="#A1A1AA" HorizontalAlignment="Center" Margin="0,0,0,22"/>
+
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                <Button Content="확인 / 계속하기" Click="BtnDismissCelebration_Click" Width="140" Height="44"
+                                        Background="#3F3F46" Foreground="White" FontWeight="Bold" FontSize="14" BorderThickness="0" Cursor="Hand" Margin="0,0,12,0">
+                                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="10"/></Style></Button.Resources>
+                                </Button>
+                                <Button Content="🚀 다음 뽑기 레이스" Click="BtnNextLaunch_Click" Width="160" Height="44"
+                                        Background="#EA580C" Foreground="White" FontWeight="Bold" FontSize="14" BorderThickness="0" Cursor="Hand">
+                                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="10"/></Style></Button.Resources>
+                                </Button>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Grid>
+
+            <!-- 2-C. RIGHT PANEL: 실시간 순위표 (LEADERBOARD) -->
+            <Border Grid.Column="2" Background="#18181B" BorderBrush="#27272A" BorderThickness="1,0,0,0" Padding="12,10">
                 <Grid>
-                    <ProgressBar x:Name="RaceProgress" Orientation="Vertical" Minimum="0" Maximum="100"
-                                 Value="0" Width="12" Margin="0,22,0,22"
-                                 Foreground="#F0C95A" Background="#294633"/>
-                    <TextBlock Text="START" FontSize="8" Foreground="#A9C5AE" HorizontalAlignment="Center" VerticalAlignment="Top"/>
-                    <TextBlock Text="GOAL" FontSize="8" Foreground="#FFF2A8" HorizontalAlignment="Center" VerticalAlignment="Bottom"/>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
+                        <TextBlock Text="⭐" FontSize="14" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="순위" FontSize="13" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <!-- Scrollable Live Ranks List -->
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel x:Name="PanelLeaderboard"/>
+                    </ScrollViewer>
                 </Grid>
             </Border>
         </Grid>
 
-        <!-- 3. Bottom Control Bar -->
-        <Border Grid.Row="2" Background="#102219" BorderBrush="#294D35" BorderThickness="0,1,0,0" Padding="20,12">
-            <Grid>
+        <!-- ========================================================= -->
+        <!-- 3. BOTTOM CONTROL BAR -->
+        <!-- ========================================================= -->
+        <Border Grid.Row="2" Background="#18181B" BorderBrush="#27272A" BorderThickness="0,1,0,0" Padding="20,8">
+            <Grid VerticalAlignment="Center">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
+                <!-- Left: Shortcuts Info -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="💡 단축키:" FontSize="12" Foreground="#789780" Margin="0,0,4,0"/>
-                    <Border Background="#193628" CornerRadius="4" Padding="6,2" Margin="0,0,8,0">
-                        <TextBlock Text="Space (출발)" FontSize="11" FontWeight="Bold" Foreground="#8DE2A8"/>
+                    <TextBlock Text="💡 단축키: " FontSize="12" Foreground="#71717A" Margin="0,0,4,0" VerticalAlignment="Center"/>
+                    <Border Background="#27272A" CornerRadius="4" Padding="6,2" Margin="0,0,6,0">
+                        <TextBlock Text="Space (출발)" FontSize="11" FontWeight="Bold" Foreground="#38BDF8"/>
                     </Border>
-                    <Border Background="#193628" CornerRadius="4" Padding="6,2">
-                        <TextBlock Text="Esc (닫기)" FontSize="11" FontWeight="Bold" Foreground="#A9C5AE"/>
+                    <Border Background="#27272A" CornerRadius="4" Padding="6,2">
+                        <TextBlock Text="Esc (닫기)" FontSize="11" FontWeight="Bold" Foreground="#A1A1AA"/>
                     </Border>
                 </StackPanel>
 
-                <!-- Huge Main Action Button -->
-                <Button x:Name="BtnLaunch" Grid.Column="1" Click="BtnLaunch_Click" Width="330" Height="54" Background="#2F6B45" Foreground="White" FontSize="19" FontWeight="Bold" BorderThickness="0" Cursor="Hand">
-                    <Button.Resources>
-                        <Style TargetType="Border"><Setter Property="CornerRadius" Value="16"/></Style>
-                    </Button.Resources>
-                    <Button.Effect>
-                        <DropShadowEffect BlurRadius="18" Color="#57A86B" Opacity="0.5"/>
-                    </Button.Effect>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                        <TextBlock Text="🌲 " FontSize="22"/>
-                        <TextBlock x:Name="TxtBtnLaunchLabel" Text="동물 숲길 레이스 출발!"/>
-                    </StackPanel>
-                </Button>
+                <!-- Center: 3 Big Control Buttons (i-Scream style) -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <!-- Re-select Button -->
+                    <Button x:Name="BtnResetToStart" Content="← 다시 선택하기" Click="BtnResetToStart_Click"
+                            Width="140" Height="44" Background="#27272A" Foreground="White"
+                            FontWeight="Bold" FontSize="13" BorderBrush="#3F3F46" BorderThickness="1" Cursor="Hand" Margin="0,0,12,0">
+                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="22"/></Style></Button.Resources>
+                    </Button>
 
+                    <!-- Giant Orange Start Button -->
+                    <Button x:Name="BtnStartRace" Click="BtnStartRace_Click"
+                            Width="200" Height="48" Background="#EA580C" Foreground="White"
+                            FontWeight="Bold" FontSize="19" BorderThickness="0" Cursor="Hand">
+                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="24"/></Style></Button.Resources>
+                        <Button.Effect><DropShadowEffect BlurRadius="18" Color="#EA580C" Opacity="0.6"/></Button.Effect>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <TextBlock Text="▶ " FontSize="18"/>
+                            <TextBlock x:Name="TxtBtnStartLabel" Text="시작하기"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Reset Button -->
+                    <Button x:Name="BtnInitAll" Content="↺ 초기화하기" Click="BtnInitAll_Click"
+                            Width="120" Height="44" Background="#27272A" Foreground="White"
+                            FontWeight="Bold" FontSize="13" BorderBrush="#3F3F46" BorderThickness="1" Cursor="Hand" Margin="12,0,0,0">
+                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="22"/></Style></Button.Resources>
+                    </Button>
+                </StackPanel>
+
+                <!-- Right: Speed, Sound & Student Manage -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                    <Button Content="효과음 ON" x:Name="BtnSoundToggle" Click="BtnSoundToggle_Click" Padding="12,8"
-                            Background="#193628" Foreground="#8DE2A8" BorderBrush="#365D42" BorderThickness="1" FontWeight="Bold" FontSize="11" Cursor="Hand">
+                    <!-- Speed Multiplier (1x / 2x / 3x) -->
+                    <Button x:Name="BtnSpeedToggle" Content="> 1x" Click="BtnSpeedToggle_Click"
+                            Width="56" Height="34" Margin="0,0,8,0"
+                            Background="#27272A" Foreground="#FDE047" BorderBrush="#3F3F46" BorderThickness="1" FontWeight="Bold" FontSize="12" Cursor="Hand" ToolTip="레이스 배속 (1x / 2x / 3x)">
+                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></Button.Resources>
+                    </Button>
+
+                    <!-- Sound Toggle -->
+                    <Button x:Name="BtnSoundToggle" Content="🔊" Click="BtnSoundToggle_Click"
+                            Width="44" Height="34" Margin="0,0,8,0"
+                            Background="#27272A" Foreground="#38BDF8" BorderBrush="#3F3F46" BorderThickness="1" FontWeight="Bold" FontSize="14" Cursor="Hand" ToolTip="효과음 켜기/끄기">
+                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></Button.Resources>
+                    </Button>
+
+                    <!-- Manage Roster -->
+                    <Button Content="👥 학생 명단" Click="BtnManageRoster_Click"
+                            Padding="10,0" Height="34"
+                            Background="#27272A" Foreground="#A1A1AA" BorderBrush="#3F3F46" BorderThickness="1" FontWeight="Bold" FontSize="11" Cursor="Hand" ToolTip="32종 동물 아바타 및 학생 명단 관리">
                         <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></Button.Resources>
                     </Button>
                 </StackPanel>

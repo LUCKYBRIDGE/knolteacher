@@ -56,7 +56,7 @@
                         <ComboBox x:Name="CbAddWidget" Width="136" Height="32" MinHeight="32" FontSize="11" Padding="6,2" VerticalContentAlignment="Center" Margin="0,0,12,0" SelectionChanged="CbAddWidget_SelectionChanged">
                             <ComboBoxItem Content="위젯 선택..." IsSelected="True"/>
                             <ComboBoxItem Content="⏱️ 수업 타이머" Tag="timer"/>
-                            <ComboBoxItem Content="🎰 핀볼 뽑기" Tag="pinball"/>
+                            <ComboBoxItem Content="🌱 뽑기 레이스" Tag="pinball"/>
                             <ComboBoxItem Content="🎯 발표자 추첨" Tag="picker"/>
                             <ComboBoxItem Content="🎲 스마트 주사위" Tag="dice"/>
                             <ComboBoxItem Content="🎡 회전 돌림판" Tag="wheel"/>
@@ -192,7 +192,7 @@
                         <!-- Left: 9 Widget Toggle Buttons + Pinball Button -->
                         <WrapPanel Grid.Column="0" VerticalAlignment="Center">
                             <Button x:Name="BtnToolTimer" Content="⏱️ 타이머" Click="DockToolBtn_Click" Tag="timer" Height="32" Padding="10,0" Margin="0,2,6,2" Background="#1E293B" Foreground="#94A3B8" BorderBrush="#334155" BorderThickness="1" FontSize="11" Cursor="Hand"/>
-                            <Button x:Name="BtnToolPinball" Content="🎰 핀볼 뽑기" Click="DockToolBtn_Click" Tag="pinball" Height="32" Padding="10,0" Margin="0,2,6,2" Background="#1E293B" Foreground="#38BDF8" BorderBrush="#0284C7" BorderThickness="1.5" FontSize="11" FontWeight="Bold" Cursor="Hand" ToolTip="32종 동물 아바타 아케이드 물리 핀볼 추첨기"/>
+                            <Button x:Name="BtnToolPinball" Content="🌱 뽑기 레이스" Click="DockToolBtn_Click" Tag="pinball" Height="32" Padding="10,0" Margin="0,2,6,2" Background="#1E293B" Foreground="#38BDF8" BorderBrush="#0284C7" BorderThickness="1.5" FontSize="11" FontWeight="Bold" Cursor="Hand" ToolTip="32종 동물 아바타 뽑기 레이스"/>
                             <Button x:Name="BtnToolPicker" Content="🎯 발표자 추첨" Click="DockToolBtn_Click" Tag="picker" Height="32" Padding="10,0" Margin="0,2,6,2" Background="#1E293B" Foreground="#94A3B8" BorderBrush="#334155" BorderThickness="1" FontSize="11" Cursor="Hand"/>
                             <Button x:Name="BtnToolDice" Content="🎲 주사위·통계" Click="DockToolBtn_Click" Tag="dice" Height="32" Padding="10,0" Margin="0,2,6,2" Background="#1E293B" Foreground="#94A3B8" BorderBrush="#334155" BorderThickness="1" FontSize="11" Cursor="Hand"/>
                             <Button x:Name="BtnToolWheel" Content="🎡 돌림판" Click="DockToolBtn_Click" Tag="wheel" Height="32" Padding="10,0" Margin="0,2,6,2" Background="#1E293B" Foreground="#94A3B8" BorderBrush="#334155" BorderThickness="1" FontSize="11" Cursor="Hand"/>

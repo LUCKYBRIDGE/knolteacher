@@ -33,7 +33,7 @@
                         <TextBlock Text="👥" FontSize="18" Margin="0,0,8,0"/>
                         <TextBlock Text="학생 명렬표 및 귀여운 동물 아바타 설정" FontWeight="Bold" FontSize="15" Foreground="White"/>
                     </StackPanel>
-                    <TextBlock Text="학생별로 원하는 동물 캐릭터를 클릭해 변경할 수 있으며, 핀볼 추첨기에서 해당 아바타 핀볼로 표출됩니다." FontSize="11" Foreground="#94A3B8" Margin="0,3,0,0"/>
+                    <TextBlock Text="학생별로 원하는 동물 캐릭터를 클릭해 변경할 수 있으며, 뽑기 레이스에서 해당 동물 캐릭터로 표출됩니다." FontSize="11" Foreground="#94A3B8" Margin="0,3,0,0"/>
                 </StackPanel>
             </Grid>
         </Border>

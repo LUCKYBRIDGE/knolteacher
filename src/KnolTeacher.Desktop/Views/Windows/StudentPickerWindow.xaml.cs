@@ -21,36 +21,24 @@ public partial class StudentPickerWindow : Window
     private readonly IDisplayManager? _displayManager;
     private int _currentMonitorIndex = 1;
 
-    // Physics Simulation State
-    private readonly List<PinballBall> _balls = new();
-    private readonly List<PinballPeg> _pegs = new();
-    private readonly List<PinballBumper> _bumpers = new();
-    private readonly List<PinballRail> _rails = new();
-    private readonly List<ConfettiParticle> _confetti = new();
+    // Simulation State
+    private readonly List<RaceRacer> _racers = new();
+    private readonly List<RaceBumper> _bumpers = new();
+    private readonly List<RaceRail> _rails = new();
 
     private DispatcherTimer? _gameTimer;
-    private DispatcherTimer? _classicShuffleTimer;
-    private int _classicShuffleCount = 0;
-    private StudentItem? _classicFinalPicked;
-
     private bool _isPlaying = false;
     private bool _soundEnabled = true;
-    private StudentItem? _lastWinner = null;
+    private double _speedMultiplier = 1.0;
     private DateTime _lastFrameTime = DateTime.UtcNow;
 
-    // Responsive camera state for the tall 680x1120 forest course.
-    private const double PinballMapWidth = 680.0;
-    private const double PinballMapHeight = 2280.0;
-    private const double PinballGoalY = 2168.0;
+    private const double TrackWidth = 680.0;
+    private const double TrackHeight = 2200.0;
+    private const double FinishY = 2050.0;
 
-    // The race lasts because the course is genuinely long, not because gravity is artificially tiny.
-    private const double RaceGravity = 260.0;
-    private const double MaxHorizontalSpeed = 220.0;
-    private DateTime _raceStartedAt = DateTime.MinValue;
-
-    private double _cameraScale = 1;
-    private PinballBall? _cameraLeader;
-    private DateTime _cameraFollowPausedUntil = DateTime.MinValue;
+    private int _targetWinnerCount = 1;
+    private int _finishedCount = 0;
+    private readonly List<StudentItem> _winners = new();
 
     public StudentPickerWindow(IStudentManagerService studentService, ISoundService soundService, IDisplayManager? displayManager = null)
     {
@@ -61,10 +49,10 @@ public partial class StudentPickerWindow : Window
 
         Loaded += (s, e) =>
         {
-            SetupPegsAndBumpers();
-            UpdateStatus();
+            SetupCourseScenery();
+            ResetToStartLine();
             PositionToDefaultMonitor();
-            UpdateCameraAndLeader(0, force: true);
+            UpdateCameraViewport(0, force: true);
         };
 
         KeyDown += Window_KeyDown;
@@ -84,7 +72,7 @@ public partial class StudentPickerWindow : Window
     {
         if (BtnSwitchMonitor != null)
         {
-            BtnSwitchMonitor.Content = _currentMonitorIndex == 1 ? "📺 모니터 2 (학생용)" : "💻 모니터 1 (메인)";
+            BtnSwitchMonitor.Content = _currentMonitorIndex == 1 ? "📺 모니터 2" : "💻 모니터 1";
         }
     }
 
@@ -104,9 +92,9 @@ public partial class StudentPickerWindow : Window
             {
                 DismissCelebration();
             }
-            else
+            else if (!_isPlaying)
             {
-                BtnLaunch_Click(this, new RoutedEventArgs());
+                StartRaceSimulation();
             }
             e.Handled = true;
         }
@@ -124,298 +112,67 @@ public partial class StudentPickerWindow : Window
         }
     }
 
-    private void UpdateStatus()
+    #region Course Scenery & Obstacles Setup
+
+    private void SetupCourseScenery()
     {
-        int total = _studentService.Students.Count;
-        int picked = _studentService.PickedStudentNumbers.Count;
-        int remaining = Math.Max(0, total - picked);
-        TxtStatus.Text = $"남은 학생: {remaining}명 / 총 {total}명";
-        TxtClassicRemaining.Text = $"남은 학생: {remaining}명 / 총 {total}명";
-    }
-
-    #region Responsive Race Camera
-
-    private void PinballViewport_SizeChanged(object sender, SizeChangedEventArgs e)
-    {
-        UpdateCameraAndLeader(0, force: true);
-    }
-
-    private void PinballScrollViewer_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
-    {
-        // Manual exploration wins temporarily; automatic leader-follow resumes shortly after.
-        _cameraFollowPausedUntil = DateTime.UtcNow.AddSeconds(4);
-    }
-
-    private void PinballScrollViewer_PreviewMouseDown(object sender, MouseButtonEventArgs e)
-    {
-        _cameraFollowPausedUntil = DateTime.UtcNow.AddSeconds(4);
-    }
-
-    private void ResetRaceCamera()
-    {
-        if (_cameraLeader != null)
-        {
-            _cameraLeader.SetLeader(false);
-            _cameraLeader = null;
-        }
-
-        RaceProgress.Value = 0;
-        TxtRaceLeader.Text = "선두: 출발 대기";
-        TxtRaceZone.Text = "🌲 숲속 출발 대기선";
-        _cameraFollowPausedUntil = DateTime.MinValue;
-
-        if (PinballScrollViewer != null)
-        {
-            PinballScrollViewer.ScrollToVerticalOffset(0);
-        }
-
-        UpdateCameraAndLeader(0, force: true);
-    }
-
-    private void UpdateCameraAndLeader(double dt, bool force = false)
-    {
-        if (PinballViewport == null || PinballScrollViewer == null || PinballWorldScale == null) return;
-
-        double viewportWidth = PinballViewport.ActualWidth;
-        double viewportHeight = PinballViewport.ActualHeight;
-        if (viewportWidth <= 1 || viewportHeight <= 1) return;
-
-        // Fit the course width to the current window while preserving a true vertical
-        // document that remains scrollable. Large displays are capped to avoid over-zooming.
-        double usableWidth = Math.Max(480, viewportWidth - 34);
-        _cameraScale = Math.Clamp(usableWidth / PinballMapWidth, 0.72, 1.60);
-        PinballWorldScale.ScaleX = _cameraScale;
-        PinballWorldScale.ScaleY = _cameraScale;
-
-        PinballBall? leader = null;
-        if (_lastWinner != null)
-        {
-            leader = _balls.FirstOrDefault(b => b.Student.Number == _lastWinner.Number);
-        }
-
-        leader ??= _balls
-            .Where(b => !b.IsSettled)
-            .OrderByDescending(b => b.Y)
-            .FirstOrDefault();
-
-        leader ??= _balls
-            .OrderByDescending(b => b.Y)
-            .FirstOrDefault();
-
-        if (!ReferenceEquals(_cameraLeader, leader))
-        {
-            _cameraLeader?.SetLeader(false);
-            _cameraLeader = leader;
-            _cameraLeader?.SetLeader(true);
-        }
-
-        if (leader != null)
-        {
-            double progress = Math.Clamp((leader.Y - 60.0) / (PinballGoalY - 60.0) * 100.0, 0, 100);
-            RaceProgress.Value = progress;
-            TxtRaceLeader.Text = $"선두: {leader.Student.Number}번 {leader.Student.Name} ({leader.Student.AvatarName})";
-            double elapsed = GetRaceElapsedSeconds();
-            TxtRaceZone.Text = _isPlaying
-                ? $"{GetRaceZoneLabel(leader.Y)} · {elapsed:0.0}초"
-                : GetRaceZoneLabel(leader.Y);
-
-            bool manualViewing = DateTime.UtcNow < _cameraFollowPausedUntil;
-            if (!manualViewing || force)
-            {
-                // Leader sits around 38% from the top so upcoming obstacles remain visible.
-                double target = leader.Y * _cameraScale - viewportHeight * 0.38;
-                double maxOffset = Math.Max(0, PinballMapHeight * _cameraScale - viewportHeight);
-                target = Math.Clamp(target, 0, maxOffset);
-
-                double current = PinballScrollViewer.VerticalOffset;
-                double next;
-                if (force)
-                {
-                    next = target;
-                }
-                else
-                {
-                    double alpha = 1.0 - Math.Exp(-5.5 * Math.Max(dt, 0.001));
-                    next = current + (target - current) * alpha;
-                }
-                PinballScrollViewer.ScrollToVerticalOffset(next);
-            }
-        }
-        else
-        {
-            RaceProgress.Value = 0;
-            TxtRaceLeader.Text = "선두: 출발 대기";
-            TxtRaceZone.Text = "🌲 숲속 출발 대기선";
-        }
-    }
-
-    private static string GetRaceZoneLabel(double y)
-    {
-        if (y < 170) return "🌲 출발 나무집";
-        if (y < 340) return "🌰 ① 도토리 갈림길";
-        if (y < 550) return "🍄 ② 버섯 숲";
-        if (y < 760) return "🪵 ③ 쓰러진 통나무 길";
-        if (y < 980) return "💧 ④ 돌개울 징검다리";
-        if (y < 1210) return "🌿 ⑤ 덩굴 협곡";
-        if (y < 1440) return "🕳️ ⑥ 고목 터널";
-        if (y < 1670) return "🌰 ⑦ 솔방울 회전숲";
-        if (y < 1910) return "🪨 ⑧ 바위 계곡";
-        if (y < 2140) return "🌱 ⑨ 거대 뿌리 미로";
-        return "🏕️ 결승점 (숲속 캠프)";
-    }
-
-    private double GetRaceElapsedSeconds()
-    {
-        if (_raceStartedAt == DateTime.MinValue) return 0;
-        return Math.Max(0, (DateTime.UtcNow - _raceStartedAt).TotalSeconds);
-    }
-
-    private static double GetZoneMaxDownSpeed(double y)
-    {
-        // Fast enough to look lively, slow enough for a ~2,100px obstacle course.
-        if (y < 340) return 160.0;
-        if (y < 550) return 145.0;
-        if (y < 760) return 155.0;
-        if (y < 980) return 142.0;
-        if (y < 1210) return 150.0;
-        if (y < 1440) return 158.0;
-        if (y < 1670) return 148.0;
-        if (y < 1910) return 154.0;
-        if (y < 2140) return 145.0;
-        return 150.0;
-    }
-
-    #endregion
-
-    #region Physics Field Setup
-
-    private void SetupPegsAndBumpers()
-    {
-        // Rebuild only dynamic collision scenery. Static forest art stays in XAML.
-        foreach (var peg in _pegs)
-        {
-            PinballCanvas.Children.Remove(peg.GlowRing);
-            PinballCanvas.Children.Remove(peg.Visual);
-        }
-        foreach (var bumper in _bumpers)
-        {
-            PinballCanvas.Children.Remove(bumper.Visual);
-        }
-        foreach (var rail in _rails)
-        {
-            PinballCanvas.Children.Remove(rail.Visual);
-        }
-
-        _pegs.Clear();
         _bumpers.Clear();
         _rails.Clear();
 
-        // 1) Acorn fork: deliberately irregular instead of a pachinko matrix.
-        var pegLayout = new (double X, double Y, double R)[]
-        {
-            (250, 205, 8), (340, 190, 8), (430, 215, 8),
-            (185, 265, 8), (295, 275, 8), (390, 270, 8), (505, 275, 8),
-            (265, 405, 7), (415, 420, 7),
-            (155, 485, 7), (340, 510, 8), (525, 485, 7),
-            (225, 865, 8), (455, 870, 8),
-            (180, 1065, 8), (335, 1105, 9), (500, 1060, 8),
-            (235, 1275, 8), (445, 1285, 8),
-            (155, 1480, 8), (340, 1515, 9), (525, 1485, 8),
-            (220, 1710, 8), (455, 1725, 8),
-            (165, 1905, 8), (340, 1940, 9), (510, 1905, 8)
-        };
+        // Zone 2 Slanted Bone Rails (Collision definition)
+        _rails.Add(new RaceRail(90, 350, 275, 470, 16));
+        _rails.Add(new RaceRail(590, 350, 405, 470, 16));
+        _rails.Add(new RaceRail(245, 570, 435, 570, 16));
 
-        foreach (var p in pegLayout)
-        {
-            var peg = new PinballPeg(p.X, p.Y, p.R);
-            _pegs.Add(peg);
-            PinballCanvas.Children.Add(peg.GlowRing);
-            PinballCanvas.Children.Add(peg.Visual);
-        }
+        // Zone 3 Criss-Cross Log Rails
+        _rails.Add(new RaceRail(60, 1130, 260, 1200, 18));
+        _rails.Add(new RaceRail(620, 1130, 420, 1200, 18));
 
-        // 2) Mushroom grove + creek stones: round obstacles create different rebounds.
-        _bumpers.Add(new PinballBumper(205, 350, 29, "#C95252", "🍄"));
-        _bumpers.Add(new PinballBumper(475, 365, 29, "#D66A4D", "🍄"));
-        _bumpers.Add(new PinballBumper(340, 445, 34, "#9D5BA8", "🍄"));
+        // Zone 5 Funnel Banks
+        _rails.Add(new RaceRail(0, 1880, 230, 2030, 20));
+        _rails.Add(new RaceRail(680, 1880, 450, 2030, 20));
+        _rails.Add(new RaceRail(230, 2030, 230, 2200, 20));
+        _rails.Add(new RaceRail(450, 2030, 450, 2200, 20));
 
-        _bumpers.Add(new PinballBumper(165, 785, 24, "#64786B", "●"));
-        _bumpers.Add(new PinballBumper(335, 820, 27, "#71857A", "●"));
-        _bumpers.Add(new PinballBumper(510, 785, 24, "#64786B", "●"));
-
-        _bumpers.Add(new PinballBumper(210, 1110, 27, "#4E7B48", "🌿"));
-        _bumpers.Add(new PinballBumper(470, 1165, 27, "#4E7B48", "🌿"));
-        _bumpers.Add(new PinballBumper(335, 1545, 31, "#7A5635", "🌰"));
-        _bumpers.Add(new PinballBumper(185, 1790, 25, "#65716E", "●"));
-        _bumpers.Add(new PinballBumper(500, 1805, 25, "#65716E", "●"));
-        _bumpers.Add(new PinballBumper(340, 2000, 29, "#6C5438", "🌱"));
-
-        foreach (var bumper in _bumpers)
-        {
-            PinballCanvas.Children.Add(bumper.Visual);
-        }
-
-        // 3) Fallen logs and roots: long angled shots inspired by pinball ramps/orbits
-        // and outdoor forest marble runs. They interrupt the route without sealing it.
-        _rails.Add(new PinballRail(92, 545, 292, 598, 12, "#82562F", "통나무"));
-        _rails.Add(new PinballRail(588, 610, 390, 665, 12, "#77502D", "통나무"));
-        _rails.Add(new PinballRail(105, 685, 286, 728, 10, "#93643A", "나뭇가지"));
-        _rails.Add(new PinballRail(575, 700, 450, 738, 9, "#896039", "나뭇가지"));
-
-        // Long-course ramps: each region changes direction without closing the route.
-        _rails.Add(new PinballRail(78, 990, 280, 1050, 10, "#5B7A3E", "나뭇가지"));
-        _rails.Add(new PinballRail(602, 1080, 415, 1135, 10, "#58733A", "나뭇가지"));
-        _rails.Add(new PinballRail(95, 1195, 300, 1248, 12, "#7B522F", "통나무"));
-        _rails.Add(new PinballRail(585, 1305, 390, 1360, 12, "#734B2C", "통나무"));
-        _rails.Add(new PinballRail(82, 1415, 270, 1468, 10, "#8A5E37", "나뭇가지"));
-        _rails.Add(new PinballRail(598, 1500, 405, 1555, 10, "#825833", "나뭇가지"));
-        _rails.Add(new PinballRail(92, 1635, 285, 1695, 11, "#65503B", "뿌리"));
-        _rails.Add(new PinballRail(588, 1715, 405, 1770, 11, "#65503B", "뿌리"));
-        _rails.Add(new PinballRail(80, 1840, 265, 1900, 12, "#67442A", "통나무"));
-        _rails.Add(new PinballRail(600, 1915, 415, 1970, 12, "#67442A", "통나무"));
-
-        // Final giant-root inlanes gently converge toward the camp.
-        _rails.Add(new PinballRail(72, 1985, 250, 2070, 12, "#684328", "뿌리"));
-        _rails.Add(new PinballRail(608, 1985, 430, 2070, 12, "#684328", "뿌리"));
-        _rails.Add(new PinballRail(245, 2070, 305, 2145, 11, "#795032", "뿌리"));
-        _rails.Add(new PinballRail(435, 2070, 375, 2145, 11, "#795032", "뿌리"));
-
-        foreach (var rail in _rails)
-        {
-            PinballCanvas.Children.Add(rail.Visual);
-        }
+        // Zone 4 Bumpers: Rune Stones & Red Mushrooms
+        AddBumper(200, 1460, 30, "rune_stone.png");
+        AddBumper(480, 1460, 30, "rune_stone.png");
+        AddBumper(340, 1550, 34, "mushroom_red.png");
+        AddBumper(160, 1650, 34, "mushroom_red.png");
+        AddBumper(520, 1650, 34, "mushroom_red.png");
+        AddBumper(270, 1750, 30, "rune_stone.png");
+        AddBumper(410, 1750, 30, "rune_stone.png");
+        AddBumper(340, 1830, 34, "mushroom_red.png");
     }
 
-    #endregion
-
-    #region Launch & Physics Loop
-
-    private void BtnLaunch_Click(object sender, RoutedEventArgs e)
+    private void AddBumper(double x, double y, double radius, string assetName)
     {
-        if (RbModeClassic.IsChecked == true)
-        {
-            StartClassicRoulette();
-            return;
-        }
-
-        StartPinballSimulation();
+        var bumper = new RaceBumper(x, y, radius, assetName);
+        _bumpers.Add(bumper);
+        RaceCanvas.Children.Add(bumper.Visual);
     }
 
-    private void StartPinballSimulation()
+    
+
+
+#endregion
+
+    #region Racer Setup & Start Line
+
+    private void ResetToStartLine()
     {
-        if (_isPlaying) return;
+        _isPlaying = false;
+        _gameTimer?.Stop();
+        _finishedCount = 0;
+        _winners.Clear();
 
-        // Clear existing balls & confetti
-        foreach (var b in _balls)
+        // Clear existing racers from Canvas & Minimap
+        foreach (var r in _racers)
         {
-            PinballCanvas.Children.Remove(b.Visual);
+            RaceCanvas.Children.Remove(r.Visual);
+            MinimapDotsLayer.Children.Remove(r.MinimapDot);
         }
-        _balls.Clear();
-
-        foreach (var c in _confetti)
-        {
-            PinballCanvas.Children.Remove(c.Visual);
-        }
-        _confetti.Clear();
+        _racers.Clear();
 
         bool exclude = ChkExcludePicked.IsChecked == true;
         var eligible = exclude
@@ -424,53 +181,74 @@ public partial class StudentPickerWindow : Window
 
         if (eligible.Count == 0)
         {
-            MessageBox.Show("추첨 가능한 학생이 없습니다. 제외 목록을 초기화해주세요.", "안내", MessageBoxButton.OK, MessageBoxImage.Information);
-            return;
+            eligible = _studentService.Students.ToList();
         }
 
-        List<StudentItem> toDrop = new();
-        if (RbModeRace.IsChecked == true)
-        {
-            // Drop ALL eligible students in a chaotic grand race!
-            toDrop.AddRange(eligible);
-        }
-        else
-        {
-            // Drop 1 random student
-            var one = _studentService.PickRandom(exclude);
-            if (one != null) toDrop.Add(one);
-        }
+        int count = eligible.Count;
+        if (count == 0) return;
 
-        var rand = new Random();
-        int count = toDrop.Count;
-        double spawnWidth = 280;
-        double startX = 195;
+        // Line up side-by-side on the start platform at Y = 120
+        double startX = 60;
+        double endX = 620;
+        double span = (endX - startX);
+        double spacing = count > 1 ? span / (count - 1) : span / 2.0;
 
         for (int i = 0; i < count; i++)
         {
-            var student = toDrop[i];
-            double x = startX + (i % 7) * (spawnWidth / 6.0) + (rand.NextDouble() * 8 - 4);
-            double y = 52 - (i / 7) * 50; // stacked inside/above the tree-house gate
-            double vx = (rand.NextDouble() - 0.5) * 70;
-            double vy = 28 + rand.NextDouble() * 34;
+            var student = eligible[i];
+            double x = (count == 1) ? 340 : (startX + i * spacing);
+            double y = 120;
 
-            var ball = new PinballBall(student, x, y, 21)
-            {
-                Vx = vx,
-                Vy = vy
-            };
+            var racer = new RaceRacer(student, x, y, 20);
+            _racers.Add(racer);
 
-            _balls.Add(ball);
-            PinballCanvas.Children.Add(ball.Visual);
+            RaceCanvas.Children.Add(racer.Visual);
+            MinimapDotsLayer.Children.Add(racer.MinimapDot);
+        }
+
+        UpdateLeaderboard();
+        UpdateMinimap();
+        UpdateCameraViewport(0, force: true);
+
+        BtnStartRace.IsEnabled = true;
+        TxtBtnStartLabel.Text = "시작하기";
+    }
+
+    
+
+
+#endregion
+
+    #region Simulation & Physics Loop
+
+    private void BtnStartRace_Click(object sender, RoutedEventArgs e)
+    {
+        if (_isPlaying) return;
+        StartRaceSimulation();
+    }
+
+    private void StartRaceSimulation()
+    {
+        if (_isPlaying) return;
+
+        // Target count
+        _targetWinnerCount = CbWinnerCount.SelectedIndex + 1;
+        _finishedCount = 0;
+        _winners.Clear();
+
+        var rand = new Random();
+        foreach (var r in _racers)
+        {
+            r.IsFinished = false;
+            r.FinishRank = 0;
+            r.Vx = (rand.NextDouble() - 0.5) * 80;
+            r.Vy = 40 + rand.NextDouble() * 50;
         }
 
         _isPlaying = true;
-        BtnLaunch.IsEnabled = false;
-        _lastWinner = null;
-        _raceStartedAt = DateTime.UtcNow;
-        ResetRaceCamera();
-        TxtBtnLaunchLabel.Text = "동물들이 숲길을 달리는 중...";
-        _lastFrameTime = _raceStartedAt;
+        BtnStartRace.IsEnabled = false;
+        TxtBtnStartLabel.Text = "레이스 질주 중...";
+        _lastFrameTime = DateTime.UtcNow;
 
         if (_soundEnabled) _soundService.PlayBeep();
 
@@ -488,142 +266,64 @@ public partial class StudentPickerWindow : Window
     private void GameTimer_Tick(object? sender, EventArgs e)
     {
         var now = DateTime.UtcNow;
-        double dt = (now - _lastFrameTime).TotalSeconds;
+        double dt = (now - _lastFrameTime).TotalSeconds * _speedMultiplier;
         _lastFrameTime = now;
-        if (dt > 0.05) dt = 0.05; // clamp delta time for stability
+        if (dt > 0.06) dt = 0.06;
 
+        double gravity = 320.0;
         double damp = 0.995;
         var rand = new Random();
 
-        // Update Peg flashes
-        foreach (var peg in _pegs)
+        // 1. Update Bumpers
+        foreach (var bumper in _bumpers)
         {
-            peg.Update(dt);
-        }
-        foreach (var b in _bumpers)
-        {
-            b.Update(dt);
-        }
-        foreach (var rail in _rails)
-        {
-            rail.Update(dt);
+            bumper.Update(dt);
         }
 
-        // Update Balls
-        for (int i = 0; i < _balls.Count; i++)
+        // 2. Update Racers
+        for (int i = 0; i < _racers.Count; i++)
         {
-            var b = _balls[i];
-            if (b.IsSettled) continue;
-
-            b.Vy += RaceGravity * dt;
-            b.Vx *= damp;
-            b.Vy *= damp;
-
-            // Speed limits prevent tunneling through thin obstacles, while the long
-            // map—not artificial slow motion—creates the race duration.
-            b.Vx = Math.Clamp(b.Vx, -MaxHorizontalSpeed, MaxHorizontalSpeed);
-            b.Vy = Math.Clamp(b.Vy, -180.0, GetZoneMaxDownSpeed(b.Y));
-
-            b.X += b.Vx * dt;
-            b.Y += b.Vy * dt;
-
-            // Anti-jam / Anti-peg-perch mechanic
-            if (b.Y > 180 && b.Y < 2100 && Math.Abs(b.Vx) < 8 && Math.Abs(b.Vy) < 18)
+            var r = _racers[i];
+            if (r.IsFinished)
             {
-                b.Vx += (rand.NextDouble() - 0.5) * 60;
-                b.Vy += 25;
+                // Slide down slowly in water chute
+                r.Y += 120.0 * dt;
+                r.UpdateVisual();
+                continue;
             }
 
-            // 1. Boundary Collisions (Walls)
-            double leftWall = 38;
-            double rightWall = 642;
-            if (b.X - b.Radius < leftWall)
-            {
-                b.X = leftWall + b.Radius;
-                b.Vx = Math.Abs(b.Vx) * 0.7 + rand.NextDouble() * 20;
-            }
-            else if (b.X + b.Radius > rightWall)
-            {
-                b.X = rightWall - b.Radius;
-                b.Vx = -Math.Abs(b.Vx) * 0.7 - rand.NextDouble() * 20;
-            }
+            r.Vy += gravity * dt;
+            r.Vx *= damp;
+            r.Vy *= damp;
 
-            // Tree-house exit guides: a short upper funnel only.
-            if (b.Y < 165)
+            r.Vx = Math.Clamp(r.Vx, -240.0, 240.0);
+            r.Vy = Math.Clamp(r.Vy, -160.0, 360.0);
+
+            r.X += r.Vx * dt;
+            r.Y += r.Vy * dt;
+
+            // Anti-jam: gently push racers if stuck on a ledge
+            if (r.Y > 200 && r.Y < 2000 && Math.Abs(r.Vx) < 5 && Math.Abs(r.Vy) < 15)
             {
-                double leftGuide = 120 + Math.Max(0, 165 - b.Y) * 0.38;
-                double rightGuide = 560 - Math.Max(0, 165 - b.Y) * 0.38;
-                if (b.X - b.Radius < leftGuide)
-                {
-                    b.X = leftGuide + b.Radius;
-                    b.Vx = Math.Abs(b.Vx) * 0.78 + 22;
-                }
-                if (b.X + b.Radius > rightGuide)
-                {
-                    b.X = rightGuide - b.Radius;
-                    b.Vx = -Math.Abs(b.Vx) * 0.78 - 22;
-                }
+                r.Vx += (rand.NextDouble() - 0.5) * 80;
+                r.Vy += 40;
             }
 
-            // 2. Peg Collisions
-            foreach (var peg in _pegs)
+            // Left & Right Outer Track Boundaries
+            double leftWall = 35;
+            double rightWall = 645;
+            if (r.X - r.Radius < leftWall)
             {
-                double dx = b.X - peg.X;
-                double dy = b.Y - peg.Y;
-                double dist = Math.Sqrt(dx * dx + dy * dy);
-                double minDist = b.Radius + peg.Radius;
-
-                if (dist < minDist && dist > 0.001)
-                {
-                    double nx = dx / dist;
-                    double ny = dy / dist;
-                    double overlap = minDist - dist;
-
-                    b.X += nx * overlap;
-                    b.Y += ny * overlap;
-
-                    // Elastic impulse
-                    double dot = b.Vx * nx + b.Vy * ny;
-                    if (dot < 0)
-                    {
-                        double restitution = 0.76;
-                        b.Vx -= (1 + restitution) * dot * nx + (rand.NextDouble() - 0.5) * 20;
-                        b.Vy -= (1 + restitution) * dot * ny;
-                        peg.Flash();
-                    }
-                }
+                r.X = leftWall + r.Radius;
+                r.Vx = Math.Abs(r.Vx) * 0.75 + 15;
+            }
+            else if (r.X + r.Radius > rightWall)
+            {
+                r.X = rightWall - r.Radius;
+                r.Vx = -Math.Abs(r.Vx) * 0.75 - 15;
             }
 
-            // 3. Bumper Collisions
-            foreach (var bumper in _bumpers)
-            {
-                double dx = b.X - bumper.X;
-                double dy = b.Y - bumper.Y;
-                double dist = Math.Sqrt(dx * dx + dy * dy);
-                double minDist = b.Radius + bumper.Radius;
-
-                if (dist < minDist && dist > 0.001)
-                {
-                    double nx = dx / dist;
-                    double ny = dy / dist;
-                    double overlap = minDist - dist;
-
-                    b.X += nx * overlap;
-                    b.Y += ny * overlap;
-
-                    double dot = b.Vx * nx + b.Vy * ny;
-                    if (dot < 0)
-                    {
-                        double bumperBoost = 1.28;
-                        b.Vx = (-dot * nx * bumperBoost) + (rand.NextDouble() - 0.5) * 46;
-                        b.Vy = (-dot * ny * bumperBoost) - 66;
-                        bumper.Flash();
-                        if (_soundEnabled) _soundService.PlayBeep();
-                    }
-                }
-            }
-
-            // 3.5 Log / branch / root rail collisions
+            // Collisions with Rails
             foreach (var rail in _rails)
             {
                 double sx = rail.X2 - rail.X1;
@@ -631,49 +331,73 @@ public partial class StudentPickerWindow : Window
                 double lenSq = sx * sx + sy * sy;
                 if (lenSq < 0.001) continue;
 
-                double t = ((b.X - rail.X1) * sx + (b.Y - rail.Y1) * sy) / lenSq;
+                double t = ((r.X - rail.X1) * sx + (r.Y - rail.Y1) * sy) / lenSq;
                 t = Math.Clamp(t, 0, 1);
                 double cx = rail.X1 + t * sx;
                 double cy = rail.Y1 + t * sy;
-                double dx = b.X - cx;
-                double dy = b.Y - cy;
+                double dx = r.X - cx;
+                double dy = r.Y - cy;
                 double dist = Math.Sqrt(dx * dx + dy * dy);
-                double minDist = b.Radius + rail.HalfThickness;
+                double minDist = r.Radius + rail.Thickness;
 
                 if (dist < minDist && dist > 0.001)
                 {
                     double nx = dx / dist;
                     double ny = dy / dist;
                     double overlap = minDist - dist;
-                    b.X += nx * overlap;
-                    b.Y += ny * overlap;
+                    r.X += nx * overlap;
+                    r.Y += ny * overlap;
 
-                    double dot = b.Vx * nx + b.Vy * ny;
+                    double dot = r.Vx * nx + r.Vy * ny;
                     if (dot < 0)
                     {
-                        b.Vx -= (1 + rail.Restitution) * dot * nx;
-                        b.Vy -= (1 + rail.Restitution) * dot * ny;
-                        // A small tangent nudge avoids balls sticking to long logs.
-                        double tx = -ny;
-                        double ty = nx;
-                        double tangentKick = (rand.NextDouble() - 0.5) * 24;
-                        b.Vx += tx * tangentKick;
-                        b.Vy += ty * tangentKick;
-                        rail.Flash();
+                        r.Vx -= 1.65 * dot * nx;
+                        r.Vy -= 1.65 * dot * ny;
+                        // Slide tangent nudge
+                        r.Vx += -ny * ((rand.NextDouble() - 0.5) * 20);
+                        r.Vy += nx * ((rand.NextDouble() - 0.5) * 20);
                     }
                 }
             }
 
-            // 4. Ball-to-Ball Collisions
-            for (int j = i + 1; j < _balls.Count; j++)
+            // Collisions with Bumpers (Mushroom & Rune Stones)
+            foreach (var bumper in _bumpers)
             {
-                var o = _balls[j];
-                if (o.IsSettled) continue;
-
-                double dx = o.X - b.X;
-                double dy = o.Y - b.Y;
+                double dx = r.X - bumper.X;
+                double dy = r.Y - bumper.Y;
                 double dist = Math.Sqrt(dx * dx + dy * dy);
-                double minDist = b.Radius + o.Radius;
+                double minDist = r.Radius + bumper.Radius;
+
+                if (dist < minDist && dist > 0.001)
+                {
+                    double nx = dx / dist;
+                    double ny = dy / dist;
+                    double overlap = minDist - dist;
+                    r.X += nx * overlap;
+                    r.Y += ny * overlap;
+
+                    double dot = r.Vx * nx + r.Vy * ny;
+                    if (dot < 0)
+                    {
+                        double boost = 1.35;
+                        r.Vx = (-dot * nx * boost) + (rand.NextDouble() - 0.5) * 50;
+                        r.Vy = (-dot * ny * boost) - 60;
+                        bumper.Flash();
+                        if (_soundEnabled) _soundService.PlayBeep();
+                    }
+                }
+            }
+
+            // Ball-to-Ball Collisions
+            for (int j = i + 1; j < _racers.Count; j++)
+            {
+                var o = _racers[j];
+                if (o.IsFinished) continue;
+
+                double dx = o.X - r.X;
+                double dy = o.Y - r.Y;
+                double dist = Math.Sqrt(dx * dx + dy * dy);
+                double minDist = r.Radius + o.Radius;
 
                 if (dist < minDist && dist > 0.001)
                 {
@@ -681,124 +405,226 @@ public partial class StudentPickerWindow : Window
                     double ny = dy / dist;
                     double overlap = minDist - dist;
 
-                    b.X -= nx * overlap * 0.5;
-                    b.Y -= ny * overlap * 0.5;
+                    r.X -= nx * overlap * 0.5;
+                    r.Y -= ny * overlap * 0.5;
                     o.X += nx * overlap * 0.5;
                     o.Y += ny * overlap * 0.5;
 
-                    double kx = b.Vx - o.Vx;
-                    double ky = b.Vy - o.Vy;
-                    double p = 2 * (nx * kx + ny * ky) / (2.0); // equal mass
+                    double kx = r.Vx - o.Vx;
+                    double ky = r.Vy - o.Vy;
+                    double p = 2 * (nx * kx + ny * ky) / 2.0;
 
-                    b.Vx -= p * nx * 0.7;
-                    b.Vy -= p * ny * 0.7;
+                    r.Vx -= p * nx * 0.7;
+                    r.Vy -= p * ny * 0.7;
                     o.Vx += p * nx * 0.7;
                     o.Vy += p * ny * 0.7;
                 }
             }
 
-            // 5. Forest camp goal detection at the end of the genuinely long course.
-            if (b.Y + b.Radius >= 2172 && b.X >= 245 && b.X <= 435)
+            // 5. Finish Waterfall Chute Crossing
+            if (r.Y >= FinishY && r.X >= 230 && r.X <= 450)
             {
-                b.IsSettled = true;
-                b.Vx = 0;
-                b.Vy = 0;
-                b.Y = 2200;
+                r.IsFinished = true;
+                r.FinishRank = ++_finishedCount;
+                _winners.Add(r.Student);
 
-                if (_lastWinner == null)
+                if (_soundEnabled) _soundService.PlayChime();
+
+                if (_finishedCount == _targetWinnerCount)
                 {
-                    _lastWinner = b.Student;
-                    TriggerWinnerCelebration(b.Student);
+                    // Winner(s) decided!
+                    TriggerWinnerCelebration(r.Student);
                 }
             }
-            else if (b.Y > 2245)
+            else if (r.Y > 2120)
             {
-                // Side clearing: completed the course but missed the center winner gate.
-                b.IsSettled = true;
-                b.Vx = 0;
-                b.Vy = 0;
-                b.Y = 2220;
+                // Settled into side trays
+                r.IsFinished = true;
+                r.FinishRank = ++_finishedCount;
             }
 
-            b.UpdateVisual();
+            r.UpdateVisual();
         }
 
-        // Camera follows the live leader after every physics step.
-        UpdateCameraAndLeader(dt);
+        // Camera Follows Leader
+        UpdateCameraViewport(dt);
 
-        // Update Confetti
-        for (int i = _confetti.Count - 1; i >= 0; i--)
-        {
-            var p = _confetti[i];
-            p.Update(dt);
-            if (p.IsDead)
-            {
-                PinballCanvas.Children.Remove(p.Visual);
-                _confetti.RemoveAt(i);
-            }
-        }
+        // Update Minimap & Leaderboard
+        UpdateMinimap();
+        UpdateLeaderboard();
 
-        // Check if all balls settled without winner
-        if (_balls.Count > 0 && _balls.All(b => b.IsSettled))
+        // Check if all racers completed
+        if (_racers.All(r => r.IsFinished))
         {
-            if (_lastWinner == null && _balls.Count > 0)
-            {
-                // Closest to champion cup wins
-                var fallbackWinner = _balls.OrderBy(b => Math.Abs(b.X - 340)).First().Student;
-                TriggerWinnerCelebration(fallbackWinner);
-            }
             _gameTimer?.Stop();
             _isPlaying = false;
-            BtnLaunch.IsEnabled = true;
-            TxtBtnLaunchLabel.Text = "동물 숲길 레이스 출발!";
+            BtnStartRace.IsEnabled = true;
+            TxtBtnStartLabel.Text = "시작하기";
+        }
+    }
+
+    private void UpdateCameraViewport(double dt, bool force = false)
+    {
+        if (RaceViewport == null || RaceScrollViewer == null) return;
+
+        double viewportHeight = RaceViewport.ActualHeight;
+        if (viewportHeight <= 1) return;
+
+        // Auto scale to viewport width
+        double usableWidth = Math.Max(400, RaceViewport.ActualWidth - 20);
+        double scale = Math.Clamp(usableWidth / TrackWidth, 0.7, 1.4);
+        RaceWorldScale.ScaleX = scale;
+        RaceWorldScale.ScaleY = scale;
+
+        // Find leader
+        var leader = _racers.Where(r => !r.IsFinished).OrderByDescending(r => r.Y).FirstOrDefault()
+                     ?? _racers.OrderByDescending(r => r.Y).FirstOrDefault();
+
+        double leaderY = leader?.Y ?? 0;
+        double targetOffset = Math.Max(0, leaderY * scale - viewportHeight * 0.35);
+        double maxOffset = Math.Max(0, TrackHeight * scale - viewportHeight);
+        targetOffset = Math.Clamp(targetOffset, 0, maxOffset);
+
+        if (force)
+        {
+            RaceScrollViewer.ScrollToVerticalOffset(targetOffset);
+        }
+        else
+        {
+            double current = RaceScrollViewer.VerticalOffset;
+            double alpha = 1.0 - Math.Exp(-6.0 * Math.Max(dt, 0.001));
+            RaceScrollViewer.ScrollToVerticalOffset(current + (targetOffset - current) * alpha);
+        }
+    }
+
+    private void UpdateMinimap()
+    {
+        if (MinimapCanvas == null || MinimapViewportBox == null) return;
+
+        double mapW = MinimapCanvas.ActualWidth;
+        double mapH = MinimapCanvas.ActualHeight;
+        if (mapW <= 1 || mapH <= 1) return;
+
+        double scaleX = mapW / TrackWidth;
+        double scaleY = mapH / TrackHeight;
+
+        // Update dots
+        foreach (var r in _racers)
+        {
+            Canvas.SetLeft(r.MinimapDot, r.X * scaleX - 3.5);
+            Canvas.SetTop(r.MinimapDot, r.Y * scaleY - 3.5);
+        }
+
+        // Update camera viewport box on minimap
+        if (RaceViewport != null && RaceScrollViewer != null)
+        {
+            double scrollY = RaceScrollViewer.VerticalOffset / RaceWorldScale.ScaleY;
+            double viewH = RaceViewport.ActualHeight / RaceWorldScale.ScaleY;
+
+            Canvas.SetTop(MinimapViewportBox, Math.Clamp(scrollY * scaleY, 0, mapH - 30));
+            MinimapViewportBox.Height = Math.Clamp(viewH * scaleY, 20, mapH);
+        }
+    }
+
+    private void UpdateLeaderboard()
+    {
+        if (PanelLeaderboard == null) return;
+        PanelLeaderboard.Children.Clear();
+
+        // Sort: finished racers by FinishRank, active racers by Y descending
+        var sorted = _racers
+            .OrderBy(r => r.IsFinished ? 0 : 1)
+            .ThenBy(r => r.IsFinished ? r.FinishRank : 0)
+            .ThenByDescending(r => r.Y)
+            .ToList();
+
+        for (int i = 0; i < sorted.Count; i++)
+        {
+            var racer = sorted[i];
+            int rank = i + 1;
+
+            var row = new Grid
+            {
+                Margin = new Thickness(0, 2, 0, 2),
+                Height = 32
+            };
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(28) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(30) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+            // Rank Badge: Gold for 1, Silver for 2, Bronze for 3, Grey for rest
+            string badgeColor = rank switch
+            {
+                1 => "#EAB308",
+                2 => "#94A3B8",
+                3 => "#D97706",
+                _ => "#3F3F46"
+            };
+
+            var badge = new Border
+            {
+                Width = 22,
+                Height = 22,
+                CornerRadius = new CornerRadius(11),
+                Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(badgeColor)),
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            badge.Child = new TextBlock
+            {
+                Text = $"{rank}",
+                FontSize = 11,
+                FontWeight = FontWeights.Bold,
+                Foreground = Brushes.White,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            Grid.SetColumn(badge, 0);
+            row.Children.Add(badge);
+
+            // Animal Avatar
+            var avatarImg = new Image
+            {
+                Width = 24,
+                Height = 24,
+                Source = AnimalAvatarCatalog.GetAvatarBitmap(racer.Student.EffectiveAvatarId),
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            Grid.SetColumn(avatarImg, 1);
+            row.Children.Add(avatarImg);
+
+            // Student Name
+            var nameText = new TextBlock
+            {
+                Text = racer.Student.Name,
+                FontSize = 12,
+                FontWeight = rank <= 3 ? FontWeights.Bold : FontWeights.Normal,
+                Foreground = rank == 1 ? new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FDE047")) : Brushes.White,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(6, 0, 0, 0),
+                TextTrimming = TextTrimming.CharacterEllipsis
+            };
+            Grid.SetColumn(nameText, 2);
+            row.Children.Add(nameText);
+
+            PanelLeaderboard.Children.Add(row);
         }
     }
 
     private void TriggerWinnerCelebration(StudentItem winner)
     {
         _studentService.PickedStudentNumbers.Add(winner.Number);
-        UpdateStatus();
 
-        if (_soundEnabled)
-        {
-            _soundService.PlayChime();
-        }
-
-        // Spawn Confetti Particles
-        SpawnConfetti(340, 2190, 75);
-
-        // Display Winner Card
         TxtWinnerTitle.Text = $"{winner.Number}번 {winner.Name} ({winner.AvatarName})";
         ImgWinnerAvatar.Source = AnimalAvatarCatalog.GetAvatarBitmap(winner.EffectiveAvatarId);
 
         GridCelebration.Visibility = Visibility.Visible;
     }
 
-    private void SpawnConfetti(double cx, double cy, int count)
-    {
-        var rand = new Random();
-        var colors = new[] { "#FDE047", "#38BDF8", "#EC4899", "#10B981", "#A855F7", "#F97316" };
-
-        for (int i = 0; i < count; i++)
-        {
-            double angle = rand.NextDouble() * Math.PI * 2;
-            double speed = 150 + rand.NextDouble() * 500;
-            double vx = Math.Cos(angle) * speed;
-            double vy = Math.Sin(angle) * speed - 120;
-            string color = colors[rand.Next(colors.Length)];
-
-            var p = new ConfettiParticle(cx, cy, vx, vy, color);
-            _confetti.Add(p);
-            PinballCanvas.Children.Add(p.Visual);
-        }
-    }
-
     private void DismissCelebration()
     {
         GridCelebration.Visibility = Visibility.Collapsed;
-        _isPlaying = false;
-        BtnLaunch.IsEnabled = true;
-        TxtBtnLaunchLabel.Text = "동물 숲길 레이스 출발!";
     }
 
     private void BtnDismissCelebration_Click(object sender, RoutedEventArgs e) => DismissCelebration();
@@ -806,86 +632,83 @@ public partial class StudentPickerWindow : Window
     private void BtnNextLaunch_Click(object sender, RoutedEventArgs e)
     {
         DismissCelebration();
-        StartPinballSimulation();
+        ResetToStartLine();
+        StartRaceSimulation();
     }
 
-    #endregion
+    
 
-    #region Classic Roulette Mode
 
-    private void Mode_Checked(object sender, RoutedEventArgs e)
+#endregion
+
+    #region Window UI Controls
+
+    private void BtnResetToStart_Click(object sender, RoutedEventArgs e)
     {
-        if (GridClassicMode == null) return;
+        ResetToStartLine();
+    }
 
-        if (RbModeClassic.IsChecked == true)
+    private void BtnInitAll_Click(object sender, RoutedEventArgs e)
+    {
+        _studentService.ResetPicked();
+        ResetToStartLine();
+        MessageBox.Show("추첨 기록 및 제외 명단이 초기화되었습니다.", "초기화", MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+
+    private void BtnSpeedToggle_Click(object sender, RoutedEventArgs e)
+    {
+        if (_speedMultiplier < 1.4)
         {
-            GridClassicMode.Visibility = Visibility.Visible;
-            TxtBtnLaunchLabel.Text = "🎲 발표자 룰렛 뽑기!";
+            _speedMultiplier = 1.8;
+            BtnSpeedToggle.Content = "> 2x";
+        }
+        else if (_speedMultiplier < 2.2)
+        {
+            _speedMultiplier = 2.6;
+            BtnSpeedToggle.Content = "> 3x";
         }
         else
         {
-            GridClassicMode.Visibility = Visibility.Collapsed;
-            if (BorderClassicAvatar != null) BorderClassicAvatar.Visibility = Visibility.Collapsed;
-            TxtBtnLaunchLabel.Text = "🌲 동물 숲길 레이스 출발!";
+            _speedMultiplier = 1.0;
+            BtnSpeedToggle.Content = "> 1x";
         }
     }
 
-    private void StartClassicRoulette()
+    private void BtnSoundToggle_Click(object sender, RoutedEventArgs e)
     {
-        bool exclude = ChkExcludePicked.IsChecked == true;
-        _classicFinalPicked = _studentService.PickRandom(exclude);
-
-        if (_classicFinalPicked == null)
-        {
-            MessageBox.Show("추첨할 학생이 없습니다.", "안내", MessageBoxButton.OK, MessageBoxImage.Information);
-            return;
-        }
-
-        BtnLaunch.IsEnabled = false;
-        _classicShuffleCount = 0;
-
-        if (_classicShuffleTimer == null)
-        {
-            _classicShuffleTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
-            _classicShuffleTimer.Tick += ClassicShuffleTimer_Tick;
-        }
-        _classicShuffleTimer.Start();
+        _soundEnabled = !_soundEnabled;
+        BtnSoundToggle.Content = _soundEnabled ? "🔊" : "🔇";
     }
 
-    private void ClassicShuffleTimer_Tick(object? sender, EventArgs e)
+    private void BtnHideTitle_Click(object sender, RoutedEventArgs e)
     {
-        _classicShuffleCount++;
-        if (_studentService.Students.Count > 0)
+        if (TbRaceTitle.Visibility == Visibility.Visible)
         {
-            int rndIndex = Random.Shared.Next(_studentService.Students.Count);
-            var temp = _studentService.Students[rndIndex];
-            TxtClassicWinnerNumber.Text = $"{temp.Number}번";
-            TxtClassicWinnerName.Text = $"{temp.Name} ({temp.AvatarName})";
-            if (BorderClassicAvatar != null) BorderClassicAvatar.Visibility = Visibility.Visible;
-            if (ImgClassicAvatar != null) ImgClassicAvatar.Source = AnimalAvatarCatalog.GetAvatarBitmap(temp.EffectiveAvatarId);
+            TbRaceTitle.Visibility = Visibility.Collapsed;
+            BtnHideTitle.Content = "제목 보이기";
         }
-
-        if (_classicShuffleCount > 18)
+        else
         {
-            _classicShuffleTimer?.Stop();
-            BtnLaunch.IsEnabled = true;
+            TbRaceTitle.Visibility = Visibility.Visible;
+            BtnHideTitle.Content = "제목 숨기기";
+        }
+    }
 
-            if (_classicFinalPicked != null)
+    private void BtnViewResult_Click(object sender, RoutedEventArgs e)
+    {
+        if (_winners.Count > 0)
+        {
+            TriggerWinnerCelebration(_winners.First());
+        }
+        else
+        {
+            var first = _racers.OrderBy(r => r.IsFinished ? r.FinishRank : 999).ThenByDescending(r => r.Y).FirstOrDefault();
+            if (first != null)
             {
-                TxtClassicWinnerNumber.Text = $"🎉 {_classicFinalPicked.Number}번 🎉";
-                TxtClassicWinnerName.Text = $"{_classicFinalPicked.Name} ({_classicFinalPicked.AvatarName})";
-                if (BorderClassicAvatar != null) BorderClassicAvatar.Visibility = Visibility.Visible;
-                if (ImgClassicAvatar != null) ImgClassicAvatar.Source = AnimalAvatarCatalog.GetAvatarBitmap(_classicFinalPicked.EffectiveAvatarId);
+                TriggerWinnerCelebration(first.Student);
             }
-
-            if (_soundEnabled) _soundService.PlayChime();
-            UpdateStatus();
         }
     }
-
-    #endregion
-
-    #region Toolbar Actions
 
     private void BtnManageRoster_Click(object sender, RoutedEventArgs e)
     {
@@ -895,38 +718,37 @@ public partial class StudentPickerWindow : Window
         };
         if (dlg.ShowDialog() == true)
         {
-            UpdateStatus();
+            ResetToStartLine();
         }
     }
 
-    private void BtnReset_Click(object sender, RoutedEventArgs e)
+    private void RaceViewport_SizeChanged(object sender, SizeChangedEventArgs e)
     {
-        _studentService.ResetPicked();
-        UpdateStatus();
-        MessageBox.Show("제외 목록이 초기화되었습니다. 모든 학생이 다시 추첨에 포함됩니다.", "초기화 완료", MessageBoxButton.OK, MessageBoxImage.Information);
+        UpdateCameraViewport(0, force: true);
+        UpdateMinimap();
     }
 
-    private void BtnSoundToggle_Click(object sender, RoutedEventArgs e)
+    private void RaceScrollViewer_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
     {
-        _soundEnabled = !_soundEnabled;
-        BtnSoundToggle.Content = _soundEnabled ? "효과음 ON" : "효과음 OFF";
-        BtnSoundToggle.Foreground = _soundEnabled ? new SolidColorBrush((Color)ColorConverter.ConvertFromString("#8DE2A8")) : Brushes.Gray;
+        // Allow teacher to freely scroll the race track
     }
 
     protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
     {
         _gameTimer?.Stop();
-        _classicShuffleTimer?.Stop();
         e.Cancel = true;
         Hide();
     }
 
-    #endregion
+    
+
+
+#endregion
 }
 
-#region Helper Physics Classes (PinballBall, PinballPeg, PinballBumper, ConfettiParticle)
+#region Helper Physics & Graphic Classes
 
-public class PinballBall
+public class RaceRacer
 {
     public StudentItem Student { get; }
     public double X { get; set; }
@@ -934,14 +756,115 @@ public class PinballBall
     public double Vx { get; set; }
     public double Vy { get; set; }
     public double Radius { get; }
-    public bool IsSettled { get; set; } = false;
+    public bool IsFinished { get; set; } = false;
+    public int FinishRank { get; set; } = 0;
 
     public Grid Visual { get; }
-    private readonly Ellipse _leaderRing;
+    public Ellipse MinimapDot { get; }
+    private readonly RotateTransform _rot;
 
-    public PinballBall(StudentItem student, double x, double y, double radius)
+    public RaceRacer(StudentItem student, double x, double y, double radius)
     {
         Student = student;
+        X = x;
+        Y = y;
+        Radius = radius;
+
+        Visual = new Grid
+        {
+            Width = radius * 2 + 30,
+            Height = radius * 2 + 26
+        };
+
+        _rot = new RotateTransform(0);
+        Visual.RenderTransformOrigin = new Point(0.5, 0.4);
+        Visual.RenderTransform = _rot;
+
+        // 1. Natural Animal Avatar (FRAMELESS - No circular frame or thick stroke!)
+        var img = new Image
+        {
+            Width = radius * 2 + 4,
+            Height = radius * 2 + 4,
+            Source = AnimalAvatarCatalog.GetAvatarBitmap(student.EffectiveAvatarId),
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Top,
+        };
+        RenderOptions.SetBitmapScalingMode(img, BitmapScalingMode.HighQuality);
+        Visual.Children.Add(img);
+
+        // 2. Translucent Black Pill Badge with Student Name
+        var badge = new Border
+        {
+            Background = new SolidColorBrush(Color.FromArgb(215, 15, 23, 42)),
+            CornerRadius = new CornerRadius(6),
+            Padding = new Thickness(6, 1, 6, 1),
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Bottom,
+            Margin = new Thickness(0, 0, 0, 0)
+        };
+        badge.Child = new TextBlock
+        {
+            Text = student.Name,
+            FontSize = 10,
+            FontWeight = FontWeights.Bold,
+            Foreground = Brushes.White,
+            HorizontalAlignment = HorizontalAlignment.Center
+        };
+        Visual.Children.Add(badge);
+
+        // 3. Minimap Dot
+        MinimapDot = new Ellipse
+        {
+            Width = 7,
+            Height = 7,
+            Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FDE047")),
+            Stroke = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#B45309")),
+            StrokeThickness = 1
+        };
+
+        UpdateVisual();
+    }
+
+    public void UpdateVisual()
+    {
+        Canvas.SetLeft(Visual, X - Visual.Width / 2.0);
+        Canvas.SetTop(Visual, Y - Radius);
+
+        // Tilt based on horizontal velocity
+        double angle = Math.Clamp(Vx * 0.15, -28.0, 28.0);
+        _rot.Angle = angle;
+    }
+}
+
+public class RaceRail
+{
+    public double X1 { get; }
+    public double Y1 { get; }
+    public double X2 { get; }
+    public double Y2 { get; }
+    public double Thickness { get; }
+
+    public RaceRail(double x1, double y1, double x2, double y2, double thickness)
+    {
+        X1 = x1;
+        Y1 = y1;
+        X2 = x2;
+        Y2 = y2;
+        Thickness = thickness;
+    }
+}
+
+public class RaceBumper
+{
+    public double X { get; }
+    public double Y { get; }
+    public double Radius { get; }
+    public Grid Visual { get; }
+    private double _flashTimer;
+    private readonly ScaleTransform _scale;
+
+    public RaceBumper(double x, double y, double radius, string assetName)
+    {
         X = x;
         Y = y;
         Radius = radius;
@@ -952,179 +875,28 @@ public class PinballBall
             Height = radius * 2
         };
 
-        // Circular Avatar Ellipse with neon border
-        var ellipse = new Ellipse
+        _scale = new ScaleTransform(1, 1);
+        Visual.RenderTransformOrigin = new Point(0.5, 0.5);
+        Visual.RenderTransform = _scale;
+
+        var img = new Image
         {
             Width = radius * 2,
             Height = radius * 2,
-            Stroke = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F0C95A")),
-            StrokeThickness = 2.5
+            Source = new BitmapImage(new Uri($"pack://application:,,,/assets/race/{assetName}")),
         };
+        RenderOptions.SetBitmapScalingMode(img, BitmapScalingMode.HighQuality);
+        Visual.Children.Add(img);
 
-        var avatarBmp = AnimalAvatarCatalog.GetAvatarBitmap(student.EffectiveAvatarId);
-        if (avatarBmp != null)
-        {
-            ellipse.Fill = new ImageBrush(avatarBmp)
-            {
-                Stretch = Stretch.UniformToFill
-            };
-        }
-        else
-        {
-            ellipse.Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#1E293B"));
-        }
-        Visual.Children.Add(ellipse);
-
-        _leaderRing = new Ellipse
-        {
-            Width = radius * 2,
-            Height = radius * 2,
-            Stroke = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FFF2A8")),
-            StrokeThickness = 4,
-            Visibility = Visibility.Collapsed,
-            IsHitTestVisible = false
-        };
-        Visual.Children.Add(_leaderRing);
-
-        // Number Badge
-        var badge = new Border
-        {
-            Background = new SolidColorBrush(Color.FromArgb(220, 15, 23, 42)),
-            CornerRadius = new CornerRadius(6),
-            Padding = new Thickness(4, 1, 4, 1),
-            HorizontalAlignment = HorizontalAlignment.Center,
-            VerticalAlignment = VerticalAlignment.Bottom,
-            Margin = new Thickness(0, 0, 0, 1)
-        };
-        badge.Child = new TextBlock
-        {
-            Text = $"{student.Number}",
-            FontSize = 9,
-            FontWeight = FontWeights.Bold,
-            Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FDE047")),
-            HorizontalAlignment = HorizontalAlignment.Center
-        };
-        Visual.Children.Add(badge);
-
-        UpdateVisual();
-    }
-
-    public void SetLeader(bool isLeader)
-    {
-        _leaderRing.Visibility = isLeader ? Visibility.Visible : Visibility.Collapsed;
-        Panel.SetZIndex(Visual, isLeader ? 50 : 10);
-    }
-
-    public void UpdateVisual()
-    {
-        Canvas.SetLeft(Visual, X - Radius);
-        Canvas.SetTop(Visual, Y - Radius);
-    }
-}
-
-public class PinballPeg
-{
-    public double X { get; }
-    public double Y { get; }
-    public double Radius { get; }
-
-    public Ellipse Visual { get; }
-    public Ellipse GlowRing { get; }
-    private double _flashTimer = 0;
-
-    public PinballPeg(double x, double y, double radius)
-    {
-        X = x;
-        Y = y;
-        Radius = radius;
-
-        Visual = new Ellipse
-        {
-            Width = radius * 2,
-            Height = radius * 2,
-            Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#C79445")),
-            Stroke = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#684522")),
-            StrokeThickness = 1.5
-        };
         Canvas.SetLeft(Visual, x - radius);
         Canvas.SetTop(Visual, y - radius);
-
-        GlowRing = new Ellipse
-        {
-            Width = radius * 4,
-            Height = radius * 4,
-            Stroke = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#8BCF8F")),
-            StrokeThickness = 2,
-            Opacity = 0
-        };
-        Canvas.SetLeft(GlowRing, x - radius * 2);
-        Canvas.SetTop(GlowRing, y - radius * 2);
     }
 
     public void Flash()
     {
         _flashTimer = 0.25;
-        GlowRing.Opacity = 0.9;
-        Visual.Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FFFFFF"));
-    }
-
-    public void Update(double dt)
-    {
-        if (_flashTimer > 0)
-        {
-            _flashTimer -= dt;
-            GlowRing.Opacity = Math.Max(0, _flashTimer / 0.25);
-            if (_flashTimer <= 0)
-            {
-                Visual.Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#C79445"));
-            }
-        }
-    }
-}
-
-public class PinballBumper
-{
-    public double X { get; }
-    public double Y { get; }
-    public double Radius { get; }
-
-    public Border Visual { get; }
-    private double _flashTimer = 0;
-    private readonly string _baseColor;
-
-    public PinballBumper(double x, double y, double radius, string colorHex, string icon = "🍄")
-    {
-        X = x;
-        Y = y;
-        Radius = radius;
-        _baseColor = colorHex;
-
-        Visual = new Border
-        {
-            Width = radius * 2,
-            Height = radius * 2,
-            CornerRadius = new CornerRadius(radius),
-            Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(colorHex)),
-            BorderBrush = Brushes.White,
-            BorderThickness = new Thickness(3)
-        };
-        Visual.Child = new TextBlock
-        {
-            Text = icon,
-            FontSize = radius >= 30 ? 22 : 17,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            VerticalAlignment = VerticalAlignment.Center,
-            Foreground = Brushes.White
-        };
-
-        Canvas.SetLeft(Visual, x - radius);
-        Canvas.SetTop(Visual, y - radius);
-    }
-
-    public void Flash()
-    {
-        _flashTimer = 0.3;
-        Visual.Background = Brushes.White;
+        _scale.ScaleX = 1.25;
+        _scale.ScaleY = 1.25;
     }
 
     public void Update(double dt)
@@ -1134,146 +906,14 @@ public class PinballBumper
             _flashTimer -= dt;
             if (_flashTimer <= 0)
             {
-                Visual.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(_baseColor));
+                _scale.ScaleX = 1.0;
+                _scale.ScaleY = 1.0;
             }
         }
     }
 }
 
-public class PinballRail
-{
-    public double X1 { get; }
-    public double Y1 { get; }
-    public double X2 { get; }
-    public double Y2 { get; }
-    public double HalfThickness { get; }
-    public double Restitution { get; } = 0.62;
 
-    public Grid Visual { get; }
-    private readonly Border _wood;
-    private double _flashTimer;
 
-    public PinballRail(double x1, double y1, double x2, double y2, double halfThickness, string colorHex, string label)
-    {
-        X1 = x1;
-        Y1 = y1;
-        X2 = x2;
-        Y2 = y2;
-        HalfThickness = halfThickness;
-
-        double dx = x2 - x1;
-        double dy = y2 - y1;
-        double length = Math.Sqrt(dx * dx + dy * dy);
-        double angle = Math.Atan2(dy, dx) * 180.0 / Math.PI;
-
-        Visual = new Grid
-        {
-            Width = length,
-            Height = halfThickness * 2 + 8,
-            RenderTransformOrigin = new Point(0.5, 0.5),
-            RenderTransform = new RotateTransform(angle),
-            IsHitTestVisible = false
-        };
-
-        _wood = new Border
-        {
-            Height = halfThickness * 2,
-            CornerRadius = new CornerRadius(halfThickness),
-            Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(colorHex)),
-            BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#C99759")),
-            BorderThickness = new Thickness(2),
-            VerticalAlignment = VerticalAlignment.Center
-        };
-
-        var grain = new Border
-        {
-            Height = 3,
-            Margin = new Thickness(15, 0, 15, 0),
-            CornerRadius = new CornerRadius(2),
-            Background = new SolidColorBrush(Color.FromArgb(85, 255, 226, 168)),
-            VerticalAlignment = VerticalAlignment.Center
-        };
-
-        var tag = new TextBlock
-        {
-            Text = label == "통나무" ? "🍃" : label == "뿌리" ? "🌱" : "🍂",
-            FontSize = 15,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            VerticalAlignment = VerticalAlignment.Center,
-            Opacity = 0.86
-        };
-
-        Visual.Children.Add(_wood);
-        Visual.Children.Add(grain);
-        Visual.Children.Add(tag);
-
-        Canvas.SetLeft(Visual, (x1 + x2) / 2 - length / 2);
-        Canvas.SetTop(Visual, (y1 + y2) / 2 - Visual.Height / 2);
-    }
-
-    public void Flash()
-    {
-        _flashTimer = 0.18;
-        _wood.BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F6D365"));
-        _wood.BorderThickness = new Thickness(3);
-    }
-
-    public void Update(double dt)
-    {
-        if (_flashTimer <= 0) return;
-        _flashTimer -= dt;
-        if (_flashTimer <= 0)
-        {
-            _wood.BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#C99759"));
-            _wood.BorderThickness = new Thickness(2);
-        }
-    }
-}
-
-public class ConfettiParticle
-{
-    public double X { get; set; }
-    public double Y { get; set; }
-    public double Vx { get; set; }
-    public double Vy { get; set; }
-    public double Life { get; set; } = 1.8;
-    public bool IsDead => Life <= 0;
-
-    public Rectangle Visual { get; }
-
-    public ConfettiParticle(double x, double y, double vx, double vy, string colorHex)
-    {
-        X = x;
-        Y = y;
-        Vx = vx;
-        Vy = vy;
-
-        Visual = new Rectangle
-        {
-            Width = 10,
-            Height = 10,
-            Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString(colorHex)),
-            RenderTransform = new RotateTransform(0)
-        };
-        UpdateVisual();
-    }
-
-    public void Update(double dt)
-    {
-        Life -= dt;
-        Vy += 450 * dt; // gravity
-        X += Vx * dt;
-        Y += Vy * dt;
-
-        Visual.Opacity = Math.Clamp(Life / 1.5, 0, 1);
-        UpdateVisual();
-    }
-
-    private void UpdateVisual()
-    {
-        Canvas.SetLeft(Visual, X);
-        Canvas.SetTop(Visual, Y);
-    }
-}
 
 #endregion
