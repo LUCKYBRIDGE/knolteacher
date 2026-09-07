@@ -59,7 +59,7 @@
                             <ComboBoxItem Content="🎰 핀볼 뽑기" Tag="pinball"/>
                             <ComboBoxItem Content="🎯 발표자 추첨" Tag="picker"/>
                             <ComboBoxItem Content="🎲 스마트 주사위" Tag="dice"/>
-                            <ComboBoxItem Content="🎡 돌려돌려 돌림판" Tag="wheel"/>
+                            <ComboBoxItem Content="🎡 회전 돌림판" Tag="wheel"/>
                             <ComboBoxItem Content="🏆 모둠 점수판" Tag="score"/>
                             <ComboBoxItem Content="✏️ 칠판 판서장" Tag="drawing"/>
                             <ComboBoxItem Content="📅 오늘의 시간표" Tag="timetable"/>

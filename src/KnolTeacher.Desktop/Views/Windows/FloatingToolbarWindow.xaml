@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="스마트 플로팅 독 (Alt+9)"
+        Title="화면 상단 도구바 (Alt+9)"
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
@@ -93,7 +93,7 @@
                 <!-- Drag Grip -->
                 <TextBlock Text="⋮⋮" FontSize="14" FontWeight="Bold" Foreground="#64748B"
                            VerticalAlignment="Center" Margin="2,0,8,0" Cursor="SizeAll"
-                           ToolTip="클릭하고 드래그하여 독 이동"/>
+                           ToolTip="클릭하고 드래그하여 도구바 이동"/>
 
                 <!-- Brand Logo -->
                 <Image Source="/assets/app_icon.png" Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,10,0"/>
@@ -181,7 +181,7 @@
                 <Separator Margin="2,4,8,4" Background="#334155"/>
 
                 <!-- Close Button -->
-                <Button Click="BtnClose_Click" Width="26" Height="26" Background="Transparent" BorderThickness="0" Cursor="Hand" ToolTip="독 닫기 (Alt+9)">
+                <Button Click="BtnClose_Click" Width="26" Height="26" Background="Transparent" BorderThickness="0" Cursor="Hand" ToolTip="도구바 닫기 (Alt+9)">
                     <Button.Template>
                         <ControlTemplate TargetType="Button">
                             <Border x:Name="bClose" CornerRadius="13" Background="Transparent">

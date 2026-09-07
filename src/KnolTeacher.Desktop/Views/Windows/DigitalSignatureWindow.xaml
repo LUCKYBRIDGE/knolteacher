@@ -133,7 +133,7 @@
                                 <RadioButton x:Name="RbColorBlack" Checked="StampOptionChanged" Cursor="Hand">
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                         <Border Width="16" Height="16" CornerRadius="8" Background="#0F172A" Margin="0,0,6,0"/>
-                                        <TextBlock Text="검정먹" FontSize="12" FontWeight="SemiBold"/>
+                                        <TextBlock Text="흑색 (검정)" FontSize="12" FontWeight="SemiBold"/>
                                     </StackPanel>
                                 </RadioButton>
                             </StackPanel>
@@ -170,13 +170,13 @@
                                 <RadioButton x:Name="RbInkBlack" IsChecked="True" Checked="PenOptionChanged" Margin="0,0,12,0" Cursor="Hand">
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                         <Border Width="16" Height="16" CornerRadius="8" Background="#0F172A" Margin="0,0,6,0"/>
-                                        <TextBlock Text="만년필 흑색" FontSize="12" FontWeight="SemiBold"/>
+                                        <TextBlock Text="흑색 (검정)" FontSize="12" FontWeight="SemiBold"/>
                                     </StackPanel>
                                 </RadioButton>
                                 <RadioButton x:Name="RbInkBlue" Checked="PenOptionChanged" Margin="0,0,12,0" Cursor="Hand">
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                         <Border Width="16" Height="16" CornerRadius="8" Background="#1D4ED8" Margin="0,0,6,0"/>
-                                        <TextBlock Text="딥 블루" FontSize="12" FontWeight="SemiBold"/>
+                                        <TextBlock Text="청색 (파랑)" FontSize="12" FontWeight="SemiBold"/>
                                     </StackPanel>
                                 </RadioButton>
                                 <RadioButton x:Name="RbInkRed" Checked="PenOptionChanged" Cursor="Hand">

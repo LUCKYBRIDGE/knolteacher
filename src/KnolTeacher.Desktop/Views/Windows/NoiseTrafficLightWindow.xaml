@@ -129,7 +129,7 @@
                     <TextBlock x:Name="TxtWarningCount" Text="0 회" FontSize="16" FontWeight="Bold" Foreground="#EF4444" VerticalAlignment="Center"/>
                     <TextBlock Text=" (빨간불 1.2초 지속 시 1회 누적)" FontSize="11" Foreground="#64748B" VerticalAlignment="Center" Margin="6,0,0,0"/>
                 </StackPanel>
-                <Button Grid.Column="1" Content="🔄 카운트 리셋" Click="BtnResetWarnings_Click" Padding="10,4" Background="#334155" Foreground="White" BorderThickness="0" FontSize="11" FontWeight="SemiBold" Cursor="Hand">
+                <Button Grid.Column="1" Content="🔄 경고 횟수 초기화" Click="BtnResetWarnings_Click" Padding="10,4" Background="#334155" Foreground="White" BorderThickness="0" FontSize="11" FontWeight="SemiBold" Cursor="Hand">
                     <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
                 </Button>
             </Grid>
@@ -181,7 +181,7 @@
                         </Grid.ColumnDefinitions>
 
                         <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="⏱️ 퀵 일시정지:" FontSize="11" FontWeight="Bold" Foreground="#38BDF8" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                            <TextBlock Text="⏱️ 일시정지 (발표·활동):" FontSize="11" FontWeight="Bold" Foreground="#38BDF8" VerticalAlignment="Center" Margin="0,0,6,0"/>
                             <Button Content="30초" Click="BtnQuickPause_Click" Tag="30" Padding="6,2" Margin="0,0,4,0" Background="#1E293B" Foreground="White" FontSize="10" FontWeight="Bold" BorderThickness="0" Cursor="Hand">
                                 <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
                             </Button>

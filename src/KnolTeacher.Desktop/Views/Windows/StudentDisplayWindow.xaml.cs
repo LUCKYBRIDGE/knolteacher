@@ -265,7 +265,7 @@ public partial class StudentDisplayWindow : Window
             "timer" => AddWidget("timer", "⏱️ 수업 타이머", new TimerWidgetView(_soundService), nextX, nextY, 340, 240),
             "picker" => AddWidget("picker", "🎯 발표자 추첨", new PickerWidgetView(_studentService, _soundService), nextX, nextY, 360, 280),
             "dice" => AddWidget("dice", "🎲 스마트 주사위 & 통계", new DiceWidgetView(_soundService), nextX, nextY, 480, 290),
-            "wheel" => AddWidget("wheel", "🎡 돌려돌려 돌림판", new WheelWidgetView(_soundService), nextX, nextY, 340, 270),
+            "wheel" => AddWidget("wheel", "🎡 회전 돌림판", new WheelWidgetView(_soundService), nextX, nextY, 340, 270),
             "score" => AddWidget("score", "🏆 모둠 점수판", new ScoreWidgetView(), nextX, nextY, 360, 270),
             "drawing" => AddWidget("drawing", "✏️ 칠판 판서장", new DrawingWidgetView(), nextX, nextY, 400, 310),
             "timetable" => AddWidget("timetable", "📅 오늘의 시간표", new TimetableWidgetView(_timetableService), nextX, nextY, 320, 440),

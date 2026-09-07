@@ -229,13 +229,13 @@ public partial class App : Application
                                 if (dockWindow.IsVisible)
                                 {
                                     dockWindow.Hide();
-                                    HudNotificationWindow.Instance.ShowToast("🏝️", "스마트 독 숨김");
+                                    HudNotificationWindow.Instance.ShowToast("🏝️", "화면 상단 도구바 숨김");
                                 }
                                 else
                                 {
                                     dockWindow.Show();
                                     dockWindow.Activate();
-                                    HudNotificationWindow.Instance.ShowToast("🏝️", "스마트 독 열림 (Alt+9)");
+                                    HudNotificationWindow.Instance.ShowToast("🏝️", "화면 상단 도구바 열림 (Alt+9)");
                                 }
                                 break;
 

@@ -38,7 +38,7 @@ public static class DefaultHotkeys
         new() { Id = 6, Action = "snip", Name = "화면 캡처", Description = "사각 영역 즉시 캡처 & 복사", Modifier = "Alt", Key = "6", Enabled = true },
         new() { Id = 7, Action = "board", Name = "놀보드", Description = "학생용 대형 올인원 보드 실행", Modifier = "Alt", Key = "7", Enabled = true },
         new() { Id = 8, Action = "picker", Name = "발표자 추첨", Description = "무작위 발표자 학생 이름 뽑기", Modifier = "Alt", Key = "8", Enabled = true },
-        new() { Id = 9, Action = "dock", Name = "스마트 플로팅 독", Description = "화면 상단 미니 리모컨 토글", Modifier = "Alt", Key = "9", Enabled = true },
+        new() { Id = 9, Action = "dock", Name = "화면 상단 도구바", Description = "화면 상단 미니 툴바 토글 (Alt+9)", Modifier = "Alt", Key = "9", Enabled = true },
         new() { Id = 10, Action = "board_f2", Name = "놀보드 (F2)", Description = "놀보드 1초 원클릭 실행", Modifier = "None", Key = "F2", Enabled = true },
         new() { Id = 11, Action = "qr", Name = "QR코드 생성기", Description = "학생 태블릿 스캔용 QR 생성기 (Alt+Q)", Modifier = "Alt", Key = "Q", Enabled = true },
         new() { Id = 12, Action = "signature", Name = "전자서명 & 도장", Description = "전자서명 및 직인 생성기 (Alt+S)", Modifier = "Alt", Key = "S", Enabled = true },

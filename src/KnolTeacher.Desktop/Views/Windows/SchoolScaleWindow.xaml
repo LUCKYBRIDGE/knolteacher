@@ -237,13 +237,13 @@
 
                                 <!-- Scale Category Badge -->
                                 <Border x:Name="BorderScaleBadge" Grid.Column="1" Background="#FEE2E2" CornerRadius="8" Padding="12,6" VerticalAlignment="Center">
-                                    <TextBlock x:Name="TxtScaleBadge" Text="🔴 초거대규모 학교 (과밀)" FontWeight="Bold" FontSize="12" Foreground="#991B1B"/>
+                                    <TextBlock x:Name="TxtScaleBadge" Text="🔴 과대학교 (과밀·대규모)" FontWeight="Bold" FontSize="12" Foreground="#991B1B"/>
                                 </Border>
                             </Grid>
 
                             <!-- Scale Summary Box -->
                             <Border Background="{DynamicResource BeigeCardInner}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,0,0,14">
-                                <TextBlock x:Name="TxtScaleSummary" Text="총 48학급의 초거대규모 학교로, 학년당 평균 8학급 편성 및 학생 밀도가 매우 높습니다." FontSize="12" Foreground="{DynamicResource BeigeTextMain}" TextWrapping="Wrap" LineHeight="18"/>
+                                <TextBlock x:Name="TxtScaleSummary" Text="총 48학급의 과대학교로, 학년당 평균 8학급 편성 및 학생 밀도가 매우 높습니다." FontSize="12" Foreground="{DynamicResource BeigeTextMain}" TextWrapping="Wrap" LineHeight="18"/>
                             </Border>
 
                             <!-- 3-Column KPI Stat Cards -->

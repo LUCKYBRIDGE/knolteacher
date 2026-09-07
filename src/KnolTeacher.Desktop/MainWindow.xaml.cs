@@ -455,7 +455,7 @@ public partial class MainWindow : FluentWindow
             "• Alt + 2: 4K 화면 전체 판서 (0ms 실시간 화면 프리즈)\n" +
             "• Alt + 3: 교실 집중 타이머 (카운트다운 & 차임벨)\n" +
             "• Alt + 8: 핀볼 발표자 추첨기\n" +
-            "• Alt + 9: 스마트 플로팅 독 리모컨 (화면 상단 슬림바)\n" +
+            "• Alt + 9: 화면 상단 도구바\n" +
             "• Alt + S: 🔏 디지털 전자서명 & 공문서 직인 도장 생성기\n" +
             "• Alt + N: 🚦 실시간 교실 소음 신호등\n" +
             "• Alt + B: 🔔 원터치 교실 효과음 사운드보드\n" +
@@ -548,7 +548,7 @@ public partial class MainWindow : FluentWindow
 
     private void BtnShiftTimetable_Click(object sender, RoutedEventArgs e)
     {
-        var dlg = new PromptInputDialog("시간표 일괄 시차 조정", "일괄 변경할 시간(분)을 입력하세요:\n(+5: 5분 미루기, -5: 5분 당기기)", "5")
+        var dlg = new PromptInputDialog("시간 일괄 조정 (당기기/미루기)", "일괄 변경할 시간(분)을 입력하세요:\n(+5: 5분 미루기, -5: 5분 당기기)", "5")
         {
             Owner = this
         };
@@ -627,19 +627,19 @@ public partial class MainWindow : FluentWindow
             {
                 NavBtnTools.Background = accentBrush;
                 NavBtnTools.Foreground = Brushes.White;
-                TxtViewTitle.Text = "🧰 수업 진행 도구 & 화상기";
+                TxtViewTitle.Text = "🧰 수업 도구 모음";
             }
             else if (index == 2)
             {
                 NavBtnSchedule.Background = accentBrush;
                 NavBtnSchedule.Foreground = Brushes.White;
-                TxtViewTitle.Text = "⏰ 스마트 예약 센터 & 전원 관리";
+                TxtViewTitle.Text = "⏰ 예약 실행 & 알림";
             }
             else if (index == 3)
             {
                 NavBtnZen.Background = accentBrush;
                 NavBtnZen.Foreground = Brushes.White;
-                TxtViewTitle.Text = "🧹 스마트 데스크 & 바탕화면 1초 정리";
+                TxtViewTitle.Text = "🧹 바탕화면 & PC 정리";
             }
             else if (index == 4)
             {
@@ -752,7 +752,7 @@ public partial class MainWindow : FluentWindow
                     "• 시간대별 알림장 자동 안내 문구 & 세트 묶음 관리\n" +
                     "• 48pt 대형 공지 확대경 & 한국어 TTS 음성 낭독\n" +
                     "• 놀보드 위젯 위치 잠금 🔒 & 카드 투명도(20~100%) 조절\n" +
-                    "• 교실 소음 신호등 3단계 표정 & 스마트 퀵 일시정지\n" +
+                    "• 교실 소음 신호등 3단계 표정 & 일시정지 (발표·활동)\n" +
                     "• 학사일정 연계 교원 월 15일 복무·조퇴 자동 계산기\n\n" +
                     "모든 최신 기능과 시스템 안정성이 완벽하게 유지되고 있습니다.";
 
@@ -1307,7 +1307,7 @@ public partial class MainWindow : FluentWindow
         Clipboard.SetText(script);
 
         System.Windows.MessageBox.Show(
-            "🚀 [나이스 1초 일괄입력 코드가 복사되었습니다!]\n\n" +
+            "🚀 [나이스 일괄 복사 붙여넣기 코드가 복사되었습니다!]\n\n" +
             "【사용 방법】\n" +
             "1. 4세대 나이스 웹 화면(행동특성 또는 학기말종합의견)을 켭니다.\n" +
             "2. 키보드 [F12] (개발자 도구)를 누릅니다.\n" +
@@ -1315,7 +1315,7 @@ public partial class MainWindow : FluentWindow
             "4. [Ctrl + V]로 붙여넣은 후 [Enter]를 누르면,\n" +
             "   " + _neisComments.Count + "명의 학생 번호에 맞춰 1초 만에 자동으로 쏙 채워집니다!\n\n" +
             "※ 입력 확인 후 나이스 상단의 [저장] 버튼을 클릭해 완료하세요.",
-            "나이스 일괄입력 코드 복사 완료",
+            "나이스 일괄 복사 붙여넣기 코드 복사 완료",
             MessageBoxButton.OK,
             MessageBoxImage.Information);
     }

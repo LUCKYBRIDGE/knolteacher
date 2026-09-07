@@ -178,7 +178,7 @@ public partial class ClassroomTimerWindow : Window
         if (PanelPieView != null) PanelPieView.Visibility = _isPieMode ? Visibility.Visible : Visibility.Collapsed;
         if (BtnTogglePieMode != null)
         {
-            BtnTogglePieMode.Content = _isPieMode ? "⏱️ 숫자 시계 모드" : "🥧 파이 시계 모드";
+            BtnTogglePieMode.Content = _isPieMode ? "⏱️ 숫자 타이머" : "🥧 원형 타이머";
         }
         UpdatePieGeometry();
     }

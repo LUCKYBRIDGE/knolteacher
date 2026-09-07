@@ -117,7 +117,7 @@
                                 <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="🧰" FontSize="14" Margin="0,0,10,0"/>
-                                    <TextBlock Text="수업 도구 &amp; 화상기" VerticalAlignment="Center"/>
+                                    <TextBlock Text="수업 도구 모음" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
 
@@ -125,7 +125,7 @@
                                 <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="⏰" FontSize="14" Margin="0,0,10,0"/>
-                                    <TextBlock Text="스마트 예약 센터" VerticalAlignment="Center"/>
+                                    <TextBlock Text="예약 실행 &amp; 알림" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
 
@@ -133,7 +133,7 @@
                                 <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="🧹" FontSize="14" Margin="0,0,10,0"/>
-                                    <TextBlock Text="스마트 데스크 &amp; 정리" VerticalAlignment="Center"/>
+                                    <TextBlock Text="바탕화면 &amp; PC 정리" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
 
@@ -204,7 +204,7 @@
                                 <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="🏝️" FontSize="13" Margin="0,0,8,0"/>
-                                    <TextBlock Text="스마트 독 (Alt+9)" FontSize="12" VerticalAlignment="Center"/>
+                                    <TextBlock Text="화면 상단 도구바 (Alt+9)" FontSize="12" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
 
@@ -448,7 +448,7 @@
                                                 <Button Content="⏱️ 40분 타이머" Click="BtnLaunchClassTimer_Click" Padding="4,3" Margin="0,0,3,0" Background="{DynamicResource BeigeAccent}" Foreground="White" BorderThickness="0" FontSize="10" FontWeight="Bold" Cursor="Hand" ToolTip="수업 40분 집중 타이머 시작">
                                                     <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
                                                 </Button>
-                                                <Button Content="🔄 시차 조정" Click="BtnShiftTimetable_Click" Padding="4,3" Background="{DynamicResource BeigeCardInner}" Foreground="{DynamicResource BeigeTextSub}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="10" Cursor="Hand" ToolTip="시간표 5분 일괄 당기기/미루기">
+                                                <Button Content="🔄 시간 일괄 조정" Click="BtnShiftTimetable_Click" Padding="4,3" Background="{DynamicResource BeigeCardInner}" Foreground="{DynamicResource BeigeTextSub}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="10" Cursor="Hand" ToolTip="시간표 일괄 당기기/미루기">
                                                     <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
                                                 </Button>
                                             </UniformGrid>
@@ -749,7 +749,7 @@
                                 <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
                                     <TextBlock Text="✏️" FontSize="38" HorizontalAlignment="Center" Margin="0,0,0,8"/>
                                     <TextBlock Text="화면 전체 판서" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="4K 0ms 스크린 프리즈 (Alt+2)" FontSize="12" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                    <TextBlock Text="수업 화면 정지 &amp; 판서 (Alt+2)" FontSize="12" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
                                 </StackPanel>
                             </Border>
 
@@ -776,7 +776,7 @@
                                 <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
                                     <TextBlock Text="📷" FontSize="38" HorizontalAlignment="Center" Margin="0,0,0,8"/>
                                     <TextBlock Text="스마트 실물화상기" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="BESTCAM 흑화방지 자가치유" FontSize="12" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                    <TextBlock Text="화면 꺼짐 방지 &amp; 자동 연결" FontSize="12" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
                                 </StackPanel>
                             </Border>
 
@@ -784,8 +784,8 @@
                             <Border Margin="6" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="18" Cursor="Hand" MouseLeftButtonUp="BtnLaunchDock_Click">
                                 <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
                                     <TextBlock Text="🏝️" FontSize="38" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                    <TextBlock Text="스마트 플로팅 독" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="상단 슬림 리모컨 (Alt+9)" FontSize="12" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                    <TextBlock Text="화면 상단 도구바" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="화면 상단 빠른 툴바 (Alt+9)" FontSize="12" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
                                 </StackPanel>
                             </Border>
 
@@ -903,7 +903,7 @@
                                 <!-- Header & Add Button -->
                                 <Grid Grid.Row="0" Margin="0,0,0,16">
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="🔄 정기 반복 예약 센터" FontWeight="Bold" FontSize="16" Foreground="{DynamicResource BeigeTextMain}" VerticalAlignment="Center"/>
+                                        <TextBlock Text="🔄 정기 반복 예약 실행 &amp; 알림" FontWeight="Bold" FontSize="16" Foreground="{DynamicResource BeigeTextMain}" VerticalAlignment="Center"/>
                                         <TextBlock Text=" (선생님 일정 및 PC 전원 자동화)" FontSize="12" Foreground="{DynamicResource BeigeTextMuted}" VerticalAlignment="Center" Margin="6,0,0,0"/>
                                     </StackPanel>
                                     <Button Content="+ 새로운 예약 등록" Click="BtnAddSchedule_Click" HorizontalAlignment="Right" Padding="14,8" Background="{DynamicResource BeigeAccent}" Foreground="White" FontWeight="Bold" BorderThickness="0" Cursor="Hand">
@@ -1287,11 +1287,11 @@
 
                                         <StackPanel Grid.Column="0" VerticalAlignment="Center">
                                             <TextBlock Text="💡 나이스 입력 2가지 방식 중 편한 방법을 선택하세요:" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource BeigeTextMain}"/>
-                                            <TextBlock Text="① [1초 완성 스크립트 복사]: 나이스 F12 콘솔에서 붙여넣으면 전교생 1초 일괄 입력 (추천)" FontSize="10" Foreground="{DynamicResource BeigeTextSub}" Margin="0,2,0,0"/>
-                                            <TextBlock Text="② [플로팅 도우미]: 나이스 화면 위에 띄우고 F8 단축키 1초 자동입력 &amp; 자동연속 입력" FontSize="10" Foreground="{DynamicResource BeigeTextSub}"/>
+                                            <TextBlock Text="① [나이스 일괄 복사 붙여넣기]: 나이스 F12 콘솔에서 붙여넣으면 전교생 일괄 자동 입력 (추천)" FontSize="10" Foreground="{DynamicResource BeigeTextSub}" Margin="0,2,0,0"/>
+                                            <TextBlock Text="② [플로팅 도우미]: 나이스 화면 위에 띄우고 F8 단축키 자동입력 &amp; 자동연속 입력" FontSize="10" Foreground="{DynamicResource BeigeTextSub}"/>
                                         </StackPanel>
 
-                                        <Button Grid.Column="1" Content="🚀 [방식 1] 나이스 1초 일괄입력 코드 복사" Click="BtnCopyNeisScript_Click" Height="38" Padding="14,0" Margin="0,0,8,0" Background="#2563EB" Foreground="White" FontWeight="Bold" FontSize="12" BorderThickness="0" Cursor="Hand">
+                                        <Button Grid.Column="1" Content="🚀 [방식 1] 나이스 일괄 복사 붙여넣기" Click="BtnCopyNeisScript_Click" Height="38" Padding="14,0" Margin="0,0,8,0" Background="#2563EB" Foreground="White" FontWeight="Bold" FontSize="12" BorderThickness="0" Cursor="Hand">
                                             <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></Button.Resources>
                                         </Button>
 

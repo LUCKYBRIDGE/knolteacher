@@ -55,7 +55,7 @@
                     <Button x:Name="BtnSwitchMonitor" Content="📺 모니터 2" Click="BtnSwitchMonitor_Click" Padding="8,6" Margin="0,0,6,0" Background="#1E293B" Foreground="#38BDF8" BorderBrush="#0284C7" BorderThickness="1" FontWeight="Bold" FontSize="11" Cursor="Hand" ToolTip="핀볼 창을 모니터 1 ↔ 모니터 2로 즉시 이동">
                         <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
                     </Button>
-                    <CheckBox x:Name="ChkExcludePicked" Content="당첨자 제외" IsChecked="True" Foreground="#CBD5E1" FontSize="12" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <CheckBox x:Name="ChkExcludePicked" Content="뽑힌 학생 제외" IsChecked="True" Foreground="#CBD5E1" FontSize="12" VerticalAlignment="Center" Margin="0,0,10,0"/>
                     <Button Content="👥 학생 &amp; 동물 아바타" Click="BtnManageRoster_Click" Padding="10,6" Margin="0,0,6,0" Background="#1E293B" Foreground="#38BDF8" BorderBrush="#334155" BorderThickness="1" FontWeight="Bold" FontSize="11" Cursor="Hand" ToolTip="학생 명단 및 32종 동물 아바타 관리">
                         <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
                     </Button>
@@ -80,7 +80,7 @@
                 <Canvas x:Name="PinballCanvas" Width="800" Height="860" ClipToBounds="True">
                     <!-- Top Dispenser Chute -->
                     <Border Canvas.Left="200" Canvas.Top="12" Width="400" Height="50" CornerRadius="12" Background="#1E293B" BorderBrush="#38BDF8" BorderThickness="1.5">
-                        <TextBlock Text="🚀 핀볼 발사 챔버 (대기 중)" FontSize="12" FontWeight="Bold" Foreground="#38BDF8" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBlock Text="🚀 출발 대기선 (대기 중)" FontSize="12" FontWeight="Bold" Foreground="#38BDF8" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
 
                     <!-- Bottom Inward Funnel Guides (channeling into Champion Cup) -->
@@ -91,8 +91,8 @@
                     <Border Canvas.Left="300" Canvas.Top="730" Width="200" Height="110" CornerRadius="18" Background="#1A2E05" BorderBrush="#EAB308" BorderThickness="3">
                         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
                             <TextBlock Text="🏆" FontSize="28" HorizontalAlignment="Center"/>
-                            <TextBlock Text="CHAMPION CUP" FontWeight="Bold" FontSize="13" Foreground="#FDE047" HorizontalAlignment="Center"/>
-                            <TextBlock Text="1등 당첨 골대" FontSize="11" Foreground="#FEF08A" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                            <TextBlock Text="결승점" FontWeight="Bold" FontSize="13" Foreground="#FDE047" HorizontalAlignment="Center"/>
+                            <TextBlock Text="1등 도착" FontSize="11" Foreground="#FEF08A" HorizontalAlignment="Center" Margin="0,2,0,0"/>
                         </StackPanel>
                     </Border>
 
