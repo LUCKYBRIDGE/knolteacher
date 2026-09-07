@@ -39,8 +39,123 @@ public partial class StudentPickerWindow : Window
     private DateTime _lastFrameTime = DateTime.UtcNow;
 
     private const double TrackWidth = 680.0;
-    private const double TrackHeight = 2200.0;
-    private const double FinishY = 2050.0;
+    private const double TrackHeight = 3500.0;
+    private const double FinishY = 3360.0;
+    private bool _isPaused = false;
+
+    public static void GetTrackBoundaries(double y, out double left, out double right)
+    {
+        if (y <= 160.0)
+        {
+            left = 50.0;
+            right = 630.0;
+        }
+        else if (y <= 420.0)
+        {
+            // Meadow chicane
+            double t = (y - 160.0) / (420.0 - 160.0);
+            double c = 340.0 + 35.0 * Math.Sin(t * Math.PI * 2.0);
+            double hw = 290.0 - 50.0 * t;
+            left = c - hw;
+            right = c + hw;
+        }
+        else if (y <= 560.0)
+        {
+            // Bridge funnel into canyon
+            double t = (y - 420.0) / (560.0 - 420.0);
+            double s = t * t * (3.0 - 2.0 * t);
+            double c = 340.0;
+            double hw = 240.0 - 80.0 * s;
+            left = c - hw;
+            right = c + hw;
+        }
+        else if (y <= 950.0)
+        {
+            // Canyon S-Curve 1: Banking to the LEFT
+            double t = (y - 560.0) / (950.0 - 560.0);
+            double c = 340.0 - 80.0 * Math.Sin(t * Math.PI);
+            double hw = 160.0;
+            left = c - hw;
+            right = c + hw;
+        }
+        else if (y <= 1350.0)
+        {
+            // Canyon S-Curve 2: Banking to the RIGHT
+            double t = (y - 950.0) / (1350.0 - 950.0);
+            double c = 340.0 + 80.0 * Math.Sin(t * Math.PI);
+            double hw = 160.0;
+            left = c - hw;
+            right = c + hw;
+        }
+        else if (y <= 1640.0)
+        {
+            // Fossil Mesa Chutes (Left & Right chutes around fossil)
+            double t = (y - 1350.0) / (1640.0 - 1350.0);
+            double s = Math.Clamp(t * t * (3.0 - 2.0 * t), 0.0, 1.0);
+            left = 180.0 - 40.0 * s;
+            right = 500.0 + 40.0 * s;
+        }
+        else if (y <= 1820.0)
+        {
+            // Funnel around Upper Diamond (tapers to 170..510)
+            double t = (y - 1640.0) / (1820.0 - 1640.0);
+            double s = t * t * (3.0 - 2.0 * t);
+            left = 140.0 + 30.0 * s;
+            right = 540.0 - 30.0 * s;
+        }
+        else if (y <= 1990.0)
+        {
+            // Widens around the Two Lower Diamonds
+            double t = (y - 1820.0) / (1990.0 - 1820.0);
+            double s = Math.Sin(t * Math.PI);
+            left = 170.0 - 85.0 * s;
+            right = 510.0 + 85.0 * s;
+        }
+        else if (y <= 2080.0)
+        {
+            // Maze Exit Funnel
+            double t = (y - 1990.0) / (2080.0 - 1990.0);
+            double s = t * t * (3.0 - 2.0 * t);
+            left = 170.0 - 15.0 * s;
+            right = 510.0 + 15.0 * s;
+        }
+        else if (y <= 2480.0)
+        {
+            // Forest Meander 1: Banking Right
+            double t = (y - 2080.0) / (2480.0 - 2080.0);
+            double c = 340.0 + 50.0 * Math.Sin(t * Math.PI);
+            double hw = 185.0;
+            left = c - hw;
+            right = c + hw;
+        }
+        else if (y <= 3240.0)
+        {
+            // Forest Meander 2 into River Rapids (stays wide and spacious!)
+            double t = (y - 2480.0) / (3240.0 - 2480.0);
+            double c = 340.0 - 30.0 * Math.Sin(t * Math.PI);
+            double hw = 185.0; // width 370
+            left = c - hw;
+            right = c + hw;
+        }
+        else if (y <= 3310.0)
+        {
+            // Quick smooth funnel into the short finish canal!
+            double t = (y - 3240.0) / (3310.0 - 3240.0);
+            double s = t * t * (3.0 - 2.0 * t);
+            double c = 340.0;
+            double hw = 185.0 - 110.0 * s; // 370 -> 150 (left 265, right 415)
+            left = c - hw;
+            right = c + hw;
+        }
+        else
+        {
+            // Very short finish canal & dock (Y = 3310 ~ 3500, width 150)
+            double c = 340.0;
+            double hw = 75.0;
+            left = c - hw;
+            right = c + hw;
+        }
+    }
 
     private int _targetWinnerCount = 1;
     private int _finishedCount = 0;
@@ -59,11 +174,16 @@ public partial class StudentPickerWindow : Window
             ResetToStartLine();
             PositionToDefaultMonitor();
             UpdateCameraViewport(0, force: true);
+            if (SliderSoundVolume != null)
+            {
+                SliderSoundVolume.Value = Math.Round(_soundService.MasterVolume * 100);
+                UpdateSoundUi();
+            }
         };
 
         IsVisibleChanged += (s, e) =>
         {
-            if (IsVisible && !_isPlaying)
+            if (!IsVisible)
             {
                 StopAndReset();
             }
@@ -106,7 +226,11 @@ public partial class StudentPickerWindow : Window
             {
                 DismissCelebration();
             }
-            else if (!_isPlaying)
+            else if (_isPlaying)
+            {
+                TogglePause();
+            }
+            else
             {
                 StartRaceSimulation();
             }
@@ -147,59 +271,91 @@ public partial class StudentPickerWindow : Window
         _squirrels.Clear();
         _projectiles.Clear();
 
-        // 1. Zone 2 Slanted Cartoon Wood Rails (Flush from wall to center to eliminate traps)
-        _rails.Add(new RaceRail(0, 275, 275, 395, 10));
-        _rails.Add(new RaceRail(680, 275, 405, 395, 10));
+        // 1. Zone 3 Dinosaur Fossil Mesa & Diamond Maze Guide Rails
+        // A. Dinosaur Fossil Mesa (Y = 1360 ~ 1640)
+        _rails.Add(new RaceRail(340, 1360, 260, 1440, 14));
+        _rails.Add(new RaceRail(340, 1360, 420, 1440, 14));
+        _rails.Add(new RaceRail(260, 1440, 260, 1570, 14));
+        _rails.Add(new RaceRail(420, 1440, 420, 1570, 14));
+        _rails.Add(new RaceRail(260, 1570, 340, 1640, 14));
+        _rails.Add(new RaceRail(420, 1570, 340, 1640, 14));
 
-        // 2. Zone 3 Mid-track Cartoon Wood Rails (Flush from wall to center)
-        _rails.Add(new RaceRail(0, 1095, 255, 1185, 10));
-        _rails.Add(new RaceRail(680, 1095, 425, 1185, 10));
+        // B. Upper Center Diamond Rock (Y = 1680 ~ 1810)
+        _rails.Add(new RaceRail(340, 1680, 304, 1745, 14));
+        _rails.Add(new RaceRail(340, 1680, 376, 1745, 14));
+        _rails.Add(new RaceRail(304, 1745, 340, 1810, 14));
+        _rails.Add(new RaceRail(376, 1745, 340, 1810, 14));
 
-        // 3. Zone 5 Waterfall Funnel Banks
-        _rails.Add(new RaceRail(0, 1860, 230, 2010, 14));
-        _rails.Add(new RaceRail(680, 1860, 450, 2010, 14));
-        _rails.Add(new RaceRail(230, 2010, 230, 2200, 14));
-        _rails.Add(new RaceRail(450, 2010, 450, 2200, 14));
+        // C. Lower-Left Diamond Rock (Y = 1830 ~ 1975)
+        _rails.Add(new RaceRail(230, 1830, 198, 1905, 14));
+        _rails.Add(new RaceRail(230, 1830, 262, 1905, 14));
+        _rails.Add(new RaceRail(198, 1905, 230, 1975, 14));
+        _rails.Add(new RaceRail(262, 1905, 230, 1975, 14));
 
-        // 4. ROTATING LOGS (회전 통나무 동적 장애물!)
-        // Upper Slope: Clockwise Rotating Log in center
-        AddRotatingLog(340, 520, 220, 32, 2.2, 15);
+        // D. Lower-Right Diamond Rock (Y = 1830 ~ 1975)
+        _rails.Add(new RaceRail(450, 1830, 418, 1905, 14));
+        _rails.Add(new RaceRail(450, 1830, 482, 1905, 14));
+        _rails.Add(new RaceRail(418, 1905, 450, 1975, 14));
+        _rails.Add(new RaceRail(482, 1905, 450, 1975, 14));
 
-        // Mid-Course Twin Shuffling Logs: counter-rotating to create exciting pinball channels!
-        AddRotatingLog(220, 880, 180, 30, -2.5, -30);
-        AddRotatingLog(460, 880, 180, 30, 2.5, 30);
+        // 2. ROTATING LOGS (회전 통나무 동적 장애물!)
+        // Upper Canyon Chicane: Clockwise Rotating Log
+        AddRotatingLog(275, 680, 150, 28, 2.2, 15);
 
-        // Lower Mushroom Forest: Slower Heavy Rotating Log
-        AddRotatingLog(340, 1460, 210, 34, -1.8, 0);
+        // Fossil Mesa Twin Chute Logs
+        AddRotatingLog(195, 1540, 65, 22, -2.8, -25);
+        AddRotatingLog(485, 1540, 65, 22, 2.8, 25);
 
-        // 5. CARTOON BUMPERS (타이트한 히트박스 반경)
-        // Zone 2 Upper side bumpers
-        AddBumper(150, 640, 24, "cartoon_mushroom_yellow.png");
-        AddBumper(530, 640, 24, "cartoon_mushroom_yellow.png");
+        // Lower Mushroom Forest: Heavy Rotating Log
+        AddRotatingLog(380, 2180, 150, 28, -2.0, 0);
 
-        // Zone 3 Star Bouncer in center
-        AddBumper(340, 1060, 28, "cartoon_star_bumper.png");
+        // 3. SMALL CARTOON BUMPERS & OBSTACLES (충분한 최소 간격을 보장하는 최적 분산 배치)
+        // --- Meadow & Early Forest (Y = 240 ~ 600) ---
+        AddBumper(210, 260, 14, "cartoon_acorn_peg.png");
+        AddBumper(470, 260, 14, "cartoon_acorn_peg.png");
+        AddBumper(340, 330, 15, "cartoon_wood_stump.png");
+        AddBumper(180, 410, 16, "cartoon_flower_bumper.png");
+        AddBumper(500, 410, 16, "cartoon_flower_bumper.png");
+        AddBumper(340, 500, 15, "cartoon_wood_stump.png");
 
-        // Zone 4 Enchanted Mushroom Forest
-        AddBumper(190, 1320, 26, "cartoon_mushroom_red.png");
-        AddBumper(490, 1320, 26, "cartoon_mushroom_red.png");
-        AddBumper(160, 1600, 26, "cartoon_mushroom_purple.png");
-        AddBumper(520, 1600, 26, "cartoon_mushroom_purple.png");
-        AddBumper(260, 1720, 26, "cartoon_mushroom_red.png");
-        AddBumper(420, 1720, 26, "cartoon_mushroom_red.png");
-        AddBumper(340, 1830, 28, "cartoon_mushroom_yellow.png");
+        // --- Canyon Winding Trail (Y = 620 ~ 1350) ---
+        AddBumper(210, 640, 14, "cartoon_acorn_peg.png");
+        AddBumper(380, 640, 14, "cartoon_acorn_peg.png");
+        AddBumper(190, 820, 15, "cartoon_mushroom_purple.png");
+        AddBumper(350, 820, 15, "cartoon_mushroom_red.png");
+        AddBumper(290, 1000, 14, "cartoon_pebble_bumper.png");
+        AddBumper(460, 1000, 14, "cartoon_pebble_bumper.png");
+        AddBumper(340, 1180, 15, "cartoon_wood_stump.png");
 
-        // 6. INTERACTIVE POPPABLE WATER BUBBLES (부딪히면 터지며 역전을 유발하는 비눗방울!)
-        AddBubble(290, 1920, 28);
-        AddBubble(390, 1920, 28);
-        AddBubble(340, 1985, 28);
+        // --- Fossil Mesa & Diamond Maze (Y = 1360 ~ 2080) ---
+        // 슬라럼 통로 내부 장애물 전면 제거: 공들이 시원하게 미끄러져 통과할 수 있도록 최소 110px 이상 완전 개방!
+        // 미로 출구 유도 범퍼만 배치 (중앙 260px 완전 개방)
+        AddBumper(210, 2030, 15, "cartoon_flower_bumper.png");
+        AddBumper(470, 2030, 15, "cartoon_flower_bumper.png");
 
-        // 7. PERCHED ANIMATED SQUIRRELS (나뭇가지에 앉아 주기적으로 솔방울을 던지는 2D 옆모습 청설모!)
-        // 1호 청설모: 좌측 절벽 나뭇가지 (Y = 740), 오른쪽으로 솔방울 투척!
-        AddSquirrel(x: 46, y: 740, radius: 26, isFacingRight: true, startDelay: 0.8, projectileAsset: "cartoon_pinecone.png");
+        // --- Enchanted Mushroom Forest (Y = 2100 ~ 2780) ---
+        AddBumper(280, 2320, 16, "cartoon_mushroom_red.png");
+        AddBumper(480, 2320, 16, "cartoon_mushroom_purple.png");
+        AddBumper(230, 2520, 16, "cartoon_flower_bumper.png");
+        AddBumper(410, 2520, 16, "cartoon_wood_stump.png");
+        AddBumper(340, 2700, 15, "cartoon_mushroom_yellow.png");
 
-        // 2호 청설모: 우측 절벽 나뭇가지 (Y = 1340), 왼쪽으로 솔방울 투척!
-        AddSquirrel(x: 634, y: 1340, radius: 26, isFacingRight: false, startDelay: 2.2, projectileAsset: "cartoon_pinecone.png");
+        // --- 4. River Rapids Flume & Short Finish Canal (Y = 2800 ~ 3360) ---
+        // 넓은 강물 급류 (가장자리 조약돌 2개, 중앙 240px 완전 개방)
+        AddBumper(210, 2960, 14, "cartoon_pebble_bumper.png");
+        AddBumper(470, 2960, 14, "cartoon_pebble_bumper.png");
+
+        // 도착지점 바로 직전(Y=3325)의 3개 비눗방울 관문 (도착 직전 3개로 충분!)
+        AddBubble(295, 3325, 22);
+        AddBubble(340, 3325, 24);
+        AddBubble(385, 3325, 22);
+
+        // --- 5. Perched Animated Squirrels (5마리 청설모 솔방울 투척) ---
+        AddSquirrel(x: 95, y: 780, radius: 26, isFacingRight: true, startDelay: 0.3, projectileAsset: "cartoon_pinecone.png");
+        AddSquirrel(x: 585, y: 1150, radius: 26, isFacingRight: false, startDelay: 0.7, projectileAsset: "cartoon_pinecone.png");
+        AddSquirrel(x: 135, y: 1520, radius: 26, isFacingRight: true, startDelay: 0.5, projectileAsset: "cartoon_pinecone.png");
+        AddSquirrel(x: 530, y: 1720, radius: 26, isFacingRight: false, startDelay: 0.9, projectileAsset: "cartoon_pinecone.png");
+        AddSquirrel(x: 195, y: 2320, radius: 26, isFacingRight: true, startDelay: 0.4, projectileAsset: "cartoon_pinecone.png");
     }
 
     private void AddRotatingLog(double x, double y, double length, double thickness, double angularVelocity, double initialAngleDeg)
@@ -230,7 +386,7 @@ public partial class StudentPickerWindow : Window
         {
             _projectiles.Add(proj);
             RaceCanvas.Children.Add(proj.Visual);
-            if (_soundEnabled) _soundService.PlayBeep();
+            if (_soundEnabled && _isPlaying && !_isPaused && IsVisible) _soundService.PlayBeep();
         };
         _squirrels.Add(sq);
         RaceCanvas.Children.Add(sq.BranchVisual);
@@ -247,10 +403,16 @@ public partial class StudentPickerWindow : Window
     private void ResetToStartLine()
     {
         _isPlaying = false;
+        _isPaused = false;
         _gameTimer?.Stop();
         _finishedCount = 0;
         _winners.Clear();
         _raceElapsedSeconds = 0;
+
+        if (BtnPauseResume != null) BtnPauseResume.IsEnabled = false;
+        if (TxtPauseIcon != null) TxtPauseIcon.Text = "⏸ ";
+        if (TxtPauseLabel != null) TxtPauseLabel.Text = "일시정지";
+        if (BorderPausedBanner != null) BorderPausedBanner.Visibility = Visibility.Collapsed;
 
         foreach (var b in _bubbles)
         {
@@ -289,7 +451,7 @@ public partial class StudentPickerWindow : Window
         int count = eligible.Count;
         if (count == 0) return;
 
-        // Line up side-by-side on the start platform at Y = 120
+        // Line up side-by-side on the start platform at Y = 135
         double startX = 60;
         double endX = 620;
         double span = (endX - startX);
@@ -299,7 +461,7 @@ public partial class StudentPickerWindow : Window
         {
             var student = eligible[i];
             double x = (count == 1) ? 340 : (startX + i * spacing);
-            double y = 120;
+            double y = 135;
 
             var racer = new RaceRacer(student, x, y, 13);
             _racers.Add(racer);
@@ -316,9 +478,6 @@ public partial class StudentPickerWindow : Window
         TxtBtnStartLabel.Text = "시작하기";
     }
 
-    
-
-
 #endregion
 
     #region Simulation & Physics Loop
@@ -327,6 +486,43 @@ public partial class StudentPickerWindow : Window
     {
         if (_isPlaying) return;
         StartRaceSimulation();
+    }
+
+    private void BtnPauseResume_Click(object sender, RoutedEventArgs e)
+    {
+        TogglePause();
+    }
+
+    private void TogglePause()
+    {
+        if (!_isPlaying) return;
+        if (_isPaused)
+        {
+            ResumeRace();
+        }
+        else
+        {
+            PauseRace();
+        }
+    }
+
+    private void PauseRace()
+    {
+        if (!_isPlaying || _isPaused) return;
+        _isPaused = true;
+        if (TxtPauseIcon != null) TxtPauseIcon.Text = "▶ ";
+        if (TxtPauseLabel != null) TxtPauseLabel.Text = "이어하기";
+        if (BorderPausedBanner != null) BorderPausedBanner.Visibility = Visibility.Visible;
+    }
+
+    private void ResumeRace()
+    {
+        if (!_isPlaying || !_isPaused) return;
+        _isPaused = false;
+        _lastFrameTime = DateTime.UtcNow;
+        if (TxtPauseIcon != null) TxtPauseIcon.Text = "⏸ ";
+        if (TxtPauseLabel != null) TxtPauseLabel.Text = "일시정지";
+        if (BorderPausedBanner != null) BorderPausedBanner.Visibility = Visibility.Collapsed;
     }
 
     private void StartRaceSimulation()
@@ -348,11 +544,17 @@ public partial class StudentPickerWindow : Window
         }
 
         _isPlaying = true;
+        _isPaused = false;
         BtnStartRace.IsEnabled = false;
         TxtBtnStartLabel.Text = "레이스 질주 중...";
+        if (BtnPauseResume != null) BtnPauseResume.IsEnabled = true;
+        if (TxtPauseIcon != null) TxtPauseIcon.Text = "⏸ ";
+        if (TxtPauseLabel != null) TxtPauseLabel.Text = "일시정지";
+        if (BorderPausedBanner != null) BorderPausedBanner.Visibility = Visibility.Collapsed;
+
         _lastFrameTime = DateTime.UtcNow;
 
-        if (_soundEnabled) _soundService.PlayBeep();
+        if (_soundEnabled && IsVisible) _soundService.PlayBeep();
 
         if (_gameTimer == null)
         {
@@ -367,6 +569,8 @@ public partial class StudentPickerWindow : Window
 
     private void GameTimer_Tick(object? sender, EventArgs e)
     {
+        if (!_isPlaying || _isPaused || !IsVisible) return;
+
         var now = DateTime.UtcNow;
         double dt = (now - _lastFrameTime).TotalSeconds * _speedMultiplier;
         _lastFrameTime = now;
@@ -412,8 +616,11 @@ public partial class StudentPickerWindow : Window
             var r = _racers[i];
             if (r.IsFinished)
             {
-                // Slide down slowly in water chute
-                r.Y += 120.0 * dt;
+                // Slide down smoothly onto harbor dock
+                if (r.Y < 3450)
+                {
+                    r.Y += 100.0 * dt;
+                }
                 r.UpdateVisual();
                 continue;
             }
@@ -449,18 +656,127 @@ public partial class StudentPickerWindow : Window
                 }
             }
 
-            // Left & Right Outer Track Boundaries
-            double leftWall = 35;
-            double rightWall = 645;
+            // 1. Continuous Outer Track Boundaries (Zero wall penetration)
+            GetTrackBoundaries(r.Y, out double leftWall, out double rightWall);
             if (r.X - r.Radius < leftWall)
             {
                 r.X = leftWall + r.Radius;
-                r.Vx = Math.Abs(r.Vx) * 0.75 + 20;
+                r.Vx = Math.Abs(r.Vx) * 0.75 + 25;
             }
             else if (r.X + r.Radius > rightWall)
             {
                 r.X = rightWall - r.Radius;
-                r.Vx = -Math.Abs(r.Vx) * 0.75 - 20;
+                r.Vx = -Math.Abs(r.Vx) * 0.75 - 25;
+            }
+
+            // 2. Island Collision Watchdogs (Fossil Mesa & 3 Diamond Rocks)
+            // Prevents racers from penetrating inside island geometries even at extreme velocities!
+            // Island 1: Dinosaur Fossil Mesa (Y: 1360 ~ 1640)
+            if (r.Y >= 1360.0 && r.Y <= 1640.0)
+            {
+                double halfW;
+                if (r.Y <= 1440.0)
+                {
+                    double t = (r.Y - 1360.0) / 80.0;
+                    halfW = 80.0 * Math.Clamp(t, 0.0, 1.0);
+                }
+                else if (r.Y <= 1570.0)
+                {
+                    halfW = 80.0;
+                }
+                else
+                {
+                    double t = (1640.0 - r.Y) / 70.0;
+                    halfW = 80.0 * Math.Clamp(t, 0.0, 1.0);
+                }
+
+                double islandLeft = 340.0 - halfW;
+                double islandRight = 340.0 + halfW;
+                if (r.X + r.Radius > islandLeft && r.X - r.Radius < islandRight)
+                {
+                    if (r.X < 340.0)
+                    {
+                        r.X = islandLeft - r.Radius;
+                        r.Vx = -Math.Abs(r.Vx) * 0.8 - 30.0;
+                    }
+                    else
+                    {
+                        r.X = islandRight + r.Radius;
+                        r.Vx = Math.Abs(r.Vx) * 0.8 + 30.0;
+                    }
+                    r.Vy = Math.Max(r.Vy, 70.0);
+                }
+            }
+
+            // Island 2: Upper Center Diamond Rock (Y: 1680 ~ 1810)
+            if (r.Y >= 1680.0 && r.Y <= 1810.0)
+            {
+                double halfW = (r.Y <= 1745.0)
+                    ? 36.0 * (r.Y - 1680.0) / 65.0
+                    : 36.0 * (1810.0 - r.Y) / 65.0;
+                halfW = Math.Max(0.0, halfW);
+
+                double islandLeft = 340.0 - halfW;
+                double islandRight = 340.0 + halfW;
+                if (r.X + r.Radius > islandLeft && r.X - r.Radius < islandRight)
+                {
+                    if (r.X < 340.0)
+                    {
+                        r.X = islandLeft - r.Radius;
+                        r.Vx = -Math.Abs(r.Vx) * 0.8 - 30.0;
+                    }
+                    else
+                    {
+                        r.X = islandRight + r.Radius;
+                        r.Vx = Math.Abs(r.Vx) * 0.8 + 30.0;
+                    }
+                    r.Vy = Math.Max(r.Vy, 70.0);
+                }
+            }
+
+            // Island 3 & 4: Lower Dual Diamond Rocks (Y: 1830 ~ 1975)
+            if (r.Y >= 1830.0 && r.Y <= 1975.0)
+            {
+                double halfW = (r.Y <= 1905.0)
+                    ? 32.0 * (r.Y - 1830.0) / 75.0
+                    : 32.0 * (1975.0 - r.Y) / 70.0;
+                halfW = Math.Max(0.0, halfW);
+
+                // Left Diamond (Center X = 230)
+                double leftD_Left = 230.0 - halfW;
+                double leftD_Right = 230.0 + halfW;
+                if (r.X + r.Radius > leftD_Left && r.X - r.Radius < leftD_Right)
+                {
+                    if (r.X < 230.0)
+                    {
+                        r.X = leftD_Left - r.Radius;
+                        r.Vx = -Math.Abs(r.Vx) * 0.8 - 25.0;
+                    }
+                    else
+                    {
+                        r.X = leftD_Right + r.Radius;
+                        r.Vx = Math.Abs(r.Vx) * 0.8 + 25.0;
+                    }
+                    r.Vy = Math.Max(r.Vy, 70.0);
+                }
+
+                // Right Diamond (Center X = 450)
+                double rightD_Left = 450.0 - halfW;
+                double rightD_Right = 450.0 + halfW;
+                if (r.X + r.Radius > rightD_Left && r.X - r.Radius < rightD_Right)
+                {
+                    if (r.X < 450.0)
+                    {
+                        r.X = rightD_Left - r.Radius;
+                        r.Vx = -Math.Abs(r.Vx) * 0.8 - 25.0;
+                    }
+                    else
+                    {
+                        r.X = rightD_Right + r.Radius;
+                        r.Vx = Math.Abs(r.Vx) * 0.8 + 25.0;
+                    }
+                    r.Vy = Math.Max(r.Vy, 70.0);
+                }
             }
 
             // Collisions with Rails (with active downhill sliding!)
@@ -515,7 +831,7 @@ public partial class StudentPickerWindow : Window
             {
                 if (log.CheckAndResolveCollision(r, rand, out bool collided))
                 {
-                    if (collided && _soundEnabled)
+                    if (collided && _soundEnabled && _isPlaying && !_isPaused && IsVisible)
                     {
                         _soundService.PlayBeep();
                     }
@@ -545,7 +861,7 @@ public partial class StudentPickerWindow : Window
                         r.Vx = (-dot * nx * boost) + (rand.NextDouble() - 0.5) * 50;
                         r.Vy = (-dot * ny * boost) - 60;
                         bumper.Flash();
-                        if (_soundEnabled) _soundService.PlayBeep();
+                        if (_soundEnabled && _isPlaying && !_isPaused && IsVisible) _soundService.PlayBeep();
                     }
                 }
             }
@@ -564,7 +880,7 @@ public partial class StudentPickerWindow : Window
                 {
                     // Pop the bubble!
                     bubble.Pop();
-                    if (_soundEnabled)
+                    if (_soundEnabled && _isPlaying && !_isPaused && IsVisible)
                     {
                         _soundService.PlayBeep();
                     }
@@ -598,7 +914,7 @@ public partial class StudentPickerWindow : Window
                 if (dist < minDist)
                 {
                     sq.Bump();
-                    if (_soundEnabled)
+                    if (_soundEnabled && _isPlaying && !_isPaused && IsVisible)
                     {
                         _soundService.PlayBeep();
                     }
@@ -633,11 +949,13 @@ public partial class StudentPickerWindow : Window
                     RaceCanvas.Children.Remove(proj.Visual);
                     _projectiles.RemoveAt(pIdx);
 
-                    if (_soundEnabled) _soundService.PlayBeep();
+                    if (_soundEnabled && _isPlaying && !_isPaused && IsVisible) _soundService.PlayBeep();
 
-                    // Knock racer with projectile momentum
-                    r.Vx += proj.Vx * 0.7 + (rand.NextDouble() - 0.5) * 60.0;
-                    r.Vy = -35.0 + (rand.NextDouble() - 0.5) * 40.0;
+                    // Strong disruptive knockback impulse from high-speed pinecone!
+                    double pushDir = Math.Sign(proj.Vx);
+                    if (pushDir == 0) pushDir = (r.X < 340) ? 1.0 : -1.0;
+                    r.Vx = pushDir * (260.0 + rand.NextDouble() * 120.0);
+                    r.Vy = -95.0 + (rand.NextDouble() - 0.5) * 80.0;
                 }
             }
 
@@ -674,14 +992,16 @@ public partial class StudentPickerWindow : Window
                 }
             }
 
-            // 5. Finish Waterfall Chute Crossing
-            if (r.Y >= FinishY && r.X >= 230 && r.X <= 450)
+            // 5. Finish Line Crossing (Harbor Dock & Confetti)
+            if (r.Y >= FinishY && r.X >= 240 && r.X <= 440)
             {
                 r.IsFinished = true;
                 r.FinishRank = ++_finishedCount;
                 _winners.Add(r.Student);
 
-                if (_soundEnabled) _soundService.PlayChime();
+                TriggerWaterSplash(r.X, r.Y);
+
+                if (_soundEnabled && _isPlaying && !_isPaused && IsVisible) _soundService.PlayChime();
 
                 if (_finishedCount == _targetWinnerCount)
                 {
@@ -689,9 +1009,9 @@ public partial class StudentPickerWindow : Window
                     TriggerWinnerCelebration(r.Student);
                 }
             }
-            else if (r.Y > 2120)
+            else if (r.Y > 3480)
             {
-                // Settled into side trays
+                // Settled into harbor dock platform
                 r.IsFinished = true;
                 r.FinishRank = ++_finishedCount;
             }
@@ -711,8 +1031,11 @@ public partial class StudentPickerWindow : Window
         {
             _gameTimer?.Stop();
             _isPlaying = false;
+            _isPaused = false;
             BtnStartRace.IsEnabled = true;
             TxtBtnStartLabel.Text = "시작하기";
+            if (BtnPauseResume != null) BtnPauseResume.IsEnabled = false;
+            if (BorderPausedBanner != null) BorderPausedBanner.Visibility = Visibility.Collapsed;
         }
     }
 
@@ -889,8 +1212,24 @@ public partial class StudentPickerWindow : Window
         StartRaceSimulation();
     }
 
-    
+    private void TriggerWaterSplash(double x, double y)
+    {
+        if (ImgWaterSplash == null) return;
+        Canvas.SetLeft(ImgWaterSplash, 270);
+        Canvas.SetTop(ImgWaterSplash, Math.Clamp(y - 20, 3320, 3380));
+        ImgWaterSplash.Visibility = Visibility.Visible;
+        ImgWaterSplash.Opacity = 1.0;
 
+        var anim = new DoubleAnimation(1.0, 0.0, TimeSpan.FromMilliseconds(450))
+        {
+            BeginTime = TimeSpan.FromMilliseconds(150)
+        };
+        anim.Completed += (s, e) =>
+        {
+            ImgWaterSplash.Visibility = Visibility.Collapsed;
+        };
+        ImgWaterSplash.BeginAnimation(UIElement.OpacityProperty, anim);
+    }
 
 #endregion
 
@@ -930,7 +1269,48 @@ public partial class StudentPickerWindow : Window
     private void BtnSoundToggle_Click(object sender, RoutedEventArgs e)
     {
         _soundEnabled = !_soundEnabled;
-        BtnSoundToggle.Content = _soundEnabled ? "🔊" : "🔇";
+        _soundService.IsMuted = !_soundEnabled;
+        UpdateSoundUi();
+    }
+
+    private void SliderSoundVolume_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (TxtSoundVolume == null || _soundService == null) return;
+        int vol = (int)Math.Round(SliderSoundVolume.Value);
+        TxtSoundVolume.Text = $"{vol}%";
+        _soundService.MasterVolume = vol / 100.0;
+        if (vol == 0)
+        {
+            _soundEnabled = false;
+            _soundService.IsMuted = true;
+            BtnSoundToggle.Content = "🔇";
+            BtnSoundToggle.Foreground = new SolidColorBrush(Color.FromRgb(239, 68, 68));
+        }
+        else
+        {
+            _soundEnabled = true;
+            _soundService.IsMuted = false;
+            BtnSoundToggle.Content = "🔊";
+            BtnSoundToggle.Foreground = new SolidColorBrush(Color.FromRgb(56, 189, 248));
+        }
+    }
+
+    private void UpdateSoundUi()
+    {
+        if (BtnSoundToggle == null || SliderSoundVolume == null || TxtSoundVolume == null) return;
+        if (_soundEnabled && !_soundService.IsMuted)
+        {
+            BtnSoundToggle.Content = "🔊";
+            BtnSoundToggle.Foreground = new SolidColorBrush(Color.FromRgb(56, 189, 248));
+            if (SliderSoundVolume.Value <= 0) SliderSoundVolume.Value = 80;
+            TxtSoundVolume.Text = $"{(int)Math.Round(SliderSoundVolume.Value)}%";
+            _soundService.MasterVolume = SliderSoundVolume.Value / 100.0;
+        }
+        else
+        {
+            BtnSoundToggle.Content = "🔇";
+            BtnSoundToggle.Foreground = new SolidColorBrush(Color.FromRgb(239, 68, 68));
+        }
     }
 
     private void BtnHideTitle_Click(object sender, RoutedEventArgs e)
@@ -989,9 +1369,14 @@ public partial class StudentPickerWindow : Window
     public void StopAndReset()
     {
         _isPlaying = false;
+        _isPaused = false;
         _gameTimer?.Stop();
         _finishedCount = 0;
         _winners.Clear();
+        if (BorderPausedBanner != null) BorderPausedBanner.Visibility = Visibility.Collapsed;
+        if (BtnPauseResume != null) BtnPauseResume.IsEnabled = false;
+        if (TxtPauseIcon != null) TxtPauseIcon.Text = "⏸ ";
+        if (TxtPauseLabel != null) TxtPauseLabel.Text = "일시정지";
         if (GridCelebration != null)
         {
             GridCelebration.Visibility = Visibility.Collapsed;
@@ -1146,6 +1531,19 @@ public class RaceBumper
         Visual.RenderTransformOrigin = new Point(0.5, 0.5);
         Visual.RenderTransform = _scale;
 
+        // Ground shadow for spatial grounding
+        var shadow = new Ellipse
+        {
+            Width = radius * 1.7,
+            Height = radius * 0.75,
+            Fill = new SolidColorBrush(Color.FromArgb(70, 15, 10, 5)),
+            VerticalAlignment = VerticalAlignment.Bottom,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            Margin = new Thickness(0, 0, 0, -3),
+            IsHitTestVisible = false
+        };
+        Visual.Children.Add(shadow);
+
         var img = new Image
         {
             Width = radius * 2,
@@ -1211,6 +1609,18 @@ public class RotatingLog
         Visual.RenderTransformOrigin = new Point(0.5, 0.5);
         Visual.RenderTransform = _rotateTransform;
 
+        // Soft drop shadow rotating underneath the log
+        var shadow = new Border
+        {
+            Width = length * 0.94,
+            Height = Visual.Height * 0.75,
+            Background = new SolidColorBrush(Color.FromArgb(90, 15, 10, 5)),
+            CornerRadius = new CornerRadius(thickness * 0.45),
+            Margin = new Thickness(0, 8, 0, 0),
+            IsHitTestVisible = false
+        };
+        Visual.Children.Add(shadow);
+
         var img = new Image
         {
             Width = length,
@@ -1219,6 +1629,20 @@ public class RotatingLog
         };
         RenderOptions.SetBitmapScalingMode(img, BitmapScalingMode.HighQuality);
         Visual.Children.Add(img);
+
+        // Center bronze/gold rivet axle cap
+        var rivet = new Ellipse
+        {
+            Width = 18,
+            Height = 18,
+            Fill = new SolidColorBrush(Color.FromRgb(245, 158, 11)),
+            Stroke = new SolidColorBrush(Color.FromRgb(69, 26, 3)),
+            StrokeThickness = 2.5,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            IsHitTestVisible = false
+        };
+        Visual.Children.Add(rivet);
 
         Canvas.SetLeft(Visual, X - Visual.Width / 2.0);
         Canvas.SetTop(Visual, Y - Visual.Height / 2.0);
@@ -1423,10 +1847,11 @@ public class PopOutSquirrel
     private double _idleAnimTime;
     private bool _hasThrownThisCycle;
 
-    private const double DurationIdle = 2.6;
-    private const double DurationWindup = 0.35;
-    private const double DurationThrow = 0.22;
-    private const double DurationCheer = 0.45;
+    // Snappy, rapid-fire barrage throw cycle (~1.3s total)
+    private const double DurationIdle = 0.85;
+    private const double DurationWindup = 0.16;
+    private const double DurationThrow = 0.14;
+    private const double DurationCheer = 0.20;
 
     public PopOutSquirrel(double x, double y, double radius, bool isFacingRight, double startDelay, string projectileAsset)
     {
@@ -1440,14 +1865,14 @@ public class PopOutSquirrel
         _state = 0;
         _stateTimer = -startDelay;
 
-        // Load 4 2D side-profile animated sprite frames
+        // Load 2D side-profile animated sprite frames (all 512x512, transparent, facing right)
         _frameIdle = new BitmapImage(new Uri("pack://application:,,,/assets/race/cartoon_squirrel_idle.png"));
         _frameWindup = new BitmapImage(new Uri("pack://application:,,,/assets/race/cartoon_squirrel_windup.png"));
         _frameThrow = new BitmapImage(new Uri("pack://application:,,,/assets/race/cartoon_squirrel_throw.png"));
         _frameCheer = new BitmapImage(new Uri("pack://application:,,,/assets/race/cartoon_squirrel_cheer.png"));
 
         // 1. Wooden Branch Perch Visual (Cliff side footing)
-        double branchW = 86;
+        double branchW = 92;
         double branchH = 50;
         BranchVisual = new Grid
         {
@@ -1466,24 +1891,24 @@ public class PopOutSquirrel
 
         if (isFacingRight)
         {
-            Canvas.SetLeft(BranchVisual, 0);
-            Canvas.SetTop(BranchVisual, y + 8);
+            Canvas.SetLeft(BranchVisual, Math.Max(0, X - 35));
+            Canvas.SetTop(BranchVisual, y + 14);
         }
         else
         {
             BranchVisual.RenderTransformOrigin = new Point(0.5, 0.5);
             BranchVisual.RenderTransform = new ScaleTransform(-1.0, 1.0);
-            Canvas.SetLeft(BranchVisual, 680 - branchW);
-            Canvas.SetTop(BranchVisual, y + 8);
+            Canvas.SetLeft(BranchVisual, Math.Min(680 - branchW, X - branchW + 35));
+            Canvas.SetTop(BranchVisual, y + 14);
         }
 
         // 2. Animated Squirrel Visual (Stationed on branch, always visible!)
-        double sqSize = 64;
+        double sqSize = 84;
         SquirrelVisual = new Grid
         {
             Width = sqSize,
             Height = sqSize,
-            RenderTransformOrigin = new Point(0.5, 0.85),
+            RenderTransformOrigin = new Point(0.5, 0.88),
             IsHitTestVisible = false,
             Opacity = 1.0
         };
@@ -1507,8 +1932,8 @@ public class PopOutSquirrel
     public void Bump()
     {
         _bumpTimer = 0.25;
-        _scale.ScaleX = (IsFacingRight ? 1.0 : -1.0) * 1.3;
-        _scale.ScaleY = 1.3;
+        _scale.ScaleX = (IsFacingRight ? 1.0 : -1.0) * 1.35;
+        _scale.ScaleY = 1.35;
     }
 
     public void Update(double dt)
@@ -1534,35 +1959,42 @@ public class PopOutSquirrel
 
                 if (_bumpTimer <= 0)
                 {
-                    _scale.ScaleY = 1.0 + 0.025 * Math.Sin(_idleAnimTime * 3.5);
+                    _scale.ScaleY = 1.0 + 0.03 * Math.Sin(_idleAnimTime * 4.0);
                 }
 
                 if (_stateTimer >= DurationIdle)
                 {
-                    _state = 1; // Windup!
+                    _state = 1; // Quick Windup!
                     _stateTimer = 0;
                     _sqImg.Source = _frameWindup;
+                    // Lean back anticipation
+                    _scale.ScaleX = (IsFacingRight ? 1.0 : -1.0) * 0.92;
+                    _scale.ScaleY = 1.06;
                 }
                 break;
 
-            case 1: // Windup (cocking arm back with pinecone, aiming)
+            case 1: // Windup anticipation (cocked back, determined eye)
                 if (_sqImg.Source != _frameWindup) _sqImg.Source = _frameWindup;
 
                 if (_stateTimer >= DurationWindup)
                 {
-                    _state = 2; // Throw!
+                    _state = 2; // Snap Throw!
                     _stateTimer = 0;
                     _sqImg.Source = _frameThrow;
+                    // Dynamic forward squash-and-stretch
+                    _scale.ScaleX = (IsFacingRight ? 1.0 : -1.0) * 1.15;
+                    _scale.ScaleY = 0.94;
 
-                    // Release the flying pinecone projectile!
+                    // Release high-speed pinecone projectile right from outstretched paw!
                     if (!_hasThrownThisCycle)
                     {
                         _hasThrownThisCycle = true;
                         var rand = new Random();
-                        double throwX = IsFacingRight ? (X + 28) : (X - 28);
-                        double throwY = Y - 6;
-                        double vx = (IsFacingRight ? 1.0 : -1.0) * (150.0 + rand.NextDouble() * 50.0);
-                        double vy = 55.0 + rand.NextDouble() * 40.0;
+                        double throwX = IsFacingRight ? (X + 42) : (X - 42);
+                        double throwY = Y - 2;
+                        // High speed throw across track!
+                        double vx = (IsFacingRight ? 1.0 : -1.0) * (380.0 + rand.NextDouble() * 110.0);
+                        double vy = 60.0 + (rand.NextDouble() - 0.5) * 50.0;
                         OnThrowProjectile?.Invoke(new ThrownProjectile(throwX, throwY, vx, vy, ProjectileAsset));
                     }
                 }
@@ -1573,9 +2005,11 @@ public class PopOutSquirrel
 
                 if (_stateTimer >= DurationThrow)
                 {
-                    _state = 3; // Cheer!
+                    _state = 3; // Joyful cheer/chuckle
                     _stateTimer = 0;
                     _sqImg.Source = _frameCheer;
+                    _scale.ScaleX = (IsFacingRight ? 1.0 : -1.0) * 1.08;
+                    _scale.ScaleY = 1.08;
                 }
                 break;
 
@@ -1584,9 +2018,11 @@ public class PopOutSquirrel
 
                 if (_stateTimer >= DurationCheer)
                 {
-                    _state = 0; // Back to Idle
+                    _state = 0; // Back to Idle for next rapid throw!
                     _stateTimer = 0;
                     _sqImg.Source = _frameIdle;
+                    _scale.ScaleX = IsFacingRight ? 1.0 : -1.0;
+                    _scale.ScaleY = 1.0;
                 }
                 break;
         }
@@ -1612,13 +2048,13 @@ public class ThrownProjectile
     public double Y { get; set; }
     public double Vx { get; set; }
     public double Vy { get; set; }
-    public double Radius { get; } = 14;
+    public double Radius { get; } = 18;
     public bool IsDestroyed { get; private set; }
     public Grid Visual { get; }
     private readonly RotateTransform _rot;
     private double _angle;
     private double _lifeTimer;
-    private const double MaxLife = 3.6;
+    private const double MaxLife = 3.2;
 
     public ThrownProjectile(double x, double y, double vx, double vy, string assetName)
     {
@@ -1627,7 +2063,7 @@ public class ThrownProjectile
         Vx = vx;
         Vy = vy;
 
-        double size = 32;
+        double size = 44;
         Visual = new Grid
         {
             Width = size,
@@ -1657,34 +2093,35 @@ public class ThrownProjectile
         if (IsDestroyed) return;
 
         _lifeTimer += dt;
-        if (_lifeTimer >= MaxLife || Y > 2150)
+        if (_lifeTimer >= MaxLife || Y > 3450)
         {
             Destroy();
             return;
         }
 
-        // Realistic pinecone projectile physics: gravity arc & air drag
-        Vy += 170.0 * dt;
-        Vx *= 0.995;
-        Vy *= 0.995;
+        // Fast pinecone trajectory with gravity and slight air drag
+        Vy += 130.0 * dt;
+        Vx *= 0.998;
+        Vy *= 0.998;
 
         X += Vx * dt;
         Y += Vy * dt;
 
-        // Ricochet / Wall bounce off canyon walls
-        if (X - Radius < 38)
+        // Dynamic ricochet / Wall bounce off track boundaries
+        StudentPickerWindow.GetTrackBoundaries(Y, out double pLeft, out double pRight);
+        if (X - Radius < pLeft)
         {
-            X = 38 + Radius;
-            Vx = Math.Abs(Vx) * 0.75 + 15;
+            X = pLeft + Radius;
+            Vx = Math.Abs(Vx) * 0.85 + 25.0;
         }
-        else if (X + Radius > 642)
+        else if (X + Radius > pRight)
         {
-            X = 642 - Radius;
-            Vx = -Math.Abs(Vx) * 0.75 - 15;
+            X = pRight - Radius;
+            Vx = -(Math.Abs(Vx) * 0.85 + 25.0);
         }
 
-        // Rapid spin rotation as it flies
-        _angle += Vx * dt * 4.2;
+        // Natural tumbling rotation as the heavy pinecone sails through the air
+        _angle += Math.Sign(Vx) * dt * 110.0;
         _rot.Angle = _angle;
 
         Canvas.SetLeft(Visual, X - Visual.Width / 2.0);
