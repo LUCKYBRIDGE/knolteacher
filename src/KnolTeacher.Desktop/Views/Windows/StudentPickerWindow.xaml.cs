@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using System.Windows.Threading;
@@ -26,11 +27,13 @@ public partial class StudentPickerWindow : Window
     private readonly List<RaceBumper> _bumpers = new();
     private readonly List<RaceRail> _rails = new();
     private readonly List<RotatingLog> _rotatingLogs = new();
+    private readonly List<PoppableBubble> _bubbles = new();
 
     private DispatcherTimer? _gameTimer;
     private bool _isPlaying = false;
     private bool _soundEnabled = true;
     private double _speedMultiplier = 1.0;
+    private double _raceElapsedSeconds = 0;
     private DateTime _lastFrameTime = DateTime.UtcNow;
 
     private const double TrackWidth = 680.0;
@@ -128,9 +131,11 @@ public partial class StudentPickerWindow : Window
     {
         foreach (var b in _bumpers) RaceCanvas.Children.Remove(b.Visual);
         foreach (var l in _rotatingLogs) RaceCanvas.Children.Remove(l.Visual);
+        foreach (var bub in _bubbles) RaceCanvas.Children.Remove(bub.Visual);
         _bumpers.Clear();
         _rails.Clear();
         _rotatingLogs.Clear();
+        _bubbles.Clear();
 
         // 1. Zone 2 Slanted Cartoon Wood Rails (Flush from wall to center to eliminate traps)
         _rails.Add(new RaceRail(0, 275, 275, 395, 10));
@@ -141,10 +146,10 @@ public partial class StudentPickerWindow : Window
         _rails.Add(new RaceRail(680, 1095, 425, 1185, 10));
 
         // 3. Zone 5 Waterfall Funnel Banks
-        _rails.Add(new RaceRail(0, 1880, 230, 2030, 14));
-        _rails.Add(new RaceRail(680, 1880, 450, 2030, 14));
-        _rails.Add(new RaceRail(230, 2030, 230, 2200, 14));
-        _rails.Add(new RaceRail(450, 2030, 450, 2200, 14));
+        _rails.Add(new RaceRail(0, 1860, 230, 2010, 14));
+        _rails.Add(new RaceRail(680, 1860, 450, 2010, 14));
+        _rails.Add(new RaceRail(230, 2010, 230, 2200, 14));
+        _rails.Add(new RaceRail(450, 2010, 450, 2200, 14));
 
         // 4. ROTATING LOGS (회전 통나무 동적 장애물!)
         // Upper Slope: Clockwise Rotating Log in center
@@ -173,6 +178,11 @@ public partial class StudentPickerWindow : Window
         AddBumper(260, 1720, 26, "cartoon_mushroom_red.png");
         AddBumper(420, 1720, 26, "cartoon_mushroom_red.png");
         AddBumper(340, 1830, 28, "cartoon_mushroom_yellow.png");
+
+        // 6. INTERACTIVE POPPABLE WATER BUBBLES (부딪히면 터지며 역전을 유발하는 비눗방울!)
+        AddBubble(290, 1920, 28);
+        AddBubble(390, 1920, 28);
+        AddBubble(340, 1985, 28);
     }
 
     private void AddRotatingLog(double x, double y, double length, double thickness, double angularVelocity, double initialAngleDeg)
@@ -189,6 +199,13 @@ public partial class StudentPickerWindow : Window
         RaceCanvas.Children.Add(bumper.Visual);
     }
 
+    private void AddBubble(double x, double y, double radius)
+    {
+        var bubble = new PoppableBubble(x, y, radius);
+        _bubbles.Add(bubble);
+        RaceCanvas.Children.Add(bubble.Visual);
+    }
+
     
 
 
@@ -202,6 +219,12 @@ public partial class StudentPickerWindow : Window
         _gameTimer?.Stop();
         _finishedCount = 0;
         _winners.Clear();
+        _raceElapsedSeconds = 0;
+
+        foreach (var b in _bubbles)
+        {
+            b.Reset();
+        }
 
         // Clear existing racers from Canvas & Minimap
         foreach (var r in _racers)
@@ -311,7 +334,9 @@ public partial class StudentPickerWindow : Window
         double damp = 0.995;
         var rand = new Random();
 
-        // 1. Update Bumpers & Rotating Logs
+        _raceElapsedSeconds += dt;
+
+        // 1. Update Bumpers, Rotating Logs & Bubbles
         foreach (var bumper in _bumpers)
         {
             bumper.Update(dt);
@@ -319,6 +344,10 @@ public partial class StudentPickerWindow : Window
         foreach (var log in _rotatingLogs)
         {
             log.Update(dt);
+        }
+        foreach (var bubble in _bubbles)
+        {
+            bubble.Update(_raceElapsedSeconds);
         }
 
         // 2. Update Racers
@@ -462,6 +491,41 @@ public partial class StudentPickerWindow : Window
                         bumper.Flash();
                         if (_soundEnabled) _soundService.PlayBeep();
                     }
+                }
+            }
+
+            // Collisions with Poppable Water Bubbles ("부딪히면 사라지는 비눗방울")
+            foreach (var bubble in _bubbles)
+            {
+                if (bubble.IsPopped) continue;
+
+                double dx = r.X - bubble.X;
+                double dy = r.Y - bubble.Y;
+                double dist = Math.Sqrt(dx * dx + dy * dy);
+                double minDist = r.Radius + bubble.Radius;
+
+                if (dist < minDist)
+                {
+                    // Pop the bubble!
+                    bubble.Pop();
+                    if (_soundEnabled)
+                    {
+                        _soundService.PlayBeep();
+                    }
+
+                    // Dramatic Race Reversal:
+                    // The bubble absorbs forward momentum, deflecting the leader upwards & outwards,
+                    // momentarily slowing them down so following racers can slip past and overtake!
+                    double nx = dist > 0.001 ? dx / dist : (rand.NextDouble() - 0.5);
+                    double ny = dist > 0.001 ? dy / dist : -1.0;
+
+                    // Push out of bubble
+                    r.X = bubble.X + nx * (minDist + 2.0);
+                    r.Y = bubble.Y + ny * (minDist + 2.0);
+
+                    // Rebound upwards and deflect horizontally
+                    r.Vx = nx * (65.0 + rand.NextDouble() * 50.0);
+                    r.Vy = -60.0 - rand.NextDouble() * 45.0;
                 }
             }
 
@@ -1130,6 +1194,89 @@ public class RotatingLog
             return true;
         }
         return false;
+    }
+}
+
+public class PoppableBubble
+{
+    public double X { get; }
+    public double Y { get; }
+    public double Radius { get; }
+    public bool IsPopped { get; private set; }
+    public Grid Visual { get; }
+
+    private readonly ScaleTransform _scale;
+    private readonly double _floatPhase;
+
+    public PoppableBubble(double x, double y, double radius)
+    {
+        X = x;
+        Y = y;
+        Radius = radius;
+        _floatPhase = (x * 0.04) % (Math.PI * 2);
+
+        Visual = new Grid
+        {
+            Width = radius * 2,
+            Height = radius * 2,
+            RenderTransformOrigin = new Point(0.5, 0.5)
+        };
+
+        _scale = new ScaleTransform(1, 1);
+        Visual.RenderTransform = _scale;
+
+        var img = new Image
+        {
+            Width = radius * 2,
+            Height = radius * 2,
+            Source = new BitmapImage(new Uri("pack://application:,,,/assets/race/cartoon_bubble.png")),
+            IsHitTestVisible = false
+        };
+        RenderOptions.SetBitmapScalingMode(img, BitmapScalingMode.HighQuality);
+        Visual.Children.Add(img);
+
+        Canvas.SetLeft(Visual, X - radius);
+        Canvas.SetTop(Visual, Y - radius);
+    }
+
+    public void Update(double totalSeconds)
+    {
+        if (IsPopped) return;
+        // Gentle bobbing motion
+        double bob = Math.Sin(totalSeconds * 2.8 + _floatPhase) * 3.5;
+        Canvas.SetTop(Visual, (Y + bob) - Radius);
+    }
+
+    public void Pop()
+    {
+        if (IsPopped) return;
+        IsPopped = true;
+
+        // Visual pop effect: rapid expansion & fade out
+        var scaleAnim = new DoubleAnimation(1.0, 1.45, TimeSpan.FromMilliseconds(130));
+        var opacityAnim = new DoubleAnimation(1.0, 0.0, TimeSpan.FromMilliseconds(130));
+        opacityAnim.Completed += (s, e) =>
+        {
+            Visual.Visibility = Visibility.Collapsed;
+        };
+
+        _scale.BeginAnimation(ScaleTransform.ScaleXProperty, scaleAnim);
+        _scale.BeginAnimation(ScaleTransform.ScaleYProperty, scaleAnim);
+        Visual.BeginAnimation(UIElement.OpacityProperty, opacityAnim);
+    }
+
+    public void Reset()
+    {
+        IsPopped = false;
+        Visual.Visibility = Visibility.Visible;
+        Visual.Opacity = 1.0;
+        _scale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+        _scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+        Visual.BeginAnimation(UIElement.OpacityProperty, null);
+        _scale.ScaleX = 1.0;
+        _scale.ScaleY = 1.0;
+        Canvas.SetLeft(Visual, X - Radius);
+        Canvas.SetTop(Visual, Y - Radius);
     }
 }
 

@@ -115,7 +115,6 @@
                     <!-- Minimap Box -->
                     <Border Grid.Row="1" Background="#0F172A" CornerRadius="12" BorderBrush="#334155" BorderThickness="1.5" ClipToBounds="True">
                         <Canvas x:Name="MinimapCanvas" Width="154" Height="620" ClipToBounds="True">
-                            <!-- Background unified cartoon preview of the whole track -->
                             <Rectangle x:Name="MinimapBg" Width="154" Height="620">
                                 <Rectangle.Fill>
                                     <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
@@ -129,6 +128,15 @@
                                     </LinearGradientBrush>
                                 </Rectangle.Fill>
                             </Rectangle>
+
+                            <!-- Minimap Canyon Walls & Funnel Preview -->
+                            <Path Data="M 0,0 L 8,0 L 8,620 L 0,620 Z" Fill="#7C4B25" Opacity="0.7"/>
+                            <Path Data="M 146,0 L 154,0 L 154,620 L 146,620 Z" Fill="#7C4B25" Opacity="0.7"/>
+                            <Path Data="M 0,524 L 52,566 L 52,620 L 0,620 Z" Fill="#BA7D42"/>
+                            <Path Data="M 154,524 L 102,566 L 102,620 L 154,620 Z" Fill="#BA7D42"/>
+                            <Rectangle Canvas.Left="52" Canvas.Top="566" Width="50" Height="54" Fill="#0284C7"/>
+
+
 
                             <!-- Live dots representing students on minimap -->
                             <Canvas x:Name="MinimapDotsLayer" Width="154" Height="620"/>
@@ -177,11 +185,26 @@
 
                             <!-- Natural Dirt/Sand Adventure Trail with Soft Edges -->
                             <Path Data="M 340,160 C 340,360 210,500 280,740 C 350,980 490,1180 420,1440 C 340,1700 340,1920 340,2050"
-                                  Stroke="#3B6318" StrokeThickness="230" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Opacity="0.4"/>
+                                   Stroke="#3B6318" StrokeThickness="230" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Opacity="0.4"/>
                             <Path Data="M 340,160 C 340,360 210,500 280,740 C 350,980 490,1180 420,1440 C 340,1700 340,1920 340,2050"
-                                  Stroke="#DFB277" StrokeThickness="170" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Opacity="0.85"/>
+                                   Stroke="#DFB277" StrokeThickness="170" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Opacity="0.85"/>
                             <Path Data="M 340,160 C 340,360 210,500 280,740 C 350,980 490,1180 420,1440 C 340,1700 340,1920 340,2050"
-                                  Stroke="#E7C693" StrokeThickness="110" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Opacity="0.9"/>
+                                   Stroke="#E7C693" StrokeThickness="110" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Opacity="0.9"/>
+
+                            <!-- ================================================= -->
+                            <!-- 🏞️ 거대한 협곡 통로 외벽 (CANON CORRIDOR WALLS) -->
+                            <!-- ================================================= -->
+                            <!-- Left Outer Canyon Wall (X = 0 ~ 36) -->
+                            <Rectangle Canvas.Left="0" Canvas.Top="170" Width="36" Height="1690" Fill="#8A5229"/>
+                            <Path Data="M 0,170 L 36,170 L 36,1860 L 0,1860 Z" Fill="#7C4620" Opacity="0.4"/>
+                            <Path Data="M 36,170 L 36,1860" Stroke="#3F6212" StrokeThickness="5"/>
+                            <Path Data="M 36,170 L 36,1860" Stroke="#84CC16" StrokeThickness="2.5" StrokeDashArray="4,2"/>
+
+                            <!-- Right Outer Canyon Wall (X = 644 ~ 680) -->
+                            <Rectangle Canvas.Left="644" Canvas.Top="170" Width="36" Height="1690" Fill="#8A5229"/>
+                            <Path Data="M 644,170 L 680,170 L 680,1860 L 644,1860 Z" Fill="#7C4620" Opacity="0.4"/>
+                            <Path Data="M 644,170 L 644,1860" Stroke="#3F6212" StrokeThickness="5"/>
+                            <Path Data="M 644,170 L 644,1860" Stroke="#84CC16" StrokeThickness="2.5" StrokeDashArray="4,2"/>
 
                             <!-- Left & Right Cartoon Bushes Lining Boundaries -->
                             <Image Canvas.Left="4" Canvas.Top="240" Width="100" Height="58" Source="pack://application:,,,/assets/race/cartoon_bush.png"/>
@@ -214,6 +237,12 @@
                             <!-- ================================================= -->
                             <!-- ZONE 2: 🪵 슬로프 & 카툰 목재 가이드 레일 (Y = 240 ~ 720) -->
                             <!-- ================================================= -->
+                            <!-- Sculpted Earth Canyon Banks behind Rails -->
+                            <Path Data="M 0,270 L 275,395 L 275,415 L 0,430 Z" Fill="#7C4620" Opacity="0.8"/>
+                            <Path Data="M 0,270 L 275,395" Stroke="#4D7C0F" StrokeThickness="4"/>
+                            <Path Data="M 680,270 L 405,395 L 405,415 L 680,430 Z" Fill="#7C4620" Opacity="0.8"/>
+                            <Path Data="M 680,270 L 405,395" Stroke="#4D7C0F" StrokeThickness="4"/>
+
                             <!-- Slanted Wooden Rails (Wall flush to eliminate traps) -->
                             <Image Canvas.Left="-5" Canvas.Top="270" Width="290" Height="56"
                                    Source="pack://application:,,,/assets/race/cartoon_wood_rail.png" RenderTransformOrigin="0.0,0.5">
@@ -227,6 +256,12 @@
                             <!-- ================================================= -->
                             <!-- ZONE 3: 🌲 숲속 갈림길 가이드 레일 (Y = 720 ~ 1300) -->
                             <!-- ================================================= -->
+                            <!-- Sculpted Earth Canyon Banks behind Rails -->
+                            <Path Data="M 0,1090 L 255,1185 L 255,1205 L 0,1220 Z" Fill="#7C4620" Opacity="0.8"/>
+                            <Path Data="M 0,1090 L 255,1185" Stroke="#4D7C0F" StrokeThickness="4"/>
+                            <Path Data="M 680,1090 L 425,1185 L 425,1205 L 680,1220 Z" Fill="#7C4620" Opacity="0.8"/>
+                            <Path Data="M 680,1090 L 425,1185" Stroke="#4D7C0F" StrokeThickness="4"/>
+
                             <Image Canvas.Left="-5" Canvas.Top="1090" Width="270" Height="56"
                                    Source="pack://application:,,,/assets/race/cartoon_wood_rail.png" RenderTransformOrigin="0.0,0.5">
                                 <Image.RenderTransform><RotateTransform Angle="20"/></Image.RenderTransform>
@@ -242,41 +277,98 @@
                             <!-- ================================================= -->
 
                             <!-- ================================================= -->
-                            <!-- ZONE 5: 🌊 결승 워터 슬라이드 (Y = 1880 ~ 2200) -->
+                            <!-- ZONE 5: 🌊 깔대기 결승 워터 슬라이드 (Y = 1860 ~ 2200) -->
+                            <!-- (레퍼런스 media_1788745693705.png 스타일 1:1 완벽 구현) -->
                             <!-- ================================================= -->
-                            <!-- Funnel banks -->
-                            <Path Data="M 0,1880 L 230,2030 L 230,2200 L 0,2200 Z" Fill="#1E293B"/>
-                            <Path Data="M 680,1880 L 450,2030 L 450,2200 L 680,2200 Z" Fill="#1E293B"/>
 
-                            <!-- Flowing Blue Waterfall Chute -->
-                            <Rectangle Canvas.Left="230" Canvas.Top="1980" Width="220" Height="220">
+                            <!-- Water Basin Background behind Funnel (From mouth Y=1900 down into Chute) -->
+                            <Path Data="M 70,1920 Q 205,1900 340,1915 Q 475,1900 610,1920 L 450,2030 L 230,2030 Z">
+                                <Path.Fill>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                        <GradientStop Color="#7DD3FC" Offset="0"/>
+                                        <GradientStop Color="#38BDF8" Offset="0.3"/>
+                                        <GradientStop Color="#0284C7" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Path.Fill>
+                            </Path>
+
+                            <!-- Water Basin Top Foam Waves (Foamy edge where water meets forest) -->
+                            <Path Data="M 70,1920 Q 140,1905 205,1915 Q 270,1905 340,1918 Q 410,1905 475,1915 Q 540,1905 610,1920"
+                                  Stroke="#F0F9FF" StrokeThickness="7" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+                            <Path Data="M 70,1920 Q 140,1905 205,1915 Q 270,1905 340,1918 Q 410,1905 475,1915 Q 540,1905 610,1920"
+                                  Stroke="#BAE6FD" StrokeThickness="12" Opacity="0.6" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+
+                            <!-- Straight Vertical Waterfall Chute between X=230 and X=450 -->
+                            <Rectangle Canvas.Left="230" Canvas.Top="2010" Width="220" Height="190">
                                 <Rectangle.Fill>
                                     <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                        <GradientStop Color="#38BDF8" Offset="0"/>
-                                        <GradientStop Color="#0284C7" Offset="0.7"/>
-                                        <GradientStop Color="#0369A1" Offset="1"/>
+                                        <GradientStop Color="#0284C7" Offset="0"/>
+                                        <GradientStop Color="#0369A1" Offset="0.6"/>
+                                        <GradientStop Color="#075985" Offset="1"/>
                                     </LinearGradientBrush>
                                 </Rectangle.Fill>
                             </Rectangle>
 
-                            <!-- Water Flow Ripples -->
-                            <Path Data="M 240,2030 Q 340,2010 440,2030 M 240,2090 Q 340,2070 440,2090 M 240,2150 Q 340,2130 440,2150"
-                                  Stroke="White" StrokeThickness="3" Opacity="0.7" StrokeDashArray="4,4"/>
+                            <!-- Waterfall Flow Curves & Ripples -->
+                            <Path Data="M 232,2065 Q 340,2045 448,2065 M 232,2125 Q 340,2105 448,2125 M 232,2175 Q 340,2155 448,2175"
+                                  Stroke="#7DD3FC" StrokeThickness="4" Opacity="0.85"/>
+                            <Path Data="M 235,2095 Q 340,2075 445,2095 M 235,2150 Q 340,2130 445,2150"
+                                  Stroke="#BAE6FD" StrokeThickness="2.5" Opacity="0.75" StrokeDashArray="6,4"/>
+
+                            <!-- Falling Water Cascade Streaks -->
+                            <Path Data="M 270,2020 L 270,2060 M 320,2035 L 320,2085 M 365,2025 L 365,2075 M 410,2040 L 410,2090 M 295,2100 L 295,2150 M 385,2105 L 385,2155"
+                                  Stroke="White" StrokeThickness="2" Opacity="0.65" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+
+                            <!-- Left Slanted Earthen Funnel Bank (흙 절벽 본체) -->
+                            <Path Data="M 0,1860 L 230,2010 L 230,2200 L 0,2200 Z" Fill="#C2884E"/>
+                            <!-- Left Strata Wavy Lines (지층 무늬) -->
+                            <Path Data="M 0,1900 Q 115,1915 230,1900 M 0,1950 Q 115,1965 230,1950 M 0,2010 Q 115,2025 230,2010 M 0,2070 Q 115,2085 230,2070 M 0,2130 Q 115,2145 230,2130"
+                                  Stroke="#9E6733" StrokeThickness="5" Opacity="0.45"/>
+                            <!-- Left Chute Cliff Edge Shadow & Contour -->
+                            <Path Data="M 0,1860 L 230,2010 L 230,2200" Stroke="#5A3A1B" StrokeThickness="3"/>
+                            <Rectangle Canvas.Left="222" Canvas.Top="2010" Width="8" Height="190" Fill="#5A3A1B" Opacity="0.4"/>
+
+                            <!-- Left Bank Grass Border Trim (상단 잔디 턱) -->
+                            <!-- Dark Forest Green Base Grass -->
+                            <Path Data="M 0,1860 L 230,2010 L 230,2028 L 0,1878 Z" Fill="#3F6212"/>
+                            <!-- Bright Lime Grass Zigzag Border -->
+                            <Path Data="M 0,1860 L 230,2010 L 230,2022 L 215,2012 L 200,2020 L 185,2002 L 170,2010 L 155,1992 L 140,2000 L 125,1982 L 110,1990 L 95,1972 L 80,1980 L 65,1962 L 50,1970 L 35,1952 L 20,1960 L 5,1942 L 0,1872 Z"
+                                  Fill="#84CC16"/>
+                            <!-- Grass Border Highlight Edge -->
+                            <Path Data="M 0,1860 L 230,2010" Stroke="#BEF264" StrokeThickness="2.5"/>
+
+                            <!-- Right Slanted Earthen Funnel Bank (흙 절벽 본체) -->
+                            <Path Data="M 680,1860 L 450,2010 L 450,2200 L 680,2200 Z" Fill="#C2884E"/>
+                            <!-- Right Strata Wavy Lines (지층 무늬) -->
+                            <Path Data="M 680,1900 Q 565,1915 450,1900 M 680,1950 Q 565,1965 450,1950 M 680,2010 Q 565,2025 450,2010 M 680,2070 Q 565,2085 450,2070 M 680,2130 Q 565,2145 450,2130"
+                                  Stroke="#9E6733" StrokeThickness="5" Opacity="0.45"/>
+                            <!-- Right Chute Cliff Edge Shadow & Contour -->
+                            <Path Data="M 680,1860 L 450,2010 L 450,2200" Stroke="#5A3A1B" StrokeThickness="3"/>
+                            <Rectangle Canvas.Left="450" Canvas.Top="2010" Width="8" Height="190" Fill="#5A3A1B" Opacity="0.4"/>
+
+                            <!-- Right Bank Grass Border Trim (상단 잔디 턱) -->
+                            <!-- Dark Forest Green Base Grass -->
+                            <Path Data="M 680,1860 L 450,2010 L 450,2028 L 680,1878 Z" Fill="#3F6212"/>
+                            <!-- Bright Lime Grass Zigzag Border -->
+                            <Path Data="M 680,1860 L 450,2010 L 450,2022 L 465,2012 L 480,2020 L 495,2002 L 510,2010 L 525,1992 L 540,2000 L 555,1982 L 570,1990 L 585,1972 L 600,1980 L 615,1962 L 630,1970 L 645,1952 L 660,1960 L 675,1942 L 680,1872 Z"
+                                  Fill="#84CC16"/>
+                            <!-- Grass Border Highlight Edge -->
+                            <Path Data="M 680,1860 L 450,2010" Stroke="#BEF264" StrokeThickness="2.5"/>
 
                             <!-- Cartoon Water Splash -->
-                            <Image Canvas.Left="260" Canvas.Top="2040" Width="160" Height="80"
-                                   Source="pack://application:,,,/assets/race/cartoon_water_splash.png" Opacity="0.9"/>
+                            <Image Canvas.Left="250" Canvas.Top="2040" Width="180" Height="90"
+                                   Source="pack://application:,,,/assets/race/cartoon_water_splash.png" Opacity="0.95"/>
 
                             <!-- Cartoon Finish Line Arch -->
                             <Image Canvas.Left="190" Canvas.Top="1980" Width="300" Height="75"
                                    Source="pack://application:,,,/assets/race/cartoon_finish_arch.png"/>
 
                             <!-- Finish trays for side settling -->
-                            <Border Canvas.Left="35" Canvas.Top="2080" Width="160" Height="70" CornerRadius="14" Background="#1E293B" BorderBrush="#475569" BorderThickness="2">
-                                <TextBlock Text="도전 완료 💫" FontSize="12" Foreground="#94A3B8" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Border Canvas.Left="35" Canvas.Top="2080" Width="160" Height="70" CornerRadius="14" Background="#8A5229" BorderBrush="#5A3A1B" BorderThickness="2">
+                                <TextBlock Text="도전 완료 💫" FontSize="12" FontWeight="Bold" Foreground="#FDE047" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
-                            <Border Canvas.Left="485" Canvas.Top="2080" Width="160" Height="70" CornerRadius="14" Background="#1E293B" BorderBrush="#475569" BorderThickness="2">
-                                <TextBlock Text="도전 완료 💫" FontSize="12" Foreground="#94A3B8" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Border Canvas.Left="485" Canvas.Top="2080" Width="160" Height="70" CornerRadius="14" Background="#8A5229" BorderBrush="#5A3A1B" BorderThickness="2">
+                                <TextBlock Text="도전 완료 💫" FontSize="12" FontWeight="Bold" Foreground="#FDE047" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
 
                             <!-- DYNAMIC PHYSICS PARTICLES & BALLS & BUMPERS ARE ADDED HERE -->
