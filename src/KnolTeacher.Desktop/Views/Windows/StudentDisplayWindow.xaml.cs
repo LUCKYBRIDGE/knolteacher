@@ -147,7 +147,13 @@ public partial class StudentDisplayWindow : Window
 
     public void OpenPinballWindow()
     {
-        if (_pinballWindow == null)
+        var app = Application.Current as App;
+        var win = app?.Services?.GetService(typeof(StudentPickerWindow)) as StudentPickerWindow;
+        if (win != null)
+        {
+            _pinballWindow = win;
+        }
+        else if (_pinballWindow == null)
         {
             _pinballWindow = new StudentPickerWindow(_studentService, _soundService, _displayManager);
         }

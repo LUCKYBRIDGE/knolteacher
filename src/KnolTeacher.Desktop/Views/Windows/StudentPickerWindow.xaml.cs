@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -25,6 +25,7 @@ public partial class StudentPickerWindow : Window
     private readonly List<PinballBall> _balls = new();
     private readonly List<PinballPeg> _pegs = new();
     private readonly List<PinballBumper> _bumpers = new();
+    private readonly List<PinballRail> _rails = new();
     private readonly List<ConfettiParticle> _confetti = new();
 
     private DispatcherTimer? _gameTimer;
@@ -36,6 +37,20 @@ public partial class StudentPickerWindow : Window
     private bool _soundEnabled = true;
     private StudentItem? _lastWinner = null;
     private DateTime _lastFrameTime = DateTime.UtcNow;
+
+    // Responsive camera state for the tall 680x1120 forest course.
+    private const double PinballMapWidth = 680.0;
+    private const double PinballMapHeight = 2280.0;
+    private const double PinballGoalY = 2168.0;
+
+    // The race lasts because the course is genuinely long, not because gravity is artificially tiny.
+    private const double RaceGravity = 260.0;
+    private const double MaxHorizontalSpeed = 220.0;
+    private DateTime _raceStartedAt = DateTime.MinValue;
+
+    private double _cameraScale = 1;
+    private PinballBall? _cameraLeader;
+    private DateTime _cameraFollowPausedUntil = DateTime.MinValue;
 
     public StudentPickerWindow(IStudentManagerService studentService, ISoundService soundService, IDisplayManager? displayManager = null)
     {
@@ -49,6 +64,7 @@ public partial class StudentPickerWindow : Window
             SetupPegsAndBumpers();
             UpdateStatus();
             PositionToDefaultMonitor();
+            UpdateCameraAndLeader(0, force: true);
         };
 
         KeyDown += Window_KeyDown;
@@ -117,53 +133,255 @@ public partial class StudentPickerWindow : Window
         TxtClassicRemaining.Text = $"남은 학생: {remaining}명 / 총 {total}명";
     }
 
+    #region Responsive Race Camera
+
+    private void PinballViewport_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        UpdateCameraAndLeader(0, force: true);
+    }
+
+    private void PinballScrollViewer_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        // Manual exploration wins temporarily; automatic leader-follow resumes shortly after.
+        _cameraFollowPausedUntil = DateTime.UtcNow.AddSeconds(4);
+    }
+
+    private void PinballScrollViewer_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+    {
+        _cameraFollowPausedUntil = DateTime.UtcNow.AddSeconds(4);
+    }
+
+    private void ResetRaceCamera()
+    {
+        if (_cameraLeader != null)
+        {
+            _cameraLeader.SetLeader(false);
+            _cameraLeader = null;
+        }
+
+        RaceProgress.Value = 0;
+        TxtRaceLeader.Text = "선두: 출발 대기";
+        TxtRaceZone.Text = "🌲 숲속 출발 대기선";
+        _cameraFollowPausedUntil = DateTime.MinValue;
+
+        if (PinballScrollViewer != null)
+        {
+            PinballScrollViewer.ScrollToVerticalOffset(0);
+        }
+
+        UpdateCameraAndLeader(0, force: true);
+    }
+
+    private void UpdateCameraAndLeader(double dt, bool force = false)
+    {
+        if (PinballViewport == null || PinballScrollViewer == null || PinballWorldScale == null) return;
+
+        double viewportWidth = PinballViewport.ActualWidth;
+        double viewportHeight = PinballViewport.ActualHeight;
+        if (viewportWidth <= 1 || viewportHeight <= 1) return;
+
+        // Fit the course width to the current window while preserving a true vertical
+        // document that remains scrollable. Large displays are capped to avoid over-zooming.
+        double usableWidth = Math.Max(480, viewportWidth - 34);
+        _cameraScale = Math.Clamp(usableWidth / PinballMapWidth, 0.72, 1.60);
+        PinballWorldScale.ScaleX = _cameraScale;
+        PinballWorldScale.ScaleY = _cameraScale;
+
+        PinballBall? leader = null;
+        if (_lastWinner != null)
+        {
+            leader = _balls.FirstOrDefault(b => b.Student.Number == _lastWinner.Number);
+        }
+
+        leader ??= _balls
+            .Where(b => !b.IsSettled)
+            .OrderByDescending(b => b.Y)
+            .FirstOrDefault();
+
+        leader ??= _balls
+            .OrderByDescending(b => b.Y)
+            .FirstOrDefault();
+
+        if (!ReferenceEquals(_cameraLeader, leader))
+        {
+            _cameraLeader?.SetLeader(false);
+            _cameraLeader = leader;
+            _cameraLeader?.SetLeader(true);
+        }
+
+        if (leader != null)
+        {
+            double progress = Math.Clamp((leader.Y - 60.0) / (PinballGoalY - 60.0) * 100.0, 0, 100);
+            RaceProgress.Value = progress;
+            TxtRaceLeader.Text = $"선두: {leader.Student.Number}번 {leader.Student.Name} ({leader.Student.AvatarName})";
+            double elapsed = GetRaceElapsedSeconds();
+            TxtRaceZone.Text = _isPlaying
+                ? $"{GetRaceZoneLabel(leader.Y)} · {elapsed:0.0}초"
+                : GetRaceZoneLabel(leader.Y);
+
+            bool manualViewing = DateTime.UtcNow < _cameraFollowPausedUntil;
+            if (!manualViewing || force)
+            {
+                // Leader sits around 38% from the top so upcoming obstacles remain visible.
+                double target = leader.Y * _cameraScale - viewportHeight * 0.38;
+                double maxOffset = Math.Max(0, PinballMapHeight * _cameraScale - viewportHeight);
+                target = Math.Clamp(target, 0, maxOffset);
+
+                double current = PinballScrollViewer.VerticalOffset;
+                double next;
+                if (force)
+                {
+                    next = target;
+                }
+                else
+                {
+                    double alpha = 1.0 - Math.Exp(-5.5 * Math.Max(dt, 0.001));
+                    next = current + (target - current) * alpha;
+                }
+                PinballScrollViewer.ScrollToVerticalOffset(next);
+            }
+        }
+        else
+        {
+            RaceProgress.Value = 0;
+            TxtRaceLeader.Text = "선두: 출발 대기";
+            TxtRaceZone.Text = "🌲 숲속 출발 대기선";
+        }
+    }
+
+    private static string GetRaceZoneLabel(double y)
+    {
+        if (y < 170) return "🌲 출발 나무집";
+        if (y < 340) return "🌰 ① 도토리 갈림길";
+        if (y < 550) return "🍄 ② 버섯 숲";
+        if (y < 760) return "🪵 ③ 쓰러진 통나무 길";
+        if (y < 980) return "💧 ④ 돌개울 징검다리";
+        if (y < 1210) return "🌿 ⑤ 덩굴 협곡";
+        if (y < 1440) return "🕳️ ⑥ 고목 터널";
+        if (y < 1670) return "🌰 ⑦ 솔방울 회전숲";
+        if (y < 1910) return "🪨 ⑧ 바위 계곡";
+        if (y < 2140) return "🌱 ⑨ 거대 뿌리 미로";
+        return "🏕️ 결승점 (숲속 캠프)";
+    }
+
+    private double GetRaceElapsedSeconds()
+    {
+        if (_raceStartedAt == DateTime.MinValue) return 0;
+        return Math.Max(0, (DateTime.UtcNow - _raceStartedAt).TotalSeconds);
+    }
+
+    private static double GetZoneMaxDownSpeed(double y)
+    {
+        // Fast enough to look lively, slow enough for a ~2,100px obstacle course.
+        if (y < 340) return 160.0;
+        if (y < 550) return 145.0;
+        if (y < 760) return 155.0;
+        if (y < 980) return 142.0;
+        if (y < 1210) return 150.0;
+        if (y < 1440) return 158.0;
+        if (y < 1670) return 148.0;
+        if (y < 1910) return 154.0;
+        if (y < 2140) return 145.0;
+        return 150.0;
+    }
+
+    #endregion
+
     #region Physics Field Setup
 
     private void SetupPegsAndBumpers()
     {
-        _pegs.Clear();
-        _bumpers.Clear();
-
-        // Staggered Triangular Pachinko Peg Grid
-        int rows = 7;
-        double startY = 220;
-        double rowSpacing = 65;
-
-        for (int r = 0; r < rows; r++)
+        // Rebuild only dynamic collision scenery. Static forest art stays in XAML.
+        foreach (var peg in _pegs)
         {
-            int cols = 6 + (r % 2);
-            double colSpacing = 68;
-            double startX = 400 - ((cols - 1) * colSpacing) / 2.0;
-            double y = startY + r * rowSpacing;
-
-            for (int c = 0; c < cols; c++)
-            {
-                double x = startX + c * colSpacing;
-                // Leave center hole open in rows 2 & 4 for Bumpers
-                if (r == 2 && (c == 2 || c == 3)) continue;
-                if (r == 4 && (c == 2 || c == 3 || c == 4)) continue;
-
-                var peg = new PinballPeg(x, y, 7);
-                _pegs.Add(peg);
-
-                // Add visual element to canvas
-                PinballCanvas.Children.Add(peg.GlowRing);
-                PinballCanvas.Children.Add(peg.Visual);
-            }
+            PinballCanvas.Children.Remove(peg.GlowRing);
+            PinballCanvas.Children.Remove(peg.Visual);
+        }
+        foreach (var bumper in _bumpers)
+        {
+            PinballCanvas.Children.Remove(bumper.Visual);
+        }
+        foreach (var rail in _rails)
+        {
+            PinballCanvas.Children.Remove(rail.Visual);
         }
 
-        // Bouncy Neon Bumpers in the middle
-        var b1 = new PinballBumper(330, 350, 30, "#38BDF8");
-        var b2 = new PinballBumper(470, 350, 30, "#38BDF8");
-        var b3 = new PinballBumper(400, 480, 34, "#EC4899");
+        _pegs.Clear();
+        _bumpers.Clear();
+        _rails.Clear();
 
-        _bumpers.Add(b1);
-        _bumpers.Add(b2);
-        _bumpers.Add(b3);
-
-        foreach (var b in _bumpers)
+        // 1) Acorn fork: deliberately irregular instead of a pachinko matrix.
+        var pegLayout = new (double X, double Y, double R)[]
         {
-            PinballCanvas.Children.Add(b.Visual);
+            (250, 205, 8), (340, 190, 8), (430, 215, 8),
+            (185, 265, 8), (295, 275, 8), (390, 270, 8), (505, 275, 8),
+            (265, 405, 7), (415, 420, 7),
+            (155, 485, 7), (340, 510, 8), (525, 485, 7),
+            (225, 865, 8), (455, 870, 8),
+            (180, 1065, 8), (335, 1105, 9), (500, 1060, 8),
+            (235, 1275, 8), (445, 1285, 8),
+            (155, 1480, 8), (340, 1515, 9), (525, 1485, 8),
+            (220, 1710, 8), (455, 1725, 8),
+            (165, 1905, 8), (340, 1940, 9), (510, 1905, 8)
+        };
+
+        foreach (var p in pegLayout)
+        {
+            var peg = new PinballPeg(p.X, p.Y, p.R);
+            _pegs.Add(peg);
+            PinballCanvas.Children.Add(peg.GlowRing);
+            PinballCanvas.Children.Add(peg.Visual);
+        }
+
+        // 2) Mushroom grove + creek stones: round obstacles create different rebounds.
+        _bumpers.Add(new PinballBumper(205, 350, 29, "#C95252", "🍄"));
+        _bumpers.Add(new PinballBumper(475, 365, 29, "#D66A4D", "🍄"));
+        _bumpers.Add(new PinballBumper(340, 445, 34, "#9D5BA8", "🍄"));
+
+        _bumpers.Add(new PinballBumper(165, 785, 24, "#64786B", "●"));
+        _bumpers.Add(new PinballBumper(335, 820, 27, "#71857A", "●"));
+        _bumpers.Add(new PinballBumper(510, 785, 24, "#64786B", "●"));
+
+        _bumpers.Add(new PinballBumper(210, 1110, 27, "#4E7B48", "🌿"));
+        _bumpers.Add(new PinballBumper(470, 1165, 27, "#4E7B48", "🌿"));
+        _bumpers.Add(new PinballBumper(335, 1545, 31, "#7A5635", "🌰"));
+        _bumpers.Add(new PinballBumper(185, 1790, 25, "#65716E", "●"));
+        _bumpers.Add(new PinballBumper(500, 1805, 25, "#65716E", "●"));
+        _bumpers.Add(new PinballBumper(340, 2000, 29, "#6C5438", "🌱"));
+
+        foreach (var bumper in _bumpers)
+        {
+            PinballCanvas.Children.Add(bumper.Visual);
+        }
+
+        // 3) Fallen logs and roots: long angled shots inspired by pinball ramps/orbits
+        // and outdoor forest marble runs. They interrupt the route without sealing it.
+        _rails.Add(new PinballRail(92, 545, 292, 598, 12, "#82562F", "통나무"));
+        _rails.Add(new PinballRail(588, 610, 390, 665, 12, "#77502D", "통나무"));
+        _rails.Add(new PinballRail(105, 685, 286, 728, 10, "#93643A", "나뭇가지"));
+        _rails.Add(new PinballRail(575, 700, 450, 738, 9, "#896039", "나뭇가지"));
+
+        // Long-course ramps: each region changes direction without closing the route.
+        _rails.Add(new PinballRail(78, 990, 280, 1050, 10, "#5B7A3E", "나뭇가지"));
+        _rails.Add(new PinballRail(602, 1080, 415, 1135, 10, "#58733A", "나뭇가지"));
+        _rails.Add(new PinballRail(95, 1195, 300, 1248, 12, "#7B522F", "통나무"));
+        _rails.Add(new PinballRail(585, 1305, 390, 1360, 12, "#734B2C", "통나무"));
+        _rails.Add(new PinballRail(82, 1415, 270, 1468, 10, "#8A5E37", "나뭇가지"));
+        _rails.Add(new PinballRail(598, 1500, 405, 1555, 10, "#825833", "나뭇가지"));
+        _rails.Add(new PinballRail(92, 1635, 285, 1695, 11, "#65503B", "뿌리"));
+        _rails.Add(new PinballRail(588, 1715, 405, 1770, 11, "#65503B", "뿌리"));
+        _rails.Add(new PinballRail(80, 1840, 265, 1900, 12, "#67442A", "통나무"));
+        _rails.Add(new PinballRail(600, 1915, 415, 1970, 12, "#67442A", "통나무"));
+
+        // Final giant-root inlanes gently converge toward the camp.
+        _rails.Add(new PinballRail(72, 1985, 250, 2070, 12, "#684328", "뿌리"));
+        _rails.Add(new PinballRail(608, 1985, 430, 2070, 12, "#684328", "뿌리"));
+        _rails.Add(new PinballRail(245, 2070, 305, 2145, 11, "#795032", "뿌리"));
+        _rails.Add(new PinballRail(435, 2070, 375, 2145, 11, "#795032", "뿌리"));
+
+        foreach (var rail in _rails)
+        {
+            PinballCanvas.Children.Add(rail.Visual);
         }
     }
 
@@ -225,18 +443,18 @@ public partial class StudentPickerWindow : Window
 
         var rand = new Random();
         int count = toDrop.Count;
-        double spawnWidth = 340;
-        double startX = 230;
+        double spawnWidth = 280;
+        double startX = 195;
 
         for (int i = 0; i < count; i++)
         {
             var student = toDrop[i];
-            double x = startX + (i % 8) * (spawnWidth / 8.0) + (rand.NextDouble() * 10 - 5);
-            double y = 18 - (i / 8) * 55; // staggered stacked above top funnel
-            double vx = (rand.NextDouble() - 0.5) * 60;
-            double vy = 40 + rand.NextDouble() * 80;
+            double x = startX + (i % 7) * (spawnWidth / 6.0) + (rand.NextDouble() * 8 - 4);
+            double y = 52 - (i / 7) * 50; // stacked inside/above the tree-house gate
+            double vx = (rand.NextDouble() - 0.5) * 70;
+            double vy = 28 + rand.NextDouble() * 34;
 
-            var ball = new PinballBall(student, x, y, 22)
+            var ball = new PinballBall(student, x, y, 21)
             {
                 Vx = vx,
                 Vy = vy
@@ -248,9 +466,11 @@ public partial class StudentPickerWindow : Window
 
         _isPlaying = true;
         BtnLaunch.IsEnabled = false;
-        TxtBtnLaunchLabel.Text = "핀볼 질주 중...";
         _lastWinner = null;
-        _lastFrameTime = DateTime.UtcNow;
+        _raceStartedAt = DateTime.UtcNow;
+        ResetRaceCamera();
+        TxtBtnLaunchLabel.Text = "동물들이 숲길을 달리는 중...";
+        _lastFrameTime = _raceStartedAt;
 
         if (_soundEnabled) _soundService.PlayBeep();
 
@@ -272,8 +492,7 @@ public partial class StudentPickerWindow : Window
         _lastFrameTime = now;
         if (dt > 0.05) dt = 0.05; // clamp delta time for stability
 
-        double gravity = 760; // px/s^2
-        double damp = 0.992;
+        double damp = 0.995;
         var rand = new Random();
 
         // Update Peg flashes
@@ -285,6 +504,10 @@ public partial class StudentPickerWindow : Window
         {
             b.Update(dt);
         }
+        foreach (var rail in _rails)
+        {
+            rail.Update(dt);
+        }
 
         // Update Balls
         for (int i = 0; i < _balls.Count; i++)
@@ -292,23 +515,28 @@ public partial class StudentPickerWindow : Window
             var b = _balls[i];
             if (b.IsSettled) continue;
 
-            b.Vy += gravity * dt;
+            b.Vy += RaceGravity * dt;
             b.Vx *= damp;
             b.Vy *= damp;
+
+            // Speed limits prevent tunneling through thin obstacles, while the long
+            // map—not artificial slow motion—creates the race duration.
+            b.Vx = Math.Clamp(b.Vx, -MaxHorizontalSpeed, MaxHorizontalSpeed);
+            b.Vy = Math.Clamp(b.Vy, -180.0, GetZoneMaxDownSpeed(b.Y));
 
             b.X += b.Vx * dt;
             b.Y += b.Vy * dt;
 
             // Anti-jam / Anti-peg-perch mechanic
-            if (b.Y > 180 && b.Y < 680 && Math.Abs(b.Vx) < 8 && Math.Abs(b.Vy) < 18)
+            if (b.Y > 180 && b.Y < 2100 && Math.Abs(b.Vx) < 8 && Math.Abs(b.Vy) < 18)
             {
                 b.Vx += (rand.NextDouble() - 0.5) * 60;
                 b.Vy += 25;
             }
 
             // 1. Boundary Collisions (Walls)
-            double leftWall = 30;
-            double rightWall = 770;
+            double leftWall = 38;
+            double rightWall = 642;
             if (b.X - b.Radius < leftWall)
             {
                 b.X = leftWall + b.Radius;
@@ -320,22 +548,20 @@ public partial class StudentPickerWindow : Window
                 b.Vx = -Math.Abs(b.Vx) * 0.7 - rand.NextDouble() * 20;
             }
 
-            // Funnel walls (slanted deflectors at upper sides)
-            if (b.Y < 380)
+            // Tree-house exit guides: a short upper funnel only.
+            if (b.Y < 165)
             {
-                // Left triangle
-                double leftSlopeX = (380 - b.Y) * (70.0 / 380.0);
-                if (b.X - b.Radius < leftSlopeX)
+                double leftGuide = 120 + Math.Max(0, 165 - b.Y) * 0.38;
+                double rightGuide = 560 - Math.Max(0, 165 - b.Y) * 0.38;
+                if (b.X - b.Radius < leftGuide)
                 {
-                    b.X = leftSlopeX + b.Radius;
-                    b.Vx = Math.Abs(b.Vx) * 0.8 + 30;
+                    b.X = leftGuide + b.Radius;
+                    b.Vx = Math.Abs(b.Vx) * 0.78 + 22;
                 }
-                // Right triangle
-                double rightSlopeX = 800 - (380 - b.Y) * (70.0 / 380.0);
-                if (b.X + b.Radius > rightSlopeX)
+                if (b.X + b.Radius > rightGuide)
                 {
-                    b.X = rightSlopeX - b.Radius;
-                    b.Vx = -Math.Abs(b.Vx) * 0.8 - 30;
+                    b.X = rightGuide - b.Radius;
+                    b.Vx = -Math.Abs(b.Vx) * 0.78 - 22;
                 }
             }
 
@@ -360,7 +586,7 @@ public partial class StudentPickerWindow : Window
                     double dot = b.Vx * nx + b.Vy * ny;
                     if (dot < 0)
                     {
-                        double restitution = 0.72;
+                        double restitution = 0.76;
                         b.Vx -= (1 + restitution) * dot * nx + (rand.NextDouble() - 0.5) * 20;
                         b.Vy -= (1 + restitution) * dot * ny;
                         peg.Flash();
@@ -388,11 +614,52 @@ public partial class StudentPickerWindow : Window
                     double dot = b.Vx * nx + b.Vy * ny;
                     if (dot < 0)
                     {
-                        double bumperBoost = 1.35; // extra bouncy!
-                        b.Vx = (-dot * nx * bumperBoost) + (rand.NextDouble() - 0.5) * 40;
-                        b.Vy = (-dot * ny * bumperBoost) - 80;
+                        double bumperBoost = 1.28;
+                        b.Vx = (-dot * nx * bumperBoost) + (rand.NextDouble() - 0.5) * 46;
+                        b.Vy = (-dot * ny * bumperBoost) - 66;
                         bumper.Flash();
                         if (_soundEnabled) _soundService.PlayBeep();
+                    }
+                }
+            }
+
+            // 3.5 Log / branch / root rail collisions
+            foreach (var rail in _rails)
+            {
+                double sx = rail.X2 - rail.X1;
+                double sy = rail.Y2 - rail.Y1;
+                double lenSq = sx * sx + sy * sy;
+                if (lenSq < 0.001) continue;
+
+                double t = ((b.X - rail.X1) * sx + (b.Y - rail.Y1) * sy) / lenSq;
+                t = Math.Clamp(t, 0, 1);
+                double cx = rail.X1 + t * sx;
+                double cy = rail.Y1 + t * sy;
+                double dx = b.X - cx;
+                double dy = b.Y - cy;
+                double dist = Math.Sqrt(dx * dx + dy * dy);
+                double minDist = b.Radius + rail.HalfThickness;
+
+                if (dist < minDist && dist > 0.001)
+                {
+                    double nx = dx / dist;
+                    double ny = dy / dist;
+                    double overlap = minDist - dist;
+                    b.X += nx * overlap;
+                    b.Y += ny * overlap;
+
+                    double dot = b.Vx * nx + b.Vy * ny;
+                    if (dot < 0)
+                    {
+                        b.Vx -= (1 + rail.Restitution) * dot * nx;
+                        b.Vy -= (1 + rail.Restitution) * dot * ny;
+                        // A small tangent nudge avoids balls sticking to long logs.
+                        double tx = -ny;
+                        double ty = nx;
+                        double tangentKick = (rand.NextDouble() - 0.5) * 24;
+                        b.Vx += tx * tangentKick;
+                        b.Vy += ty * tangentKick;
+                        rail.Flash();
                     }
                 }
             }
@@ -430,32 +697,13 @@ public partial class StudentPickerWindow : Window
                 }
             }
 
-            // 4.5 Bottom Inward Funnel Guides (channeling towards Champion Cup between Y=560 and Y=730)
-            if (b.Y >= 560 && b.Y < 730)
+            // 5. Forest camp goal detection at the end of the genuinely long course.
+            if (b.Y + b.Radius >= 2172 && b.X >= 245 && b.X <= 435)
             {
-                double leftSlope = (b.Y - 560) * (300.0 / 170.0);
-                if (b.X - b.Radius < leftSlope)
-                {
-                    b.X = leftSlope + b.Radius;
-                    b.Vx = Math.Abs(b.Vx) * 0.7 + 35;
-                }
-                double rightSlope = 800 - (b.Y - 560) * (300.0 / 170.0);
-                if (b.X + b.Radius > rightSlope)
-                {
-                    b.X = rightSlope - b.Radius;
-                    b.Vx = -Math.Abs(b.Vx) * 0.7 - 35;
-                }
-            }
-
-            // 5. Bottom Winning Cup Detection
-            // Champion cup is at Left: 300, Top: 730, Width: 200, Height: 110
-            if (b.Y + b.Radius >= 740 && b.X >= 310 && b.X <= 490)
-            {
-                // Winner!
                 b.IsSettled = true;
                 b.Vx = 0;
                 b.Vy = 0;
-                b.Y = 760;
+                b.Y = 2200;
 
                 if (_lastWinner == null)
                 {
@@ -463,17 +711,20 @@ public partial class StudentPickerWindow : Window
                     TriggerWinnerCelebration(b.Student);
                 }
             }
-            else if (b.Y > 770)
+            else if (b.Y > 2245)
             {
-                // Dropped into side tray
+                // Side clearing: completed the course but missed the center winner gate.
                 b.IsSettled = true;
                 b.Vx = 0;
                 b.Vy = 0;
-                b.Y = 780;
+                b.Y = 2220;
             }
 
             b.UpdateVisual();
         }
+
+        // Camera follows the live leader after every physics step.
+        UpdateCameraAndLeader(dt);
 
         // Update Confetti
         for (int i = _confetti.Count - 1; i >= 0; i--)
@@ -493,13 +744,13 @@ public partial class StudentPickerWindow : Window
             if (_lastWinner == null && _balls.Count > 0)
             {
                 // Closest to champion cup wins
-                var fallbackWinner = _balls.OrderBy(b => Math.Abs(b.X - 400)).First().Student;
+                var fallbackWinner = _balls.OrderBy(b => Math.Abs(b.X - 340)).First().Student;
                 TriggerWinnerCelebration(fallbackWinner);
             }
             _gameTimer?.Stop();
             _isPlaying = false;
             BtnLaunch.IsEnabled = true;
-            TxtBtnLaunchLabel.Text = "핀볼 일제 발사! (추첨)";
+            TxtBtnLaunchLabel.Text = "동물 숲길 레이스 출발!";
         }
     }
 
@@ -514,7 +765,7 @@ public partial class StudentPickerWindow : Window
         }
 
         // Spawn Confetti Particles
-        SpawnConfetti(400, 420, 75);
+        SpawnConfetti(340, 2190, 75);
 
         // Display Winner Card
         TxtWinnerTitle.Text = $"{winner.Number}번 {winner.Name} ({winner.AvatarName})";
@@ -547,7 +798,7 @@ public partial class StudentPickerWindow : Window
         GridCelebration.Visibility = Visibility.Collapsed;
         _isPlaying = false;
         BtnLaunch.IsEnabled = true;
-        TxtBtnLaunchLabel.Text = "핀볼 일제 발사! (추첨)";
+        TxtBtnLaunchLabel.Text = "동물 숲길 레이스 출발!";
     }
 
     private void BtnDismissCelebration_Click(object sender, RoutedEventArgs e) => DismissCelebration();
@@ -575,7 +826,7 @@ public partial class StudentPickerWindow : Window
         {
             GridClassicMode.Visibility = Visibility.Collapsed;
             if (BorderClassicAvatar != null) BorderClassicAvatar.Visibility = Visibility.Collapsed;
-            TxtBtnLaunchLabel.Text = "🚀 핀볼 일제 발사! (추첨)";
+            TxtBtnLaunchLabel.Text = "🌲 동물 숲길 레이스 출발!";
         }
     }
 
@@ -658,8 +909,8 @@ public partial class StudentPickerWindow : Window
     private void BtnSoundToggle_Click(object sender, RoutedEventArgs e)
     {
         _soundEnabled = !_soundEnabled;
-        BtnSoundToggle.Content = _soundEnabled ? "배경음 / 효과음 ON" : "효과음 OFF";
-        BtnSoundToggle.Foreground = _soundEnabled ? new SolidColorBrush((Color)ColorConverter.ConvertFromString("#38BDF8")) : Brushes.Gray;
+        BtnSoundToggle.Content = _soundEnabled ? "효과음 ON" : "효과음 OFF";
+        BtnSoundToggle.Foreground = _soundEnabled ? new SolidColorBrush((Color)ColorConverter.ConvertFromString("#8DE2A8")) : Brushes.Gray;
     }
 
     protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
@@ -686,6 +937,7 @@ public class PinballBall
     public bool IsSettled { get; set; } = false;
 
     public Grid Visual { get; }
+    private readonly Ellipse _leaderRing;
 
     public PinballBall(StudentItem student, double x, double y, double radius)
     {
@@ -705,7 +957,7 @@ public class PinballBall
         {
             Width = radius * 2,
             Height = radius * 2,
-            Stroke = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#38BDF8")),
+            Stroke = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F0C95A")),
             StrokeThickness = 2.5
         };
 
@@ -722,6 +974,17 @@ public class PinballBall
             ellipse.Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#1E293B"));
         }
         Visual.Children.Add(ellipse);
+
+        _leaderRing = new Ellipse
+        {
+            Width = radius * 2,
+            Height = radius * 2,
+            Stroke = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FFF2A8")),
+            StrokeThickness = 4,
+            Visibility = Visibility.Collapsed,
+            IsHitTestVisible = false
+        };
+        Visual.Children.Add(_leaderRing);
 
         // Number Badge
         var badge = new Border
@@ -744,6 +1007,12 @@ public class PinballBall
         Visual.Children.Add(badge);
 
         UpdateVisual();
+    }
+
+    public void SetLeader(bool isLeader)
+    {
+        _leaderRing.Visibility = isLeader ? Visibility.Visible : Visibility.Collapsed;
+        Panel.SetZIndex(Visual, isLeader ? 50 : 10);
     }
 
     public void UpdateVisual()
@@ -773,8 +1042,8 @@ public class PinballPeg
         {
             Width = radius * 2,
             Height = radius * 2,
-            Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FDE047")),
-            Stroke = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#CA8A04")),
+            Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#C79445")),
+            Stroke = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#684522")),
             StrokeThickness = 1.5
         };
         Canvas.SetLeft(Visual, x - radius);
@@ -784,7 +1053,7 @@ public class PinballPeg
         {
             Width = radius * 4,
             Height = radius * 4,
-            Stroke = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#38BDF8")),
+            Stroke = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#8BCF8F")),
             StrokeThickness = 2,
             Opacity = 0
         };
@@ -807,7 +1076,7 @@ public class PinballPeg
             GlowRing.Opacity = Math.Max(0, _flashTimer / 0.25);
             if (_flashTimer <= 0)
             {
-                Visual.Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FDE047"));
+                Visual.Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#C79445"));
             }
         }
     }
@@ -823,7 +1092,7 @@ public class PinballBumper
     private double _flashTimer = 0;
     private readonly string _baseColor;
 
-    public PinballBumper(double x, double y, double radius, string colorHex)
+    public PinballBumper(double x, double y, double radius, string colorHex, string icon = "🍄")
     {
         X = x;
         Y = y;
@@ -841,8 +1110,8 @@ public class PinballBumper
         };
         Visual.Child = new TextBlock
         {
-            Text = "⚡",
-            FontSize = 16,
+            Text = icon,
+            FontSize = radius >= 30 ? 22 : 17,
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
             Foreground = Brushes.White
@@ -867,6 +1136,96 @@ public class PinballBumper
             {
                 Visual.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(_baseColor));
             }
+        }
+    }
+}
+
+public class PinballRail
+{
+    public double X1 { get; }
+    public double Y1 { get; }
+    public double X2 { get; }
+    public double Y2 { get; }
+    public double HalfThickness { get; }
+    public double Restitution { get; } = 0.62;
+
+    public Grid Visual { get; }
+    private readonly Border _wood;
+    private double _flashTimer;
+
+    public PinballRail(double x1, double y1, double x2, double y2, double halfThickness, string colorHex, string label)
+    {
+        X1 = x1;
+        Y1 = y1;
+        X2 = x2;
+        Y2 = y2;
+        HalfThickness = halfThickness;
+
+        double dx = x2 - x1;
+        double dy = y2 - y1;
+        double length = Math.Sqrt(dx * dx + dy * dy);
+        double angle = Math.Atan2(dy, dx) * 180.0 / Math.PI;
+
+        Visual = new Grid
+        {
+            Width = length,
+            Height = halfThickness * 2 + 8,
+            RenderTransformOrigin = new Point(0.5, 0.5),
+            RenderTransform = new RotateTransform(angle),
+            IsHitTestVisible = false
+        };
+
+        _wood = new Border
+        {
+            Height = halfThickness * 2,
+            CornerRadius = new CornerRadius(halfThickness),
+            Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(colorHex)),
+            BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#C99759")),
+            BorderThickness = new Thickness(2),
+            VerticalAlignment = VerticalAlignment.Center
+        };
+
+        var grain = new Border
+        {
+            Height = 3,
+            Margin = new Thickness(15, 0, 15, 0),
+            CornerRadius = new CornerRadius(2),
+            Background = new SolidColorBrush(Color.FromArgb(85, 255, 226, 168)),
+            VerticalAlignment = VerticalAlignment.Center
+        };
+
+        var tag = new TextBlock
+        {
+            Text = label == "통나무" ? "🍃" : label == "뿌리" ? "🌱" : "🍂",
+            FontSize = 15,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            Opacity = 0.86
+        };
+
+        Visual.Children.Add(_wood);
+        Visual.Children.Add(grain);
+        Visual.Children.Add(tag);
+
+        Canvas.SetLeft(Visual, (x1 + x2) / 2 - length / 2);
+        Canvas.SetTop(Visual, (y1 + y2) / 2 - Visual.Height / 2);
+    }
+
+    public void Flash()
+    {
+        _flashTimer = 0.18;
+        _wood.BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F6D365"));
+        _wood.BorderThickness = new Thickness(3);
+    }
+
+    public void Update(double dt)
+    {
+        if (_flashTimer <= 0) return;
+        _flashTimer -= dt;
+        if (_flashTimer <= 0)
+        {
+            _wood.BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#C99759"));
+            _wood.BorderThickness = new Thickness(2);
         }
     }
 }
