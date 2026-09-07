@@ -165,74 +165,75 @@
                             <Rectangle Canvas.Left="0" Canvas.Top="0" Width="680" Height="2200">
                                 <Rectangle.Fill>
                                     <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                        <GradientStop Color="#84CC16" Offset="0"/>     <!-- 1. Sunny Canopy -->
-                                        <GradientStop Color="#65A30D" Offset="0.18"/>  <!-- 2. Grassy Hill Slope -->
-                                        <GradientStop Color="#4D7C0F" Offset="0.38"/>  <!-- 3. Forest Woodland -->
-                                        <GradientStop Color="#15803D" Offset="0.60"/>  <!-- 4. Enchanted Glade -->
-                                        <GradientStop Color="#166534" Offset="0.78"/>  <!-- 5. Mushroom Hollow -->
-                                        <GradientStop Color="#0F766E" Offset="0.90"/>  <!-- 6. Riverbank -->
-                                        <GradientStop Color="#0284C7" Offset="1.0"/>   <!-- 7. Crystal Water Slide -->
+                                        <GradientStop Color="#4E8A26" Offset="0"/>     <!-- 1. Lush Sunny Meadow -->
+                                        <GradientStop Color="#437920" Offset="0.20"/>  <!-- 2. Gentle Grass Slopes -->
+                                        <GradientStop Color="#38661B" Offset="0.45"/>  <!-- 3. Forest Glade -->
+                                        <GradientStop Color="#2D5417" Offset="0.70"/>  <!-- 4. Enchanted Woodland -->
+                                        <GradientStop Color="#1E401B" Offset="0.88"/>  <!-- 5. Riverbank Verge -->
+                                        <GradientStop Color="#0284C7" Offset="1.0"/>   <!-- 6. Crystal Water Slide -->
                                     </LinearGradientBrush>
                                 </Rectangle.Fill>
                             </Rectangle>
 
-                            <!-- Winding Stylized Cartoon Adventure Trail -->
-                            <Path Data="M 340,160 C 340,360 180,520 270,760 C 360,1000 520,1180 430,1440 C 340,1700 340,1920 340,2050"
-                                  Stroke="#FDE68A" StrokeThickness="220" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Opacity="0.3"/>
-                            <Path Data="M 340,160 C 340,360 180,520 270,760 C 360,1000 520,1180 430,1440 C 340,1700 340,1920 340,2050"
-                                  Stroke="#FDE047" StrokeThickness="130" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Opacity="0.45"/>
+                            <!-- Natural Dirt/Sand Adventure Trail with Soft Edges -->
+                            <Path Data="M 340,160 C 340,360 210,500 280,740 C 350,980 490,1180 420,1440 C 340,1700 340,1920 340,2050"
+                                  Stroke="#3B6318" StrokeThickness="230" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Opacity="0.4"/>
+                            <Path Data="M 340,160 C 340,360 210,500 280,740 C 350,980 490,1180 420,1440 C 340,1700 340,1920 340,2050"
+                                  Stroke="#DFB277" StrokeThickness="170" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Opacity="0.85"/>
+                            <Path Data="M 340,160 C 340,360 210,500 280,740 C 350,980 490,1180 420,1440 C 340,1700 340,1920 340,2050"
+                                  Stroke="#E7C693" StrokeThickness="110" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Opacity="0.9"/>
 
                             <!-- Left & Right Cartoon Bushes Lining Boundaries -->
-                            <Image Canvas.Left="10" Canvas.Top="260" Width="90" Height="58" Source="pack://application:,,,/assets/race/cartoon_bush.png"/>
-                            <Image Canvas.Left="580" Canvas.Top="260" Width="90" Height="58" Source="pack://application:,,,/assets/race/cartoon_bush.png"/>
-                            <Image Canvas.Left="15" Canvas.Top="580" Width="80" Height="52" Source="pack://application:,,,/assets/race/cartoon_bush.png"/>
-                            <Image Canvas.Left="585" Canvas.Top="580" Width="80" Height="52" Source="pack://application:,,,/assets/race/cartoon_bush.png"/>
-                            <Image Canvas.Left="10" Canvas.Top="920" Width="85" Height="55" Source="pack://application:,,,/assets/race/cartoon_bush.png"/>
-                            <Image Canvas.Left="585" Canvas.Top="920" Width="85" Height="55" Source="pack://application:,,,/assets/race/cartoon_bush.png"/>
-                            <Image Canvas.Left="20" Canvas.Top="1240" Width="90" Height="58" Source="pack://application:,,,/assets/race/cartoon_bush.png"/>
-                            <Image Canvas.Left="575" Canvas.Top="1240" Width="90" Height="58" Source="pack://application:,,,/assets/race/cartoon_bush.png"/>
-                            <Image Canvas.Left="15" Canvas.Top="1560" Width="90" Height="58" Source="pack://application:,,,/assets/race/cartoon_bush.png"/>
-                            <Image Canvas.Left="580" Canvas.Top="1560" Width="90" Height="58" Source="pack://application:,,,/assets/race/cartoon_bush.png"/>
+                            <Image Canvas.Left="4" Canvas.Top="240" Width="100" Height="58" Source="pack://application:,,,/assets/race/cartoon_bush.png"/>
+                            <Image Canvas.Left="576" Canvas.Top="240" Width="100" Height="58" Source="pack://application:,,,/assets/race/cartoon_bush.png"/>
+                            <Image Canvas.Left="6" Canvas.Top="560" Width="90" Height="52" Source="pack://application:,,,/assets/race/cartoon_bush.png"/>
+                            <Image Canvas.Left="584" Canvas.Top="560" Width="90" Height="52" Source="pack://application:,,,/assets/race/cartoon_bush.png"/>
+                            <Image Canvas.Left="4" Canvas.Top="900" Width="95" Height="55" Source="pack://application:,,,/assets/race/cartoon_bush.png"/>
+                            <Image Canvas.Left="581" Canvas.Top="900" Width="95" Height="55" Source="pack://application:,,,/assets/race/cartoon_bush.png"/>
+                            <Image Canvas.Left="10" Canvas.Top="1220" Width="100" Height="58" Source="pack://application:,,,/assets/race/cartoon_bush.png"/>
+                            <Image Canvas.Left="570" Canvas.Top="1220" Width="100" Height="58" Source="pack://application:,,,/assets/race/cartoon_bush.png"/>
+                            <Image Canvas.Left="6" Canvas.Top="1540" Width="100" Height="58" Source="pack://application:,,,/assets/race/cartoon_bush.png"/>
+                            <Image Canvas.Left="574" Canvas.Top="1540" Width="100" Height="58" Source="pack://application:,,,/assets/race/cartoon_bush.png"/>
 
-                            <!-- Decorative Cartoon Pebbles -->
-                            <Image Canvas.Left="55" Canvas.Top="420" Width="45" Height="34" Source="pack://application:,,,/assets/race/cartoon_pebble.png"/>
-                            <Image Canvas.Left="580" Canvas.Top="420" Width="45" Height="34" Source="pack://application:,,,/assets/race/cartoon_pebble.png"/>
-                            <Image Canvas.Left="60" Canvas.Top="1080" Width="50" Height="38" Source="pack://application:,,,/assets/race/cartoon_pebble.png"/>
-                            <Image Canvas.Left="570" Canvas.Top="1080" Width="50" Height="38" Source="pack://application:,,,/assets/race/cartoon_pebble.png"/>
+                            <!-- Natural Cartoon Pebbles -->
+                            <Image Canvas.Left="50" Canvas.Top="410" Width="40" Height="30" Source="pack://application:,,,/assets/race/cartoon_pebble.png"/>
+                            <Image Canvas.Left="590" Canvas.Top="410" Width="40" Height="30" Source="pack://application:,,,/assets/race/cartoon_pebble.png"/>
+                            <Image Canvas.Left="55" Canvas.Top="1060" Width="45" Height="34" Source="pack://application:,,,/assets/race/cartoon_pebble.png"/>
+                            <Image Canvas.Left="580" Canvas.Top="1060" Width="45" Height="34" Source="pack://application:,,,/assets/race/cartoon_pebble.png"/>
 
                             <!-- ================================================= -->
                             <!-- ZONE 1: 🌴 출발선 (Y = 0 ~ 240) -->
                             <!-- ================================================= -->
                             <!-- Festive Party Bunting Arch -->
-                            <Image Canvas.Left="40" Canvas.Top="80" Width="600" Height="110"
+                            <Image Canvas.Left="40" Canvas.Top="95" Width="600" Height="90"
                                    Source="pack://application:,,,/assets/race/cartoon_start_banner.png"/>
 
                             <!-- Wooden Start Gate Platform Line -->
-                            <Border Canvas.Left="40" Canvas.Top="170" Width="600" Height="16" CornerRadius="8" Background="#78350F" BorderBrush="#CA8A04" BorderThickness="2"/>
+                            <Border Canvas.Left="40" Canvas.Top="170" Width="600" Height="14" CornerRadius="7" Background="#78350F" BorderBrush="#B45309" BorderThickness="1.5"/>
 
                             <!-- ================================================= -->
                             <!-- ZONE 2: 🪵 슬로프 & 카툰 목재 가이드 레일 (Y = 240 ~ 720) -->
                             <!-- ================================================= -->
-                            <!-- Slanted Wooden Rails -->
-                            <Image Canvas.Left="70" Canvas.Top="320" Width="220" Height="60"
-                                   Source="pack://application:,,,/assets/race/cartoon_wood_rail.png" RenderTransformOrigin="0.5,0.5">
-                                <Image.RenderTransform><RotateTransform Angle="28"/></Image.RenderTransform>
+                            <!-- Slanted Wooden Rails (Wall flush to eliminate traps) -->
+                            <Image Canvas.Left="-5" Canvas.Top="270" Width="290" Height="56"
+                                   Source="pack://application:,,,/assets/race/cartoon_wood_rail.png" RenderTransformOrigin="0.0,0.5">
+                                <Image.RenderTransform><RotateTransform Angle="24"/></Image.RenderTransform>
                             </Image>
-                            <Image Canvas.Left="390" Canvas.Top="320" Width="220" Height="60"
-                                   Source="pack://application:,,,/assets/race/cartoon_wood_rail.png" RenderTransformOrigin="0.5,0.5">
-                                <Image.RenderTransform><RotateTransform Angle="-28"/></Image.RenderTransform>
+                            <Image Canvas.Left="395" Canvas.Top="270" Width="290" Height="56"
+                                   Source="pack://application:,,,/assets/race/cartoon_wood_rail.png" RenderTransformOrigin="1.0,0.5">
+                                <Image.RenderTransform><RotateTransform Angle="-24"/></Image.RenderTransform>
                             </Image>
 
                             <!-- ================================================= -->
                             <!-- ZONE 3: 🌲 숲속 갈림길 가이드 레일 (Y = 720 ~ 1300) -->
                             <!-- ================================================= -->
-                            <Image Canvas.Left="40" Canvas.Top="1120" Width="220" Height="60"
-                                   Source="pack://application:,,,/assets/race/cartoon_wood_rail.png" RenderTransformOrigin="0.5,0.5">
-                                <Image.RenderTransform><RotateTransform Angle="22"/></Image.RenderTransform>
+                            <Image Canvas.Left="-5" Canvas.Top="1090" Width="270" Height="56"
+                                   Source="pack://application:,,,/assets/race/cartoon_wood_rail.png" RenderTransformOrigin="0.0,0.5">
+                                <Image.RenderTransform><RotateTransform Angle="20"/></Image.RenderTransform>
                             </Image>
-                            <Image Canvas.Left="420" Canvas.Top="1120" Width="220" Height="60"
-                                   Source="pack://application:,,,/assets/race/cartoon_wood_rail.png" RenderTransformOrigin="0.5,0.5">
-                                <Image.RenderTransform><RotateTransform Angle="-22"/></Image.RenderTransform>
+                            <Image Canvas.Left="415" Canvas.Top="1090" Width="270" Height="56"
+                                   Source="pack://application:,,,/assets/race/cartoon_wood_rail.png" RenderTransformOrigin="1.0,0.5">
+                                <Image.RenderTransform><RotateTransform Angle="-20"/></Image.RenderTransform>
                             </Image>
 
                             <!-- ================================================= -->

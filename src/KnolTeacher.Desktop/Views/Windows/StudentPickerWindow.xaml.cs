@@ -56,6 +56,14 @@ public partial class StudentPickerWindow : Window
             UpdateCameraViewport(0, force: true);
         };
 
+        IsVisibleChanged += (s, e) =>
+        {
+            if (IsVisible && !_isPlaying)
+            {
+                StopAndReset();
+            }
+        };
+
         KeyDown += Window_KeyDown;
     }
 
@@ -107,6 +115,7 @@ public partial class StudentPickerWindow : Window
             }
             else
             {
+                StopAndReset();
                 Hide();
             }
             e.Handled = true;
@@ -123,47 +132,47 @@ public partial class StudentPickerWindow : Window
         _rails.Clear();
         _rotatingLogs.Clear();
 
-        // 1. Zone 2 Slanted Cartoon Wood Rails (Collision definition)
-        _rails.Add(new RaceRail(80, 310, 270, 410, 18));
-        _rails.Add(new RaceRail(600, 310, 410, 410, 18));
+        // 1. Zone 2 Slanted Cartoon Wood Rails (Flush from wall to center to eliminate traps)
+        _rails.Add(new RaceRail(0, 275, 275, 395, 10));
+        _rails.Add(new RaceRail(680, 275, 405, 395, 10));
 
-        // 2. Zone 3 Mid-track Cartoon Wood Rails
-        _rails.Add(new RaceRail(50, 1110, 250, 1190, 18));
-        _rails.Add(new RaceRail(630, 1110, 430, 1190, 18));
+        // 2. Zone 3 Mid-track Cartoon Wood Rails (Flush from wall to center)
+        _rails.Add(new RaceRail(0, 1095, 255, 1185, 10));
+        _rails.Add(new RaceRail(680, 1095, 425, 1185, 10));
 
         // 3. Zone 5 Waterfall Funnel Banks
-        _rails.Add(new RaceRail(0, 1880, 230, 2030, 20));
-        _rails.Add(new RaceRail(680, 1880, 450, 2030, 20));
-        _rails.Add(new RaceRail(230, 2030, 230, 2200, 20));
-        _rails.Add(new RaceRail(450, 2030, 450, 2200, 20));
+        _rails.Add(new RaceRail(0, 1880, 230, 2030, 14));
+        _rails.Add(new RaceRail(680, 1880, 450, 2030, 14));
+        _rails.Add(new RaceRail(230, 2030, 230, 2200, 14));
+        _rails.Add(new RaceRail(450, 2030, 450, 2200, 14));
 
         // 4. ROTATING LOGS (회전 통나무 동적 장애물!)
         // Upper Slope: Clockwise Rotating Log in center
-        AddRotatingLog(340, 520, 220, 34, 2.2, 15);
+        AddRotatingLog(340, 520, 220, 32, 2.2, 15);
 
         // Mid-Course Twin Shuffling Logs: counter-rotating to create exciting pinball channels!
-        AddRotatingLog(220, 880, 180, 32, -2.5, -30);
-        AddRotatingLog(460, 880, 180, 32, 2.5, 30);
+        AddRotatingLog(220, 880, 180, 30, -2.5, -30);
+        AddRotatingLog(460, 880, 180, 30, 2.5, 30);
 
         // Lower Mushroom Forest: Slower Heavy Rotating Log
-        AddRotatingLog(340, 1460, 210, 36, -1.8, 0);
+        AddRotatingLog(340, 1460, 210, 34, -1.8, 0);
 
-        // 5. CARTOON BUMPERS (통통 튀는 만화풍 버섯 & 별)
+        // 5. CARTOON BUMPERS (타이트한 히트박스 반경)
         // Zone 2 Upper side bumpers
-        AddBumper(150, 640, 32, "cartoon_mushroom_yellow.png");
-        AddBumper(530, 640, 32, "cartoon_mushroom_yellow.png");
+        AddBumper(150, 640, 24, "cartoon_mushroom_yellow.png");
+        AddBumper(530, 640, 24, "cartoon_mushroom_yellow.png");
 
         // Zone 3 Star Bouncer in center
-        AddBumper(340, 1060, 36, "cartoon_star_bumper.png");
+        AddBumper(340, 1060, 28, "cartoon_star_bumper.png");
 
         // Zone 4 Enchanted Mushroom Forest
-        AddBumper(190, 1320, 34, "cartoon_mushroom_red.png");
-        AddBumper(490, 1320, 34, "cartoon_mushroom_red.png");
-        AddBumper(160, 1600, 34, "cartoon_mushroom_purple.png");
-        AddBumper(520, 1600, 34, "cartoon_mushroom_purple.png");
-        AddBumper(260, 1720, 34, "cartoon_mushroom_red.png");
-        AddBumper(420, 1720, 34, "cartoon_mushroom_red.png");
-        AddBumper(340, 1830, 36, "cartoon_mushroom_yellow.png");
+        AddBumper(190, 1320, 26, "cartoon_mushroom_red.png");
+        AddBumper(490, 1320, 26, "cartoon_mushroom_red.png");
+        AddBumper(160, 1600, 26, "cartoon_mushroom_purple.png");
+        AddBumper(520, 1600, 26, "cartoon_mushroom_purple.png");
+        AddBumper(260, 1720, 26, "cartoon_mushroom_red.png");
+        AddBumper(420, 1720, 26, "cartoon_mushroom_red.png");
+        AddBumper(340, 1830, 28, "cartoon_mushroom_yellow.png");
     }
 
     private void AddRotatingLog(double x, double y, double length, double thickness, double angularVelocity, double initialAngleDeg)
@@ -227,7 +236,7 @@ public partial class StudentPickerWindow : Window
             double x = (count == 1) ? 340 : (startX + i * spacing);
             double y = 120;
 
-            var racer = new RaceRacer(student, x, y, 20);
+            var racer = new RaceRacer(student, x, y, 13);
             _racers.Add(racer);
 
             RaceCanvas.Children.Add(racer.Visual);
@@ -334,11 +343,25 @@ public partial class StudentPickerWindow : Window
             r.X += r.Vx * dt;
             r.Y += r.Vy * dt;
 
-            // Anti-jam: gently push racers if stuck on a ledge
-            if (r.Y > 200 && r.Y < 2000 && Math.Abs(r.Vx) < 5 && Math.Abs(r.Vy) < 15)
+            // Anti-jam watchdog: actively propel any racer getting slow or stuck above finish
+            if (r.Y > 160 && r.Y < FinishY)
             {
-                r.Vx += (rand.NextDouble() - 0.5) * 80;
-                r.Vy += 40;
+                if (Math.Abs(r.Vx) < 14.0 && r.Vy < 30.0)
+                {
+                    r.StuckTimer += dt;
+                    if (r.StuckTimer > 0.25)
+                    {
+                        // Direct impulse downhill toward the track center
+                        double centerNudge = (340.0 - r.X);
+                        r.Vx += Math.Sign(centerNudge) * (50.0 + rand.NextDouble() * 30.0);
+                        r.Vy = Math.Max(r.Vy + 90.0, 130.0 + rand.NextDouble() * 60.0);
+                        r.StuckTimer = 0;
+                    }
+                }
+                else
+                {
+                    r.StuckTimer = 0;
+                }
             }
 
             // Left & Right Outer Track Boundaries
@@ -347,15 +370,15 @@ public partial class StudentPickerWindow : Window
             if (r.X - r.Radius < leftWall)
             {
                 r.X = leftWall + r.Radius;
-                r.Vx = Math.Abs(r.Vx) * 0.75 + 15;
+                r.Vx = Math.Abs(r.Vx) * 0.75 + 20;
             }
             else if (r.X + r.Radius > rightWall)
             {
                 r.X = rightWall - r.Radius;
-                r.Vx = -Math.Abs(r.Vx) * 0.75 - 15;
+                r.Vx = -Math.Abs(r.Vx) * 0.75 - 20;
             }
 
-            // Collisions with Rails
+            // Collisions with Rails (with active downhill sliding!)
             foreach (var rail in _rails)
             {
                 double sx = rail.X2 - rail.X1;
@@ -372,23 +395,33 @@ public partial class StudentPickerWindow : Window
                 double dist = Math.Sqrt(dx * dx + dy * dy);
                 double minDist = r.Radius + rail.Thickness;
 
-                if (dist < minDist && dist > 0.001)
+                if (dist < minDist && dist > 0.0001)
                 {
                     double nx = dx / dist;
                     double ny = dy / dist;
-                    double overlap = minDist - dist;
+                    double overlap = minDist - dist + 0.5;
                     r.X += nx * overlap;
                     r.Y += ny * overlap;
 
+                    // Downhill unit tangent vector (ensure ty >= 0 so it points down the slope)
+                    double len = Math.Sqrt(lenSq);
+                    double tx = sx / len;
+                    double ty = sy / len;
+                    if (ty < 0) { tx = -tx; ty = -ty; }
+
+                    // Zero out incoming velocity into normal
                     double dot = r.Vx * nx + r.Vy * ny;
                     if (dot < 0)
                     {
-                        r.Vx -= 1.65 * dot * nx;
-                        r.Vy -= 1.65 * dot * ny;
-                        // Slide tangent nudge
-                        r.Vx += -ny * ((rand.NextDouble() - 0.5) * 20);
-                        r.Vy += nx * ((rand.NextDouble() - 0.5) * 20);
+                        r.Vx -= 1.35 * dot * nx;
+                        r.Vy -= 1.35 * dot * ny;
                     }
+
+                    // ACTIVE DOWNHILL SLIDING FORCE:
+                    // Accelerate along the rail downhill slope so animals slide effortlessly!
+                    double downhillForce = 520.0 * dt;
+                    r.Vx += tx * downhillForce;
+                    r.Vy += ty * downhillForce;
                 }
             }
 
@@ -777,9 +810,22 @@ public partial class StudentPickerWindow : Window
         // Allow teacher to freely scroll the race track
     }
 
+    public void StopAndReset()
+    {
+        _isPlaying = false;
+        _gameTimer?.Stop();
+        _finishedCount = 0;
+        _winners.Clear();
+        if (GridCelebration != null)
+        {
+            GridCelebration.Visibility = Visibility.Collapsed;
+        }
+        ResetToStartLine();
+    }
+
     protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
     {
-        _gameTimer?.Stop();
+        StopAndReset();
         e.Cancel = true;
         Hide();
     }
@@ -802,6 +848,7 @@ public class RaceRacer
     public double Radius { get; }
     public bool IsFinished { get; set; } = false;
     public int FinishRank { get; set; } = 0;
+    public double StuckTimer { get; set; } = 0;
 
     public Grid Visual { get; }
     public Ellipse MinimapDot { get; }
@@ -816,19 +863,19 @@ public class RaceRacer
 
         Visual = new Grid
         {
-            Width = radius * 2 + 30,
-            Height = radius * 2 + 26
+            Width = 56,
+            Height = 58
         };
 
         _rot = new RotateTransform(0);
-        Visual.RenderTransformOrigin = new Point(0.5, 0.4);
+        Visual.RenderTransformOrigin = new Point(0.5, 0.35);
         Visual.RenderTransform = _rot;
 
         // 1. Natural Animal Avatar (FRAMELESS - No circular frame or thick stroke!)
         var img = new Image
         {
-            Width = radius * 2 + 4,
-            Height = radius * 2 + 4,
+            Width = 40,
+            Height = 40,
             Source = AnimalAvatarCatalog.GetAvatarBitmap(student.EffectiveAvatarId),
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Top,
@@ -872,7 +919,7 @@ public class RaceRacer
     public void UpdateVisual()
     {
         Canvas.SetLeft(Visual, X - Visual.Width / 2.0);
-        Canvas.SetTop(Visual, Y - Radius);
+        Canvas.SetTop(Visual, Y - 20.0);
 
         // Tilt based on horizontal velocity
         double angle = Math.Clamp(Vx * 0.15, -28.0, 28.0);
@@ -1013,7 +1060,7 @@ public class RotatingLog
     {
         collided = false;
         double halfL = Length * 0.44;
-        double halfT = Thickness * 0.5;
+        double halfT = Thickness * 0.32;
 
         double cosA = Math.Cos(Angle);
         double sinA = Math.Sin(Angle);
