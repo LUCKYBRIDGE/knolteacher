@@ -144,6 +144,22 @@ public partial class MainWindow : FluentWindow
     {
         try
         {
+            // Responsive Screen Bounds Clamp: Ensure MainWindow never overflows the monitor work area
+            var workArea = SystemParameters.WorkArea;
+            if (workArea.Width > 0 && workArea.Height > 0)
+            {
+                if (Width > workArea.Width - 16.0)
+                {
+                    Width = Math.Max(MinWidth, workArea.Width - 24.0);
+                }
+                if (Height > workArea.Height - 16.0)
+                {
+                    Height = Math.Max(MinHeight, workArea.Height - 24.0);
+                }
+                Left = Math.Max(workArea.Left + 12.0, workArea.Left + (workArea.Width - Width) / 2.0);
+                Top = Math.Max(workArea.Top + 12.0, workArea.Top + (workArea.Height - Height) / 2.0);
+            }
+
             // 0. Initialize System Tray & Background Minimization
             _trayService.Initialize(
                 this,

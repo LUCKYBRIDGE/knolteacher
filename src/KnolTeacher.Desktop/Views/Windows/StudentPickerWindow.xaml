@@ -4,8 +4,8 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="🌱 뽑기 레이스 (Alt+8)" Height="780" Width="1240"
-        MinHeight="660" MinWidth="980"
+        Title="🌱 뽑기 레이스 (Alt+8)" Height="740" Width="1220"
+        MinHeight="620" MinWidth="960"
         WindowStartupLocation="CenterScreen"
         Topmost="True"
         Background="#1E1E24">
@@ -17,13 +17,13 @@
             <!-- 2. Main 3-Column Playfield (Minimap | Race Track | Leaderboard) -->
             <RowDefinition Height="*" />
             <!-- 3. Bottom Control Bar -->
-            <RowDefinition Height="64" />
+            <RowDefinition Height="60" />
         </Grid.RowDefinitions>
 
         <!-- ========================================================= -->
         <!-- 1. TOP HEADER & TOPIC BAR -->
         <!-- ========================================================= -->
-        <Border Grid.Row="0" Background="#18181B" BorderBrush="#27272A" BorderThickness="0,0,0,1" Padding="14,0">
+        <Border Grid.Row="0" Background="#18181B" BorderBrush="#27272A" BorderThickness="0,0,0,1" Padding="12,0">
             <Grid VerticalAlignment="Center">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
@@ -33,30 +33,31 @@
 
                 <!-- Left: App Identity -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="🌱" FontSize="20" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                    <TextBlock Text="뽑기 레이스" FontSize="16" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
+                    <TextBlock Text="🌱" FontSize="18" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <TextBlock Text="뽑기 레이스" FontSize="15" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
                 </StackPanel>
 
                 <!-- Center: Configurable Race Topic Banner -->
-                <StackPanel x:Name="PanelTitle" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel x:Name="PanelTitle" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="420">
                     <TextBox x:Name="TbRaceTitle" Text="이번엔 1등, 꼴등이 받아요"
-                             FontSize="20" FontWeight="Bold" Foreground="White"
+                             FontSize="18" FontWeight="Bold" Foreground="White"
                              Background="Transparent" BorderThickness="0"
                              TextAlignment="Center" VerticalAlignment="Center"
+                             MaxWidth="310"
                              Cursor="IBeam" ToolTip="클릭하여 이번 뽑기 레이스 제목을 직접 수정할 수 있습니다"/>
                     <Button x:Name="BtnHideTitle" Content="제목 숨기기" Click="BtnHideTitle_Click"
-                            Margin="12,0,0,0" Padding="8,4" FontSize="11"
+                            Margin="8,0,0,0" Padding="6,3" FontSize="10.5"
                             Background="#27272A" Foreground="#A1A1AA" BorderBrush="#3F3F46" BorderThickness="1" Cursor="Hand">
-                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="5"/></Style></Button.Resources>
                     </Button>
                 </StackPanel>
 
                 <!-- Right: Options & Window Controls -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                     <!-- Target Winner Count Picker -->
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,0">
-                        <TextBlock Text="⭐ 순위" FontSize="12" FontWeight="Bold" Foreground="#E4E4E7" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                        <ComboBox x:Name="CbWinnerCount" Width="74" Height="28" FontSize="12" FontWeight="Bold"
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
+                        <TextBlock Text="⭐ 순위" FontSize="11.5" FontWeight="Bold" Foreground="#E4E4E7" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                        <ComboBox x:Name="CbWinnerCount" Width="66" Height="28" FontSize="11.5" FontWeight="Bold"
                                   Background="#27272A" Foreground="White" BorderBrush="#3F3F46" VerticalContentAlignment="Center">
                             <ComboBoxItem Content="1명" IsSelected="True"/>
                             <ComboBoxItem Content="2명"/>
@@ -68,20 +69,20 @@
 
                     <!-- View Results Button -->
                     <Button x:Name="BtnViewResult" Content="결과 보기" Click="BtnViewResult_Click"
-                            Padding="12,6" Margin="0,0,10,0" Height="30"
-                            Background="#EA580C" Foreground="White" FontWeight="Bold" FontSize="12" BorderThickness="0" Cursor="Hand">
+                            Padding="10,5" Margin="0,0,8,0" Height="28"
+                            Background="#EA580C" Foreground="White" FontWeight="Bold" FontSize="11.5" BorderThickness="0" Cursor="Hand">
                         <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
                     </Button>
 
                     <!-- Monitor Switcher -->
                     <Button x:Name="BtnSwitchMonitor" Content="📺 모니터 2" Click="BtnSwitchMonitor_Click"
-                            Padding="10,6" Margin="0,0,8,0" Height="30"
+                            Padding="8,5" Margin="0,0,8,0" Height="28"
                             Background="#27272A" Foreground="#38BDF8" BorderBrush="#0284C7" BorderThickness="1" FontWeight="Bold" FontSize="11" Cursor="Hand">
                         <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
                     </Button>
 
                     <!-- Exclude Picked Checkbox -->
-                    <CheckBox x:Name="ChkExcludePicked" Content="뽑힌 학생 제외" IsChecked="True" Foreground="#D4D4D8" FontSize="11" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                    <CheckBox x:Name="ChkExcludePicked" Content="뽑힌 학생 제외" IsChecked="True" Foreground="#D4D4D8" FontSize="11" VerticalAlignment="Center" Margin="0,0,2,0"/>
                 </StackPanel>
             </Grid>
         </Border>
@@ -323,7 +324,7 @@
         <!-- ========================================================= -->
         <!-- 3. BOTTOM CONTROL BAR -->
         <!-- ========================================================= -->
-        <Border Grid.Row="2" Background="#18181B" BorderBrush="#27272A" BorderThickness="0,1,0,0" Padding="20,8">
+        <Border Grid.Row="2" Background="#18181B" BorderBrush="#27272A" BorderThickness="0,1,0,0" Padding="14,6">
             <Grid VerticalAlignment="Center">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -333,15 +334,15 @@
 
                 <!-- Left: Shortcuts Info -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="💡 단축키: " FontSize="12" Foreground="#71717A" Margin="0,0,4,0" VerticalAlignment="Center"/>
-                    <Border Background="#27272A" CornerRadius="4" Padding="6,2" Margin="0,0,6,0">
-                        <TextBlock Text="Space (출발/정지)" FontSize="11" FontWeight="Bold" Foreground="#38BDF8"/>
+                    <TextBlock Text="💡 단축키: " FontSize="11" Foreground="#71717A" Margin="0,0,3,0" VerticalAlignment="Center"/>
+                    <Border Background="#27272A" CornerRadius="4" Padding="5,2" Margin="0,0,4,0">
+                        <TextBlock Text="Space (출발/정지)" FontSize="10.5" FontWeight="Bold" Foreground="#38BDF8"/>
                     </Border>
-                    <Border Background="#27272A" CornerRadius="4" Padding="6,2" Margin="0,0,6,0">
-                        <TextBlock Text="PgUp/PgDn (시점)" FontSize="11" FontWeight="Bold" Foreground="#FDE047"/>
+                    <Border Background="#27272A" CornerRadius="4" Padding="5,2" Margin="0,0,4,0">
+                        <TextBlock Text="PgUp/PgDn (시점)" FontSize="10.5" FontWeight="Bold" Foreground="#FDE047"/>
                     </Border>
-                    <Border Background="#27272A" CornerRadius="4" Padding="6,2">
-                        <TextBlock Text="Esc (닫기)" FontSize="11" FontWeight="Bold" Foreground="#A1A1AA"/>
+                    <Border Background="#27272A" CornerRadius="4" Padding="5,2">
+                        <TextBlock Text="Esc (닫기)" FontSize="10.5" FontWeight="Bold" Foreground="#A1A1AA"/>
                     </Border>
                 </StackPanel>
 
@@ -349,39 +350,39 @@
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                     <!-- Re-select Button -->
                     <Button x:Name="BtnResetToStart" Content="← 처음으로" Click="BtnResetToStart_Click"
-                            Width="110" Height="44" Background="#27272A" Foreground="White"
-                            FontWeight="Bold" FontSize="13" BorderBrush="#3F3F46" BorderThickness="1" Cursor="Hand" Margin="0,0,10,0">
-                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="22"/></Style></Button.Resources>
+                            Width="98" Height="40" Background="#27272A" Foreground="White"
+                            FontWeight="Bold" FontSize="12" BorderBrush="#3F3F46" BorderThickness="1" Cursor="Hand" Margin="0,0,8,0">
+                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="20"/></Style></Button.Resources>
                     </Button>
 
                     <!-- Giant Orange Start Button -->
                     <Button x:Name="BtnStartRace" Click="BtnStartRace_Click"
-                            Width="160" Height="48" Background="#EA580C" Foreground="White"
-                            FontWeight="Bold" FontSize="18" BorderThickness="0" Cursor="Hand" Margin="0,0,10,0">
-                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="24"/></Style></Button.Resources>
-                        <Button.Effect><DropShadowEffect BlurRadius="18" Color="#EA580C" Opacity="0.6"/></Button.Effect>
+                            Width="144" Height="44" Background="#EA580C" Foreground="White"
+                            FontWeight="Bold" FontSize="16" BorderThickness="0" Cursor="Hand" Margin="0,0,8,0">
+                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="22"/></Style></Button.Resources>
+                        <Button.Effect><DropShadowEffect BlurRadius="16" Color="#EA580C" Opacity="0.55"/></Button.Effect>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                            <TextBlock Text="▶ " FontSize="16"/>
+                            <TextBlock Text="▶ " FontSize="14"/>
                             <TextBlock x:Name="TxtBtnStartLabel" Text="시작하기"/>
                         </StackPanel>
                     </Button>
 
                     <!-- ⏸️ / ▶️ Pause / Resume Button -->
                     <Button x:Name="BtnPauseResume" Click="BtnPauseResume_Click" IsEnabled="False"
-                            Width="130" Height="44" Background="#27272A" Foreground="#FDE047"
-                            FontWeight="Bold" FontSize="13" BorderBrush="#EAB308" BorderThickness="1.5" Cursor="Hand" Margin="0,0,10,0" ToolTip="스페이스바 또는 클릭하여 일시정지/이어하기">
-                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="22"/></Style></Button.Resources>
+                            Width="116" Height="40" Background="#27272A" Foreground="#FDE047"
+                            FontWeight="Bold" FontSize="12" BorderBrush="#EAB308" BorderThickness="1.5" Cursor="Hand" Margin="0,0,8,0" ToolTip="스페이스바 또는 클릭하여 일시정지/이어하기">
+                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="20"/></Style></Button.Resources>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                            <TextBlock x:Name="TxtPauseIcon" Text="⏸ " FontSize="14"/>
+                            <TextBlock x:Name="TxtPauseIcon" Text="⏸ " FontSize="13"/>
                             <TextBlock x:Name="TxtPauseLabel" Text="일시정지"/>
                         </StackPanel>
                     </Button>
 
                     <!-- Reset Button -->
-                    <Button x:Name="BtnInitAll" Content="↺ 초기화하기" Click="BtnInitAll_Click"
-                            Width="110" Height="44" Background="#27272A" Foreground="#A1A1AA"
-                            FontWeight="Bold" FontSize="13" BorderBrush="#3F3F46" BorderThickness="1" Cursor="Hand">
-                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="22"/></Style></Button.Resources>
+                    <Button x:Name="BtnInitAll" Content="↺ 초기화" Click="BtnInitAll_Click"
+                            Width="98" Height="40" Background="#27272A" Foreground="#A1A1AA"
+                            FontWeight="Bold" FontSize="12" BorderBrush="#3F3F46" BorderThickness="1" Cursor="Hand">
+                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="20"/></Style></Button.Resources>
                     </Button>
                 </StackPanel>
 
@@ -389,33 +390,33 @@
                 <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                     <!-- Speed Multiplier (1x / 2x / 3x) -->
                     <Button x:Name="BtnSpeedToggle" Content="> 1x" Click="BtnSpeedToggle_Click"
-                            Width="56" Height="34" Margin="0,0,8,0"
-                            Background="#27272A" Foreground="#FDE047" BorderBrush="#3F3F46" BorderThickness="1" FontWeight="Bold" FontSize="12" Cursor="Hand" ToolTip="레이스 배속 (1x / 2x / 3x)">
-                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></Button.Resources>
+                            Width="50" Height="32" Margin="0,0,6,0"
+                            Background="#27272A" Foreground="#FDE047" BorderBrush="#3F3F46" BorderThickness="1" FontWeight="Bold" FontSize="11.5" Cursor="Hand" ToolTip="레이스 배속 (1x / 2x / 3x)">
+                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="7"/></Style></Button.Resources>
                     </Button>
 
                     <!-- Sound Volume & Mute Controls -->
-                    <Border Background="#27272A" BorderBrush="#3F3F46" BorderThickness="1" CornerRadius="8" Padding="6,0" Margin="0,0,8,0" Height="34">
+                    <Border Background="#27272A" BorderBrush="#3F3F46" BorderThickness="1" CornerRadius="7" Padding="5,0" Margin="0,0,6,0" Height="32">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <!-- Sound Mute/Unmute Toggle -->
                             <Button x:Name="BtnSoundToggle" Content="🔇" Click="BtnSoundToggle_Click"
-                                    Width="26" Height="26" Background="Transparent" Foreground="#EF4444" BorderThickness="0"
-                                    FontWeight="Bold" FontSize="13" Cursor="Hand" ToolTip="레이스 배경음악 켜기 (기본: 음소거)" Padding="0"/>
+                                    Width="24" Height="24" Background="Transparent" Foreground="#EF4444" BorderThickness="0"
+                                    FontWeight="Bold" FontSize="12" Cursor="Hand" ToolTip="레이스 배경음악 켜기 (기본: 음소거)" Padding="0"/>
                             <!-- Volume Slider -->
-                            <Slider x:Name="SliderSoundVolume" Width="68" Minimum="0" Maximum="100" Value="0"
-                                    SmallChange="5" LargeChange="10" VerticalAlignment="Center" Margin="4,0,4,0"
+                            <Slider x:Name="SliderSoundVolume" Width="58" Minimum="0" Maximum="100" Value="0"
+                                    SmallChange="5" LargeChange="10" VerticalAlignment="Center" Margin="3,0,3,0"
                                     ValueChanged="SliderSoundVolume_ValueChanged" ToolTip="효과음/배경음 볼륨 조절" Cursor="Hand"/>
                             <!-- Volume Text -->
-                            <TextBlock x:Name="TxtSoundVolume" Text="OFF" Foreground="#A1A1AA" FontSize="11" FontWeight="SemiBold"
-                                       VerticalAlignment="Center" Width="28" TextAlignment="Right"/>
+                            <TextBlock x:Name="TxtSoundVolume" Text="OFF" Foreground="#A1A1AA" FontSize="10" FontWeight="SemiBold"
+                                       VerticalAlignment="Center" Width="26" TextAlignment="Right"/>
                         </StackPanel>
                     </Border>
 
                     <!-- Manage Roster -->
-                    <Button Content="👥 학생 명단" Click="BtnManageRoster_Click"
-                            Padding="10,0" Height="34"
+                    <Button Content="👥 명단 관리" Click="BtnManageRoster_Click"
+                            Padding="8,0" Height="32"
                             Background="#27272A" Foreground="#A1A1AA" BorderBrush="#3F3F46" BorderThickness="1" FontWeight="Bold" FontSize="11" Cursor="Hand" ToolTip="32종 동물 아바타 및 학생 명단 관리">
-                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></Button.Resources>
+                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="7"/></Style></Button.Resources>
                     </Button>
                 </StackPanel>
             </Grid>
