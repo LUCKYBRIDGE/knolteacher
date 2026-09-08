@@ -72,9 +72,9 @@ public class ThemeService : IThemeService
         else
         {
             // 💎 Studio Clean & Indigo Pro (Default)
-            SetBrush(res, "BeigeAppBg", "#F8FAFC");
-            SetBrush(res, "BeigeSidebarBg", "#F1F5F9");
-            SetBrush(res, "BeigeSidebarHover", "#E2E8F0");
+            SetBrush(res, "BeigeAppBg", "#EEF2F6");
+            SetBrush(res, "BeigeSidebarBg", "#FFFFFF");
+            SetBrush(res, "BeigeSidebarHover", "#F1F5F9");
             SetBrush(res, "BeigeAccent", "#2563EB");
             SetBrush(res, "BeigeAccentHover", "#1D4ED8");
             SetBrush(res, "BeigeAccentSoft", "#EFF6FF");
@@ -84,9 +84,9 @@ public class ThemeService : IThemeService
             SetBrush(res, "BeigeTextMain", "#0F172A");
             SetBrush(res, "BeigeTextSub", "#334155");
             SetBrush(res, "BeigeTextMuted", "#64748B");
-            SetBrush(res, "BeigeLunchBg", "#FFFBEB");
-            SetBrush(res, "BeigeLunchBorder", "#FDE68A");
-            SetBrush(res, "BeigeLunchText", "#B45309");
+            SetBrush(res, "BeigeLunchBg", "#EFF6FF");
+            SetBrush(res, "BeigeLunchBorder", "#DBEAFE");
+            SetBrush(res, "BeigeLunchText", "#2563EB");
         }
     }
 

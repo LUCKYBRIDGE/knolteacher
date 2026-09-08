@@ -9,9 +9,9 @@
             </ResourceDictionary.MergedDictionaries>
 
             <!-- 💎 KnolTeacher Studio Clean & Indigo Palette (Default) -->
-            <SolidColorBrush x:Key="BeigeAppBg" Color="#F8FAFC" />
-            <SolidColorBrush x:Key="BeigeSidebarBg" Color="#F1F5F9" />
-            <SolidColorBrush x:Key="BeigeSidebarHover" Color="#E2E8F0" />
+            <SolidColorBrush x:Key="BeigeAppBg" Color="#EEF2F6" />
+            <SolidColorBrush x:Key="BeigeSidebarBg" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="BeigeSidebarHover" Color="#F1F5F9" />
             <SolidColorBrush x:Key="BeigeAccent" Color="#2563EB" />
             <SolidColorBrush x:Key="BeigeAccentHover" Color="#1D4ED8" />
             <SolidColorBrush x:Key="BeigeAccentSoft" Color="#EFF6FF" />
@@ -21,9 +21,9 @@
             <SolidColorBrush x:Key="BeigeTextMain" Color="#0F172A" />
             <SolidColorBrush x:Key="BeigeTextSub" Color="#334155" />
             <SolidColorBrush x:Key="BeigeTextMuted" Color="#64748B" />
-            <SolidColorBrush x:Key="BeigeLunchBg" Color="#FFFBEB" />
-            <SolidColorBrush x:Key="BeigeLunchBorder" Color="#FDE68A" />
-            <SolidColorBrush x:Key="BeigeLunchText" Color="#B45309" />
+            <SolidColorBrush x:Key="BeigeLunchBg" Color="#EFF6FF" />
+            <SolidColorBrush x:Key="BeigeLunchBorder" Color="#DBEAFE" />
+            <SolidColorBrush x:Key="BeigeLunchText" Color="#2563EB" />
             <BooleanToVisibilityConverter x:Key="BoolToVisConverter" />
 
             <!-- Global Font: Malgun Gothic for crisp Korean typography -->

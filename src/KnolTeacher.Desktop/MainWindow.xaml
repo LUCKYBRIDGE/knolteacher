@@ -164,920 +164,668 @@
             </ui:TitleBar.Header>
         </ui:TitleBar>
 
-        <!-- Main Body Grid -->
+        <!-- ======================================================== -->
+        <!-- 💎 Main Body: Seamless Full-Width Top Header + Bento Grid -->
+        <!-- ======================================================== -->
         <Grid Grid.Row="1">
-            <Grid.ColumnDefinitions>
-                <!-- Left Sidebar -->
-                <ColumnDefinition Width="232" MinWidth="215" />
-                <!-- Right Workspace Content -->
-                <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <!-- Row 0: Full-Width Clean Studio Top Header Bar -->
+                <RowDefinition Height="Auto" />
+                <!-- Row 1: Workspace Grid (Bento Grid on Tab 0, Other Tools on Tabs 1-5) -->
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
 
-            <!-- 1. Left Sidebar (Clean Studio & Indigo Nav) -->
-            <Border Grid.Column="0" Background="{DynamicResource BeigeSidebarBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="0,0,1,0">
+            <!-- 1. Full-Width Top Header Bar -->
+            <Border Grid.Row="0" Margin="18,10,18,10" Padding="0">
                 <Grid>
-                    <Grid.RowDefinitions>
-                        <!-- Brand Header -->
-                        <RowDefinition Height="Auto" />
-                        <!-- Primary Signature Button -->
-                        <RowDefinition Height="Auto" />
-                        <!-- Menu Items -->
-                        <RowDefinition Height="*" />
-                        <!-- Sidebar Bottom Theme Switcher -->
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <!-- Left: KnolTeacher Brand + Live Period Capsule -->
+                        <ColumnDefinition Width="Auto" />
+                        <!-- Center: Floating White Action Pill Dock -->
+                        <ColumnDefinition Width="*" />
+                        <!-- Right: Utility Icons & Menu Drawer -->
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
 
-                    <!-- Brand Header -->
-                    <StackPanel Grid.Row="0" Margin="14,14,14,8">
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <Image Source="/assets/app_icon.png" Width="24" Height="24" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="놀티쳐" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource BeigeTextMain}" VerticalAlignment="Center"/>
+                    <!-- Left: Brand + Live Capsule -->
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,14,0" Cursor="Hand" MouseLeftButtonUp="BtnReturnDashboard_Click" ToolTip="메인 대시보드로 이동">
+                            <TextBlock Text="🎓" FontSize="22" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                            <TextBlock Text="KnolTeacher" FontSize="19" FontWeight="Bold" Foreground="{DynamicResource BeigeTextMain}" VerticalAlignment="Center" FontFamily="Segoe UI Variable Display, Malgun Gothic, Segoe UI"/>
                         </StackPanel>
-                        <TextBlock Text="KnolTeacher • pinky-ne.com" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource BeigeTextMuted}" Cursor="Hand" Margin="32,2,0,0" MouseLeftButtonUp="LogoSub_MouseLeftButtonUp" ToolTip="핑키네 (pinky-ne.com) 플랫폼 바로가기"/>
+
+                        <!-- 🔴 Live Period Status Capsule (Mockup Signature) -->
+                        <Border x:Name="PillLivePeriodStatus"
+                                Background="#E0F2FE"
+                                BorderBrush="#BAE6FD"
+                                BorderThickness="1"
+                                CornerRadius="16"
+                                Padding="11,5"
+                                VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Ellipse x:Name="DotLiveStatus" Width="7.5" Height="7.5" Fill="#0284C7" Margin="0,0,7,0" VerticalAlignment="Center"/>
+                                <TextBlock x:Name="TxtLivePeriodStatus" Text="확인 중..." FontSize="11.5" FontWeight="Bold" Foreground="#0284C7" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Button x:Name="BtnCheckVersion" Visibility="Collapsed" />
                     </StackPanel>
 
-                    <!-- 🌟 Primary Signature Button: 놀보드 열기 (F2) -->
-                    <Border Grid.Row="1" Margin="10,4,10,10">
-                        <Button x:Name="BtnSidebarBoard" Click="BtnLaunchBoard_Click"
-                                Background="{DynamicResource BeigeAccent}"
-                                Foreground="White"
-                                Height="42"
-                                FontWeight="Bold" FontSize="13"
-                                BorderThickness="0"
-                                HorizontalContentAlignment="Stretch"
-                                Padding="12,0"
-                                Cursor="Hand">
+                    <!-- Center: Floating White Action Pill Dock (Mockup Signature) -->
+                    <Border Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center"
+                            Background="White"
+                            BorderBrush="{DynamicResource BeigeCardBorder}"
+                            BorderThickness="1"
+                            CornerRadius="20"
+                            Padding="10,4">
+                        <Border.Effect>
+                            <DropShadowEffect BlurRadius="14" Opacity="0.06" ShadowDepth="2" Color="#64748B"/>
+                        </Border.Effect>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <!-- 놀보드 F2 -->
+                            <Button Click="BtnLaunchBoard_Click" Background="Transparent" Foreground="{DynamicResource BeigeTextMain}" BorderThickness="0" Padding="10,5" Cursor="Hand" ToolTip="학생용 화면(모니터 2) 놀보드 열기 (F2)">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="📺" FontSize="13" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="놀보드" FontWeight="Bold" FontSize="12" VerticalAlignment="Center"/>
+                                    <Border Background="#F1F5F9" CornerRadius="4" Padding="5,1" Margin="6,0,0,0" VerticalAlignment="Center">
+                                        <TextBlock Text="F2" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource BeigeAccent}"/>
+                                    </Border>
+                                </StackPanel>
+                            </Button>
+
+                            <Border Width="1" Height="14" Background="{DynamicResource BeigeCardBorder}" Margin="4,0" VerticalAlignment="Center"/>
+
+                            <!-- 판서 Alt+2 -->
+                            <Button Click="BtnLaunchDrawing_Click" Background="Transparent" Foreground="{DynamicResource BeigeTextMain}" BorderThickness="0" Padding="10,5" Cursor="Hand" ToolTip="화면 일시정지 및 판서 모드 (Alt+2)">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="✏️" FontSize="12" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="판서" FontWeight="Bold" FontSize="12" VerticalAlignment="Center"/>
+                                    <Border Background="#F1F5F9" CornerRadius="4" Padding="5,1" Margin="6,0,0,0" VerticalAlignment="Center">
+                                        <TextBlock Text="Alt+2" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource BeigeTextSub}"/>
+                                    </Border>
+                                </StackPanel>
+                            </Button>
+
+                            <Border Width="1" Height="14" Background="{DynamicResource BeigeCardBorder}" Margin="4,0" VerticalAlignment="Center"/>
+
+                            <!-- 타이머 Alt+3 -->
+                            <Button Click="BtnLaunchTimer_Click" Background="Transparent" Foreground="{DynamicResource BeigeTextMain}" BorderThickness="0" Padding="10,5" Cursor="Hand" ToolTip="교실 집중 타이머 &amp; 차임벨 (Alt+3)">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="⏱️" FontSize="12" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="타이머" FontWeight="Bold" FontSize="12" VerticalAlignment="Center"/>
+                                    <Border Background="#F1F5F9" CornerRadius="4" Padding="5,1" Margin="6,0,0,0" VerticalAlignment="Center">
+                                        <TextBlock Text="Alt+3" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource BeigeTextSub}"/>
+                                    </Border>
+                                </StackPanel>
+                            </Button>
+
+                            <Border Width="1" Height="14" Background="{DynamicResource BeigeCardBorder}" Margin="4,0" VerticalAlignment="Center"/>
+
+                            <!-- 추첨 Alt+8 -->
+                            <Button Click="BtnLaunchPicker_Click" Background="Transparent" Foreground="{DynamicResource BeigeTextMain}" BorderThickness="0" Padding="10,5" Cursor="Hand" ToolTip="동물 아바타 발표자 추첨 레이스 (Alt+8)">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="🎲" FontSize="12" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="추첨" FontWeight="Bold" FontSize="12" VerticalAlignment="Center"/>
+                                    <Border Background="#F1F5F9" CornerRadius="4" Padding="5,1" Margin="6,0,0,0" VerticalAlignment="Center">
+                                        <TextBlock Text="Alt+8" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource BeigeTextSub}"/>
+                                    </Border>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Right: Utility Icons & Menu Drawer -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                        <!-- Return Button for Tabs 1-5 -->
+                        <Button x:Name="BtnReturnDashboard" Click="BtnReturnDashboard_Click" Visibility="Collapsed" Background="{DynamicResource BeigeAccentSoft}" Foreground="{DynamicResource BeigeAccent}" BorderBrush="#BFDBFE" BorderThickness="1" Padding="10,4" Margin="0,0,8,0" Cursor="Hand" ToolTip="메인 일과 &amp; 급식 대시보드로 돌아가기">
                             <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></Button.Resources>
-                            <DockPanel LastChildFill="True">
-                                <Border DockPanel.Dock="Right" Background="#1D4ED8" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
-                                    <TextBlock Text="F2" FontSize="10" FontWeight="Bold" Foreground="#EFF6FF"/>
-                                </Border>
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="📺" FontSize="14" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="놀보드 열기" VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </DockPanel>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="◀ " FontSize="11" VerticalAlignment="Center"/>
+                                <TextBlock Text="대시보드 복귀" FontWeight="Bold" FontSize="11.5" VerticalAlignment="Center"/>
+                            </StackPanel>
                         </Button>
-                    </Border>
 
-                    <!-- Navigation Items -->
-                    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Margin="8,0,8,0">
-                        <StackPanel>
-                            <TextBlock Text="메뉴" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource BeigeTextMuted}" Margin="8,0,0,6"/>
+                        <!-- Template Share -->
+                        <Button x:Name="BtnOpenTemplateShare" Click="BtnLaunchTemplateShare_Click" Width="34" Height="34" Padding="0" Margin="0,0,5,0" Background="White" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" Cursor="Hand" ToolTip="학생 명렬, 학사일정 양식 다운로드 및 동료 교사 설정 공유">
+                            <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="17"/></Style></Button.Resources>
+                            <TextBlock Text="📋" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Button>
 
-                            <Button x:Name="NavBtnToday" Click="NavBtn_Click" Tag="0" Background="{DynamicResource BeigeAccentSoft}" Foreground="{DynamicResource BeigeAccent}" FontWeight="Bold" Height="36" HorizontalContentAlignment="Left" Padding="10,0" Margin="0,0,0,3" BorderThickness="0" Cursor="Hand">
-                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="7"/></Style></Button.Resources>
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="📅" FontSize="14" Margin="0,0,9,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="일과 &amp; 급식" VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </Button>
+                        <!-- Tutorial / Help -->
+                        <Button x:Name="BtnOpenTutorial" Click="BtnOpenTutorial_Click" Width="34" Height="34" Padding="0" Margin="0,0,5,0" Background="White" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" Cursor="Hand" ToolTip="놀티쳐 주요 기능 둘러보기 및 초기 설정 도우미">
+                            <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="17"/></Style></Button.Resources>
+                            <TextBlock Text="❓" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Button>
 
-                            <Button x:Name="NavBtnTools" Click="NavBtn_Click" Tag="1" Background="Transparent" Foreground="{DynamicResource BeigeTextSub}" FontWeight="SemiBold" Height="36" HorizontalContentAlignment="Left" Padding="10,0" Margin="0,0,0,3" BorderThickness="0" Cursor="Hand" ToolTip="19개 수업·학급·행정 도구 모음 (1-Click)">
-                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="7"/></Style></Button.Resources>
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="🧰" FontSize="14" Margin="0,0,9,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="수업 &amp; 교실 도구" VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </Button>
+                        <!-- Alarm Bell -->
+                        <Button x:Name="BtnTogglePeriodAlarm" Click="BtnTogglePeriodAlarm_Click" Width="34" Height="34" Padding="0" Margin="0,0,6,0" Background="White" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" Cursor="Hand" ToolTip="수업 시작 예비령 및 교시 알람 토글">
+                            <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="17"/></Style></Button.Resources>
+                            <TextBlock Text="🔔" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Button>
 
-                            <Button x:Name="NavBtnSchedule" Click="NavBtn_Click" Tag="2" Background="Transparent" Foreground="{DynamicResource BeigeTextSub}" FontWeight="SemiBold" Height="36" HorizontalContentAlignment="Left" Padding="10,0" Margin="0,0,0,3" BorderThickness="0" Cursor="Hand">
-                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="7"/></Style></Button.Resources>
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="⏰" FontSize="14" Margin="0,0,9,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="예약 실행 &amp; 알림" VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </Button>
-
-                            <Button x:Name="NavBtnZen" Click="NavBtn_Click" Tag="3" Background="Transparent" Foreground="{DynamicResource BeigeTextSub}" FontWeight="SemiBold" Height="36" HorizontalContentAlignment="Left" Padding="10,0" Margin="0,0,0,3" BorderThickness="0" Cursor="Hand">
-                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="7"/></Style></Button.Resources>
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="🧹" FontSize="14" Margin="0,0,9,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="바탕화면 &amp; PC 정리" VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </Button>
-
-                            <Button x:Name="NavBtnSites" Click="NavBtn_Click" Tag="4" Background="Transparent" Foreground="{DynamicResource BeigeTextSub}" FontWeight="SemiBold" Height="36" HorizontalContentAlignment="Left" Padding="10,0" Margin="0,0,0,3" BorderThickness="0" Cursor="Hand">
-                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="7"/></Style></Button.Resources>
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="🌐" FontSize="14" Margin="0,0,9,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="유용한 교육 사이트" VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </Button>
-
-                            <Button x:Name="NavBtnNeis" Click="NavBtn_Click" Tag="5" Background="Transparent" Foreground="{DynamicResource BeigeTextSub}" FontWeight="SemiBold" Height="36" HorizontalContentAlignment="Left" Padding="10,0" Margin="0,0,0,3" BorderThickness="0" Cursor="Hand">
-                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="7"/></Style></Button.Resources>
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="📝" FontSize="14" Margin="0,0,9,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="나이스 평어 일괄입력" VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </Button>
-
-                            <!-- 🌟 Pinky-NE Classroom Banner -->
-                            <Border Margin="0,4,0,4" Background="{DynamicResource BeigeCardInner}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="8" Padding="10,8" Cursor="Hand" MouseLeftButtonUp="BannerPinky_Click" ToolTip="핑키네(Pinky-NE) 교실자료실 &amp; 놀퀴즈 바로가기 (pinky-ne.com)">
-                                <StackPanel>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="🌟" FontSize="12" Margin="0,0,6,0"/>
-                                        <TextBlock Text="핑키네 (Pinky-NE)" FontWeight="Bold" FontSize="11" Foreground="{DynamicResource BeigeAccent}"/>
-                                    </StackPanel>
-                                    <TextBlock Text="초등 교실자료실 &amp; 놀퀴즈 ↗" FontSize="10" Foreground="{DynamicResource BeigeTextSub}" Margin="0,2,0,0"/>
-                                </StackPanel>
-                            </Border>
-
-                            <Separator Margin="0,8,0,8" Background="{DynamicResource BeigeCardBorder}"/>
-
-                            <TextBlock Text="수업 필수 단축키 (0-Click)" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource BeigeTextMuted}" Margin="8,0,0,6"/>
-
-                            <!-- Alt+2 Screen Drawing -->
-                            <Button Click="BtnLaunchDrawing_Click" Background="Transparent" Foreground="{DynamicResource BeigeTextSub}" Height="34" HorizontalContentAlignment="Stretch" Padding="8,0" Margin="0,0,0,2" BorderThickness="0" Cursor="Hand" ToolTip="수업 화면 정지 &amp; 판서 (Alt+2)">
-                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
-                                <DockPanel LastChildFill="True">
-                                    <Border DockPanel.Dock="Right" Background="{DynamicResource BeigeAccentSoft}" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
-                                        <TextBlock Text="Alt+2" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource BeigeAccent}"/>
-                                    </Border>
-                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="✏️" FontSize="14" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                        <TextBlock Text="화면 전체 판서" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </DockPanel>
-                            </Button>
-
-                            <!-- Alt+3 Class Timer -->
-                            <Button Click="BtnLaunchTimer_Click" Background="Transparent" Foreground="{DynamicResource BeigeTextSub}" Height="34" HorizontalContentAlignment="Stretch" Padding="8,0" Margin="0,0,0,2" BorderThickness="0" Cursor="Hand" ToolTip="교실 집중 타이머 &amp; 차임벨 (Alt+3)">
-                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
-                                <DockPanel LastChildFill="True">
-                                    <Border DockPanel.Dock="Right" Background="{DynamicResource BeigeAccentSoft}" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
-                                        <TextBlock Text="Alt+3" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource BeigeAccent}"/>
-                                    </Border>
-                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="⏱️" FontSize="14" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                        <TextBlock Text="교실 집중 타이머" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </DockPanel>
-                            </Button>
-
-                            <!-- Alt+8 Pinball Picker -->
-                            <Button Click="BtnLaunchPicker_Click" Background="Transparent" Foreground="{DynamicResource BeigeTextSub}" Height="34" HorizontalContentAlignment="Stretch" Padding="8,0" Margin="0,0,0,2" BorderThickness="0" Cursor="Hand" ToolTip="32종 동물 아바타 레이스 &amp; 발표자 추첨 (Alt+8)">
-                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
-                                <DockPanel LastChildFill="True">
-                                    <Border DockPanel.Dock="Right" Background="{DynamicResource BeigeAccentSoft}" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
-                                        <TextBlock Text="Alt+8" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource BeigeAccent}"/>
-                                    </Border>
-                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="🎰" FontSize="14" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                        <TextBlock Text="뽑기 레이스" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </DockPanel>
-                            </Button>
-                        </StackPanel>
-                    </ScrollViewer>
-
-                    <!-- Sidebar Footer: Dynamic Theme Switcher (Studio | Dark | Beige) -->
-                    <Border Grid.Row="3" Margin="10,4,10,12" Background="{DynamicResource BeigeCardInner}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="8" Padding="8,6">
-                        <StackPanel>
-                            <TextBlock Text="🎨 실시간 테마 선택" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource BeigeTextMuted}" Margin="2,0,0,4"/>
-                            <UniformGrid Columns="3">
-                                <Button Content="💎스튜디오" Click="BtnTheme_Click" Tag="Studio" FontSize="10" Padding="0,4" Margin="1" Background="{DynamicResource BeigeCardBg}" Foreground="{DynamicResource BeigeTextMain}" BorderThickness="0" Cursor="Hand"/>
-                                <Button Content="🌙다크" Click="BtnTheme_Click" Tag="Dark" FontSize="10" Padding="0,4" Margin="1" Background="{DynamicResource BeigeCardBg}" Foreground="{DynamicResource BeigeTextMain}" BorderThickness="0" Cursor="Hand"/>
-                                <Button Content="🌾베이지" Click="BtnTheme_Click" Tag="Beige" FontSize="10" Padding="0,4" Margin="1" Background="{DynamicResource BeigeCardBg}" Foreground="{DynamicResource BeigeTextMain}" BorderThickness="0" Cursor="Hand"/>
-                            </UniformGrid>
-                        </StackPanel>
-                    </Border>
+                        <!-- All Tools Menu Drawer Toggle Button -->
+                        <Button x:Name="BtnToggleDrawer" Click="BtnToggleDrawer_Click" Height="34" Padding="12,0" Background="{DynamicResource BeigeAccent}" Foreground="White" BorderThickness="0" Cursor="Hand" ToolTip="전체 교실 도구 및 다른 화면(수업도구, 예약, PC정리, 사이트, 나이스) 이동">
+                            <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="17"/></Style></Button.Resources>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="☰" FontSize="14" FontWeight="Bold" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="전체 메뉴" FontSize="11.5" FontWeight="Bold" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
                 </Grid>
             </Border>
 
-            <!-- 2. Right Workspace Content Area -->
-            <Grid Grid.Column="1" Margin="16,10,16,6">
-                <Grid.RowDefinitions>
-                    <!-- Global Top Header -->
-                    <RowDefinition Height="Auto" />
-                    <!-- Content Tabs -->
-                    <RowDefinition Height="*" />
-                </Grid.RowDefinitions>
-
-                <!-- Global Top Header Bar -->
-                <Border Grid.Row="0" Margin="0,0,0,12" Padding="4,0,4,10" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="0,0,0,1">
-                    <Grid>
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <StackPanel VerticalAlignment="Center">
-                                <TextBlock x:Name="TxtViewTitle" Text="📅 오늘의 일과 &amp; 급식" FontSize="17" FontWeight="Bold" Foreground="{DynamicResource BeigeTextMain}"/>
-                                <TextBlock Text="초등 교사용 올인원 스마트 교실 대시보드" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}" Margin="1,2,0,0"/>
-                            </StackPanel>
-
-                            <!-- 🔴 Live Period Status Capsule (Concept 2 Signature) -->
-                            <Border x:Name="PillLivePeriodStatus"
-                                    Background="{DynamicResource BeigeAccentSoft}"
-                                    BorderBrush="#BFDBFE"
-                                    BorderThickness="1"
-                                    CornerRadius="16"
-                                    Padding="10,5"
-                                    Margin="14,0,0,0"
-                                    VerticalAlignment="Center">
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Ellipse x:Name="DotLiveStatus" Width="8" Height="8" Fill="{DynamicResource BeigeAccent}" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                                    <TextBlock x:Name="TxtLivePeriodStatus" Text="확인 중..." FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource BeigeAccent}" VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </Border>
-                        </StackPanel>
-                        <Button x:Name="BtnCheckVersion" Visibility="Collapsed" />
-
-                        <!-- Top Right Controls: Fast Classroom Tools Dock & Sizing -->
-                        <StackPanel x:Name="HeaderWidgetControls" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                            <!-- Fast 1-Click Classroom Tools Dock (Quick Actions) -->
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
-                                <Button Click="BtnLaunchBoard_Click"
-                                        Background="{DynamicResource BeigeAccent}"
-                                        Foreground="White"
-                                        BorderThickness="0"
-                                        Padding="10,5"
-                                        Margin="0,0,5,0"
-                                        FontSize="11"
-                                        FontWeight="Bold"
-                                        Cursor="Hand"
-                                        ToolTip="학생용 화면(모니터 2) 놀보드 열기 (F2)">
-                                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
-                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="📺 " FontSize="12" VerticalAlignment="Center"/>
-                                        <TextBlock Text="놀보드 F2" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Button>
-
-                                <Button Click="BtnLaunchDrawing_Click"
-                                        Background="{DynamicResource BeigeCardInner}"
-                                        Foreground="{DynamicResource BeigeTextMain}"
-                                        BorderBrush="{DynamicResource BeigeCardBorder}"
-                                        BorderThickness="1"
-                                        Padding="8,5"
-                                        Margin="0,0,5,0"
-                                        FontSize="11"
-                                        FontWeight="SemiBold"
-                                        Cursor="Hand"
-                                        ToolTip="화면 일시정지 및 판서 모드 (Alt+2)">
-                                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
-                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="✏️ " FontSize="11" VerticalAlignment="Center"/>
-                                        <TextBlock Text="판서 Alt+2" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Button>
-
-                                <Button Click="BtnLaunchTimer_Click"
-                                        Background="{DynamicResource BeigeCardInner}"
-                                        Foreground="{DynamicResource BeigeTextMain}"
-                                        BorderBrush="{DynamicResource BeigeCardBorder}"
-                                        BorderThickness="1"
-                                        Padding="8,5"
-                                        Margin="0,0,5,0"
-                                        FontSize="11"
-                                        FontWeight="SemiBold"
-                                        Cursor="Hand"
-                                        ToolTip="교실 집중 타이머 &amp; 차임벨 (Alt+3)">
-                                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
-                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="⏱️ " FontSize="11" VerticalAlignment="Center"/>
-                                        <TextBlock Text="타이머 Alt+3" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Button>
-
-                                <Button Click="BtnLaunchPicker_Click"
-                                        Background="{DynamicResource BeigeCardInner}"
-                                        Foreground="{DynamicResource BeigeTextMain}"
-                                        BorderBrush="{DynamicResource BeigeCardBorder}"
-                                        BorderThickness="1"
-                                        Padding="8,5"
-                                        Margin="0,0,8,0"
-                                        FontSize="11"
-                                        FontWeight="SemiBold"
-                                        Cursor="Hand"
-                                        ToolTip="동물 아바타 발표자 추첨 레이스 (Alt+8)">
-                                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
-                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="🎲 " FontSize="11" VerticalAlignment="Center"/>
-                                        <TextBlock Text="추첨 Alt+8" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Button>
-
-                                <Border Width="1" Height="20" Background="{DynamicResource BeigeCardBorder}" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                            </StackPanel>
-
-                            <Button x:Name="BtnOpenTemplateShare"
-                                    Click="BtnLaunchTemplateShare_Click"
-                                    Background="{DynamicResource BeigeCardInner}"
-                                    Foreground="{DynamicResource BeigeTextMain}"
-                                    BorderBrush="{DynamicResource BeigeCardBorder}"
-                                    BorderThickness="1"
-                                    Padding="9,5"
-                                    Margin="0,0,6,0"
-                                    FontSize="11"
-                                    FontWeight="SemiBold"
-                                    Cursor="Hand"
-                                    ToolTip="학생 명렬, 학사일정, 주간 시간표 양식 다운로드 및 동료 교사 설정 공유">
-                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="📋 " FontSize="11" VerticalAlignment="Center"/>
-                                    <TextBlock Text="양식·공유" VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </Button>
-
-                            <Button x:Name="BtnOpenTutorial"
-                                    Click="BtnOpenTutorial_Click"
-                                    Background="{DynamicResource BeigeCardInner}"
-                                    Foreground="{DynamicResource BeigeTextMain}"
-                                    BorderBrush="{DynamicResource BeigeCardBorder}"
-                                    BorderThickness="1"
-                                    Padding="9,5"
-                                    Margin="0,0,6,0"
-                                    FontSize="11"
-                                    FontWeight="SemiBold"
-                                    Cursor="Hand"
-                                    ToolTip="놀티쳐 주요 기능 둘러보기 및 초기 설정 도우미">
-                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="🎓 " FontSize="11" VerticalAlignment="Center"/>
-                                    <TextBlock Text="튜토리얼" VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </Button>
-                            <Button x:Name="BtnToggleWidgetCustomize"
-                                    Click="BtnToggleWidgetCustomize_Click"
-                                    Background="{DynamicResource BeigeAccentSoft}"
-                                    Foreground="{DynamicResource BeigeAccent}"
-                                    BorderBrush="{DynamicResource BeigeCardBorder}"
-                                    BorderThickness="1"
-                                    Padding="10,5"
-                                    FontSize="11.5"
-                                    FontWeight="Bold"
-                                    Cursor="Hand"
-                                    ToolTip="메인화면 위젯 크기 조절, 자유 배치, 위젯 추가 및 제거">
-                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="📐 " FontSize="12" VerticalAlignment="Center"/>
-                                    <TextBlock Text="위젯 설정" VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </Button>
-                        </StackPanel>
-                    </Grid>
-                </Border>
-
-                <!-- Workspace Tab Pages -->
-                <TabControl x:Name="MainTabs" Grid.Row="1" BorderThickness="0" Background="Transparent">
+            <!-- 2. Workspace: TabControl with Tab 0 Bento Grid and Tabs 1-5 -->
+            <Grid Grid.Row="1">
+                <TabControl x:Name="MainTabs" BorderThickness="0" Background="Transparent">
                     <TabControl.ItemContainerStyle>
                         <Style TargetType="TabItem"><Setter Property="Visibility" Value="Collapsed" /></Style>
                     </TabControl.ItemContainerStyle>
 
-                    <!-- TAB 0: 오늘의 일과 & 급식 (Today) -->
+                    <!-- TAB 0: 오늘의 일과 & 급식 (Pixel-Perfect 3-Column Bento Grid) -->
                     <TabItem>
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <!-- Row 0: Collapsible Modern Widget Customization Bar -->
-                                <RowDefinition Height="Auto" />
-                                <!-- Row 1: Workspace Widget Canvas -->
-                                <RowDefinition Height="*" />
-                            </Grid.RowDefinitions>
+                        <Grid Margin="18,0,18,14">
+                            <Grid.ColumnDefinitions>
+                                <!-- Col 0: 시간표 & 오늘의 할 일 (~30%) -->
+                                <ColumnDefinition Width="30*" MinWidth="320"/>
+                                <!-- Col 1: 월간 학사일정 통합 카드 (~38%) -->
+                                <ColumnDefinition Width="38*" MinWidth="380"/>
+                                <!-- Col 2: 학교 점심 & 날씨 (~32%) -->
+                                <ColumnDefinition Width="32*" MinWidth="320"/>
+                            </Grid.ColumnDefinitions>
 
-                            <!-- Modern Widget Customization & Sizing Bar (Collapsible) -->
-                            <Border x:Name="WidgetCustomizeBar"
-                                    Grid.Row="0"
-                                    Visibility="Collapsed"
-                                    Background="{DynamicResource BeigeCardInner}"
-                                    BorderBrush="{DynamicResource BeigeAccent}"
-                                    BorderThickness="1"
-                                    CornerRadius="12"
-                                    Padding="14,10"
-                                    Margin="0,0,0,12">
-                                <Border.Effect>
-                                    <DropShadowEffect BlurRadius="16" Opacity="0.08" ShadowDepth="2" Color="#000000"/>
-                                </Border.Effect>
-                                <Grid>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                    </Grid.RowDefinitions>
+                            <!-- ================================================= -->
+                            <!-- COL 0: 오늘의 시간표 & 오늘의 할 일 -->
+                            <!-- ================================================= -->
+                            <Grid Grid.Column="0">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="1.25*"/>
+                                    <RowDefinition Height="0.85*"/>
+                                </Grid.RowDefinitions>
 
-                                    <!-- Row 0: 위젯 켜기/끄기 칩 목록 -->
-                                    <DockPanel Grid.Row="0" LastChildFill="True" Margin="0,0,0,10">
-                                        <TextBlock Text="🧩 위젯 켜기/끄기:" FontWeight="Bold" FontSize="11.5" Foreground="{DynamicResource BeigeTextMain}" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                                        <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                            <CheckBox x:Name="ChkWidgetNotice" Content="📢 학급 안내" IsChecked="True" Click="ChkWidget_Click" Tag="banner" Margin="0,0,12,2" FontWeight="SemiBold" FontSize="11" Foreground="{DynamicResource BeigeTextMain}"/>
-                                            <CheckBox x:Name="ChkWidgetClock" Content="⏰ 시계" IsChecked="True" Click="ChkWidget_Click" Tag="clock" Margin="0,0,12,2" FontWeight="SemiBold" FontSize="11" Foreground="{DynamicResource BeigeTextMain}"/>
-                                            <CheckBox x:Name="ChkWidgetTimetable" Content="🕒 시간표" IsChecked="True" Click="ChkWidget_Click" Tag="timetable" Margin="0,0,12,2" FontWeight="SemiBold" FontSize="11" Foreground="{DynamicResource BeigeTextMain}"/>
-                                            <CheckBox x:Name="ChkWidgetCalendar" Content="📅 학사일정" IsChecked="True" Click="ChkWidget_Click" Tag="calendar" Margin="0,0,12,2" FontWeight="SemiBold" FontSize="11" Foreground="{DynamicResource BeigeTextMain}"/>
-                                            <CheckBox x:Name="ChkWidgetDDay" Content="🚩 D-Day/메모" IsChecked="True" Click="ChkWidget_Click" Tag="dday" Margin="0,0,12,2" FontWeight="SemiBold" FontSize="11" Foreground="{DynamicResource BeigeTextMain}"/>
-                                            <CheckBox x:Name="ChkWidgetWeather" Content="⛅ 날씨" IsChecked="True" Click="ChkWidget_Click" Tag="weather" Margin="0,0,12,2" FontWeight="SemiBold" FontSize="11" Foreground="{DynamicResource BeigeTextMain}"/>
-                                            <CheckBox x:Name="ChkWidgetMeal" Content="🍱 점심 식단" IsChecked="True" Click="ChkWidget_Click" Tag="meal" Margin="0,0,12,2" FontWeight="SemiBold" FontSize="11" Foreground="{DynamicResource BeigeTextMain}"/>
-                                        </WrapPanel>
-                                    </DockPanel>
+                                <!-- Card 1: 오늘의 시간표 -->
+                                <Border Grid.Row="0" Margin="0,0,0,12" Background="White" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="16" Padding="16,14">
+                                    <Border.Effect>
+                                        <DropShadowEffect BlurRadius="14" Opacity="0.05" ShadowDepth="2" Color="#64748B"/>
+                                    </Border.Effect>
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="*"/>
+                                        </Grid.RowDefinitions>
 
-                                    <!-- Row 1: 프리셋 버튼, 잠금 토글, 초기화, 저장 -->
-                                    <DockPanel Grid.Row="1" LastChildFill="True">
-                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                            <TextBlock Text="📐 빠른 배치:" FontWeight="Bold" FontSize="11.5" Foreground="{DynamicResource BeigeTextMain}" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                                            <Button Click="BtnPresetDefault_Click" Content="🔲 기본 3단 분할" Padding="10,5" Margin="0,0,6,0" Background="{DynamicResource BeigeCardBg}" Foreground="{DynamicResource BeigeTextMain}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="11" FontWeight="SemiBold" Cursor="Hand">
-                                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                                        <!-- Header -->
+                                        <DockPanel Grid.Row="0" Margin="0,0,0,10" LastChildFill="True">
+                                            <Button DockPanel.Dock="Right" Content="···" Click="BtnTimetableMore_Click" Width="26" Height="22" Background="Transparent" Foreground="{DynamicResource BeigeTextMuted}" BorderThickness="0" FontSize="15" FontWeight="Bold" Cursor="Hand" ToolTip="시간표 설정 및 과목 편집">
+                                                <Button.ContextMenu>
+                                                    <ContextMenu>
+                                                        <MenuItem Header="✏️ 시간표 과목 직접 수정..." Click="BtnEditAllTimetable_Click"/>
+                                                        <MenuItem Header="🔔 수업 시작 예비령/알람 설정" Click="BtnOpenPeriodAlarmSettings_Click"/>
+                                                        <MenuItem Header="🔄 시간표 일괄 당기기/미루기" Click="BtnShiftTimetable_Click"/>
+                                                        <Separator/>
+                                                        <MenuItem Header="⏱️ 40분 수업 타이머 즉시 실행" Click="BtnLaunchClassTimer_Click"/>
+                                                    </ContextMenu>
+                                                </Button.ContextMenu>
                                             </Button>
-                                            <Button Click="BtnPresetFocusTimetableMeal_Click" Content="🕒 시간표+급식 집중" Padding="10,5" Margin="0,0,6,0" Background="{DynamicResource BeigeCardBg}" Foreground="{DynamicResource BeigeTextMain}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="11" FontWeight="SemiBold" Cursor="Hand">
-                                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
-                                            </Button>
-                                            <Button Click="BtnPresetFocusCalendar_Click" Content="📅 학사일정 집중" Padding="10,5" Margin="0,0,6,0" Background="{DynamicResource BeigeCardBg}" Foreground="{DynamicResource BeigeTextMain}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="11" FontWeight="SemiBold" Cursor="Hand">
-                                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
-                                            </Button>
-                                        </StackPanel>
+                                            <TextBlock Text="오늘의 시간표" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource BeigeTextMain}" VerticalAlignment="Center"/>
+                                        </DockPanel>
 
-                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                                            <!-- Lock Toggle -->
-                                            <Button x:Name="BtnToggleWidgetLock" Click="BtnToggleWidgetLock_Click" Content="🔓 위젯 조절 모드" Padding="10,5" Margin="0,0,6,0" Background="{DynamicResource BeigeAccentSoft}" Foreground="{DynamicResource BeigeAccent}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="11" FontWeight="Bold" Cursor="Hand" ToolTip="완성된 위젯의 크기 및 위치 고정 (수업 중 오작동 방지)">
-                                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
-                                            </Button>
-                                            <!-- Reset -->
-                                            <Button Click="BtnResetWidgetLayout_Click" Content="🔄 초기화" Padding="10,5" Margin="0,0,6,0" Background="{DynamicResource BeigeCardBg}" Foreground="{DynamicResource BeigeTextSub}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="11" Cursor="Hand" ToolTip="기본 위치와 크기로 원복">
-                                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
-                                            </Button>
-                                            <!-- Save -->
-                                            <Button Click="BtnSaveWidgetLayout_Click" Content="💾 배치 저장" Padding="12,5" Background="{DynamicResource BeigeAccent}" Foreground="White" BorderThickness="0" FontSize="11" FontWeight="Bold" Cursor="Hand" ToolTip="현재 배치 및 크기를 사용자 기본값으로 영구 저장">
-                                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
-                                            </Button>
-                                            <!-- Done / Exit Edit Mode -->
-                                            <Button Click="BtnDoneWidgetCustomize_Click" Content="✓ 설정 완료" Padding="12,5" Margin="6,0,0,0" Background="{DynamicResource BeigeCardBg}" Foreground="{DynamicResource BeigeTextMain}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="11" FontWeight="Bold" Cursor="Hand" ToolTip="위젯 편집을 완료하고 일반 뷰 모드로 전환합니다 (크기 조절 및 닫기 버튼 숨김)">
-                                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
-                                            </Button>
-                                        </StackPanel>
-                                    </DockPanel>
-                                </Grid>
-                            </Border>
-
-                            <!-- Main Workspace Widget Host Canvas inside ScrollViewer -->
-                            <ScrollViewer Grid.Row="1"
-                                          x:Name="WidgetScrollViewer"
-                                          HorizontalScrollBarVisibility="Auto"
-                                          VerticalScrollBarVisibility="Auto"
-                                          Focusable="False">
-                                <Canvas x:Name="MainWidgetCanvas"
-                                        ClipToBounds="False"
-                                        Background="Transparent"
-                                        SizeChanged="MainWidgetCanvas_SizeChanged">
-
-                                    <!-- Widget 1: 학급 안내 배너 (Anti-Clipping: TextWrapping, MinWidth 340, MinHeight 70) -->
-                                    <controls:MainWidgetCard x:Name="WidgetNotice"
-                                                             WidgetId="banner"
-                                                             Title="오늘의 학급 안내 / 목표"
-                                                             Icon="📢"
-                                                             DefaultWidth="740"
-                                                             DefaultHeight="74"
-                                                             MinWidth="340"
-                                                             MinHeight="70"
-                                                             Canvas.Left="0"
-                                                             Canvas.Top="0">
-                                        <Border Padding="12,6">
-                                            <Grid>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="Auto" />
-                                                    <ColumnDefinition Width="*" />
-                                                    <ColumnDefinition Width="Auto" />
-                                                </Grid.ColumnDefinitions>
-                                                <Border Grid.Column="0" Width="36" Height="36" Background="{DynamicResource BeigeAccentSoft}" CornerRadius="9" VerticalAlignment="Center" Margin="0,0,10,0">
-                                                    <TextBlock Text="📢" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                </Border>
-                                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,8,0">
-                                                    <StackPanel Orientation="Horizontal">
-                                                        <TextBlock x:Name="TxtHeaderGreeting" Text="좋은 아침입니다! 🌿" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource BeigeAccent}"/>
-                                                        <TextBlock Text=" • 오늘의 학급 안내 및 목표" FontSize="10" Foreground="{DynamicResource BeigeTextMuted}" Margin="4,0,0,0" VerticalAlignment="Center"/>
-                                                    </StackPanel>
-                                                    <TextBlock x:Name="TxtClassBanner" Text="하교 전 알림장과 준비물을 다시 확인해요! 🎒" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource BeigeTextMain}" Margin="0,2,0,0" TextWrapping="Wrap" MaxHeight="38" TextTrimming="CharacterEllipsis"/>
-                                                </StackPanel>
-                                                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                                    <Button x:Name="BtnBannerChime" Click="BtnBannerChime_Click" Content="🔔 차임벨" Padding="7,4" Margin="0,0,5,0" Background="{DynamicResource BeigeCardInner}" Foreground="{DynamicResource BeigeAccent}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="10.5" FontWeight="Bold" Cursor="Hand" ToolTip="학생 주목 집중 차임벨 울리기">
-                                                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
-                                                    </Button>
-                                                    <Button x:Name="BtnEditBanner" Click="BtnEditBanner_Click" Content="✏️ 수정" Padding="7,4" Background="{DynamicResource BeigeCardInner}" Foreground="{DynamicResource BeigeTextSub}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="10.5" Cursor="Hand" ToolTip="안내 문구 직접 변경">
-                                                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
-                                                    </Button>
-                                                </StackPanel>
-                                            </Grid>
-                                        </Border>
-                                    </controls:MainWidgetCard>
-
-                                    <!-- Widget 2: 디지털 시계 (Anti-Clipping: Viewbox Auto-Scaling, MinWidth 220, MinHeight 70) -->
-                                    <controls:MainWidgetCard x:Name="WidgetClock"
-                                                             WidgetId="clock"
-                                                             Title="디지털 시계"
-                                                             Icon="⏰"
-                                                             DefaultWidth="280"
-                                                             DefaultHeight="74"
-                                                             MinWidth="220"
-                                                             MinHeight="70"
-                                                             Canvas.Left="750"
-                                                             Canvas.Top="0">
-                                        <Border Padding="12,6">
-                                            <Grid>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*" />
-                                                    <ColumnDefinition Width="Auto" />
-                                                </Grid.ColumnDefinitions>
-                                                <Viewbox Grid.Column="0" Stretch="Uniform" StretchDirection="DownOnly" HorizontalAlignment="Left" VerticalAlignment="Center">
-                                                    <StackPanel VerticalAlignment="Center">
-                                                        <TextBlock x:Name="TxtBigClockTime" Text="12:00:00" FontSize="22" FontWeight="Bold" Foreground="{DynamicResource BeigeTextMain}" FontFamily="Segoe UI Variable Display, Malgun Gothic, Segoe UI"/>
-                                                        <TextBlock x:Name="TxtBigClockDate" Text="2026년 9월 5일 (토)" FontSize="10.5" Foreground="{DynamicResource BeigeTextMuted}" Margin="1,1,0,0"/>
-                                                    </StackPanel>
-                                                </Viewbox>
-                                                <Border Grid.Column="1" Margin="8,0,0,0" Background="{DynamicResource BeigeAccentSoft}" CornerRadius="8" Padding="7,5" VerticalAlignment="Center">
-                                                    <StackPanel HorizontalAlignment="Center">
-                                                        <TextBlock Text="🔔" FontSize="12" HorizontalAlignment="Center"/>
-                                                        <TextBlock x:Name="TxtMiniClockPeriod" Text="일과 중" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource BeigeAccent}" HorizontalAlignment="Center" Margin="0,2,0,0"/>
-                                                    </StackPanel>
-                                                </Border>
-                                            </Grid>
-                                        </Border>
-                                    </controls:MainWidgetCard>
-
-                                    <!-- Widget 3: 오늘 시간표 (Anti-Clipping: ScrollViewer, MinWidth 280, MinHeight 260, DockPanel headers) -->
-                                    <controls:MainWidgetCard x:Name="WidgetTimetable"
-                                                             WidgetId="timetable"
-                                                             Title="오늘 시간표"
-                                                             Icon="🕒"
-                                                             DefaultWidth="360"
-                                                             DefaultHeight="620"
-                                                             MinWidth="280"
-                                                             MinHeight="260"
-                                                             Canvas.Left="0"
-                                                             Canvas.Top="84">
-                                        <Grid Margin="10">
-                                            <Grid.RowDefinitions>
-                                                <RowDefinition Height="Auto" />
-                                                <RowDefinition Height="*" />
-                                            </Grid.RowDefinitions>
-                                            <Grid Grid.Row="0" Margin="0,0,0,8">
-                                                <Grid.RowDefinitions>
-                                                    <RowDefinition Height="Auto" />
-                                                    <RowDefinition Height="Auto" />
-                                                </Grid.RowDefinitions>
-                                                <DockPanel Grid.Row="0" LastChildFill="True">
-                                                    <Button x:Name="BtnTogglePeriodAlarm" DockPanel.Dock="Right" Content="🔔 알람 ON" Click="BtnTogglePeriodAlarm_Click" Padding="8,3" Background="{DynamicResource BeigeCardInner}" Foreground="{DynamicResource BeigeAccent}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="10" FontWeight="Bold" Cursor="Hand">
-                                                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
-                                                    </Button>
-                                                    <StackPanel VerticalAlignment="Center" Margin="0,0,8,0">
-                                                        <TextBlock Text="🕒 오늘 시간표" FontWeight="Bold" FontSize="13" Foreground="{DynamicResource BeigeTextMain}"/>
-                                                        <TextBlock x:Name="TxtCurrentPeriodStatus" Text="확인 중..." FontSize="11" Foreground="{DynamicResource BeigeAccent}" Margin="0,2,0,0" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
-                                                    </StackPanel>
-                                                </DockPanel>
-                                                <UniformGrid Grid.Row="1" Columns="3" Margin="0,6,0,0">
-                                                    <Button Content="⚙️ 예비령" Click="BtnOpenPeriodAlarmSettings_Click" Padding="2,3" Margin="0,0,3,0" Background="{DynamicResource BeigeCardInner}" Foreground="{DynamicResource BeigeAccent}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="10" FontWeight="Bold" Cursor="Hand" ToolTip="수업 시작 전 카운트다운 설정">
-                                                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
-                                                    </Button>
-                                                    <Button Content="⏱️ 40분" Click="BtnLaunchClassTimer_Click" Padding="2,3" Margin="0,0,3,0" Background="{DynamicResource BeigeAccent}" Foreground="White" BorderThickness="0" FontSize="10" FontWeight="Bold" Cursor="Hand" ToolTip="수업 40분 집중 타이머 시작">
-                                                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
-                                                    </Button>
-                                                    <Button Content="🔄 시간조정" Click="BtnShiftTimetable_Click" Padding="2,3" Background="{DynamicResource BeigeCardInner}" Foreground="{DynamicResource BeigeTextSub}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="10" FontWeight="SemiBold" Cursor="Hand" ToolTip="시간표 일괄 당기기/미루기">
-                                                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
-                                                    </Button>
-                                                </UniformGrid>
-                                            </Grid>
-
-                                            <ListBox x:Name="ListTimetable" Grid.Row="1" BorderThickness="0" Background="Transparent"
-                                                     ScrollViewer.VerticalScrollBarVisibility="Auto"
-                                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-                                                <ListBox.ItemContainerStyle>
-                                                    <Style TargetType="ListBoxItem">
-                                                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                                                        <Setter Property="Padding" Value="0" />
-                                                        <Setter Property="Margin" Value="0,0,0,4" />
-                                                        <Setter Property="BorderThickness" Value="0" />
-                                                        <Setter Property="Background" Value="Transparent" />
-                                                        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-                                                        <Setter Property="Template">
-                                                            <Setter.Value>
-                                                                <ControlTemplate TargetType="ListBoxItem">
-                                                                    <ContentPresenter />
-                                                                </ControlTemplate>
-                                                            </Setter.Value>
-                                                        </Setter>
-                                                    </Style>
-                                                </ListBox.ItemContainerStyle>
-                                                <ListBox.ItemTemplate>
-                                                    <DataTemplate>
-                                                        <Border CornerRadius="8" Padding="8,5" Cursor="Hand" ToolTip="우클릭하여 과목명/태그/타이머를 빠르게 수정할 수 있습니다 (더블클릭 시 바로 수정)">
-                                                            <Border.Style>
-                                                                <Style TargetType="Border">
-                                                                    <Setter Property="Background" Value="{DynamicResource BeigeCardInner}" />
-                                                                    <Setter Property="BorderBrush" Value="{DynamicResource BeigeCardBorder}" />
-                                                                    <Setter Property="BorderThickness" Value="1" />
-                                                                    <Style.Triggers>
-                                                                        <DataTrigger Binding="{Binding IsCurrentPeriod}" Value="True">
-                                                                            <Setter Property="Background" Value="{DynamicResource BeigeAccentSoft}" />
-                                                                            <Setter Property="BorderBrush" Value="{DynamicResource BeigeAccent}" />
-                                                                            <Setter Property="BorderThickness" Value="1.5" />
-                                                                        </DataTrigger>
-                                                                    </Style.Triggers>
-                                                                </Style>
-                                                            </Border.Style>
-                                                            <Border.ContextMenu>
-                                                                <ContextMenu>
-                                                                    <MenuItem Header="✏️ 과목명 직접 수정..." Click="MenuEditSubject_Click"/>
+                                        <!-- Timetable List -->
+                                        <ListBox x:Name="ListTimetable" Grid.Row="1" BorderThickness="0" Background="Transparent"
+                                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                            <ListBox.ItemContainerStyle>
+                                                <Style TargetType="ListBoxItem">
+                                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                                    <Setter Property="Padding" Value="0" />
+                                                    <Setter Property="Margin" Value="0,0,0,7" />
+                                                    <Setter Property="BorderThickness" Value="0" />
+                                                    <Setter Property="Background" Value="Transparent" />
+                                                    <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                                                    <Setter Property="Template">
+                                                        <Setter.Value>
+                                                            <ControlTemplate TargetType="ListBoxItem">
+                                                                <ContentPresenter />
+                                                            </ControlTemplate>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </Style>
+                                            </ListBox.ItemContainerStyle>
+                                            <ListBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border CornerRadius="10" Padding="10,8" Cursor="Hand" ToolTip="우클릭하여 과목명/태그/타이머를 빠르게 수정할 수 있습니다 (더블클릭 시 바로 수정)">
+                                                        <Border.Style>
+                                                            <Style TargetType="Border">
+                                                                <Setter Property="Background" Value="White"/>
+                                                                <Setter Property="BorderBrush" Value="{DynamicResource BeigeCardBorder}"/>
+                                                                <Setter Property="BorderThickness" Value="1"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsCurrentPeriod}" Value="True">
+                                                                        <Setter Property="Background" Value="#F0F7FF"/>
+                                                                        <Setter Property="BorderBrush" Value="{DynamicResource BeigeAccent}"/>
+                                                                        <Setter Property="BorderThickness" Value="1.5"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Border.Style>
+                                                        <Border.ContextMenu>
+                                                            <ContextMenu>
+                                                                <MenuItem Header="✏️ 과목명 직접 수정..." Click="MenuEditSubject_Click"/>
+                                                                <Separator/>
+                                                                <MenuItem Header="📚 빠른 과목 변경">
+                                                                    <MenuItem Header="국어" Click="MenuQuickSubject_Click" Tag="국어"/>
+                                                                    <MenuItem Header="수학" Click="MenuQuickSubject_Click" Tag="수학"/>
+                                                                    <MenuItem Header="사회" Click="MenuQuickSubject_Click" Tag="사회"/>
+                                                                    <MenuItem Header="과학" Click="MenuQuickSubject_Click" Tag="과학"/>
+                                                                    <MenuItem Header="영어" Click="MenuQuickSubject_Click" Tag="영어"/>
+                                                                    <MenuItem Header="체육" Click="MenuQuickSubject_Click" Tag="체육"/>
+                                                                    <MenuItem Header="음악" Click="MenuQuickSubject_Click" Tag="음악"/>
+                                                                    <MenuItem Header="미술" Click="MenuQuickSubject_Click" Tag="미술"/>
+                                                                    <MenuItem Header="도덕" Click="MenuQuickSubject_Click" Tag="도덕"/>
+                                                                    <MenuItem Header="실과" Click="MenuQuickSubject_Click" Tag="실과"/>
                                                                     <Separator/>
-                                                                    <MenuItem Header="📚 빠른 과목 변경">
-                                                                        <MenuItem Header="국어" Click="MenuQuickSubject_Click" Tag="국어"/>
-                                                                        <MenuItem Header="수학" Click="MenuQuickSubject_Click" Tag="수학"/>
-                                                                        <MenuItem Header="사회" Click="MenuQuickSubject_Click" Tag="사회"/>
-                                                                        <MenuItem Header="과학" Click="MenuQuickSubject_Click" Tag="과학"/>
-                                                                        <MenuItem Header="영어" Click="MenuQuickSubject_Click" Tag="영어"/>
-                                                                        <MenuItem Header="체육" Click="MenuQuickSubject_Click" Tag="체육"/>
-                                                                        <MenuItem Header="음악" Click="MenuQuickSubject_Click" Tag="음악"/>
-                                                                        <MenuItem Header="미술" Click="MenuQuickSubject_Click" Tag="미술"/>
-                                                                        <MenuItem Header="도덕" Click="MenuQuickSubject_Click" Tag="도덕"/>
-                                                                        <MenuItem Header="실과" Click="MenuQuickSubject_Click" Tag="실과"/>
-                                                                        <Separator/>
-                                                                        <MenuItem Header="창체 (창의적 체험활동)" Click="MenuQuickSubject_Click" Tag="창체"/>
-                                                                        <MenuItem Header="동아리" Click="MenuQuickSubject_Click" Tag="동아리"/>
-                                                                        <MenuItem Header="자율 / 안전" Click="MenuQuickSubject_Click" Tag="자율"/>
-                                                                        <MenuItem Header="진로활동" Click="MenuQuickSubject_Click" Tag="진로"/>
-                                                                    </MenuItem>
-                                                                    <MenuItem Header="🏷️ 수업 구분(태그) 설정">
-                                                                        <MenuItem Header="담임 수업" Click="MenuQuickTag_Click" Tag="담임"/>
-                                                                        <MenuItem Header="전담 수업" Click="MenuQuickTag_Click" Tag="전담"/>
-                                                                        <MenuItem Header="교과 교실 (특별실)" Click="MenuQuickTag_Click" Tag="특별실"/>
-                                                                        <MenuItem Header="온라인 / 원격" Click="MenuQuickTag_Click" Tag="원격"/>
-                                                                        <Separator/>
-                                                                        <MenuItem Header="태그 없음" Click="MenuQuickTag_Click" Tag=""/>
-                                                                    </MenuItem>
+                                                                    <MenuItem Header="창체 (창의적 체험활동)" Click="MenuQuickSubject_Click" Tag="창체"/>
+                                                                    <MenuItem Header="동아리" Click="MenuQuickSubject_Click" Tag="동아리"/>
+                                                                    <MenuItem Header="자율 / 안전" Click="MenuQuickSubject_Click" Tag="자율"/>
+                                                                    <MenuItem Header="진로활동" Click="MenuQuickSubject_Click" Tag="진로"/>
+                                                                </MenuItem>
+                                                                <MenuItem Header="🏷️ 수업 구분(태그) 설정">
+                                                                    <MenuItem Header="담임 수업" Click="MenuQuickTag_Click" Tag="담임"/>
+                                                                    <MenuItem Header="전담 수업" Click="MenuQuickTag_Click" Tag="전담"/>
+                                                                    <MenuItem Header="교과 교실 (특별실)" Click="MenuQuickTag_Click" Tag="특별실"/>
+                                                                    <MenuItem Header="온라인 / 원격" Click="MenuQuickTag_Click" Tag="원격"/>
                                                                     <Separator/>
-                                                                    <MenuItem Header="⏱️ 이 교시 40분 타이머 바로 실행" Click="MenuItemTimer_Click"/>
-                                                                    <MenuItem Header="🔔 이 교시 예비 알람 토글" Click="MenuItemToggleAlarm_Click"/>
-                                                                    <Separator/>
-                                                                    <MenuItem Header="🧹 빈 시간으로 비우기" Click="MenuClearSubject_Click"/>
-                                                                </ContextMenu>
-                                                            </Border.ContextMenu>
-                                                            <Grid>
-                                                                <Grid.ColumnDefinitions>
-                                                                    <ColumnDefinition Width="Auto" />
-                                                                    <ColumnDefinition Width="*" />
-                                                                    <ColumnDefinition Width="Auto" />
-                                                                </Grid.ColumnDefinitions>
-                                                                <Border Grid.Column="0" Background="{DynamicResource BeigeAccentSoft}" CornerRadius="5" Padding="5,2" VerticalAlignment="Center" Margin="0,0,6,0">
-                                                                    <TextBlock Text="{Binding DisplayBadge}" FontWeight="Bold" Foreground="{DynamicResource BeigeAccent}" FontSize="10.5"/>
-                                                                </Border>
-                                                                <DockPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,6,0" LastChildFill="True">
-                                                                    <Border DockPanel.Dock="Right" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="3" Padding="3,1" Margin="4,0,0,0" VerticalAlignment="Center">
-                                                                        <TextBlock Text="{Binding Tag}" FontSize="9" Foreground="{DynamicResource BeigeTextMuted}"/>
-                                                                    </Border>
-                                                                    <TextBlock Text="{Binding Subject}" FontWeight="Bold" FontSize="12" Foreground="{DynamicResource BeigeTextMain}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                                                </DockPanel>
-                                                                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                                                    <TextBlock Text="{Binding TimeRange}" Foreground="{DynamicResource BeigeTextMuted}" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                                                                    <Button Content="⏱️" Click="BtnItemTimer_Click" Tag="{Binding}" Width="19" Height="19" Padding="0" Background="Transparent" BorderThickness="0" Cursor="Hand" ToolTip="이 교시 타이머 실행" Margin="0,0,2,0"/>
-                                                                    <Button Content="✏️" Click="BtnEditSubject_Click" Tag="{Binding}" Width="19" Height="19" Padding="0" Background="Transparent" BorderThickness="0" Cursor="Hand" ToolTip="과목 수정"/>
-                                                                </StackPanel>
-                                                            </Grid>
-                                                        </Border>
-                                                    </DataTemplate>
-                                                </ListBox.ItemTemplate>
-                                            </ListBox>
-                                        </Grid>
-                                    </controls:MainWidgetCard>
+                                                                    <MenuItem Header="태그 없음" Click="MenuQuickTag_Click" Tag=""/>
+                                                                </MenuItem>
+                                                                <Separator/>
+                                                                <MenuItem Header="⏱️ 이 교시 40분 타이머 바로 실행" Click="MenuItemTimer_Click"/>
+                                                                <MenuItem Header="🔔 이 교시 예비 알람 토글" Click="MenuItemToggleAlarm_Click"/>
+                                                                <Separator/>
+                                                                <MenuItem Header="🧹 빈 시간으로 비우기" Click="MenuClearSubject_Click"/>
+                                                            </ContextMenu>
+                                                        </Border.ContextMenu>
+                                                        <Grid>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="Auto" />
+                                                                <ColumnDefinition Width="*" />
+                                                                <ColumnDefinition Width="Auto" />
+                                                            </Grid.ColumnDefinitions>
+                                                            <!-- Period Badge -->
+                                                            <Border Grid.Column="0" CornerRadius="7" Padding="7,3" Margin="0,0,10,0" VerticalAlignment="Center">
+                                                                <Border.Style>
+                                                                    <Style TargetType="Border">
+                                                                        <Setter Property="Background" Value="#F1F5F9"/>
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding IsCurrentPeriod}" Value="True">
+                                                                                <Setter Property="Background" Value="{DynamicResource BeigeAccent}"/>
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </Border.Style>
+                                                                <TextBlock Text="{Binding DisplayBadge}" FontSize="11" FontWeight="Bold">
+                                                                    <TextBlock.Style>
+                                                                        <Style TargetType="TextBlock">
+                                                                            <Setter Property="Foreground" Value="#475569"/>
+                                                                            <Style.Triggers>
+                                                                                <DataTrigger Binding="{Binding IsCurrentPeriod}" Value="True">
+                                                                                    <Setter Property="Foreground" Value="White"/>
+                                                                                </DataTrigger>
+                                                                            </Style.Triggers>
+                                                                        </Style>
+                                                                    </TextBlock.Style>
+                                                                </TextBlock>
+                                                            </Border>
 
-                                    <!-- Widget 4: 학사일정 달력 (Anti-Clipping: MinWidth 280, MinHeight 280, TextTrimming with ToolTip) -->
-                                    <controls:MainWidgetCard x:Name="WidgetCalendar"
-                                                             WidgetId="calendar"
-                                                             Title="학사일정"
-                                                             Icon="📅"
-                                                             DefaultWidth="350"
-                                                             DefaultHeight="400"
-                                                             MinWidth="280"
-                                                             MinHeight="280"
-                                                             Canvas.Left="370"
-                                                             Canvas.Top="84">
-                                        <Grid Margin="10">
-                                            <Grid.RowDefinitions>
-                                                <RowDefinition Height="Auto" />
-                                                <RowDefinition Height="Auto" />
-                                                <RowDefinition Height="Auto" />
-                                                <RowDefinition Height="*" />
-                                                <RowDefinition Height="Auto" />
-                                            </Grid.RowDefinitions>
-                                            <Grid Grid.Row="0" Margin="0,0,0,6">
-                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                                    <TextBlock Text="📅" FontSize="13" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                                                    <TextBlock Text="학사일정" FontWeight="Bold" FontSize="12.5" Foreground="{DynamicResource BeigeTextMain}" VerticalAlignment="Center"/>
-                                                </StackPanel>
-                                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                                                    <Button x:Name="BtnCalToday" Click="BtnCalToday_Click" Content="오늘" Padding="6,2" Margin="0,0,3,0" Background="{DynamicResource BeigeCardInner}" Foreground="{DynamicResource BeigeTextMain}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="10" Cursor="Hand">
-                                                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
-                                                    </Button>
-                                                    <Button Click="BtnRefreshAcademicCalendar_Click" Content="🔄" Width="22" Height="22" Padding="0" Background="Transparent" BorderThickness="0" Cursor="Hand" ToolTip="나이스 학사일정 새로고침"/>
-                                                </StackPanel>
-                                            </Grid>
-                                            <Border Grid.Row="1" Background="{DynamicResource BeigeCardInner}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="6" Padding="6,3" Margin="0,0,0,6">
-                                                <Grid>
-                                                    <Button x:Name="BtnCalPrev" Click="BtnCalPrev_Click" Content="◀" Width="24" Height="22" Padding="0" HorizontalAlignment="Left" Background="Transparent" Foreground="{DynamicResource BeigeTextSub}" BorderThickness="0" FontSize="10" Cursor="Hand" ToolTip="이전 달">
-                                                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
-                                                    </Button>
-                                                    <TextBlock x:Name="TxtCalMonthYear" Text="2026년 9월" FontWeight="Bold" FontSize="12.5" Foreground="{DynamicResource BeigeAccent}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                    <Button x:Name="BtnCalNext" Click="BtnCalNext_Click" Content="▶" Width="24" Height="22" Padding="0" HorizontalAlignment="Right" Background="Transparent" Foreground="{DynamicResource BeigeTextSub}" BorderThickness="0" FontSize="10" Cursor="Hand" ToolTip="다음 달">
-                                                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
-                                                    </Button>
-                                                </Grid>
-                                            </Border>
-                                            <UniformGrid Grid.Row="2" Columns="7" Margin="0,0,0,4">
-                                                <TextBlock Text="일" Foreground="#EF4444" FontWeight="Bold" FontSize="10" HorizontalAlignment="Center"/>
-                                                <TextBlock Text="월" Foreground="{DynamicResource BeigeTextMuted}" FontWeight="Bold" FontSize="10" HorizontalAlignment="Center"/>
-                                                <TextBlock Text="화" Foreground="{DynamicResource BeigeTextMuted}" FontWeight="Bold" FontSize="10" HorizontalAlignment="Center"/>
-                                                <TextBlock Text="수" Foreground="{DynamicResource BeigeTextMuted}" FontWeight="Bold" FontSize="10" HorizontalAlignment="Center"/>
-                                                <TextBlock Text="목" Foreground="{DynamicResource BeigeTextMuted}" FontWeight="Bold" FontSize="10" HorizontalAlignment="Center"/>
-                                                <TextBlock Text="금" Foreground="{DynamicResource BeigeTextMuted}" FontWeight="Bold" FontSize="10" HorizontalAlignment="Center"/>
-                                                <TextBlock Text="토" Foreground="#3B82F6" FontWeight="Bold" FontSize="10" HorizontalAlignment="Center"/>
-                                            </UniformGrid>
-                                            <ItemsControl x:Name="ListCalendarCells" Grid.Row="3">
-                                                <ItemsControl.ItemsPanel>
-                                                    <ItemsPanelTemplate>
-                                                        <UniformGrid Columns="7" />
-                                                    </ItemsPanelTemplate>
-                                                </ItemsControl.ItemsPanel>
+                                                            <!-- Subject + Time Range -->
+                                                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                                                <TextBlock Text="{Binding Subject}" FontSize="13.5" FontWeight="Bold" Margin="0,0,8,0">
+                                                                    <TextBlock.Style>
+                                                                        <Style TargetType="TextBlock">
+                                                                            <Setter Property="Foreground" Value="{DynamicResource BeigeTextMain}"/>
+                                                                            <Style.Triggers>
+                                                                                <DataTrigger Binding="{Binding IsCurrentPeriod}" Value="True">
+                                                                                    <Setter Property="Foreground" Value="#1D4ED8"/>
+                                                                                </DataTrigger>
+                                                                            </Style.Triggers>
+                                                                        </Style>
+                                                                    </TextBlock.Style>
+                                                                </TextBlock>
+                                                                <TextBlock Text="{Binding TimeRange, StringFormat='({0})'}" FontSize="11.5" Foreground="{DynamicResource BeigeTextMuted}" VerticalAlignment="Center"/>
+                                                            </StackPanel>
+
+                                                            <!-- Quick action icon (timer / edit) -->
+                                                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                                                <Button Content="⏱️" Click="BtnItemTimer_Click" Tag="{Binding}" Width="20" Height="20" Background="Transparent" BorderThickness="0" Cursor="Hand" ToolTip="타이머 실행"/>
+                                                                <Button Content="✏️" Click="BtnEditSubject_Click" Tag="{Binding}" Width="20" Height="20" Background="Transparent" BorderThickness="0" Cursor="Hand" ToolTip="과목 수정"/>
+                                                            </StackPanel>
+                                                        </Grid>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ListBox.ItemTemplate>
+                                        </ListBox>
+                                    </Grid>
+                                </Border>
+
+                                <!-- Card 2: 오늘의 할 일 (Mockup Signature) -->
+                                <Border Grid.Row="1" Background="White" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="16" Padding="16,14">
+                                    <Border.Effect>
+                                        <DropShadowEffect BlurRadius="14" Opacity="0.05" ShadowDepth="2" Color="#64748B"/>
+                                    </Border.Effect>
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="*"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <!-- Header -->
+                                        <DockPanel Grid.Row="0" Margin="0,0,0,8" LastChildFill="True">
+                                            <Button DockPanel.Dock="Right" Content="···" Click="BtnTodoMore_Click" Width="26" Height="22" Background="Transparent" Foreground="{DynamicResource BeigeTextMuted}" BorderThickness="0" FontSize="15" FontWeight="Bold" Cursor="Hand" ToolTip="할 일 옵션">
+                                                <Button.ContextMenu>
+                                                    <ContextMenu>
+                                                        <MenuItem Header="🧹 완료된 항목 모두 정리" Click="MenuClearCompletedTodos_Click"/>
+                                                        <MenuItem Header="🔄 기본 교실 체크리스트 불러오기" Click="MenuResetSampleTodos_Click"/>
+                                                    </ContextMenu>
+                                                </Button.ContextMenu>
+                                            </Button>
+                                            <TextBlock Text="오늘의 할 일" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource BeigeTextMain}" VerticalAlignment="Center"/>
+                                        </DockPanel>
+
+                                        <!-- Todo List -->
+                                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0,0,0,6">
+                                            <ItemsControl x:Name="ListTodoItems">
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate>
-                                                        <Border Margin="1" Background="{Binding CellBackground}" BorderBrush="{Binding CellBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="1,2" Cursor="Hand" MouseLeftButtonUp="CalDay_MouseLeftButtonUp" Tag="{Binding}" MinHeight="26">
-                                                            <Grid>
-                                                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                                                    <TextBlock Text="{Binding DayNumber}" Foreground="{Binding DayForeground}" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center"/>
-                                                                    <Ellipse Width="4" Height="4" Margin="0,1,0,0" Fill="{Binding DotColor}" Visibility="{Binding DotVisibility}" HorizontalAlignment="Center"/>
-                                                                </StackPanel>
-                                                            </Grid>
-                                                        </Border>
+                                                        <Grid Margin="0,0,0,6">
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="Auto"/>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="Auto"/>
+                                                            </Grid.ColumnDefinitions>
+                                                            <CheckBox IsChecked="{Binding IsCompleted}" Click="TodoCheckbox_Click" Tag="{Binding}" VerticalAlignment="Center" Margin="0,0,8,0" Cursor="Hand"/>
+                                                            <TextBlock Grid.Column="1" Text="{Binding Text}" FontSize="12.5" Foreground="{DynamicResource BeigeTextMain}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
+                                                                <TextBlock.Style>
+                                                                    <Style TargetType="TextBlock">
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding IsCompleted}" Value="True">
+                                                                                <Setter Property="TextDecorations" Value="Strikethrough"/>
+                                                                                <Setter Property="Foreground" Value="{DynamicResource BeigeTextMuted}"/>
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </TextBlock.Style>
+                                                            </TextBlock>
+                                                            <Button Grid.Column="2" Content="✕" Click="BtnDeleteTodo_Click" Tag="{Binding}" Width="18" Height="18" Background="Transparent" Foreground="#94A3B8" BorderThickness="0" FontSize="9" Cursor="Hand" ToolTip="삭제"/>
+                                                        </Grid>
                                                     </DataTemplate>
                                                 </ItemsControl.ItemTemplate>
                                             </ItemsControl>
-                                            <Border Grid.Row="4" Background="{DynamicResource BeigeCardInner}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="6" Padding="8,5" Margin="0,5,0,0">
-                                                <Grid>
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="Auto" />
-                                                        <ColumnDefinition Width="*" />
-                                                    </Grid.ColumnDefinitions>
-                                                    <TextBlock x:Name="TxtCalSelectedDate" Text="9월 5일 (토)" FontWeight="Bold" FontSize="10" Foreground="{DynamicResource BeigeAccent}" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                                    <TextBlock x:Name="TxtCalSelectedEvent" Grid.Column="1" Text="등록된 학사일정이 없습니다." FontSize="10" Foreground="{DynamicResource BeigeTextMain}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" VerticalAlignment="Center"/>
-                                                </Grid>
-                                            </Border>
-                                        </Grid>
-                                    </controls:MainWidgetCard>
+                                        </ScrollViewer>
 
-                                    <!-- Widget 5: D-Day 및 알림 메모 (Anti-Clipping: ScrollViewer for chips, MinWidth 260, MinHeight 140) -->
-                                    <controls:MainWidgetCard x:Name="WidgetDDay"
-                                                             WidgetId="dday"
-                                                             Title="주요 학사 D-Day &amp; 메모"
-                                                             Icon="🚩"
-                                                             DefaultWidth="350"
-                                                             DefaultHeight="210"
-                                                             MinWidth="260"
-                                                             MinHeight="140"
-                                                             Canvas.Left="370"
-                                                             Canvas.Top="494">
-                                        <Border Padding="10">
+                                        <!-- Quick Add Box -->
+                                        <Border Grid.Row="2" Background="#F8FAFC" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="8" Padding="6,2">
                                             <Grid>
-                                                <Grid.RowDefinitions>
-                                                    <RowDefinition Height="Auto"/>
-                                                    <RowDefinition Height="*"/>
-                                                    <RowDefinition Height="Auto"/>
-                                                </Grid.RowDefinitions>
-
-                                                <Grid Grid.Row="0" Margin="0,0,0,4">
-                                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                                        <TextBlock Text="🚩" FontSize="12" Margin="0,0,4,0"/>
-                                                        <TextBlock Text="주요 학사 D-Day" FontWeight="Bold" FontSize="11" Foreground="{DynamicResource BeigeTextMain}"/>
-                                                    </StackPanel>
-                                                    <TextBlock Text="나이스 공식 학사일정" FontSize="9" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
-                                                </Grid>
-
-                                                <!-- D-Day Chips in ScrollViewer to prevent pushing memo out -->
-                                                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" MaxHeight="85" Margin="0,0,0,4">
-                                                    <ItemsControl x:Name="ListUpcomingDDays">
-                                                        <ItemsControl.ItemsPanel>
-                                                            <ItemsPanelTemplate>
-                                                                <WrapPanel Orientation="Horizontal"/>
-                                                            </ItemsPanelTemplate>
-                                                        </ItemsControl.ItemsPanel>
-                                                        <ItemsControl.ItemTemplate>
-                                                            <DataTemplate>
-                                                                <Border Background="#FEF3C7" BorderBrush="#FDE68A" BorderThickness="1" CornerRadius="5" Padding="6,2" Margin="0,0,4,4">
-                                                                    <StackPanel Orientation="Horizontal">
-                                                                        <TextBlock Text="{Binding EventName}" FontSize="10" FontWeight="SemiBold" Foreground="#92400E" Margin="0,0,4,0"/>
-                                                                        <TextBlock Text="{Binding DDayText}" FontSize="10" FontWeight="Bold" Foreground="#B45309"/>
-                                                                    </StackPanel>
-                                                                </Border>
-                                                            </DataTemplate>
-                                                        </ItemsControl.ItemTemplate>
-                                                    </ItemsControl>
-                                                </ScrollViewer>
-
-                                                <TextBox Grid.Row="2" x:Name="TxtClassNoticeMemo" Height="36" TextWrapping="Wrap" AcceptsReturn="False" FontSize="10" Background="{DynamicResource BeigeCardInner}" BorderBrush="{DynamicResource BeigeCardBorder}" Padding="6,4" ToolTip="선생님 오늘의 전달 메모" TextChanged="TxtClassNoticeMemo_TextChanged"/>
-                                            </Grid>
-                                        </Border>
-                                    </controls:MainWidgetCard>
-
-                                    <!-- Widget 6: 오늘 날씨 및 미세먼지 (Anti-Clipping: TextWrapping guide, MinWidth 260, MinHeight 165) -->
-                                    <controls:MainWidgetCard x:Name="WidgetWeather"
-                                                             WidgetId="weather"
-                                                             Title="오늘의 날씨 &amp; 미세먼지"
-                                                             Icon="⛅"
-                                                             DefaultWidth="300"
-                                                             DefaultHeight="175"
-                                                             MinWidth="260"
-                                                             MinHeight="165"
-                                                             Canvas.Left="730"
-                                                             Canvas.Top="84">
-                                        <Grid Margin="10">
-                                            <Grid.RowDefinitions>
-                                                <RowDefinition Height="Auto"/>
-                                                <RowDefinition Height="Auto"/>
-                                                <RowDefinition Height="*"/>
-                                            </Grid.RowDefinitions>
-                                            <Grid Grid.Row="0" Margin="0,0,0,6">
-                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                                    <TextBlock Text="⛅" FontSize="13" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                                                    <TextBlock Text="오늘의 날씨" FontWeight="Bold" FontSize="12" Foreground="{DynamicResource BeigeTextMain}" VerticalAlignment="Center"/>
-                                                </StackPanel>
-                                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                                                    <ComboBox x:Name="ComboWeatherRegion" Height="22" FontSize="10" SelectionChanged="ComboWeatherRegion_SelectionChanged" Padding="4,0" Margin="0,0,4,0"/>
-                                                    <Button Content="🔄" Click="BtnRefreshWeather_Click" Width="22" Height="22" Padding="0" Background="Transparent" BorderThickness="0" Cursor="Hand" ToolTip="날씨 새로고침"/>
-                                                </StackPanel>
-                                            </Grid>
-                                            <Grid Grid.Row="1" Margin="0,0,0,6">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="*"/>
                                                     <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
-                                                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                                                    <TextBlock x:Name="TxtWeatherIcon" Text="☀️" FontSize="22" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                                    <StackPanel VerticalAlignment="Center">
-                                                        <TextBlock x:Name="TxtWeatherTemp" Text="--.-°C" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BeigeTextMain}"/>
-                                                        <StackPanel Orientation="Horizontal">
-                                                            <TextBlock x:Name="TxtWeatherDesc" Text="확인 중" FontSize="10" Foreground="{DynamicResource BeigeTextMuted}"/>
-                                                            <TextBlock x:Name="TxtWeatherApparent" Text=" · 체감 --.-°" FontSize="9" Foreground="{DynamicResource BeigeTextMuted}" Margin="3,0,0,0"/>
-                                                        </StackPanel>
-                                                    </StackPanel>
-                                                </StackPanel>
-                                                <StackPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="6,0,0,0">
-                                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,2">
-                                                        <TextBlock Text="미세 " FontSize="9" Foreground="{DynamicResource BeigeTextMuted}" VerticalAlignment="Center"/>
-                                                        <Border x:Name="BadgePm10" Background="#DCFCE7" CornerRadius="3" Padding="4,1">
-                                                            <TextBlock x:Name="TxtPm10Val" Text="보통" FontSize="9" FontWeight="Bold" Foreground="#166534"/>
-                                                        </Border>
-                                                    </StackPanel>
-                                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                                                        <TextBlock Text="초미세 " FontSize="9" Foreground="{DynamicResource BeigeTextMuted}" VerticalAlignment="Center"/>
-                                                        <Border x:Name="BadgePm25" Background="#DCFCE7" CornerRadius="3" Padding="4,1">
-                                                            <TextBlock x:Name="TxtPm25Val" Text="좋음" FontSize="9" FontWeight="Bold" Foreground="#166534"/>
-                                                        </Border>
-                                                    </StackPanel>
-                                                </StackPanel>
+                                                <TextBox x:Name="TbNewTodo" BorderThickness="0" Background="Transparent" FontSize="11.5" Foreground="{DynamicResource BeigeTextMain}" Padding="4,4" VerticalAlignment="Center" KeyDown="TbNewTodo_KeyDown" />
+                                                <Button Grid.Column="1" Content="추가" Click="BtnAddTodo_Click" Background="{DynamicResource BeigeAccent}" Foreground="White" BorderThickness="0" FontSize="11" FontWeight="Bold" Padding="8,4" Cursor="Hand">
+                                                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="5"/></Style></Button.Resources>
+                                                </Button>
                                             </Grid>
-                                            <Border x:Name="BadgeOutdoorGuide" Grid.Row="2" Background="#DCFCE7" BorderBrush="#BBF7D0" BorderThickness="1" CornerRadius="5" Padding="6,3" VerticalAlignment="Center">
-                                                <TextBlock x:Name="TxtOutdoorGuide" Text="🏃 실외활동 및 체육수업 정상 가능" FontSize="10" FontWeight="Bold" Foreground="#166534" HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center"/>
-                                            </Border>
-                                        </Grid>
-                                    </controls:MainWidgetCard>
+                                        </Border>
+                                    </Grid>
+                                </Border>
+                            </Grid>
 
-                                    <!-- Widget 7: 점심 식단표 (Anti-Clipping: ScrollViewer, MinWidth 240, MinHeight 220) -->
-                                    <controls:MainWidgetCard x:Name="WidgetMeal"
-                                                             WidgetId="meal"
-                                                             Title="점심 식단표"
-                                                             Icon="🍱"
-                                                             DefaultWidth="300"
-                                                             DefaultHeight="440"
-                                                             MinWidth="240"
-                                                             MinHeight="220"
-                                                             Canvas.Left="730"
-                                                             Canvas.Top="269">
-                                        <Grid Margin="10">
-                                            <Grid.RowDefinitions>
-                                                <RowDefinition Height="Auto" />
-                                                <RowDefinition Height="*" />
-                                                <RowDefinition Height="Auto" />
-                                            </Grid.RowDefinitions>
-                                            <Grid Grid.Row="0" Margin="0,0,0,6">
-                                                <StackPanel VerticalAlignment="Center">
-                                                    <TextBlock Text="🍱 점심 식단표" FontWeight="Bold" FontSize="12.5" Foreground="{DynamicResource BeigeLunchText}"/>
-                                                </StackPanel>
-                                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                                                    <Button x:Name="BtnMealPrev" Click="BtnMealPrev_Click" Content="◀" Width="20" Height="20" Padding="0" Background="{DynamicResource BeigeCardInner}" Foreground="{DynamicResource BeigeTextSub}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="9" Cursor="Hand">
-                                                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="3"/></Style></Button.Resources>
-                                                    </Button>
-                                                    <TextBlock x:Name="TxtMealDate" Text="오늘" FontWeight="Bold" FontSize="10" Foreground="{DynamicResource BeigeAccent}" VerticalAlignment="Center" Margin="4,0"/>
-                                                    <Button x:Name="BtnMealNext" Click="BtnMealNext_Click" Content="▶" Width="20" Height="20" Padding="0" Background="{DynamicResource BeigeCardInner}" Foreground="{DynamicResource BeigeTextSub}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="9" Cursor="Hand">
-                                                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="3"/></Style></Button.Resources>
-                                                    </Button>
-                                                    <Button x:Name="BtnMealToday" Click="BtnMealToday_Click" Content="오늘" Padding="4,1" Margin="3,0,0,0" Background="{DynamicResource BeigeCardInner}" Foreground="{DynamicResource BeigeTextMain}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="9" Cursor="Hand">
-                                                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="3"/></Style></Button.Resources>
-                                                    </Button>
-                                                </StackPanel>
-                                            </Grid>
-                                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-                                                <TextBlock x:Name="TxtMealMenu" Text="식단 불러오는 중..." FontSize="12.5" LineHeight="20" Foreground="{DynamicResource BeigeTextMain}" FontWeight="SemiBold" TextWrapping="Wrap"/>
-                                            </ScrollViewer>
-                                            <Border Grid.Row="2" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="5" Padding="8,4" Margin="0,6,0,0">
-                                                <TextBlock x:Name="TxtMealCalorie" Text="열량: 계산 중" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource BeigeLunchText}" HorizontalAlignment="Right"/>
+                            <!-- ================================================= -->
+                            <!-- COL 1: 월간 학사일정 통합 카드 (Mockup Signature) -->
+                            <!-- ================================================= -->
+                            <Border Grid.Column="1" Margin="14,0,14,0" Background="White" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="16" Padding="18,14">
+                                <Border.Effect>
+                                    <DropShadowEffect BlurRadius="14" Opacity="0.05" ShadowDepth="2" Color="#64748B"/>
+                                </Border.Effect>
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <!-- 0: Month Navigation Header -->
+                                        <RowDefinition Height="Auto"/>
+                                        <!-- 1: Weekday Headers -->
+                                        <RowDefinition Height="Auto"/>
+                                        <!-- 2: 7x6 Calendar Grid -->
+                                        <RowDefinition Height="Auto"/>
+                                        <!-- 3: Divider -->
+                                        <RowDefinition Height="Auto"/>
+                                        <!-- 4: Schedule List -->
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+
+                                    <!-- 0: Header -->
+                                    <DockPanel Grid.Row="0" Margin="0,0,0,10" LastChildFill="True">
+                                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Button x:Name="BtnCalPrev" Click="BtnCalPrev_Click" Content="‹" Width="24" Height="24" Padding="0" Background="#F8FAFC" Foreground="{DynamicResource BeigeTextSub}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="14" FontWeight="Bold" Cursor="Hand">
+                                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="5"/></Style></Button.Resources>
+                                            </Button>
+                                            <TextBlock x:Name="TxtCalMonthYear" Text="2026년 9월" FontWeight="Bold" FontSize="13" Foreground="{DynamicResource BeigeAccent}" VerticalAlignment="Center" Margin="8,0"/>
+                                            <Button x:Name="BtnCalNext" Click="BtnCalNext_Click" Content="›" Width="24" Height="24" Padding="0" Background="#F8FAFC" Foreground="{DynamicResource BeigeTextSub}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="14" FontWeight="Bold" Cursor="Hand">
+                                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="5"/></Style></Button.Resources>
+                                            </Button>
+                                            <Button x:Name="BtnCalToday" Click="BtnCalToday_Click" Content="오늘" Padding="6,2" Margin="6,0,0,0" Background="#F8FAFC" Foreground="{DynamicResource BeigeTextMain}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="10.5" Cursor="Hand">
+                                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="5"/></Style></Button.Resources>
+                                            </Button>
+                                        </StackPanel>
+                                        <TextBlock Text="월간 일정" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource BeigeTextMain}" VerticalAlignment="Center"/>
+                                    </DockPanel>
+
+                                    <!-- 1: Weekday Names -->
+                                    <UniformGrid Grid.Row="1" Columns="7" Margin="0,0,0,8">
+                                        <TextBlock Text="일" Foreground="#EF4444" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="월" Foreground="{DynamicResource BeigeTextMuted}" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="화" Foreground="{DynamicResource BeigeTextMuted}" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="수" Foreground="{DynamicResource BeigeTextMuted}" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="목" Foreground="{DynamicResource BeigeTextMuted}" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="금" Foreground="{DynamicResource BeigeTextMuted}" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="토" Foreground="#3B82F6" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
+                                    </UniformGrid>
+
+                                    <!-- 2: Calendar Day Cells (Today is Blue Circle) -->
+                                    <ItemsControl x:Name="ListCalendarCells" Grid.Row="2" Margin="0,0,0,10">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <UniformGrid Columns="7" />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Margin="1" CornerRadius="8" Padding="1,2" Cursor="Hand" MouseLeftButtonUp="CalDay_MouseLeftButtonUp" Tag="{Binding}" MinHeight="32">
+                                                    <Border.Style>
+                                                        <Style TargetType="Border">
+                                                            <Setter Property="Background" Value="Transparent"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                                    <Setter Property="Background" Value="#EFF6FF"/>
+                                                                    <Setter Property="BorderBrush" Value="#93C5FD"/>
+                                                                    <Setter Property="BorderThickness" Value="1"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Border.Style>
+                                                    <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                        <!-- Circular badge for today (Blue circle like mockup day 3) -->
+                                                        <Border Width="26" Height="26" CornerRadius="13" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                            <Border.Style>
+                                                                <Style TargetType="Border">
+                                                                    <Setter Property="Background" Value="Transparent"/>
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding IsToday}" Value="True">
+                                                                            <Setter Property="Background" Value="{DynamicResource BeigeAccent}"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Border.Style>
+                                                            <Grid>
+                                                                <TextBlock Text="{Binding DayNumber}" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                                    <TextBlock.Style>
+                                                                        <Style TargetType="TextBlock">
+                                                                            <Setter Property="Foreground" Value="{Binding DayForeground}"/>
+                                                                            <Style.Triggers>
+                                                                                <DataTrigger Binding="{Binding IsToday}" Value="True">
+                                                                                    <Setter Property="Foreground" Value="White"/>
+                                                                                    <Setter Property="FontWeight" Value="Bold"/>
+                                                                                </DataTrigger>
+                                                                            </Style.Triggers>
+                                                                        </Style>
+                                                                    </TextBlock.Style>
+                                                                </TextBlock>
+                                                            </Grid>
+                                                        </Border>
+                                                        <Ellipse Width="4" Height="4" Margin="0,22,0,0" Fill="{Binding DotColor}" Visibility="{Binding DotVisibility}" HorizontalAlignment="Center"/>
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+
+                                    <!-- 3: Divider -->
+                                    <Border Grid.Row="3" Height="1" Background="#F1F5F9" Margin="0,4,0,10"/>
+
+                                    <!-- 4: Monthly Academic Schedule List (1일 │ 교통안전... format) -->
+                                    <ScrollViewer Grid.Row="4" VerticalScrollBarVisibility="Auto">
+                                        <ItemsControl x:Name="ListMonthAcademicEvents">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Grid Margin="4,0,4,8" Cursor="Hand">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="38"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock Text="{Binding Date, StringFormat='{}{0:d일}'}" FontWeight="Bold" FontSize="12" Foreground="{DynamicResource BeigeTextSub}" VerticalAlignment="Center"/>
+                                                        <Border Grid.Column="1" Width="2" Height="14" Background="{DynamicResource BeigeAccent}" CornerRadius="1" Margin="6,0,10,0" VerticalAlignment="Center"/>
+                                                        <TextBlock Grid.Column="2" Text="{Binding EventName}" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource BeigeTextMain}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </ScrollViewer>
+
+                                    <!-- Hidden backward compatibility fields -->
+                                    <TextBlock x:Name="TxtCalSelectedDate" Visibility="Collapsed"/>
+                                    <TextBlock x:Name="TxtCalSelectedEvent" Visibility="Collapsed"/>
+                                    <ItemsControl x:Name="ListUpcomingDDays" Visibility="Collapsed"/>
+                                    <TextBox x:Name="TxtClassNoticeMemo" Visibility="Collapsed"/>
+                                </Grid>
+                            </Border>
+
+                            <!-- ================================================= -->
+                            <!-- COL 2: 학교 점심 & 날씨 -->
+                            <!-- ================================================= -->
+                            <Grid Grid.Column="2">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="1.15*"/>
+                                    <RowDefinition Height="0.85*"/>
+                                </Grid.RowDefinitions>
+
+                                <!-- Card 4: 학교 점심 (Mockup Signature) -->
+                                <Border Grid.Row="0" Margin="0,0,0,12" Background="White" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="16" Padding="16,14">
+                                    <Border.Effect>
+                                        <DropShadowEffect BlurRadius="14" Opacity="0.05" ShadowDepth="2" Color="#64748B"/>
+                                    </Border.Effect>
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="*"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <!-- Header -->
+                                        <DockPanel Grid.Row="0" Margin="0,0,0,4" LastChildFill="True">
+                                            <Border DockPanel.Dock="Right" Background="#EFF6FF" BorderBrush="#DBEAFE" BorderThickness="1" CornerRadius="12" Padding="8,3" VerticalAlignment="Center">
+                                                <TextBlock x:Name="TxtMealCaloriePill" Text="720 kcal" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource BeigeAccent}"/>
                                             </Border>
-                                        </Grid>
-                                    </controls:MainWidgetCard>
-                                </Canvas>
-                            </ScrollViewer>
+                                            <TextBlock Text="학교 점심" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource BeigeTextMain}" VerticalAlignment="Center"/>
+                                        </DockPanel>
+
+                                        <!-- Subtitle -->
+                                        <TextBlock Grid.Row="1" Text="당일 메뉴" FontSize="11.5" Foreground="{DynamicResource BeigeTextMuted}" Margin="0,0,0,8"/>
+
+                                        <!-- Menu Container Box -->
+                                        <Border Grid.Row="2" Background="#F8FAFC" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="10" Padding="12,10">
+                                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                                <TextBlock x:Name="TxtMealMenu" Text="식단 불러오는 중..." FontSize="12.5" LineHeight="21" Foreground="{DynamicResource BeigeTextMain}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                                            </ScrollViewer>
+                                        </Border>
+
+                                        <!-- Date navigation footer -->
+                                        <DockPanel Grid.Row="3" Margin="0,8,0,0" LastChildFill="True">
+                                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                                <Button x:Name="BtnMealPrev" Click="BtnMealPrev_Click" Content="‹" Width="22" Height="20" Padding="0" Background="#F8FAFC" Foreground="{DynamicResource BeigeTextSub}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="12" Cursor="Hand">
+                                                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
+                                                </Button>
+                                                <TextBlock x:Name="TxtMealDate" Text="오늘" FontWeight="Bold" FontSize="11" Foreground="{DynamicResource BeigeAccent}" VerticalAlignment="Center" Margin="6,0"/>
+                                                <Button x:Name="BtnMealNext" Click="BtnMealNext_Click" Content="›" Width="22" Height="20" Padding="0" Background="#F8FAFC" Foreground="{DynamicResource BeigeTextSub}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="12" Cursor="Hand">
+                                                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
+                                                </Button>
+                                                <Button x:Name="BtnMealToday" Click="BtnMealToday_Click" Content="오늘" Padding="5,1" Margin="4,0,0,0" Background="#F8FAFC" Foreground="{DynamicResource BeigeTextMain}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="10" Cursor="Hand">
+                                                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
+                                                </Button>
+                                            </StackPanel>
+                                            <TextBlock x:Name="TxtMealCalorie" Visibility="Collapsed"/>
+                                        </DockPanel>
+                                    </Grid>
+                                </Border>
+
+                                <!-- Card 5: 날씨 & 미세먼지 (Mockup Signature) -->
+                                <Border Grid.Row="1" Background="White" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="16" Padding="16,14">
+                                    <Border.Effect>
+                                        <DropShadowEffect BlurRadius="14" Opacity="0.05" ShadowDepth="2" Color="#64748B"/>
+                                    </Border.Effect>
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="*"/>
+                                        </Grid.RowDefinitions>
+                                        <!-- Header -->
+                                        <DockPanel Grid.Row="0" Margin="0,0,0,8" LastChildFill="True">
+                                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                                <ComboBox x:Name="ComboWeatherRegion" Height="22" FontSize="10" SelectionChanged="ComboWeatherRegion_SelectionChanged" Padding="4,0" Margin="0,0,4,0"/>
+                                                <Button Content="···" Click="BtnRefreshWeather_Click" Width="26" Height="22" Background="Transparent" Foreground="{DynamicResource BeigeTextMuted}" BorderThickness="0" FontSize="15" FontWeight="Bold" Cursor="Hand" ToolTip="날씨 새로고침"/>
+                                            </StackPanel>
+                                            <TextBlock Text="날씨" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource BeigeTextMain}" VerticalAlignment="Center"/>
+                                        </DockPanel>
+
+                                        <!-- Hero Weather -->
+                                        <StackPanel Grid.Row="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,8">
+                                            <TextBlock x:Name="TxtWeatherIcon" Text="☀️" FontSize="28" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                            <TextBlock x:Name="TxtWeatherTemp" Text="맑음, 18°C" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource BeigeTextMain}" VerticalAlignment="Center"/>
+                                        </StackPanel>
+
+                                        <!-- Details -->
+                                        <StackPanel Grid.Row="2" VerticalAlignment="Center">
+                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                                <TextBlock x:Name="TxtWeatherDesc" Text="맑음, 18°C" FontSize="11.5" Foreground="{DynamicResource BeigeTextMuted}"/>
+                                                <TextBlock x:Name="TxtWeatherApparent" Text=" (체감 17.5°C)" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}"/>
+                                            </StackPanel>
+                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                                <TextBlock Text="미세먼지: " FontSize="11" Foreground="{DynamicResource BeigeTextMuted}"/>
+                                                <TextBlock Text="PM10 " FontSize="11" Foreground="{DynamicResource BeigeTextSub}"/>
+                                                <TextBlock x:Name="TxtPm10Val" Text="보통" FontSize="11" FontWeight="Bold" Foreground="#166534"/>
+                                                <TextBlock Text=" • PM2.5 " FontSize="11" Foreground="{DynamicResource BeigeTextSub}" Margin="4,0,0,0"/>
+                                                <TextBlock x:Name="TxtPm25Val" Text="좋음" FontSize="11" FontWeight="Bold" Foreground="#166534"/>
+                                                <!-- Hidden helper borders for existing code compatibility -->
+                                                <Border x:Name="BadgePm10" Visibility="Collapsed"/>
+                                                <Border x:Name="BadgePm25" Visibility="Collapsed"/>
+                                            </StackPanel>
+                                            <Border x:Name="BadgeOutdoorGuide" Background="#DCFCE7" BorderBrush="#BBF7D0" BorderThickness="1" CornerRadius="6" Padding="8,4">
+                                                <TextBlock x:Name="TxtOutdoorGuide" Text="🏃 실외활동 및 체육수업 정상 가능" FontSize="10.5" FontWeight="Bold" Foreground="#166534" HorizontalAlignment="Center"/>
+                                            </Border>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </Grid>
                         </Grid>
                     </TabItem>
-
-                    <!-- TAB 1: 수업 & 교실 도구 (Classroom Tools - 1-Click Access) -->
+<!-- TAB 1: 수업 & 교실 도구 (Classroom Tools - 1-Click Access) -->
                     <TabItem>
                         <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="4,0,8,16">
                             <StackPanel Margin="0,4,0,0">
@@ -1751,11 +1499,141 @@
                             </Grid>
                         </Border>
                     </TabItem>
+                
+                
                 </TabControl>
+
+                <!-- ======================================================== -->
+                <!-- ☰ Slide-out Navigation Drawer Overlay (Tabs 0 to 5)       -->
+                <!-- ======================================================== -->
+                <Grid x:Name="DrawerOverlay" Visibility="Collapsed" Panel.ZIndex="500">
+                    <!-- Dim Backdrop -->
+                    <Border Background="#40000000" MouseLeftButtonUp="DrawerBackdrop_MouseLeftButtonUp"/>
+
+                    <!-- Drawer Card -->
+                    <Border HorizontalAlignment="Right" Width="290" Background="White" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1,0,0,0" Padding="18,16">
+                        <Border.Effect>
+                            <DropShadowEffect BlurRadius="24" Opacity="0.12" ShadowDepth="0" Color="#000000"/>
+                        </Border.Effect>
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- Drawer Header -->
+                            <DockPanel Grid.Row="0" Margin="0,0,0,16" LastChildFill="True">
+                                <Button DockPanel.Dock="Right" Content="✕" Click="BtnCloseDrawer_Click" Width="28" Height="28" Background="#F1F5F9" Foreground="{DynamicResource BeigeTextSub}" BorderThickness="0" FontSize="12" FontWeight="Bold" Cursor="Hand">
+                                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="14"/></Style></Button.Resources>
+                                </Button>
+                                <TextBlock Text="놀티쳐 전체 메뉴 &amp; 도구" FontSize="14.5" FontWeight="Bold" Foreground="{DynamicResource BeigeTextMain}" VerticalAlignment="Center"/>
+                            </DockPanel>
+
+                            <!-- Navigation List -->
+                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                                <StackPanel>
+                                    <!-- Tab 0: 일과 & 급식 -->
+                                    <Button x:Name="NavBtnToday" Click="NavBtn_Click" Tag="0" Background="{DynamicResource BeigeAccentSoft}" Foreground="{DynamicResource BeigeAccent}" FontWeight="Bold" Height="42" HorizontalContentAlignment="Left" Padding="12,0" Margin="0,0,0,4" BorderThickness="0" Cursor="Hand">
+                                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></Button.Resources>
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <TextBlock Text="📅" FontSize="15" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                                            <TextBlock Text="일과 &amp; 급식 (메인 대시보드)" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+
+                                    <!-- Tab 1: 수업 & 교실 도구 -->
+                                    <Button x:Name="NavBtnTools" Click="NavBtn_Click" Tag="1" Background="Transparent" Foreground="{DynamicResource BeigeTextSub}" FontWeight="SemiBold" Height="42" HorizontalContentAlignment="Left" Padding="12,0" Margin="0,0,0,4" BorderThickness="0" Cursor="Hand">
+                                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></Button.Resources>
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <TextBlock Text="🧰" FontSize="15" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                                            <TextBlock Text="수업 &amp; 교실 도구" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+
+                                    <!-- Tab 2: 예약 실행 & 알림 -->
+                                    <Button x:Name="NavBtnSchedule" Click="NavBtn_Click" Tag="2" Background="Transparent" Foreground="{DynamicResource BeigeTextSub}" FontWeight="SemiBold" Height="42" HorizontalContentAlignment="Left" Padding="12,0" Margin="0,0,0,4" BorderThickness="0" Cursor="Hand">
+                                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></Button.Resources>
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <TextBlock Text="⏰" FontSize="15" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                                            <TextBlock Text="예약 실행 &amp; 알림" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+
+                                    <!-- Tab 3: 바탕화면 & PC 정리 -->
+                                    <Button x:Name="NavBtnZen" Click="NavBtn_Click" Tag="3" Background="Transparent" Foreground="{DynamicResource BeigeTextSub}" FontWeight="SemiBold" Height="42" HorizontalContentAlignment="Left" Padding="12,0" Margin="0,0,0,4" BorderThickness="0" Cursor="Hand">
+                                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></Button.Resources>
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <TextBlock Text="🧹" FontSize="15" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                                            <TextBlock Text="바탕화면 &amp; PC 정리" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+
+                                    <!-- Tab 4: 유용한 교육 사이트 -->
+                                    <Button x:Name="NavBtnSites" Click="NavBtn_Click" Tag="4" Background="Transparent" Foreground="{DynamicResource BeigeTextSub}" FontWeight="SemiBold" Height="42" HorizontalContentAlignment="Left" Padding="12,0" Margin="0,0,0,4" BorderThickness="0" Cursor="Hand">
+                                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></Button.Resources>
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <TextBlock Text="🌐" FontSize="15" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                                            <TextBlock Text="유용한 교육 사이트" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+
+                                    <!-- Tab 5: 나이스 평어 일괄입력 -->
+                                    <Button x:Name="NavBtnNeis" Click="NavBtn_Click" Tag="5" Background="Transparent" Foreground="{DynamicResource BeigeTextSub}" FontWeight="SemiBold" Height="42" HorizontalContentAlignment="Left" Padding="12,0" Margin="0,0,0,4" BorderThickness="0" Cursor="Hand">
+                                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></Button.Resources>
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <TextBlock Text="📝" FontSize="15" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                                            <TextBlock Text="나이스 평어 일괄입력" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+
+                                    <Separator Margin="0,12,0,12" Background="{DynamicResource BeigeCardBorder}"/>
+
+                                    <!-- 🌟 Pinky-NE Classroom Banner -->
+                                    <Border Margin="0,2,0,4" Background="{DynamicResource BeigeCardInner}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="8" Padding="10,8" Cursor="Hand" MouseLeftButtonUp="BannerPinky_Click" ToolTip="핑키네(Pinky-NE) 교실자료실 &amp; 놀퀴즈 바로가기 (pinky-ne.com)">
+                                        <StackPanel>
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="🌟" FontSize="12" Margin="0,0,6,0"/>
+                                                <TextBlock Text="핑키네 (Pinky-NE)" FontWeight="Bold" FontSize="11" Foreground="{DynamicResource BeigeAccent}"/>
+                                            </StackPanel>
+                                            <TextBlock Text="초등 교실자료실 &amp; 놀퀴즈 ↗" FontSize="10" Foreground="{DynamicResource BeigeTextSub}" Margin="0,2,0,0"/>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </ScrollViewer>
+
+                            <!-- Drawer Footer: Theme Switcher -->
+                            <Border Grid.Row="2" Background="{DynamicResource BeigeCardInner}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="8" Padding="8,6" Margin="0,10,0,0">
+                                <StackPanel>
+                                    <TextBlock Text="🎨 실시간 테마 선택" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource BeigeTextMuted}" Margin="2,0,0,4"/>
+                                    <UniformGrid Columns="3">
+                                        <Button Content="💎스튜디오" Click="BtnTheme_Click" Tag="Studio" FontSize="10" Padding="0,4" Margin="1" Background="{DynamicResource BeigeCardBg}" Foreground="{DynamicResource BeigeTextMain}" BorderThickness="0" Cursor="Hand"/>
+                                        <Button Content="🌙다크" Click="BtnTheme_Click" Tag="Dark" FontSize="10" Padding="0,4" Margin="1" Background="{DynamicResource BeigeCardBg}" Foreground="{DynamicResource BeigeTextMain}" BorderThickness="0" Cursor="Hand"/>
+                                        <Button Content="🌾베이지" Click="BtnTheme_Click" Tag="Beige" FontSize="10" Padding="0,4" Margin="1" Background="{DynamicResource BeigeCardBg}" Foreground="{DynamicResource BeigeTextMain}" BorderThickness="0" Cursor="Hand"/>
+                                    </UniformGrid>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </Border>
+                </Grid>
             </Grid>
         </Grid>
 
-        <!-- 3. Bottom Footer Bar & Copyright -->
+        <!-- Compatibility Hidden Controls for MainWindow.xaml.cs references -->
+
+        <TextBlock x:Name="TxtCurrentPeriodStatus" Visibility="Collapsed"/>
+
+        <TextBlock x:Name="TxtViewTitle" Visibility="Collapsed"/>
+        <TextBlock x:Name="TxtHeaderGreeting" Visibility="Collapsed"/>
+        <TextBlock x:Name="TxtClassBanner" Visibility="Collapsed"/>
+        <TextBlock x:Name="TxtBigClockTime" Visibility="Collapsed"/>
+        <TextBlock x:Name="TxtBigClockDate" Visibility="Collapsed"/>
+        <TextBlock x:Name="TxtMiniClockPeriod" Visibility="Collapsed"/>
+        <Button x:Name="BtnBannerChime" Visibility="Collapsed"/>
+        <Button x:Name="BtnEditBanner" Visibility="Collapsed"/>
+        <Button x:Name="BtnToggleWidgetCustomize" Visibility="Collapsed"/>
+        <StackPanel x:Name="HeaderWidgetControls" Visibility="Collapsed"/>
+<!-- 3. Bottom Footer Bar & Copyright -->
         <Border Grid.Row="2" Background="{DynamicResource BeigeSidebarBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="0,1,0,0" Padding="16,8">
             <Grid>
                 <!-- Left: Copyright Notice -->

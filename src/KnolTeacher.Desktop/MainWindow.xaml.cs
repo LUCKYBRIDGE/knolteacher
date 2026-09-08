@@ -1,3 +1,5 @@
+using System.IO;
+using System.Text.Json;
 using System.Collections.ObjectModel;
 using Microsoft.Win32;
 using System;
@@ -55,6 +57,7 @@ public partial class MainWindow : FluentWindow
     private readonly DispatcherTimer _statusTimer;
     private readonly DispatcherTimer _clockTimer;
     private readonly ObservableCollection<NeisStudentComment> _neisComments = new();
+    private ObservableCollection<TodoItem> _todoItems = new();
     private int _currentNeisIndex = 0;
     private bool _isSplitScreen = false;
     private double _prevLeft, _prevTop, _prevWidth, _prevHeight;
@@ -222,6 +225,7 @@ public partial class MainWindow : FluentWindow
 
             // 8. Initialize Main Screen Widgets & Customization
             InitWidgetSystem();
+            LoadTodos();
 
             // 9. Startup Auto-Run Status & Tutorial Auto-Launch
             ChkAutoStartup.IsChecked = _startupService.IsStartupEnabled();
@@ -282,9 +286,9 @@ public partial class MainWindow : FluentWindow
         var (cur, rem) = _timetableService.GetCurrentPeriodStatus();
         if (cur != null)
         {
-            TxtCurrentPeriodStatus.Text = $"🟢 현재: {cur.Name} ({cur.Subject}) - 잔여 {rem}분";
-            TxtCurrentPeriodStatus.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#059669"));
-            TxtMiniClockPeriod.Text = cur.Name;
+            if (TxtCurrentPeriodStatus != null) TxtCurrentPeriodStatus.Text = $"🟢 현재: {cur.Name} ({cur.Subject}) - 잔여 {rem}분";
+            if (TxtCurrentPeriodStatus != null) TxtCurrentPeriodStatus.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#059669"));
+            if (TxtMiniClockPeriod != null) TxtMiniClockPeriod.Text = cur.Name;
 
             if (TxtLivePeriodStatus != null)
             {
@@ -297,9 +301,9 @@ public partial class MainWindow : FluentWindow
         }
         else
         {
-            TxtCurrentPeriodStatus.Text = "☕ 현재: 쉬는 시간 / 수업 준비 중";
-            TxtCurrentPeriodStatus.Foreground = (SolidColorBrush)FindResource("BeigeAccent");
-            TxtMiniClockPeriod.Text = "쉬는 시간";
+            if (TxtCurrentPeriodStatus != null) TxtCurrentPeriodStatus.Text = "☕ 현재: 쉬는 시간 / 수업 준비 중";
+            if (TxtCurrentPeriodStatus != null) TxtCurrentPeriodStatus.Foreground = (SolidColorBrush)FindResource("BeigeAccent");
+            if (TxtMiniClockPeriod != null) TxtMiniClockPeriod.Text = "쉬는 시간";
 
             if (TxtLivePeriodStatus != null)
             {
@@ -342,6 +346,13 @@ public partial class MainWindow : FluentWindow
             _monthScheduleEvents = await _academicCalendarService.GetScheduleForMonthAsync(_calYear, _calMonth, force);
             var cells = _academicCalendarService.GenerateMonthGrid(_calYear, _calMonth, _monthScheduleEvents, _selectedCalDate);
             ListCalendarCells.ItemsSource = cells;
+            if (ListMonthAcademicEvents != null && _monthScheduleEvents != null)
+            {
+                ListMonthAcademicEvents.ItemsSource = _monthScheduleEvents
+                    .Where(ev => ev.Date.HasValue)
+                    .OrderBy(ev => ev.Date!.Value)
+                    .ToList();
+            }
             UpdateSelectedDayDetail(_selectedCalDate);
         }
         catch (Exception ex)
@@ -418,6 +429,13 @@ public partial class MainWindow : FluentWindow
             _selectedCalDate = cell.Date;
             var cells = _academicCalendarService.GenerateMonthGrid(_calYear, _calMonth, _monthScheduleEvents, _selectedCalDate);
             ListCalendarCells.ItemsSource = cells;
+            if (ListMonthAcademicEvents != null && _monthScheduleEvents != null)
+            {
+                ListMonthAcademicEvents.ItemsSource = _monthScheduleEvents
+                    .Where(ev => ev.Date.HasValue)
+                    .OrderBy(ev => ev.Date!.Value)
+                    .ToList();
+            }
             UpdateSelectedDayDetail(cell.Date, cell.Events);
         }
     }
@@ -474,11 +492,13 @@ public partial class MainWindow : FluentWindow
             {
                 TxtMealMenu.Text = meal.MenuText;
                 TxtMealCalorie.Text = $"열량: {meal.Calorie}";
+                if (TxtMealCaloriePill != null) TxtMealCaloriePill.Text = meal.Calorie;
             }
             else
             {
                 TxtMealMenu.Text = "등록된 급식 정보가 없습니다.";
                 TxtMealCalorie.Text = "열량: 0 kcal";
+                if (TxtMealCaloriePill != null) TxtMealCaloriePill.Text = "0 kcal";
             }
         }
         catch
@@ -782,12 +802,12 @@ public partial class MainWindow : FluentWindow
         if (sender is System.Windows.Controls.Button btn && btn.Tag is string tagStr && int.TryParse(tagStr, out int index))
         {
             MainTabs.SelectedIndex = index;
+            if (DrawerOverlay != null) DrawerOverlay.Visibility = Visibility.Collapsed;
 
             var accentBrush = (SolidColorBrush)FindResource("BeigeAccent");
             var transparentBrush = Brushes.Transparent;
             var textMainBrush = (SolidColorBrush)FindResource("BeigeTextMain");
 
-            // Reset all
             NavBtnToday.Background = transparentBrush;
             NavBtnToday.Foreground = textMainBrush;
             NavBtnTools.Background = transparentBrush;
@@ -801,48 +821,22 @@ public partial class MainWindow : FluentWindow
             NavBtnNeis.Background = transparentBrush;
             NavBtnNeis.Foreground = textMainBrush;
 
-            // Activate selected
             if (index == 0)
             {
-                NavBtnToday.Background = accentBrush;
-                NavBtnToday.Foreground = Brushes.White;
+                NavBtnToday.Background = (Brush)FindResource("BeigeAccentSoft");
+                NavBtnToday.Foreground = accentBrush;
+                if (BtnReturnDashboard != null) BtnReturnDashboard.Visibility = Visibility.Collapsed;
                 TxtViewTitle.Text = "📅 오늘의 일과 & 급식";
             }
-            else if (index == 1)
+            else
             {
-                NavBtnTools.Background = accentBrush;
-                NavBtnTools.Foreground = Brushes.White;
-                TxtViewTitle.Text = "🧰 수업 & 교실 도구";
-            }
-            else if (index == 2)
-            {
-                NavBtnSchedule.Background = accentBrush;
-                NavBtnSchedule.Foreground = Brushes.White;
-                TxtViewTitle.Text = "⏰ 예약 실행 & 알림";
-            }
-            else if (index == 3)
-            {
-                NavBtnZen.Background = accentBrush;
-                NavBtnZen.Foreground = Brushes.White;
-                TxtViewTitle.Text = "🧹 바탕화면 & PC 정리";
-            }
-            else if (index == 4)
-            {
-                NavBtnSites.Background = accentBrush;
-                NavBtnSites.Foreground = Brushes.White;
-                TxtViewTitle.Text = "🌐 교사용 유용한 교육 사이트 & 업무포털";
-            }
-            else if (index == 5)
-            {
-                NavBtnNeis.Background = accentBrush;
-                NavBtnNeis.Foreground = Brushes.White;
-                TxtViewTitle.Text = "📝 나이스 평어 일괄입력 도구";
-            }
+                if (BtnReturnDashboard != null) BtnReturnDashboard.Visibility = Visibility.Visible;
 
-            // Tab 0 specific widget customization button visibility
-            if (BtnToggleWidgetCustomize != null)
-            {
-                BtnToggleWidgetCustomize.Visibility = (index == 0) ? Visibility.Visible : Visibility.Collapsed;
+                if (index == 1) { NavBtnTools.Background = (Brush)FindResource("BeigeAccentSoft"); NavBtnTools.Foreground = accentBrush; TxtViewTitle.Text = "🧰 수업 & 교실 도구"; }
+                else if (index == 2) { NavBtnSchedule.Background = (Brush)FindResource("BeigeAccentSoft"); NavBtnSchedule.Foreground = accentBrush; TxtViewTitle.Text = "⏰ 예약 실행 & 알림"; }
+                else if (index == 3) { NavBtnZen.Background = (Brush)FindResource("BeigeAccentSoft"); NavBtnZen.Foreground = accentBrush; TxtViewTitle.Text = "🧹 바탕화면 & PC 정리"; }
+                else if (index == 4) { NavBtnSites.Background = (Brush)FindResource("BeigeAccentSoft"); NavBtnSites.Foreground = accentBrush; TxtViewTitle.Text = "🌐 유용한 교육 사이트"; }
+                else if (index == 5) { NavBtnNeis.Background = (Brush)FindResource("BeigeAccentSoft"); NavBtnNeis.Foreground = accentBrush; TxtViewTitle.Text = "📝 나이스 평어 일괄입력"; }
             }
         }
     }
@@ -1534,440 +1528,166 @@ public partial class MainWindow : FluentWindow
 
     #endregion
 
-    #region Main Screen Widget Management & Customization
+    #region Bento Grid, Todo List & Navigation Drawer Handlers
 
+    private void ApplyDefaultWidgetLayout() { }
+    private void SaveCurrentWidgetLayout() { }
     private void InitWidgetSystem()
     {
-        _mainWidgets.Clear();
-        _mainWidgets.AddRange(new[]
-        {
-            WidgetNotice,
-            WidgetClock,
-            WidgetTimetable,
-            WidgetCalendar,
-            WidgetDDay,
-            WidgetWeather,
-            WidgetMeal
-        });
-
-        foreach (var w in _mainWidgets)
-        {
-            w.IsEditMode = false;
-            w.Closed += (card) =>
-            {
-                UpdateWidgetCheckboxes();
-                SaveCurrentWidgetLayout();
-            };
-            w.Moved += (card) => SaveCurrentWidgetLayout();
-            w.Resized += (card) => SaveCurrentWidgetLayout();
-        }
-
-        if (_configService.MainWidgetLayout != null)
-        {
-            _isWidgetsLocked = _configService.MainWidgetLayout.IsLocked;
-            UpdateWidgetsLockState();
-        }
-
-        LoadWidgetLayout();
-    }
-
-    private void MainWidgetCanvas_SizeChanged(object sender, SizeChangedEventArgs e)
-    {
-        if (!_isWidgetLayoutInitialized && e.NewSize.Width > 400 && e.NewSize.Height > 300)
-        {
-            _isWidgetLayoutInitialized = true;
-            LoadWidgetLayout();
-        }
+        // Bento 3-column Grid layout initialized
     }
 
     private void LoadWidgetLayout()
     {
-        var cfg = _configService.MainWidgetLayout;
-        if (cfg != null && cfg.LayoutVersion >= 2 && cfg.Widgets != null && cfg.Widgets.Count > 0)
-        {
-            foreach (var state in cfg.Widgets)
-            {
-                var card = _mainWidgets.FirstOrDefault(w => w.WidgetId == state.Id);
-                if (card != null)
-                {
-                    if (state.Width >= card.MinWidth) card.Width = state.Width;
-                    if (state.Height >= card.MinHeight) card.Height = state.Height;
+        // Responsive Bento Layout
+    }
 
-                    Canvas.SetLeft(card, Math.Max(0, state.X));
-                    Canvas.SetTop(card, Math.Max(0, state.Y));
-                    card.Visibility = state.IsVisible ? Visibility.Visible : Visibility.Collapsed;
-                    if (state.ZIndex > 0) Panel.SetZIndex(card, state.ZIndex);
+    #region Todo List Handlers (오늘의 할 일)
+
+    private void LoadTodos()
+    {
+        try
+        {
+            string file = Path.Combine(_configService.ConfigDir, "todos.json");
+            if (File.Exists(file))
+            {
+                string json = File.ReadAllText(file);
+                var list = JsonSerializer.Deserialize<List<TodoItem>>(json);
+                if (list != null && list.Count > 0)
+                {
+                    _todoItems = new ObservableCollection<TodoItem>(list);
+                    if (ListTodoItems != null) ListTodoItems.ItemsSource = _todoItems;
+                    return;
                 }
             }
-            _isWidgetsLocked = cfg.IsLocked;
-            UpdateWidgetsLockState();
-            UpdateWidgetCheckboxes();
         }
-        else
+        catch { }
+
+        _todoItems = new ObservableCollection<TodoItem>
         {
-            ApplyDefaultWidgetLayout();
-            SaveCurrentWidgetLayout();
-        }
-        UpdateCanvasExtent();
+            new TodoItem { Text = "1교시 수학 교구 확인 (자, 각도기)", IsCompleted = false },
+            new TodoItem { Text = "학부모 상담 설문지 취합 및 확인", IsCompleted = false },
+            new TodoItem { Text = "하교 전 알림장 지도 및 준비물 확인", IsCompleted = false }
+        };
+        if (ListTodoItems != null) ListTodoItems.ItemsSource = _todoItems;
+        SaveTodos();
     }
 
-    private void UpdateCanvasExtent()
+    private void SaveTodos()
     {
-        double maxRequiredW = WidgetScrollViewer.ActualWidth > 0 ? WidgetScrollViewer.ActualWidth : 1050;
-        double maxRequiredH = WidgetScrollViewer.ActualHeight > 0 ? WidgetScrollViewer.ActualHeight : 720;
-
-        foreach (var c in _mainWidgets)
+        try
         {
-            if (c.Visibility == Visibility.Visible)
-            {
-                double left = Canvas.GetLeft(c);
-                double top = Canvas.GetTop(c);
-                double w = c.ActualWidth > 0 ? c.ActualWidth : c.Width;
-                double h = c.ActualHeight > 0 ? c.ActualHeight : c.Height;
-
-                if (!double.IsNaN(left) && w > 0) maxRequiredW = Math.Max(maxRequiredW, left + w + 20);
-                if (!double.IsNaN(top) && h > 0) maxRequiredH = Math.Max(maxRequiredH, top + h + 20);
-            }
+            string file = Path.Combine(_configService.ConfigDir, "todos.json");
+            string json = JsonSerializer.Serialize(_todoItems.ToList(), new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(file, json);
         }
-
-        MainWidgetCanvas.Width = maxRequiredW;
-        MainWidgetCanvas.Height = maxRequiredH;
+        catch { }
     }
 
-    private void SaveCurrentWidgetLayout()
+    private void BtnAddTodo_Click(object sender, RoutedEventArgs e)
     {
-        var cfg = _configService.MainWidgetLayout ?? new MainWidgetLayoutConfig();
-        cfg.LayoutVersion = 2;
-        cfg.IsLocked = _isWidgetsLocked;
-        cfg.Widgets.Clear();
-
-        foreach (var card in _mainWidgets)
+        if (TbNewTodo != null && !string.IsNullOrWhiteSpace(TbNewTodo.Text))
         {
-            cfg.Widgets.Add(new MainWidgetState
-            {
-                Id = card.WidgetId,
-                X = Canvas.GetLeft(card),
-                Y = Canvas.GetTop(card),
-                Width = card.ActualWidth > 0 ? card.ActualWidth : card.Width,
-                Height = card.ActualHeight > 0 ? card.ActualHeight : card.Height,
-                IsVisible = card.Visibility == Visibility.Visible,
-                ZIndex = Panel.GetZIndex(card)
-            });
+            _todoItems.Add(new TodoItem { Text = TbNewTodo.Text.Trim(), IsCompleted = false });
+            TbNewTodo.Text = string.Empty;
+            SaveTodos();
         }
-
-        UpdateCanvasExtent();
-        _configService.SaveMainWidgetLayout();
     }
 
-    private void UpdateWidgetCheckboxes()
+    private void TbNewTodo_KeyDown(object sender, KeyEventArgs e)
     {
-        ChkWidgetNotice.IsChecked = WidgetNotice.Visibility == Visibility.Visible;
-        ChkWidgetClock.IsChecked = WidgetClock.Visibility == Visibility.Visible;
-        ChkWidgetTimetable.IsChecked = WidgetTimetable.Visibility == Visibility.Visible;
-        ChkWidgetCalendar.IsChecked = WidgetCalendar.Visibility == Visibility.Visible;
-        ChkWidgetDDay.IsChecked = WidgetDDay.Visibility == Visibility.Visible;
-        ChkWidgetWeather.IsChecked = WidgetWeather.Visibility == Visibility.Visible;
-        ChkWidgetMeal.IsChecked = WidgetMeal.Visibility == Visibility.Visible;
-    }
-
-    private void UpdateWidgetsLockState()
-    {
-        foreach (var w in _mainWidgets)
+        if (e.Key == Key.Enter)
         {
-            w.IsLocked = _isWidgetsLocked;
+            BtnAddTodo_Click(sender, e);
         }
-
-        BtnToggleWidgetLock.Content = _isWidgetsLocked ? "🔒 위젯 잠금됨" : "🔓 위젯 조절 모드";
-        BtnToggleWidgetLock.Foreground = _isWidgetsLocked ? (SolidColorBrush)FindResource("BeigeTextMuted") : (SolidColorBrush)FindResource("BeigeAccent");
     }
 
-    public void SetWidgetEditMode(bool editMode)
+    private void TodoCheckbox_Click(object sender, RoutedEventArgs e)
     {
-        WidgetCustomizeBar.Visibility = editMode ? Visibility.Visible : Visibility.Collapsed;
-        if (editMode)
+        SaveTodos();
+    }
+
+    private void BtnDeleteTodo_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement fe && fe.Tag is TodoItem item)
         {
-            BtnToggleWidgetCustomize.Background = (Brush)FindResource("BeigeAccent");
-            BtnToggleWidgetCustomize.Foreground = Brushes.White;
+            _todoItems.Remove(item);
+            SaveTodos();
         }
-        else
+    }
+
+    private void BtnTodoMore_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement fe && fe.ContextMenu != null)
         {
-            BtnToggleWidgetCustomize.Background = (Brush)FindResource("BeigeAccentSoft");
-            BtnToggleWidgetCustomize.Foreground = (Brush)FindResource("BeigeAccent");
+            fe.ContextMenu.PlacementTarget = fe;
+            fe.ContextMenu.IsOpen = true;
         }
+    }
 
-        foreach (var w in _mainWidgets)
+    private void MenuClearCompletedTodos_Click(object sender, RoutedEventArgs e)
+    {
+        var completed = _todoItems.Where(t => t.IsCompleted).ToList();
+        foreach (var item in completed) _todoItems.Remove(item);
+        SaveTodos();
+    }
+
+    private void MenuResetSampleTodos_Click(object sender, RoutedEventArgs e)
+    {
+        _todoItems.Clear();
+        _todoItems.Add(new TodoItem { Text = "1교시 수학 교구 확인 (자, 각도기)", IsCompleted = false });
+        _todoItems.Add(new TodoItem { Text = "학부모 상담 설문지 취합 및 확인", IsCompleted = false });
+        _todoItems.Add(new TodoItem { Text = "하교 전 알림장 지도 및 준비물 확인", IsCompleted = false });
+        SaveTodos();
+    }
+
+    #endregion
+
+    #region Drawer & Timetable More Handlers
+
+    private void BtnToggleDrawer_Click(object sender, RoutedEventArgs e)
+    {
+        if (DrawerOverlay != null)
         {
-            w.IsEditMode = editMode;
+            DrawerOverlay.Visibility = (DrawerOverlay.Visibility == Visibility.Visible) ? Visibility.Collapsed : Visibility.Visible;
         }
-        UpdateWidgetCheckboxes();
     }
 
-    private void BtnToggleWidgetCustomize_Click(object sender, RoutedEventArgs e)
+    private void BtnCloseDrawer_Click(object sender, RoutedEventArgs e)
     {
-        bool isOpen = WidgetCustomizeBar.Visibility == Visibility.Visible;
-        SetWidgetEditMode(!isOpen);
+        if (DrawerOverlay != null) DrawerOverlay.Visibility = Visibility.Collapsed;
     }
 
-    private void BtnDoneWidgetCustomize_Click(object sender, RoutedEventArgs e)
+    private void DrawerBackdrop_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
-        SetWidgetEditMode(false);
+        if (DrawerOverlay != null) DrawerOverlay.Visibility = Visibility.Collapsed;
     }
 
-    private void ChkWidget_Click(object sender, RoutedEventArgs e)
+    private void BtnReturnDashboard_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is CheckBox chk && chk.Tag is string tag)
+        MainTabs.SelectedIndex = 0;
+        if (BtnReturnDashboard != null) BtnReturnDashboard.Visibility = Visibility.Collapsed;
+        NavBtnToday.Background = (Brush)FindResource("BeigeAccentSoft");
+        NavBtnToday.Foreground = (Brush)FindResource("BeigeAccent");
+    }
+
+    private void BtnTimetableMore_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement fe && fe.ContextMenu != null)
         {
-            var card = _mainWidgets.FirstOrDefault(w => w.WidgetId == tag);
-            if (card != null)
-            {
-                bool show = chk.IsChecked == true;
-                card.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
-
-                if (show)
-                {
-                    card.IsEditMode = WidgetCustomizeBar.Visibility == Visibility.Visible;
-                    card.BringToFront();
-                    double maxLeft = Math.Max(0, MainWidgetCanvas.ActualWidth - card.ActualWidth);
-                    double maxTop = Math.Max(0, MainWidgetCanvas.ActualHeight - card.ActualHeight);
-                    double left = Canvas.GetLeft(card);
-                    double top = Canvas.GetTop(card);
-                    if (double.IsNaN(left) || left > maxLeft) Canvas.SetLeft(card, Math.Max(0, Math.Min(left, maxLeft)));
-                    if (double.IsNaN(top) || top > maxTop) Canvas.SetTop(card, Math.Max(0, Math.Min(top, maxTop)));
-                }
-
-                SaveCurrentWidgetLayout();
-            }
+            fe.ContextMenu.PlacementTarget = fe;
+            fe.ContextMenu.IsOpen = true;
         }
     }
 
-    private void BtnToggleWidgetLock_Click(object sender, RoutedEventArgs e)
+    private void BtnEditAllTimetable_Click(object sender, RoutedEventArgs e)
     {
-        _isWidgetsLocked = !_isWidgetsLocked;
-        UpdateWidgetsLockState();
-        SaveCurrentWidgetLayout();
+        var dlg = new PeriodAlarmSettingsDialog(_configService, _soundService, _timetableService) { Owner = this };
+        dlg.ShowDialog();
+        RefreshTimetable();
     }
 
-    private void BtnResetWidgetLayout_Click(object sender, RoutedEventArgs e)
-    {
-        ApplyDefaultWidgetLayout();
-        SaveCurrentWidgetLayout();
-    }
-
-    private void BtnSaveWidgetLayout_Click(object sender, RoutedEventArgs e)
-    {
-        SaveCurrentWidgetLayout();
-        System.Windows.MessageBox.Show("현재 메인화면 위젯 배치와 크기가 저장되었습니다.\n다음 실행 시에도 그대로 유지됩니다.", "위젯 배치 저장 완료", MessageBoxButton.OK, MessageBoxImage.Information);
-    }
-
-    private void BtnPresetDefault_Click(object sender, RoutedEventArgs e)
-    {
-        ApplyDefaultWidgetLayout();
-        SaveCurrentWidgetLayout();
-    }
-
-    private void ApplyDefaultWidgetLayout()
-    {
-        double availableWidth = WidgetScrollViewer.ActualWidth > 200
-            ? WidgetScrollViewer.ActualWidth - 24
-            : Math.Max(1400, ActualWidth > 300 ? ActualWidth - 260 : 1400);
-
-        double availableHeight = WidgetScrollViewer.ActualHeight > 200
-            ? WidgetScrollViewer.ActualHeight - 24
-            : Math.Max(780, ActualHeight > 200 ? ActualHeight - 180 : 780);
-
-        double canvasW = Math.Max(1200, availableWidth);
-        double canvasH = Math.Max(750, availableHeight);
-
-        // Row 0: Notice Banner & Digital Clock
-        double topBarH = 76;
-        double clockW = 320;
-        double bannerW = Math.Max(WidgetNotice.MinWidth, canvasW - clockW - 12);
-
-        WidgetNotice.Width = bannerW;
-        WidgetNotice.Height = topBarH;
-        Canvas.SetLeft(WidgetNotice, 0);
-        Canvas.SetTop(WidgetNotice, 0);
-        WidgetNotice.Visibility = Visibility.Visible;
-
-        WidgetClock.Width = clockW;
-        WidgetClock.Height = topBarH;
-        Canvas.SetLeft(WidgetClock, canvasW - clockW);
-        Canvas.SetTop(WidgetClock, 0);
-        WidgetClock.Visibility = Visibility.Visible;
-
-        // Row 1: 3 Columns
-        double startY = topBarH + 12;
-        double remH = Math.Max(580, canvasH - startY - 12);
-
-        // Column widths
-        double colSpacing = 12;
-        double contentW = canvasW - (colSpacing * 2);
-        double col0W = Math.Round(contentW * 0.36);
-        double col1W = Math.Round(contentW * 0.35);
-        double col2W = contentW - col0W - col1W;
-
-        // Col 0: Timetable
-        WidgetTimetable.Width = col0W;
-        WidgetTimetable.Height = remH;
-        Canvas.SetLeft(WidgetTimetable, 0);
-        Canvas.SetTop(WidgetTimetable, startY);
-        WidgetTimetable.Visibility = Visibility.Visible;
-
-        // Col 1: Calendar & D-Day
-        double calH = Math.Round(remH * 0.65);
-        double ddayH = remH - calH - colSpacing;
-
-        WidgetCalendar.Width = col1W;
-        WidgetCalendar.Height = calH;
-        Canvas.SetLeft(WidgetCalendar, col0W + colSpacing);
-        Canvas.SetTop(WidgetCalendar, startY);
-        WidgetCalendar.Visibility = Visibility.Visible;
-
-        WidgetDDay.Width = col1W;
-        WidgetDDay.Height = ddayH;
-        Canvas.SetLeft(WidgetDDay, col0W + colSpacing);
-        Canvas.SetTop(WidgetDDay, startY + calH + colSpacing);
-        WidgetDDay.Visibility = Visibility.Visible;
-
-        // Col 2: Weather & Lunch Meal
-        double weatherH = 185;
-        double mealH = remH - weatherH - colSpacing;
-
-        WidgetWeather.Width = col2W;
-        WidgetWeather.Height = weatherH;
-        Canvas.SetLeft(WidgetWeather, col0W + col1W + (colSpacing * 2));
-        Canvas.SetTop(WidgetWeather, startY);
-        WidgetWeather.Visibility = Visibility.Visible;
-
-        WidgetMeal.Width = col2W;
-        WidgetMeal.Height = mealH;
-        Canvas.SetLeft(WidgetMeal, col0W + col1W + (colSpacing * 2));
-        Canvas.SetTop(WidgetMeal, startY + weatherH + colSpacing);
-        WidgetMeal.Visibility = Visibility.Visible;
-
-        UpdateWidgetCheckboxes();
-    }
-
-    private void BtnPresetFocusTimetableMeal_Click(object sender, RoutedEventArgs e)
-    {
-        double availableWidth = WidgetScrollViewer.ActualWidth > 200
-            ? WidgetScrollViewer.ActualWidth - 24
-            : Math.Max(1400, ActualWidth > 300 ? ActualWidth - 260 : 1400);
-
-        double availableHeight = WidgetScrollViewer.ActualHeight > 200
-            ? WidgetScrollViewer.ActualHeight - 24
-            : Math.Max(780, ActualHeight > 200 ? ActualHeight - 180 : 780);
-
-        double canvasW = Math.Max(1200, availableWidth);
-        double canvasH = Math.Max(750, availableHeight);
-
-        double topBarH = 76;
-        double clockW = 320;
-        double bannerW = Math.Max(WidgetNotice.MinWidth, canvasW - clockW - 12);
-
-        WidgetNotice.Width = bannerW;
-        WidgetNotice.Height = topBarH;
-        Canvas.SetLeft(WidgetNotice, 0);
-        Canvas.SetTop(WidgetNotice, 0);
-        WidgetNotice.Visibility = Visibility.Visible;
-
-        WidgetClock.Width = clockW;
-        WidgetClock.Height = topBarH;
-        Canvas.SetLeft(WidgetClock, canvasW - clockW);
-        Canvas.SetTop(WidgetClock, 0);
-        WidgetClock.Visibility = Visibility.Visible;
-
-        double startY = topBarH + 12;
-        double remH = Math.Max(580, canvasH - startY - 12);
-        double colSpacing = 12;
-        double colW = (canvasW - colSpacing) / 2.0;
-
-        WidgetTimetable.Width = colW;
-        WidgetTimetable.Height = remH;
-        Canvas.SetLeft(WidgetTimetable, 0);
-        Canvas.SetTop(WidgetTimetable, startY);
-        WidgetTimetable.Visibility = Visibility.Visible;
-
-        WidgetMeal.Width = colW;
-        WidgetMeal.Height = remH;
-        Canvas.SetLeft(WidgetMeal, colW + colSpacing);
-        Canvas.SetTop(WidgetMeal, startY);
-        WidgetMeal.Visibility = Visibility.Visible;
-
-        WidgetCalendar.Visibility = Visibility.Collapsed;
-        WidgetDDay.Visibility = Visibility.Collapsed;
-        WidgetWeather.Visibility = Visibility.Collapsed;
-
-        UpdateWidgetCheckboxes();
-        SaveCurrentWidgetLayout();
-    }
-
-    private void BtnPresetFocusCalendar_Click(object sender, RoutedEventArgs e)
-    {
-        double availableWidth = WidgetScrollViewer.ActualWidth > 200
-            ? WidgetScrollViewer.ActualWidth - 24
-            : Math.Max(1400, ActualWidth > 300 ? ActualWidth - 260 : 1400);
-
-        double availableHeight = WidgetScrollViewer.ActualHeight > 200
-            ? WidgetScrollViewer.ActualHeight - 24
-            : Math.Max(780, ActualHeight > 200 ? ActualHeight - 180 : 780);
-
-        double canvasW = Math.Max(1200, availableWidth);
-        double canvasH = Math.Max(750, availableHeight);
-
-        double topBarH = 76;
-        double clockW = 320;
-        double bannerW = Math.Max(WidgetNotice.MinWidth, canvasW - clockW - 12);
-
-        WidgetNotice.Width = bannerW;
-        WidgetNotice.Height = topBarH;
-        Canvas.SetLeft(WidgetNotice, 0);
-        Canvas.SetTop(WidgetNotice, 0);
-        WidgetNotice.Visibility = Visibility.Visible;
-
-        WidgetClock.Width = clockW;
-        WidgetClock.Height = topBarH;
-        Canvas.SetLeft(WidgetClock, canvasW - clockW);
-        Canvas.SetTop(WidgetClock, 0);
-        WidgetClock.Visibility = Visibility.Visible;
-
-        double startY = topBarH + 12;
-        double remH = Math.Max(580, canvasH - startY - 12);
-        double colSpacing = 12;
-        double contentW = canvasW - (colSpacing * 2);
-        double col0W = Math.Round(contentW * 0.32);
-        double col1W = Math.Round(contentW * 0.42);
-        double col2W = contentW - col0W - col1W;
-
-        WidgetTimetable.Width = col0W;
-        WidgetTimetable.Height = remH;
-        Canvas.SetLeft(WidgetTimetable, 0);
-        Canvas.SetTop(WidgetTimetable, startY);
-        WidgetTimetable.Visibility = Visibility.Visible;
-
-        WidgetCalendar.Width = col1W;
-        WidgetCalendar.Height = remH;
-        Canvas.SetLeft(WidgetCalendar, col0W + colSpacing);
-        Canvas.SetTop(WidgetCalendar, startY);
-        WidgetCalendar.Visibility = Visibility.Visible;
-
-        WidgetDDay.Width = col2W;
-        WidgetDDay.Height = Math.Round(remH * 0.55);
-        Canvas.SetLeft(WidgetDDay, col0W + col1W + (colSpacing * 2));
-        Canvas.SetTop(WidgetDDay, startY);
-        WidgetDDay.Visibility = Visibility.Visible;
-
-        WidgetMeal.Width = col2W;
-        WidgetMeal.Height = remH - WidgetDDay.Height - colSpacing;
-        Canvas.SetLeft(WidgetMeal, col0W + col1W + (colSpacing * 2));
-        Canvas.SetTop(WidgetMeal, startY + WidgetDDay.Height + colSpacing);
-        WidgetMeal.Visibility = Visibility.Visible;
-
-        WidgetWeather.Visibility = Visibility.Collapsed;
-
-        UpdateWidgetCheckboxes();
-        SaveCurrentWidgetLayout();
-    }
+    #endregion
 
     #endregion
 
@@ -2043,7 +1763,7 @@ public partial class MainWindow : FluentWindow
             ChkTutorialAction.Content = "추천 3단 정돈형 위젯 배치 바로 적용하기";
             ChkTutorialAction.IsChecked = true;
             TxtTutorialActionHint.Text = "체크 시 시간표, 캘린더, 급식·D-Day가 3개 열로 깔끔하게 정돈됩니다.";
-            UpdateTutorialSpotlight(HeaderWidgetControls);
+            UpdateTutorialSpotlight(PillLivePeriodStatus);
         }
         else if (_tutorialStep == 2)
         {
@@ -2054,7 +1774,7 @@ public partial class MainWindow : FluentWindow
             ChkTutorialAction.Content = "수업 시작 1분 전 예비령 알림 차임벨 켜기";
             ChkTutorialAction.IsChecked = true;
             TxtTutorialActionHint.Text = "수업 시작 전 학생들의 주의 집중을 돕는 은은한 차임벨과 카운트다운을 켭니다.";
-            UpdateTutorialSpotlight(WidgetTimetable);
+            UpdateTutorialSpotlight(ListTimetable);
         }
         else if (_tutorialStep == 3)
         {
@@ -2065,7 +1785,7 @@ public partial class MainWindow : FluentWindow
             ChkTutorialAction.Content = "학생용 화면(모니터 2) 자동 감지 및 배치";
             ChkTutorialAction.IsChecked = true;
             TxtTutorialActionHint.Text = "듀얼 모니터 환경에서 학생용 화면을 자동으로 감지하여 놀보드를 우선 띄웁니다.";
-            UpdateTutorialSpotlight(BtnSidebarBoard);
+            UpdateTutorialSpotlight(PillLivePeriodStatus);
         }
         else if (_tutorialStep == 4)
         {
