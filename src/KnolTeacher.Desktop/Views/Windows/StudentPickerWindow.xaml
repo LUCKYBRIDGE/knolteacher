@@ -6,9 +6,127 @@
         mc:Ignorable="d"
         Title="🌱 뽑기 레이스 (Alt+8)" Height="740" Width="1220"
         MinHeight="620" MinWidth="960"
-        WindowStartupLocation="CenterScreen"
         Topmost="True"
         Background="#1E1E24">
+    <Window.Resources>
+        <!-- 🎨 Dark High-Contrast Race ComboBox Style -->
+        <ControlTemplate x:Key="DarkComboBoxToggleButton" TargetType="{x:Type ToggleButton}">
+            <Border x:Name="templateRoot" Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
+                    CornerRadius="6" SnapsToDevicePixels="true">
+                <Border x:Name="splitBorder" Width="20" HorizontalAlignment="Right"
+                        BorderThickness="0" Background="Transparent" SnapsToDevicePixels="true">
+                    <Path x:Name="arrow" Data="F1 M 0,0 L 2.66,2.66 L 5.33,0 Z"
+                          Fill="{TemplateBinding Foreground}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+            </Border>
+            <ControlTemplate.Triggers>
+                <Trigger Property="IsMouseOver" Value="true">
+                    <Setter TargetName="templateRoot" Property="Background" Value="#334155"/>
+                    <Setter TargetName="templateRoot" Property="BorderBrush" Value="#38BDF8"/>
+                </Trigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate>
+
+        <Style x:Key="DarkRaceComboBoxItem" TargetType="{x:Type ComboBoxItem}">
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="Padding" Value="8,5"/>
+            <Setter Property="Foreground" Value="#F8FAFC"/>
+            <Setter Property="Background" Value="#0F172A"/>
+            <Setter Property="FontSize" Value="11.5"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ComboBoxItem}">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                Padding="{TemplateBinding Padding}"
+                                CornerRadius="4" Margin="2,1"
+                                SnapsToDevicePixels="true">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                              SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="true">
+                                <Setter TargetName="Bd" Property="Background" Value="#2563EB"/>
+                                <Setter Property="Foreground" Value="#FFFFFF"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="true">
+                                <Setter TargetName="Bd" Property="Background" Value="#1D4ED8"/>
+                                <Setter Property="Foreground" Value="#FDE047"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="DarkRaceComboBox" TargetType="{x:Type ComboBox}">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Background" Value="#1E293B"/>
+            <Setter Property="BorderBrush" Value="#475569"/>
+            <Setter Property="Foreground" Value="#F8FAFC"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto"/>
+            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
+            <Setter Property="Padding" Value="8,2,22,2"/>
+            <Setter Property="ScrollViewer.CanContentScroll" Value="true"/>
+            <Setter Property="ScrollViewer.PanningMode" Value="Both"/>
+            <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
+            <Setter Property="ItemContainerStyle" Value="{StaticResource DarkRaceComboBoxItem}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ComboBox}">
+                        <Grid x:Name="templateRoot" SnapsToDevicePixels="true">
+                            <Popup x:Name="PART_Popup" AllowsTransparency="true"
+                                   IsOpen="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                   Placement="Bottom" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}">
+                                <Border x:Name="dropDownBorder" MaxHeight="{TemplateBinding MaxDropDownHeight}"
+                                        MinWidth="{Binding ActualWidth, ElementName=templateRoot}"
+                                        Background="#0F172A" BorderBrush="#38BDF8" BorderThickness="1.5"
+                                        CornerRadius="8" Padding="3" Margin="0,2,0,0">
+                                    <Border.Effect>
+                                        <DropShadowEffect BlurRadius="12" Color="#000000" Opacity="0.85" ShadowDepth="4"/>
+                                    </Border.Effect>
+                                    <ScrollViewer x:Name="DropDownScrollViewer" MaxHeight="220" Margin="0" Focusable="false">
+                                        <ItemsPresenter x:Name="ItemsPresenter" KeyboardNavigation.DirectionalNavigation="Contained" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                            <ToggleButton x:Name="toggleButton" Background="{TemplateBinding Background}"
+                                          BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
+                                          Foreground="{TemplateBinding Foreground}"
+                                          IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                          Template="{StaticResource DarkComboBoxToggleButton}"/>
+                            <ContentPresenter x:Name="contentPresenter"
+                                              ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}"
+                                              ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                              Content="{TemplateBinding SelectionBoxItem}"
+                                              ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
+                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              IsHitTestVisible="false"
+                                              Margin="{TemplateBinding Padding}"
+                                              SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="HasItems" Value="false">
+                                <Setter TargetName="dropDownBorder" Property="MinHeight" Value="95"/>
+                            </Trigger>
+                            <Trigger Property="IsGrouping" Value="true">
+                                <Setter Property="ScrollViewer.CanContentScroll" Value="false"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="true">
+                                <Setter Property="BorderBrush" Value="#38BDF8"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
 
     <Grid>
         <Grid.RowDefinitions>
@@ -38,13 +156,15 @@
                 </StackPanel>
 
                 <!-- Center: Configurable Race Topic Banner -->
-                <StackPanel x:Name="PanelTitle" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="420">
-                    <TextBox x:Name="TbRaceTitle" Text="이번엔 1등, 꼴등이 받아요"
-                             FontSize="18" FontWeight="Bold" Foreground="White"
-                             Background="Transparent" BorderThickness="0"
-                             TextAlignment="Center" VerticalAlignment="Center"
-                             MaxWidth="310"
-                             Cursor="IBeam" ToolTip="클릭하여 이번 뽑기 레이스 제목을 직접 수정할 수 있습니다"/>
+                <StackPanel x:Name="PanelTitle" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="440">
+                    <Border Background="#26000000" CornerRadius="8" Padding="10,3" BorderBrush="#334155" BorderThickness="1">
+                        <TextBox x:Name="TbRaceTitle" Text="이번엔 1등, 꼴등이 받아요"
+                                 FontSize="17" FontWeight="Bold" Foreground="#FDE047"
+                                 Background="Transparent" BorderThickness="0"
+                                 TextAlignment="Center" VerticalAlignment="Center"
+                                 MaxWidth="310"
+                                 Cursor="IBeam" ToolTip="클릭하여 이번 뽑기 레이스 제목을 직접 수정할 수 있습니다"/>
+                    </Border>
                     <Button x:Name="BtnHideTitle" Content="제목 숨기기" Click="BtnHideTitle_Click"
                             Margin="8,0,0,0" Padding="6,3" FontSize="10.5"
                             Background="#27272A" Foreground="#A1A1AA" BorderBrush="#3F3F46" BorderThickness="1" Cursor="Hand">
@@ -56,9 +176,10 @@
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                     <!-- Target Winner Count Picker -->
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
-                        <TextBlock Text="⭐ 순위" FontSize="11.5" FontWeight="Bold" Foreground="#E4E4E7" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                        <ComboBox x:Name="CbWinnerCount" Width="66" Height="28" FontSize="11.5" FontWeight="Bold"
-                                  Background="#27272A" Foreground="White" BorderBrush="#3F3F46" VerticalContentAlignment="Center">
+                        <TextBlock Text="⭐ 순위" FontSize="11.5" FontWeight="Bold" Foreground="#E4E4E7" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <ComboBox x:Name="CbWinnerCount" Width="72" Height="28" FontSize="11.5" FontWeight="Bold"
+                                  Style="{StaticResource DarkRaceComboBox}"
+                                  VerticalContentAlignment="Center">
                             <ComboBoxItem Content="1명" IsSelected="True"/>
                             <ComboBoxItem Content="2명"/>
                             <ComboBoxItem Content="3명"/>
@@ -178,11 +299,11 @@
 
                 <!-- 🎥 Floating Camera Viewpoint Control HUD -->
                 <Border x:Name="BorderCameraHud" HorizontalAlignment="Center" VerticalAlignment="Top"
-                        Margin="0,12,0,0" Background="#E60F172A" CornerRadius="18"
+                        Margin="0,12,0,0" Background="#F00F172A" CornerRadius="18"
                         BorderBrush="#38BDF8" BorderThickness="1.5" Padding="8,4"
                         Panel.ZIndex="10">
                     <Border.Effect>
-                        <DropShadowEffect BlurRadius="16" Color="#000000" Opacity="0.75"/>
+                        <DropShadowEffect BlurRadius="16" Color="#000000" Opacity="0.85"/>
                     </Border.Effect>
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <!-- Prev Rank Button -->
@@ -194,12 +315,13 @@
                         </Button>
 
                         <TextBlock Text="🎥" FontSize="13" VerticalAlignment="Center" Margin="2,0,4,0"/>
-                        <TextBlock Text="시점:" FontSize="11" FontWeight="Bold" Foreground="#94A3B8" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                        <TextBlock Text="시점:" FontSize="11.5" FontWeight="Bold" Foreground="#F1F5F9" VerticalAlignment="Center" Margin="0,0,6,0"/>
 
                         <!-- Rank Selection ComboBox -->
                         <ComboBox x:Name="CbCameraRank" SelectionChanged="CbCameraRank_SelectionChanged"
-                                  Width="120" Height="26" FontSize="11" FontWeight="Bold"
-                                  Background="#1E293B" Foreground="#FDE047" BorderBrush="#334155"
+                                  Style="{StaticResource DarkRaceComboBox}"
+                                  Width="126" Height="26" FontSize="11.5" FontWeight="Bold"
+                                  Foreground="#FDE047"
                                   VerticalContentAlignment="Center" Margin="0,0,4,0" Cursor="Hand"
                                   ToolTip="시점을 맞출 등수를 선택하세요 (1등, 2등, 3등, 14등, 꼴등 등)">
                         </ComboBox>

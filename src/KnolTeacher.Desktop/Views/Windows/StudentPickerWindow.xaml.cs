@@ -135,19 +135,27 @@ public partial class StudentPickerWindow : Window
             left = c - hw;
             right = c + hw;
         }
-        else if (y <= 3260.0)
+        else if (y <= 3120.0)
         {
-            // Prehistoric River Rapids Flume (stays wide 370px until 3260!)
-            double t = (y - 2480.0) / (3260.0 - 2480.0);
+            // Prehistoric River Rapids Flume (stays wide 370px until 3120)
+            double t = (y - 2480.0) / (3120.0 - 2480.0);
             double c = 340.0 - 20.0 * Math.Sin(t * Math.PI);
             double hw = 185.0; // width 370
             left = c - hw;
             right = c + hw;
         }
+        else if (y <= 3260.0)
+        {
+            // Funnel Incline: 출구(중앙 80px 협곡 입구)를 향해 기울어진 경사 둑 (Y = 3120 ~ 3260)
+            // 편평한 턱을 완전히 없애고 출구 방향으로 자연스럽게 폭이 370px에서 80px로 좁아짐
+            double t = (y - 3120.0) / (3260.0 - 3120.0);
+            double hw = 185.0 - (185.0 - 40.0) * t; // 185 -> 40
+            left = 340.0 - hw;
+            right = 340.0 + hw;
+        }
         else
         {
             // Narrow 80px Finish Canyon Chute (Y = 3260 ~ 3500, width 80px, hw = 40)
-            // Perfectly straight vertical canyon walls, NO diagonal slide ramp!
             double c = 340.0;
             double hw = 40.0; // [300, 380]
             left = c - hw;
@@ -792,7 +800,7 @@ public partial class StudentPickerWindow : Window
                 }
             }
 
-            // 1. Continuous Outer Track Boundaries (Zero wall penetration & Funnel sliding assist)
+            // 1. Continuous Outer Track Boundaries (Zero wall penetration & Funnel incline assist)
             GetTrackBoundaries(r.Y, out double leftWall, out double rightWall);
             if (r.X - r.Radius < leftWall)
             {
@@ -804,8 +812,17 @@ public partial class StudentPickerWindow : Window
                 }
                 else
                 {
-                    // Regular bouncy wall collision (끝의 깔대기 구간도 미끄러지지 않고 기존 벽면처럼 통-! 튕김)
-                    r.Vx = Math.Abs(r.Vx) * 0.8 + 35.0;
+                    if (r.Y >= 3100.0 && r.Y <= 3265.0)
+                    {
+                        // 출구를 향해 기울어진 좌측 경사 둑: 중앙 출구 방향(우하향)으로 통통 튕기며 자연스럽게 진입
+                        r.Vx = Math.Max(Math.Abs(r.Vx) * 0.75 + 40.0, 50.0);
+                        r.Vy = Math.Max(r.Vy * 0.9 + 25.0, 100.0);
+                    }
+                    else
+                    {
+                        // Regular bouncy wall collision
+                        r.Vx = Math.Abs(r.Vx) * 0.8 + 35.0;
+                    }
                 }
             }
             else if (r.X + r.Radius > rightWall)
@@ -818,26 +835,17 @@ public partial class StudentPickerWindow : Window
                 }
                 else
                 {
-                    // Regular bouncy wall collision (끝의 깔대기 구간도 미끄러지지 않고 기존 벽면처럼 통-! 튕김)
-                    r.Vx = -Math.Abs(r.Vx) * 0.8 - 35.0;
-                }
-            }
-
-            // Horizontal Stone Riverbank Barrier at Y = 3260 (outside the 80px chute: X < 300 or X > 380)
-            // No diagonal slide ramp! Bounces cleanly upward and nudges toward central 80px canyon chute!
-            if (r.Y + r.Radius >= 3260.0 && r.Y - r.Radius < 3278.0)
-            {
-                if (r.X < 300.0)
-                {
-                    r.Y = 3260.0 - r.Radius;
-                    r.Vy = -Math.Abs(r.Vy) * 0.7 - 45.0;
-                    r.Vx = Math.Max(r.Vx + 60.0, 50.0);
-                }
-                else if (r.X > 380.0)
-                {
-                    r.Y = 3260.0 - r.Radius;
-                    r.Vy = -Math.Abs(r.Vy) * 0.7 - 45.0;
-                    r.Vx = Math.Min(r.Vx - 60.0, -50.0);
+                    if (r.Y >= 3100.0 && r.Y <= 3265.0)
+                    {
+                        // 출구를 향해 기울어진 우측 경사 둑: 중앙 출구 방향(좌하향)으로 통통 튕기며 자연스럽게 진입
+                        r.Vx = Math.Min(-Math.Abs(r.Vx) * 0.75 - 40.0, -50.0);
+                        r.Vy = Math.Max(r.Vy * 0.9 + 25.0, 100.0);
+                    }
+                    else
+                    {
+                        // Regular bouncy wall collision
+                        r.Vx = -Math.Abs(r.Vx) * 0.8 - 35.0;
+                    }
                 }
             }
 
