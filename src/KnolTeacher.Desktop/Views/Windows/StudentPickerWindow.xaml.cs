@@ -8,6 +8,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using System.Windows.Threading;
@@ -44,6 +45,9 @@ public partial class StudentPickerWindow : Window
     private const double TrackHeight = 3500.0;
     private const double FinishY = 3360.0;
     private bool _isPaused = false;
+    private int _targetCameraRank = 1; // 1 = 1등(선두/기본), 2 = 2등, ..., 14 = 14등 등
+    private int? _targetCameraStudentNumber = null;
+    private double _leaderboardThrottleTimer = 0;
 
     public static void GetTrackBoundaries(double y, out double left, out double right)
     {
@@ -295,6 +299,30 @@ public partial class StudentPickerWindow : Window
             }
             e.Handled = true;
         }
+        else if (e.Key == Key.PageUp || e.Key == Key.Up)
+        {
+            if (TbRaceTitle == null || !TbRaceTitle.IsKeyboardFocused)
+            {
+                SetCameraRank(_targetCameraRank - 1);
+                e.Handled = true;
+            }
+        }
+        else if (e.Key == Key.PageDown || e.Key == Key.Down)
+        {
+            if (TbRaceTitle == null || !TbRaceTitle.IsKeyboardFocused)
+            {
+                SetCameraRank(_targetCameraRank + 1);
+                e.Handled = true;
+            }
+        }
+        else if (e.Key == Key.Home)
+        {
+            if (TbRaceTitle == null || !TbRaceTitle.IsKeyboardFocused)
+            {
+                SetCameraRank(1);
+                e.Handled = true;
+            }
+        }
         else if (e.Key == Key.Escape)
         {
             if (GridCelebration.Visibility == Visibility.Visible)
@@ -524,12 +552,18 @@ public partial class StudentPickerWindow : Window
             double y = 135;
 
             var racer = new RaceRacer(student, x, y, 13);
+            int studentNum = student.Number;
+            racer.Visual.MouseLeftButtonDown += (s, e) =>
+            {
+                SetCameraTargetStudent(studentNum);
+            };
             _racers.Add(racer);
 
             RaceCanvas.Children.Add(racer.Visual);
             MinimapDotsLayer.Children.Add(racer.MinimapDot);
         }
 
+        UpdateCameraRankOptions();
         UpdateLeaderboard();
         UpdateMinimap();
         UpdateCameraViewport(0, force: true);
@@ -1134,12 +1168,17 @@ public partial class StudentPickerWindow : Window
             r.UpdateVisual();
         }
 
-        // Camera Follows Leader
+        // Camera Follows Target (1등 기본, 2등, 3등, 14등 등 선택 가능)
         UpdateCameraViewport(dt);
 
         // Update Minimap & Leaderboard
         UpdateMinimap();
-        UpdateLeaderboard();
+        _leaderboardThrottleTimer += dt;
+        if (_leaderboardThrottleTimer >= 0.1)
+        {
+            UpdateLeaderboard();
+            _leaderboardThrottleTimer = 0;
+        }
 
         // Check if all racers completed
         if (_racers.All(r => r.IsFinished))
@@ -1167,12 +1206,42 @@ public partial class StudentPickerWindow : Window
         RaceWorldScale.ScaleX = scale;
         RaceWorldScale.ScaleY = scale;
 
-        // Find leader
-        var leader = _racers.Where(r => !r.IsFinished).OrderByDescending(r => r.Y).FirstOrDefault()
-                     ?? _racers.OrderByDescending(r => r.Y).FirstOrDefault();
+        // Current standings
+        var sorted = _racers
+            .OrderBy(r => r.IsFinished ? 0 : 1)
+            .ThenBy(r => r.IsFinished ? r.FinishRank : 0)
+            .ThenByDescending(r => r.Y)
+            .ToList();
 
-        double leaderY = leader?.Y ?? 0;
-        double targetOffset = Math.Max(0, leaderY * scale - viewportHeight * 0.35);
+        if (sorted.Count == 0) return;
+
+        RaceRacer targetRacer;
+        if (_targetCameraStudentNumber.HasValue)
+        {
+            targetRacer = sorted.FirstOrDefault(r => r.Student.Number == _targetCameraStudentNumber.Value)
+                          ?? sorted[0];
+        }
+        else if (_targetCameraRank == 1)
+        {
+            // Default: active leader (or first finisher if all finished)
+            targetRacer = _racers.Where(r => !r.IsFinished).OrderByDescending(r => r.Y).FirstOrDefault()
+                          ?? sorted[0];
+        }
+        else
+        {
+            int rankIdx = Math.Clamp(_targetCameraRank - 1, 0, sorted.Count - 1);
+            targetRacer = sorted[rankIdx];
+        }
+
+        // Update camera focus ring on racers
+        bool showFocus = (_targetCameraRank > 1 || _targetCameraStudentNumber.HasValue);
+        foreach (var r in _racers)
+        {
+            r.SetCameraFocus(showFocus && r == targetRacer);
+        }
+
+        double targetY = targetRacer.Y;
+        double targetOffset = Math.Max(0, targetY * scale - viewportHeight * 0.38);
         double maxOffset = Math.Max(0, TrackHeight * scale - viewportHeight);
         targetOffset = Math.Clamp(targetOffset, 0, maxOffset);
 
@@ -1183,7 +1252,7 @@ public partial class StudentPickerWindow : Window
         else
         {
             double current = RaceScrollViewer.VerticalOffset;
-            double alpha = 1.0 - Math.Exp(-6.0 * Math.Max(dt, 0.001));
+            double alpha = 1.0 - Math.Exp(-8.0 * Math.Max(dt, 0.001));
             RaceScrollViewer.ScrollToVerticalOffset(current + (targetOffset - current) * alpha);
         }
     }
@@ -1199,11 +1268,53 @@ public partial class StudentPickerWindow : Window
         double scaleX = mapW / TrackWidth;
         double scaleY = mapH / TrackHeight;
 
+        RaceRacer? targetRacer = null;
+        if (_targetCameraRank > 1 || _targetCameraStudentNumber.HasValue)
+        {
+            var sorted = _racers
+                .OrderBy(r => r.IsFinished ? 0 : 1)
+                .ThenBy(r => r.IsFinished ? r.FinishRank : 0)
+                .ThenByDescending(r => r.Y)
+                .ToList();
+            if (sorted.Count > 0)
+            {
+                if (_targetCameraStudentNumber.HasValue)
+                {
+                    targetRacer = sorted.FirstOrDefault(r => r.Student.Number == _targetCameraStudentNumber.Value);
+                }
+                else
+                {
+                    int rankIdx = Math.Clamp(_targetCameraRank - 1, 0, sorted.Count - 1);
+                    targetRacer = sorted[rankIdx];
+                }
+            }
+        }
+
         // Update dots
         foreach (var r in _racers)
         {
-            Canvas.SetLeft(r.MinimapDot, r.X * scaleX - 3.5);
-            Canvas.SetTop(r.MinimapDot, r.Y * scaleY - 3.5);
+            bool isTarget = (r == targetRacer);
+            double dotSize = isTarget ? 11 : 7;
+            r.MinimapDot.Width = dotSize;
+            r.MinimapDot.Height = dotSize;
+
+            if (isTarget)
+            {
+                r.MinimapDot.Fill = new SolidColorBrush(Color.FromRgb(56, 189, 248)); // Cyan
+                r.MinimapDot.Stroke = new SolidColorBrush(Color.FromRgb(254, 240, 138)); // Yellow ring
+                r.MinimapDot.StrokeThickness = 2;
+                Panel.SetZIndex(r.MinimapDot, 10);
+            }
+            else
+            {
+                r.MinimapDot.Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FDE047"));
+                r.MinimapDot.Stroke = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#B45309"));
+                r.MinimapDot.StrokeThickness = 1;
+                Panel.SetZIndex(r.MinimapDot, 1);
+            }
+
+            Canvas.SetLeft(r.MinimapDot, r.X * scaleX - dotSize / 2.0);
+            Canvas.SetTop(r.MinimapDot, r.Y * scaleY - dotSize / 2.0);
         }
 
         // Update camera viewport box on minimap
@@ -1229,19 +1340,57 @@ public partial class StudentPickerWindow : Window
             .ThenByDescending(r => r.Y)
             .ToList();
 
+        RaceRacer? currentTracked = null;
+        if (sorted.Count > 0)
+        {
+            if (_targetCameraStudentNumber.HasValue)
+            {
+                currentTracked = sorted.FirstOrDefault(r => r.Student.Number == _targetCameraStudentNumber.Value);
+            }
+            else if (_targetCameraRank > 1)
+            {
+                int rankIdx = Math.Clamp(_targetCameraRank - 1, 0, sorted.Count - 1);
+                currentTracked = sorted[rankIdx];
+            }
+            else
+            {
+                currentTracked = _racers.Where(r => !r.IsFinished).OrderByDescending(r => r.Y).FirstOrDefault() ?? sorted[0];
+            }
+        }
+
         for (int i = 0; i < sorted.Count; i++)
         {
             var racer = sorted[i];
             int rank = i + 1;
+            bool isTracked = (racer == currentTracked);
 
-            var row = new Grid
+            var row = new Border
             {
-                Margin = new Thickness(0, 2, 0, 2),
-                Height = 32
+                Margin = new Thickness(0, 1, 0, 1),
+                Height = 32,
+                CornerRadius = new CornerRadius(6),
+                Background = isTracked
+                    ? new SolidColorBrush(Color.FromArgb(50, 56, 189, 248))
+                    : Brushes.Transparent,
+                BorderBrush = isTracked
+                    ? new SolidColorBrush(Color.FromArgb(180, 56, 189, 248))
+                    : Brushes.Transparent,
+                BorderThickness = new Thickness(isTracked ? 1.5 : 0),
+                Cursor = Cursors.Hand,
+                ToolTip = $"{rank}등 {racer.Student.Name} (클릭하여 시점 전환)"
             };
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(28) });
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(30) });
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+            int studentNum = racer.Student.Number;
+            row.MouseLeftButtonDown += (s, e) =>
+            {
+                SetCameraTargetStudent(studentNum);
+            };
+
+            var grid = new Grid();
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(28) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(30) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(22) });
 
             // Rank Badge: Gold for 1, Silver for 2, Bronze for 3, Grey for rest
             string badgeColor = rank switch
@@ -1271,7 +1420,7 @@ public partial class StudentPickerWindow : Window
                 VerticalAlignment = VerticalAlignment.Center
             };
             Grid.SetColumn(badge, 0);
-            row.Children.Add(badge);
+            grid.Children.Add(badge);
 
             // Animal Avatar
             var avatarImg = new Image
@@ -1282,26 +1431,161 @@ public partial class StudentPickerWindow : Window
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center
             };
+            RenderOptions.SetBitmapScalingMode(avatarImg, BitmapScalingMode.HighQuality);
             Grid.SetColumn(avatarImg, 1);
-            row.Children.Add(avatarImg);
+            grid.Children.Add(avatarImg);
 
             // Student Name
             var nameText = new TextBlock
             {
                 Text = racer.Student.Name,
                 FontSize = 12,
-                FontWeight = rank <= 3 ? FontWeights.Bold : FontWeights.Normal,
-                Foreground = rank == 1 ? new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FDE047")) : Brushes.White,
+                FontWeight = (rank <= 3 || isTracked) ? FontWeights.Bold : FontWeights.Normal,
+                Foreground = isTracked
+                    ? new SolidColorBrush(Color.FromRgb(56, 189, 248))
+                    : (rank == 1 ? new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FDE047")) : Brushes.White),
                 VerticalAlignment = VerticalAlignment.Center,
                 Margin = new Thickness(6, 0, 0, 0),
                 TextTrimming = TextTrimming.CharacterEllipsis
             };
             Grid.SetColumn(nameText, 2);
-            row.Children.Add(nameText);
+            grid.Children.Add(nameText);
 
+            // 🎥 Camera Tracking Indicator Icon
+            if (isTracked)
+            {
+                var camIcon = new TextBlock
+                {
+                    Text = "🎥",
+                    FontSize = 11,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center
+                };
+                Grid.SetColumn(camIcon, 3);
+                grid.Children.Add(camIcon);
+            }
+
+            row.Child = grid;
             PanelLeaderboard.Children.Add(row);
         }
     }
+
+    #region Camera Viewpoint Control
+
+    private void UpdateCameraRankOptions()
+    {
+        if (CbCameraRank == null) return;
+        CbCameraRank.SelectionChanged -= CbCameraRank_SelectionChanged;
+        CbCameraRank.Items.Clear();
+
+        int total = _racers.Count;
+        if (total == 0) total = 30;
+
+        CbCameraRank.Items.Add(new ComboBoxItem { Content = "1등 (선두)", Tag = 1 });
+
+        for (int r = 2; r <= total; r++)
+        {
+            string label = (r == total) ? $"{r}등 (꼴등)" : $"{r}등";
+            CbCameraRank.Items.Add(new ComboBoxItem { Content = label, Tag = r });
+        }
+
+        SetCameraRank(1, notifyCombo: true);
+        CbCameraRank.SelectionChanged += CbCameraRank_SelectionChanged;
+    }
+
+    public void SetCameraRank(int rank, bool notifyCombo = true)
+    {
+        int total = Math.Max(1, _racers.Count);
+        _targetCameraRank = Math.Clamp(rank, 1, total);
+        _targetCameraStudentNumber = null;
+
+        if (notifyCombo && CbCameraRank != null)
+        {
+            CbCameraRank.SelectionChanged -= CbCameraRank_SelectionChanged;
+            for (int i = 0; i < CbCameraRank.Items.Count; i++)
+            {
+                if (CbCameraRank.Items[i] is ComboBoxItem item && item.Tag is int r && r == _targetCameraRank)
+                {
+                    CbCameraRank.SelectedIndex = i;
+                    break;
+                }
+            }
+            CbCameraRank.SelectionChanged += CbCameraRank_SelectionChanged;
+        }
+
+        if (BtnCameraReset1st != null)
+        {
+            BtnCameraReset1st.Visibility = (_targetCameraRank == 1) ? Visibility.Collapsed : Visibility.Visible;
+        }
+
+        UpdateCameraViewport(0, force: false);
+        UpdateLeaderboard();
+        UpdateMinimap();
+    }
+
+    public void SetCameraTargetStudent(int studentNumber)
+    {
+        _targetCameraStudentNumber = studentNumber;
+
+        var sorted = _racers
+            .OrderBy(r => r.IsFinished ? 0 : 1)
+            .ThenBy(r => r.IsFinished ? r.FinishRank : 0)
+            .ThenByDescending(r => r.Y)
+            .ToList();
+
+        int idx = sorted.FindIndex(r => r.Student.Number == studentNumber);
+        if (idx >= 0)
+        {
+            _targetCameraRank = idx + 1;
+            if (CbCameraRank != null)
+            {
+                CbCameraRank.SelectionChanged -= CbCameraRank_SelectionChanged;
+                for (int i = 0; i < CbCameraRank.Items.Count; i++)
+                {
+                    if (CbCameraRank.Items[i] is ComboBoxItem item && item.Tag is int r && r == _targetCameraRank)
+                    {
+                        CbCameraRank.SelectedIndex = i;
+                        break;
+                    }
+                }
+                CbCameraRank.SelectionChanged += CbCameraRank_SelectionChanged;
+            }
+        }
+
+        if (BtnCameraReset1st != null)
+        {
+            BtnCameraReset1st.Visibility = Visibility.Visible;
+        }
+
+        UpdateCameraViewport(0, force: false);
+        UpdateLeaderboard();
+        UpdateMinimap();
+    }
+
+    private void BtnCameraPrevRank_Click(object sender, RoutedEventArgs e)
+    {
+        SetCameraRank(_targetCameraRank - 1);
+    }
+
+    private void BtnCameraNextRank_Click(object sender, RoutedEventArgs e)
+    {
+        SetCameraRank(_targetCameraRank + 1);
+    }
+
+    private void BtnCameraReset1st_Click(object sender, RoutedEventArgs e)
+    {
+        SetCameraRank(1);
+    }
+
+    private void CbCameraRank_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (CbCameraRank.SelectedItem is ComboBoxItem item && item.Tag is int r)
+        {
+            SetCameraRank(r, notifyCombo: false);
+        }
+    }
+
+    #endregion
 
     private void TriggerWinnerCelebration(StudentItem winner)
     {
@@ -1570,6 +1854,7 @@ public class RaceRacer
     private readonly RotateTransform _rot;
     private readonly Image _pinnedPineconeImg;
     private readonly Border _dizzyBadge;
+    private readonly Border _focusRing;
 
     public RaceRacer(StudentItem student, double x, double y, double radius)
     {
@@ -1581,12 +1866,37 @@ public class RaceRacer
         Visual = new Grid
         {
             Width = 56,
-            Height = 58
+            Height = 58,
+            Cursor = Cursors.Hand,
+            ToolTip = $"{student.Number}번 {student.Name} (클릭하여 시점 전환)"
         };
 
         _rot = new RotateTransform(0);
         Visual.RenderTransformOrigin = new Point(0.5, 0.35);
         Visual.RenderTransform = _rot;
+
+        // 0. Camera Focus Ring (카메라 시점 집중 표시)
+        _focusRing = new Border
+        {
+            Width = 46,
+            Height = 46,
+            CornerRadius = new CornerRadius(23),
+            BorderBrush = new SolidColorBrush(Color.FromArgb(240, 56, 189, 248)),
+            BorderThickness = new Thickness(2.5),
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Top,
+            Margin = new Thickness(0, -3, 0, 0),
+            Visibility = Visibility.Collapsed,
+            IsHitTestVisible = false
+        };
+        _focusRing.Effect = new DropShadowEffect
+        {
+            Color = Color.FromRgb(56, 189, 248),
+            BlurRadius = 12,
+            Opacity = 0.9,
+            ShadowDepth = 0
+        };
+        Visual.Children.Add(_focusRing);
 
         // 1. Natural Animal Avatar (FRAMELESS - No circular frame or thick stroke!)
         var img = new Image
@@ -1721,6 +2031,11 @@ public class RaceRacer
             double angle = Math.Clamp(Vx * 0.15, -28.0, 28.0);
             _rot.Angle = angle;
         }
+    }
+
+    public void SetCameraFocus(bool focused)
+    {
+        _focusRing.Visibility = focused ? Visibility.Visible : Visibility.Collapsed;
     }
 }
 
