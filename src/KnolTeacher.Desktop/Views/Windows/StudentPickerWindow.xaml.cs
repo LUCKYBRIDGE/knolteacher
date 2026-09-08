@@ -663,7 +663,8 @@ public partial class StudentPickerWindow : Window
         }
         foreach (var sq in _squirrels)
         {
-            sq.Update(dt);
+            bool hasTargetApproaching = _racers.Any(r => !r.IsFinished && r.PinnedTimer <= 0 && (r.Y >= sq.Y - 110.0 && r.Y <= sq.Y + 50.0));
+            sq.Update(dt, hasTargetApproaching);
         }
         for (int pIdx = _projectiles.Count - 1; pIdx >= 0; pIdx--)
         {
@@ -691,12 +692,45 @@ public partial class StudentPickerWindow : Window
                 continue;
             }
 
+            if (r.PinnedTimer > 0)
+            {
+                // Locked to the wall by embedded shuriken pinecone!
+                r.PinnedTimer -= dt;
+                GetTrackBoundaries(r.Y, out double pLeft, out double pRight);
+                if (r.PinnedSide < 0)
+                {
+                    r.X = pLeft + r.Radius;
+                }
+                else
+                {
+                    r.X = pRight - r.Radius;
+                }
+                r.Vx = 0;
+                r.Vy = 0;
+
+                if (r.PinnedTimer <= 0)
+                {
+                    r.Unpin();
+                }
+
+                r.UpdateVisual();
+                continue; // Skip collisions and gravity while pinned to wall, allowing smooth overtaking!
+            }
+
             r.Vy += gravity * dt;
             r.Vx *= damp;
             r.Vy *= damp;
 
-            r.Vx = Math.Clamp(r.Vx, -240.0, 240.0);
-            r.Vy = Math.Clamp(r.Vy, -160.0, 360.0);
+            if (r.IsBlownByPinecone)
+            {
+                r.Vx = Math.Clamp(r.Vx, -620.0, 620.0);
+                r.Vy = Math.Clamp(r.Vy, -40.0, 60.0);
+            }
+            else
+            {
+                r.Vx = Math.Clamp(r.Vx, -240.0, 240.0);
+                r.Vy = Math.Clamp(r.Vy, -160.0, 360.0);
+            }
 
             r.X += r.Vx * dt;
             r.Y += r.Vy * dt;
@@ -727,7 +761,12 @@ public partial class StudentPickerWindow : Window
             if (r.X - r.Radius < leftWall)
             {
                 r.X = leftWall + r.Radius;
-                if (r.Y >= 3080.0 && r.Y <= 3320.0)
+                if (r.IsBlownByPinecone)
+                {
+                    // Pinned to the left wall like a target hit by a shuriken!
+                    r.PinToWall(-1, 1.35);
+                }
+                else if (r.Y >= 3080.0 && r.Y <= 3320.0)
                 {
                     // Funnel sliding assist: guide inward & down the diagonal funnel slope!
                     r.Vx = Math.Max(r.Vx, 45.0);
@@ -741,7 +780,12 @@ public partial class StudentPickerWindow : Window
             else if (r.X + r.Radius > rightWall)
             {
                 r.X = rightWall - r.Radius;
-                if (r.Y >= 3080.0 && r.Y <= 3320.0)
+                if (r.IsBlownByPinecone)
+                {
+                    // Pinned to the right wall like a target hit by a shuriken!
+                    r.PinToWall(1, 1.35);
+                }
+                else if (r.Y >= 3080.0 && r.Y <= 3320.0)
                 {
                     // Funnel sliding assist: guide inward & down the diagonal funnel slope!
                     r.Vx = Math.Min(r.Vx, -45.0);
@@ -1001,7 +1045,7 @@ public partial class StudentPickerWindow : Window
                 }
             }
 
-            // Collisions with Thrown Acorns & Pinecones ("도토리/솔방울에 부딪히는 방해물")
+            // Collisions with Thrown Acorns & Pinecones ("표창 솔방울: 맞으면 벽에 꽂히는 넉백 & 고정")
             for (int pIdx = _projectiles.Count - 1; pIdx >= 0; pIdx--)
             {
                 var proj = _projectiles[pIdx];
@@ -1018,11 +1062,14 @@ public partial class StudentPickerWindow : Window
                     RaceCanvas.Children.Remove(proj.Visual);
                     _projectiles.RemoveAt(pIdx);
 
-                    // Strong disruptive knockback impulse from high-speed pinecone!
+                    // Skewered by shuriken pinecone! Hurled directly towards the outer wall
                     double pushDir = Math.Sign(proj.Vx);
-                    if (pushDir == 0) pushDir = (r.X < 340) ? 1.0 : -1.0;
-                    r.Vx = pushDir * (260.0 + rand.NextDouble() * 120.0);
-                    r.Vy = -95.0 + (rand.NextDouble() - 0.5) * 80.0;
+                    if (pushDir == 0) pushDir = (r.X < 340) ? -1.0 : 1.0;
+
+                    r.IsBlownByPinecone = true;
+                    r.PineconePushDir = pushDir;
+                    r.Vx = pushDir * 580.0; // High speed fling to wall
+                    r.Vy = 10.0; // Level horizontal trajectory
                 }
             }
 
@@ -1030,7 +1077,8 @@ public partial class StudentPickerWindow : Window
             for (int j = i + 1; j < _racers.Count; j++)
             {
                 var o = _racers[j];
-                if (o.IsFinished) continue;
+                if (o.IsFinished || o.PinnedTimer > 0 || o.IsBlownByPinecone) continue;
+                if (r.PinnedTimer > 0 || r.IsBlownByPinecone) continue;
 
                 double dx = o.X - r.X;
                 double dy = o.Y - r.Y;
@@ -1511,9 +1559,17 @@ public class RaceRacer
     public int FinishRank { get; set; } = 0;
     public double StuckTimer { get; set; } = 0;
 
+    // Wall-Pinned (표창 솔방울에 꽂혀 벽에 고정된 상태)
+    public double PinnedTimer { get; set; } = 0;
+    public int PinnedSide { get; set; } = 0; // -1: Left wall, 1: Right wall
+    public bool IsBlownByPinecone { get; set; } = false;
+    public double PineconePushDir { get; set; } = 0;
+
     public Grid Visual { get; }
     public Ellipse MinimapDot { get; }
     private readonly RotateTransform _rot;
+    private readonly Image _pinnedPineconeImg;
+    private readonly Border _dizzyBadge;
 
     public RaceRacer(StudentItem student, double x, double y, double radius)
     {
@@ -1564,7 +1620,38 @@ public class RaceRacer
         };
         Visual.Children.Add(badge);
 
-        // 3. Minimap Dot
+        // 3. Embedded Shuriken Pinecone ("표창처럼 벽에 꽂히는 솔방울")
+        _pinnedPineconeImg = new Image
+        {
+            Width = 28,
+            Height = 32,
+            Source = new BitmapImage(new Uri("pack://application:,,,/assets/race/cartoon_pinecone.png")),
+            Visibility = Visibility.Collapsed,
+            IsHitTestVisible = false,
+            VerticalAlignment = VerticalAlignment.Top,
+            RenderTransformOrigin = new Point(0.5, 0.5)
+        };
+        RenderOptions.SetBitmapScalingMode(_pinnedPineconeImg, BitmapScalingMode.HighQuality);
+        Visual.Children.Add(_pinnedPineconeImg);
+
+        // 4. Dizzy Stars Badge ("💫 머리 위 회전 별")
+        _dizzyBadge = new Border
+        {
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Top,
+            Margin = new Thickness(0, -18, 0, 0),
+            Visibility = Visibility.Collapsed,
+            IsHitTestVisible = false
+        };
+        _dizzyBadge.Child = new TextBlock
+        {
+            Text = "💫",
+            FontSize = 16,
+            HorizontalAlignment = HorizontalAlignment.Center
+        };
+        Visual.Children.Add(_dizzyBadge);
+
+        // 5. Minimap Dot
         MinimapDot = new Ellipse
         {
             Width = 7,
@@ -1577,14 +1664,63 @@ public class RaceRacer
         UpdateVisual();
     }
 
+    public void PinToWall(int side, double duration)
+    {
+        PinnedTimer = duration;
+        PinnedSide = side;
+        IsBlownByPinecone = false;
+        Vx = 0;
+        Vy = 0;
+
+        _pinnedPineconeImg.Visibility = Visibility.Visible;
+        _dizzyBadge.Visibility = Visibility.Visible;
+
+        if (side < 0)
+        {
+            // Left wall: pinecone pins player into the left wall!
+            _pinnedPineconeImg.HorizontalAlignment = HorizontalAlignment.Left;
+            _pinnedPineconeImg.Margin = new Thickness(-10, 6, 0, 0);
+            _pinnedPineconeImg.RenderTransform = new RotateTransform(-75);
+        }
+        else
+        {
+            // Right wall: pinecone pins player into the right wall!
+            _pinnedPineconeImg.HorizontalAlignment = HorizontalAlignment.Right;
+            _pinnedPineconeImg.Margin = new Thickness(0, 6, -10, 0);
+            _pinnedPineconeImg.RenderTransform = new RotateTransform(75);
+        }
+    }
+
+    public void Unpin()
+    {
+        PinnedTimer = 0;
+        IsBlownByPinecone = false;
+        _pinnedPineconeImg.Visibility = Visibility.Collapsed;
+        _dizzyBadge.Visibility = Visibility.Collapsed;
+        _rot.Angle = 0;
+
+        // Pop outward from wall back into race!
+        Vx = -PinnedSide * 85.0;
+        Vy = 130.0;
+    }
+
     public void UpdateVisual()
     {
         Canvas.SetLeft(Visual, X - Visual.Width / 2.0);
         Canvas.SetTop(Visual, Y - 20.0);
 
-        // Tilt based on horizontal velocity
-        double angle = Math.Clamp(Vx * 0.15, -28.0, 28.0);
-        _rot.Angle = angle;
+        if (PinnedTimer > 0)
+        {
+            // Cartoon struggle/wiggle animation (trying to pull free from the pinned wall!)
+            double wiggle = Math.Sin(PinnedTimer * 32.0) * 12.0;
+            _rot.Angle = wiggle;
+        }
+        else
+        {
+            // Tilt based on horizontal velocity
+            double angle = Math.Clamp(Vx * 0.15, -28.0, 28.0);
+            _rot.Angle = angle;
+        }
     }
 }
 
@@ -2036,7 +2172,7 @@ public class PopOutSquirrel
         _scale.ScaleY = 1.35;
     }
 
-    public void Update(double dt)
+    public void Update(double dt, bool hasTargetApproaching)
     {
         if (_bumpTimer > 0)
         {
@@ -2062,7 +2198,8 @@ public class PopOutSquirrel
                     _scale.ScaleY = 1.0 + 0.03 * Math.Sin(_idleAnimTime * 4.0);
                 }
 
-                if (_stateTimer >= DurationIdle)
+                // Only start windup/throw cycle if delay has elapsed AND a racer is approaching!
+                if (_stateTimer >= DurationIdle && hasTargetApproaching)
                 {
                     _state = 1; // Quick Windup!
                     _stateTimer = 0;
@@ -2085,16 +2222,15 @@ public class PopOutSquirrel
                     _scale.ScaleX = (IsFacingRight ? 1.0 : -1.0) * 1.15;
                     _scale.ScaleY = 0.94;
 
-                    // Release high-speed pinecone projectile right from outstretched paw!
+                    // Release high-speed pinecone shuriken projectile right from outstretched paw!
                     if (!_hasThrownThisCycle)
                     {
                         _hasThrownThisCycle = true;
-                        var rand = new Random();
                         double throwX = IsFacingRight ? (X + 42) : (X - 42);
                         double throwY = Y - 2;
-                        // High speed throw across track!
-                        double vx = (IsFacingRight ? 1.0 : -1.0) * (380.0 + rand.NextDouble() * 110.0);
-                        double vy = 60.0 + (rand.NextDouble() - 0.5) * 50.0;
+                        // Laser-straight horizontal shuriken throw across track!
+                        double vx = (IsFacingRight ? 1.0 : -1.0) * 460.0;
+                        double vy = 0.0;
                         OnThrowProjectile?.Invoke(new ThrownProjectile(throwX, throwY, vx, vy, ProjectileAsset));
                     }
                 }
@@ -2199,29 +2335,27 @@ public class ThrownProjectile
             return;
         }
 
-        // Fast pinecone trajectory with gravity and slight air drag
-        Vy += 130.0 * dt;
-        Vx *= 0.998;
-        Vy *= 0.998;
-
+        // Shuriken straight horizontal flight across track (no gravity drop)
         X += Vx * dt;
         Y += Vy * dt;
 
-        // Dynamic ricochet / Wall bounce off track boundaries
+        // Embedding / Impact against far track walls:
         StudentPickerWindow.GetTrackBoundaries(Y, out double pLeft, out double pRight);
-        if (X - Radius < pLeft)
+        if (Vx > 0 && X + Radius >= pRight)
         {
-            X = pLeft + Radius;
-            Vx = Math.Abs(Vx) * 0.85 + 25.0;
+            // Shuriken embeds into far right wall and vanishes
+            Destroy();
+            return;
         }
-        else if (X + Radius > pRight)
+        else if (Vx < 0 && X - Radius <= pLeft)
         {
-            X = pRight - Radius;
-            Vx = -(Math.Abs(Vx) * 0.85 + 25.0);
+            // Shuriken embeds into far left wall and vanishes
+            Destroy();
+            return;
         }
 
-        // Natural tumbling rotation as the heavy pinecone sails through the air
-        _angle += Math.Sign(Vx) * dt * 110.0;
+        // Fast ninja star / shuriken spin
+        _angle += Math.Sign(Vx) * dt * 720.0;
         _rot.Angle = _angle;
 
         Canvas.SetLeft(Visual, X - Visual.Width / 2.0);
