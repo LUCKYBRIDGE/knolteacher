@@ -648,7 +648,7 @@ public partial class MainWindow : FluentWindow
             {
                 NavBtnTools.Background = accentBrush;
                 NavBtnTools.Foreground = Brushes.White;
-                TxtViewTitle.Text = "🧰 수업 도구 모음";
+                TxtViewTitle.Text = "🧰 수업 & 교실 도구";
             }
             else if (index == 2)
             {

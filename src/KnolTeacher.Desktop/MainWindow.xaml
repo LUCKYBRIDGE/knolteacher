@@ -115,11 +115,11 @@
                                 </StackPanel>
                             </Button>
 
-                            <Button x:Name="NavBtnTools" Click="NavBtn_Click" Tag="1" Background="Transparent" Foreground="{DynamicResource BeigeTextMain}" FontWeight="SemiBold" Height="36" HorizontalContentAlignment="Left" Padding="10,0" Margin="0,0,0,3" BorderThickness="0" Cursor="Hand">
+                            <Button x:Name="NavBtnTools" Click="NavBtn_Click" Tag="1" Background="Transparent" Foreground="{DynamicResource BeigeTextMain}" FontWeight="SemiBold" Height="36" HorizontalContentAlignment="Left" Padding="10,0" Margin="0,0,0,3" BorderThickness="0" Cursor="Hand" ToolTip="15개 수업·학급·행정 도구 모음 (1-Click)">
                                 <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                     <TextBlock Text="🧰" FontSize="14" Margin="0,0,9,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="수업 도구 모음" VerticalAlignment="Center"/>
+                                    <TextBlock Text="수업 &amp; 교실 도구" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
 
@@ -168,151 +168,48 @@
 
                             <Separator Margin="0,8,0,8" Background="{DynamicResource BeigeCardBorder}"/>
 
-                            <TextBlock Text="빠른 도구 런처" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource BeigeTextMuted}" Margin="8,0,0,6"/>
+                            <TextBlock Text="수업 필수 단축키 (0-Click)" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource BeigeTextMuted}" Margin="8,0,0,6"/>
 
-                            <Button Click="BtnLaunchDrawing_Click" Background="Transparent" Foreground="{DynamicResource BeigeTextSub}" Height="32" HorizontalContentAlignment="Stretch" Padding="8,0" Margin="0,0,0,2" BorderThickness="0" Cursor="Hand">
+                            <!-- Alt+2 Screen Drawing -->
+                            <Button Click="BtnLaunchDrawing_Click" Background="Transparent" Foreground="{DynamicResource BeigeTextSub}" Height="34" HorizontalContentAlignment="Stretch" Padding="8,0" Margin="0,0,0,2" BorderThickness="0" Cursor="Hand" ToolTip="수업 화면 정지 &amp; 판서 (Alt+2)">
                                 <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
                                 <DockPanel LastChildFill="True">
-                                    <Border DockPanel.Dock="Right" Background="{DynamicResource BeigeAccentSoft}" CornerRadius="4" Padding="5,1" VerticalAlignment="Center">
-                                        <TextBlock Text="Alt+2" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource BeigeAccent}"/>
+                                    <Border DockPanel.Dock="Right" Background="{DynamicResource BeigeAccentSoft}" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
+                                        <TextBlock Text="Alt+2" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource BeigeAccent}"/>
                                     </Border>
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="✏️" FontSize="13" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                        <TextBlock Text="화면 전체 판서" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="✏️" FontSize="14" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="화면 전체 판서" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </DockPanel>
                             </Button>
 
-                            <Button Click="BtnLaunchTimer_Click" Background="Transparent" Foreground="{DynamicResource BeigeTextSub}" Height="32" HorizontalContentAlignment="Stretch" Padding="8,0" Margin="0,0,0,2" BorderThickness="0" Cursor="Hand">
+                            <!-- Alt+3 Class Timer -->
+                            <Button Click="BtnLaunchTimer_Click" Background="Transparent" Foreground="{DynamicResource BeigeTextSub}" Height="34" HorizontalContentAlignment="Stretch" Padding="8,0" Margin="0,0,0,2" BorderThickness="0" Cursor="Hand" ToolTip="교실 집중 타이머 &amp; 차임벨 (Alt+3)">
                                 <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
                                 <DockPanel LastChildFill="True">
-                                    <Border DockPanel.Dock="Right" Background="{DynamicResource BeigeAccentSoft}" CornerRadius="4" Padding="5,1" VerticalAlignment="Center">
-                                        <TextBlock Text="Alt+3" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource BeigeAccent}"/>
+                                    <Border DockPanel.Dock="Right" Background="{DynamicResource BeigeAccentSoft}" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
+                                        <TextBlock Text="Alt+3" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource BeigeAccent}"/>
                                     </Border>
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="⏱️" FontSize="13" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                        <TextBlock Text="교실 집중 타이머" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="⏱️" FontSize="14" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="교실 집중 타이머" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </DockPanel>
                             </Button>
 
-                            <Button Click="BtnLaunchPicker_Click" Background="Transparent" Foreground="{DynamicResource BeigeTextSub}" Height="32" HorizontalContentAlignment="Stretch" Padding="8,0" Margin="0,0,0,2" BorderThickness="0" Cursor="Hand">
+                            <!-- Alt+8 Pinball Picker -->
+                            <Button Click="BtnLaunchPicker_Click" Background="Transparent" Foreground="{DynamicResource BeigeTextSub}" Height="34" HorizontalContentAlignment="Stretch" Padding="8,0" Margin="0,0,0,2" BorderThickness="0" Cursor="Hand" ToolTip="32종 동물 아바타 레이스 &amp; 발표자 추첨 (Alt+8)">
                                 <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
                                 <DockPanel LastChildFill="True">
-                                    <Border DockPanel.Dock="Right" Background="{DynamicResource BeigeAccentSoft}" CornerRadius="4" Padding="5,1" VerticalAlignment="Center">
-                                        <TextBlock Text="Alt+8" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource BeigeAccent}"/>
+                                    <Border DockPanel.Dock="Right" Background="{DynamicResource BeigeAccentSoft}" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
+                                        <TextBlock Text="Alt+8" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource BeigeAccent}"/>
                                     </Border>
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="🎰" FontSize="13" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                        <TextBlock Text="뽑기 레이스" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="🎰" FontSize="14" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="뽑기 레이스" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </DockPanel>
-                            </Button>
-
-                            <Button Click="BtnLaunchVisualizer_Click" Background="Transparent" Foreground="{DynamicResource BeigeTextSub}" Height="32" HorizontalContentAlignment="Left" Padding="8,0" Margin="0,0,0,2" BorderThickness="0" Cursor="Hand">
-                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="📷" FontSize="13" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="스마트 실물화상기" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                </StackPanel>
-                            </Button>
-
-                            <Button Click="BtnLaunchDock_Click" Background="Transparent" Foreground="{DynamicResource BeigeTextSub}" Height="32" HorizontalContentAlignment="Stretch" Padding="8,0" Margin="0,0,0,2" BorderThickness="0" Cursor="Hand">
-                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
-                                <DockPanel LastChildFill="True">
-                                    <Border DockPanel.Dock="Right" Background="{DynamicResource BeigeAccentSoft}" CornerRadius="4" Padding="5,1" VerticalAlignment="Center">
-                                        <TextBlock Text="Alt+9" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource BeigeAccent}"/>
-                                    </Border>
-                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="🏝️" FontSize="13" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                        <TextBlock Text="화면 상단 도구바" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                    </StackPanel>
-                                </DockPanel>
-                            </Button>
-
-                            <Button Click="BtnQuickQr_Click" Background="Transparent" Foreground="{DynamicResource BeigeTextSub}" Height="32" HorizontalContentAlignment="Left" Padding="8,0" Margin="0,0,0,2" BorderThickness="0" Cursor="Hand">
-                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="📱" FontSize="13" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="QR코드 생성기" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                </StackPanel>
-                            </Button>
-
-                            <Button Click="BtnLaunchChecklist_Click" Background="Transparent" Foreground="{DynamicResource BeigeTextSub}" Height="32" HorizontalContentAlignment="Left" Padding="8,0" Margin="0,0,0,2" BorderThickness="0" Cursor="Hand" ToolTip="학생 제출물 및 과제 체크리스트">
-                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="📋" FontSize="13" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="과제 체크리스트" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                </StackPanel>
-                            </Button>
-
-                            <Button Click="BtnLaunchSignature_Click" Background="Transparent" Foreground="{DynamicResource BeigeTextSub}" Height="32" HorizontalContentAlignment="Stretch" Padding="8,0" Margin="0,0,0,2" BorderThickness="0" Cursor="Hand" ToolTip="공문서 직인 및 전자 자필 서명 생성기 (Alt+S)">
-                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
-                                <DockPanel LastChildFill="True">
-                                    <Border DockPanel.Dock="Right" Background="{DynamicResource BeigeAccentSoft}" CornerRadius="4" Padding="5,1" VerticalAlignment="Center">
-                                        <TextBlock Text="Alt+S" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource BeigeAccent}"/>
-                                    </Border>
-                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="🔏" FontSize="13" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                        <TextBlock Text="전자서명 &amp; 직인" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                    </StackPanel>
-                                </DockPanel>
-                            </Button>
-
-                            <Button Click="BtnLaunchSchoolScale_Click" Background="Transparent" Foreground="{DynamicResource BeigeTextSub}" Height="32" HorizontalContentAlignment="Left" Padding="8,0" Margin="0,0,0,2" BorderThickness="0" Cursor="Hand" ToolTip="전국 학교 규모·학급수·과밀 및 지도 위치 조회">
-                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="🗺️" FontSize="13" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="전국 학교 지도" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                </StackPanel>
-                            </Button>
-
-                            <Button Click="BtnLaunchNoiseTrafficLight_Click" Background="Transparent" Foreground="{DynamicResource BeigeTextSub}" Height="32" HorizontalContentAlignment="Left" Padding="8,0" Margin="0,0,0,2" BorderThickness="0" Cursor="Hand" ToolTip="교실 소음 실시간 감지 및 신호등">
-                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="🚦" FontSize="13" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="교실 소음 신호등" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                </StackPanel>
-                            </Button>
-
-                            <Button Click="BtnLaunchWorkdayCalculator_Click" Background="Transparent" Foreground="{DynamicResource BeigeTextSub}" Height="32" HorizontalContentAlignment="Left" Padding="8,0" Margin="0,0,0,2" BorderThickness="0" Cursor="Hand" ToolTip="교원 월 15일 복무·수당 출근일수 계산기">
-                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="🧮" FontSize="13" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="15일 복무 계산기" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                </StackPanel>
-                            </Button>
-
-                            <Button Click="BtnLaunchSeatShuffle_Click" Background="Transparent" Foreground="{DynamicResource BeigeTextSub}" Height="32" HorizontalContentAlignment="Left" Padding="8,0" Margin="0,0,0,2" BorderThickness="0" Cursor="Hand" ToolTip="스마트 자리 바꾸기 &amp; 동물 아바타 책상 셔플">
-                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="🪑" FontSize="13" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="스마트 자리 바꾸기" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                </StackPanel>
-                            </Button>
-
-                            <Button Click="BtnLaunchSoundboard_Click" Background="Transparent" Foreground="{DynamicResource BeigeTextSub}" Height="32" HorizontalContentAlignment="Left" Padding="8,0" Margin="0,0,0,2" BorderThickness="0" Cursor="Hand" ToolTip="원터치 교실 효과음 &amp; 사운드보드">
-                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="🔔" FontSize="13" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="교실 효과음 보드" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                </StackPanel>
-                            </Button>
-
-                            <Button Click="BtnShowHotkeyGuide_Click" Background="Transparent" Foreground="{DynamicResource BeigeTextSub}" Height="32" HorizontalContentAlignment="Left" Padding="8,0" Margin="0,0,0,2" BorderThickness="0" Cursor="Hand" ToolTip="전역 단축키 &amp; 트레이 숨김 모드 안내">
-                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="⚡" FontSize="13" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="단축키 빠른 안내" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                </StackPanel>
-                            </Button>
-
-                            <Button Click="BtnOpenHotkeySettings_Click" Background="Transparent" Foreground="{DynamicResource BeigeTextSub}" Height="32" HorizontalContentAlignment="Left" Padding="8,0" Margin="0,0,0,2" BorderThickness="0" Cursor="Hand">
-                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="⌨️" FontSize="13" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="단축키 맞춤 설정" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                </StackPanel>
                             </Button>
                         </StackPanel>
                     </ScrollViewer>
@@ -341,17 +238,10 @@
                 </Grid.RowDefinitions>
 
                 <!-- Global Top Header Bar -->
-                <Border Grid.Row="0" Margin="0,0,0,12" Padding="4,0,4,8" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="0,0,0,1">
+                <Border Grid.Row="0" Margin="0,0,0,10" Padding="4,0,4,8" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="0,0,0,1">
                     <Grid>
                         <TextBlock x:Name="TxtViewTitle" Text="📅 오늘의 일과 &amp; 급식" FontSize="17" FontWeight="Bold" Foreground="{DynamicResource BeigeTextMain}" VerticalAlignment="Center"/>
-<StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                            <Button Content="📱 QR 생성기" Click="BtnQuickQr_Click" Padding="12,6" Margin="0,0,8,0" Background="{DynamicResource BeigeCardInner}" Foreground="{DynamicResource BeigeTextMain}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="11" FontWeight="Bold" Cursor="Hand">
-                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
-                            </Button>
-                            <Button x:Name="BtnCheckVersion" Content="🚀 버전 확인 (v3.0.0)" Click="BtnUpdate_Click" Padding="14,6" Background="{DynamicResource BeigeAccent}" Foreground="White" BorderThickness="0" FontSize="11" FontWeight="Bold" Cursor="Hand" ToolTip="최신 버전 확인 및 사이트 이동 없는 원클릭 자동 업데이트">
-                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
-                            </Button>
-                        </StackPanel>
+                        <Button x:Name="BtnCheckVersion" Visibility="Collapsed" />
                     </Grid>
                 </Border>
 
@@ -437,12 +327,12 @@
                             <!-- Row 1: 3-Column Core Workspace -->
                             <Grid Grid.Row="1">
                                 <Grid.ColumnDefinitions>
-                                    <!-- Col 0: Timetable & Period Alarms (3.2*) -->
+                                    <!-- Col 0: Timetable & Period Alarms (3.5*) -->
+                                    <ColumnDefinition Width="3.5*" />
+                                    <!-- Col 1: Academic Calendar & D-Days (3.2*) -->
                                     <ColumnDefinition Width="3.2*" />
-                                    <!-- Col 1: Academic Calendar & D-Days (3.1*) -->
-                                    <ColumnDefinition Width="3.1*" />
-                                    <!-- Col 2: Weather & Lunch Menu (2.7*) -->
-                                    <ColumnDefinition Width="2.7*" />
+                                    <!-- Col 2: Weather & Lunch Menu (2.6*) -->
+                                    <ColumnDefinition Width="2.6*" />
                                 </Grid.ColumnDefinitions>
 
                                 <!-- Column 0: Timetable Card -->
@@ -571,10 +461,7 @@
                                                     <Button x:Name="BtnCalToday" Click="BtnCalToday_Click" Content="오늘" Padding="6,2" Margin="0,0,3,0" Background="{DynamicResource BeigeCardInner}" Foreground="{DynamicResource BeigeTextMain}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="10" Cursor="Hand">
                                                         <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
                                                     </Button>
-                                                    <Button Click="BtnRefreshAcademicCalendar_Click" Content="🔄" Width="22" Height="22" Padding="0" Margin="0,0,3,0" Background="Transparent" BorderThickness="0" Cursor="Hand" ToolTip="나이스 학사일정 새로고침"/>
-                                                    <Button x:Name="BtnEarlyLeaveQuickCalc" Click="BtnEarlyLeaveQuickCalc_Click" Content="🏖️ 15일 복무" Padding="6,2" Background="#FEF3C7" Foreground="#B45309" BorderBrush="#FCD34D" BorderThickness="1" FontSize="10" FontWeight="Bold" Cursor="Hand" ToolTip="이 달의 15일 소정근무일 및 조퇴/연가 가능일 자동 계산">
-                                                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
-                                                    </Button>
+                                                    <Button Click="BtnRefreshAcademicCalendar_Click" Content="🔄" Width="22" Height="22" Padding="0" Background="Transparent" BorderThickness="0" Cursor="Hand" ToolTip="나이스 학사일정 새로고침"/>
                                                 </StackPanel>
                                             </Grid>
 
@@ -787,163 +674,247 @@
                         </Grid>
                     </TabItem>
 
-                    <!-- TAB 1: 수업 진행 도구 (Classroom Tools) -->
+                    <!-- TAB 1: 수업 & 교실 도구 (Classroom Tools - 1-Click Access) -->
                     <TabItem>
-                        <ScrollViewer VerticalScrollBarVisibility="Auto">
-                            <UniformGrid Columns="3" Margin="0,6,0,0">
-                            <!-- Tool 1: Board -->
-                            <Border Margin="6" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="18" Cursor="Hand" MouseLeftButtonUp="BtnLaunchBoard_Click">
-                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                    <TextBlock Text="📋" FontSize="38" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                    <TextBlock Text="놀보드" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="초록칠판/화이트보드 (F2)" FontSize="12" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
-                                </StackPanel>
-                            </Border>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="4,0,8,16">
+                            <StackPanel Margin="0,4,0,0">
+                                <!-- Section 1: 🎯 수업 실시간 도구 (Live Classroom) -->
+                                <Border Margin="0,0,0,16">
+                                    <StackPanel>
+                                        <DockPanel Margin="4,0,4,8">
+                                            <Border DockPanel.Dock="Right" Background="{DynamicResource BeigeAccentSoft}" CornerRadius="6" Padding="8,3" VerticalAlignment="Center">
+                                                <TextBlock Text="수업 중 상시 활용 • 단축키 지원" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource BeigeAccent}"/>
+                                            </Border>
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                <TextBlock Text="🎯" FontSize="16" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                                <TextBlock Text="수업 실시간 도구" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource BeigeTextMain}" VerticalAlignment="Center"/>
+                                                <TextBlock Text="수업 진행 및 학생 집중" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </DockPanel>
 
-                            <!-- Tool 2: Screen Drawing -->
-                            <Border Margin="6" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="18" Cursor="Hand" MouseLeftButtonUp="BtnLaunchDrawing_Click">
-                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                    <TextBlock Text="✏️" FontSize="38" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                    <TextBlock Text="화면 전체 판서" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="수업 화면 정지 &amp; 판서 (Alt+2)" FontSize="12" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
-                                </StackPanel>
-                            </Border>
+                                        <UniformGrid Columns="3">
+                                            <!-- Tool 1: Screen Drawing [Alt+2] -->
+                                            <Border Margin="4" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="14,12" Cursor="Hand" MouseLeftButtonUp="BtnLaunchDrawing_Click">
+                                                <Grid>
+                                                    <Border HorizontalAlignment="Right" VerticalAlignment="Top" Background="{DynamicResource BeigeAccentSoft}" CornerRadius="4" Padding="6,2">
+                                                        <TextBlock Text="Alt+2" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource BeigeAccent}"/>
+                                                    </Border>
+                                                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,4,0,0">
+                                                        <TextBlock Text="✏️" FontSize="34" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                                                        <TextBlock Text="화면 전체 판서" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
+                                                        <TextBlock Text="수업 화면 정지 &amp; 형광펜·펜 판서" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
 
-                            <!-- Tool 3: Timer -->
-                            <Border Margin="6" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="18" Cursor="Hand" MouseLeftButtonUp="BtnLaunchTimer_Click">
-                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                    <TextBlock Text="⏱️" FontSize="38" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                    <TextBlock Text="교실 집중 타이머" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="카운트다운 &amp; 차임벨 (Alt+3)" FontSize="12" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
-                                </StackPanel>
-                            </Border>
+                                            <!-- Tool 2: Class Timer [Alt+3] -->
+                                            <Border Margin="4" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="14,12" Cursor="Hand" MouseLeftButtonUp="BtnLaunchTimer_Click">
+                                                <Grid>
+                                                    <Border HorizontalAlignment="Right" VerticalAlignment="Top" Background="{DynamicResource BeigeAccentSoft}" CornerRadius="4" Padding="6,2">
+                                                        <TextBlock Text="Alt+3" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource BeigeAccent}"/>
+                                                    </Border>
+                                                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,4,0,0">
+                                                        <TextBlock Text="⏱️" FontSize="34" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                                                        <TextBlock Text="교실 집중 타이머" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
+                                                        <TextBlock Text="카운트다운 &amp; 모둠 활동 차임벨" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
 
-                            <!-- Tool 4: Pinball Picker -->
-                            <Border Margin="6" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="18" Cursor="Hand" MouseLeftButtonUp="BtnLaunchPicker_Click">
-                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                    <TextBlock Text="🎰" FontSize="38" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                    <TextBlock Text="뽑기 레이스" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="32종 동물 아바타 레이스 (Alt+8)" FontSize="12" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
-                                </StackPanel>
-                            </Border>
+                                            <!-- Tool 3: Picker Race [Alt+8] -->
+                                            <Border Margin="4" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="14,12" Cursor="Hand" MouseLeftButtonUp="BtnLaunchPicker_Click">
+                                                <Grid>
+                                                    <Border HorizontalAlignment="Right" VerticalAlignment="Top" Background="{DynamicResource BeigeAccentSoft}" CornerRadius="4" Padding="6,2">
+                                                        <TextBlock Text="Alt+8" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource BeigeAccent}"/>
+                                                    </Border>
+                                                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,4,0,0">
+                                                        <TextBlock Text="🎰" FontSize="34" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                                                        <TextBlock Text="뽑기 레이스" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
+                                                        <TextBlock Text="32종 동물 아바타 레이싱 추첨" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
 
-                            <!-- Tool 5: Visualizer -->
-                            <Border Margin="6" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="18" Cursor="Hand" MouseLeftButtonUp="BtnLaunchVisualizer_Click">
-                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                    <TextBlock Text="📷" FontSize="38" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                    <TextBlock Text="스마트 실물화상기" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="화면 꺼짐 방지 &amp; 자동 연결" FontSize="12" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
-                                </StackPanel>
-                            </Border>
+                                            <!-- Tool 4: Visualizer -->
+                                            <Border Margin="4" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="14,12" Cursor="Hand" MouseLeftButtonUp="BtnLaunchVisualizer_Click">
+                                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                    <TextBlock Text="📷" FontSize="34" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                                                    <TextBlock Text="스마트 실물화상기" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
+                                                    <TextBlock Text="화면 꺼짐 방지 &amp; 웹캠 자동 연결" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                                                </StackPanel>
+                                            </Border>
 
-                            <!-- Tool 6: Dock -->
-                            <Border Margin="6" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="18" Cursor="Hand" MouseLeftButtonUp="BtnLaunchDock_Click">
-                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                    <TextBlock Text="🏝️" FontSize="38" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                    <TextBlock Text="화면 상단 도구바" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="화면 상단 빠른 툴바 (Alt+9)" FontSize="12" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
-                                </StackPanel>
-                            </Border>
+                                            <!-- Tool 5: Floating Dock [Alt+9] -->
+                                            <Border Margin="4" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="14,12" Cursor="Hand" MouseLeftButtonUp="BtnLaunchDock_Click">
+                                                <Grid>
+                                                    <Border HorizontalAlignment="Right" VerticalAlignment="Top" Background="{DynamicResource BeigeAccentSoft}" CornerRadius="4" Padding="6,2">
+                                                        <TextBlock Text="Alt+9" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource BeigeAccent}"/>
+                                                    </Border>
+                                                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,4,0,0">
+                                                        <TextBlock Text="🏝️" FontSize="34" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                                                        <TextBlock Text="화면 상단 도구바" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
+                                                        <TextBlock Text="화면 상단 미니 플로팅 툴바" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
 
-                            <!-- Tool 7: QR Code Generator -->
-                            <Border Margin="6" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="18" Cursor="Hand" MouseLeftButtonUp="BtnQuickQr_Click">
-                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                    <TextBlock Text="📱" FontSize="38" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                    <TextBlock Text="QR코드 생성 도구" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="URL &amp; 텍스트 즉시 QR 변환" FontSize="12" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
-                                </StackPanel>
-                            </Border>
+                                            <!-- Tool 6: Board [F2] -->
+                                            <Border Margin="4" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="14,12" Cursor="Hand" MouseLeftButtonUp="BtnLaunchBoard_Click">
+                                                <Grid>
+                                                    <Border HorizontalAlignment="Right" VerticalAlignment="Top" Background="{DynamicResource BeigeAccentSoft}" CornerRadius="4" Padding="6,2">
+                                                        <TextBlock Text="F2" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource BeigeAccent}"/>
+                                                    </Border>
+                                                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,4,0,0">
+                                                        <TextBlock Text="📋" FontSize="34" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                                                        <TextBlock Text="놀보드 전자칠판" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
+                                                        <TextBlock Text="초록칠판 / 화이트보드 수업 판서" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
+                                        </UniformGrid>
+                                    </StackPanel>
+                                </Border>
 
-                            <!-- Tool 8: Period Countdown Alarm -->
-                            <Border Margin="6" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="18" Cursor="Hand" MouseLeftButtonUp="BtnOpenPeriodAlarmSettings_Click">
-                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                    <TextBlock Text="⏰" FontSize="38" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                    <TextBlock Text="수업 예비령 타이머" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="교시 시작 전 대형 카운트다운" FontSize="12" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
-                                </StackPanel>
-                            </Border>
+                                <!-- Section 2: 🏫 학급 경영 & 생활지도 (Classroom Management) -->
+                                <Border Margin="0,0,0,16">
+                                    <StackPanel>
+                                        <DockPanel Margin="4,0,4,8">
+                                            <Border DockPanel.Dock="Right" Background="#FEF3C7" CornerRadius="6" Padding="8,3" VerticalAlignment="Center">
+                                                <TextBlock Text="학급 운영 • 생활지도 도구" FontSize="11" FontWeight="Bold" Foreground="#B45309"/>
+                                            </Border>
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                <TextBlock Text="🏫" FontSize="16" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                                <TextBlock Text="학급 경영 &amp; 생활지도" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource BeigeTextMain}" VerticalAlignment="Center"/>
+                                                <TextBlock Text="자리 배치, 소음 관리 및 활동 지원" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </DockPanel>
 
-                            <!-- Tool 9: Hotkey Settings -->
-                            <Border Margin="6" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="18" Cursor="Hand" MouseLeftButtonUp="BtnOpenHotkeySettings_Click">
-                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                    <TextBlock Text="⌨️" FontSize="38" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                    <TextBlock Text="단축키 맞춤 설정" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="Alt+1~9 즉각 실행 &amp; 커스텀" FontSize="12" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
-                                </StackPanel>
-                            </Border>
+                                        <UniformGrid Columns="3">
+                                            <!-- Tool 7: Seat Shuffle -->
+                                            <Border Margin="4" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="14,12" Cursor="Hand" MouseLeftButtonUp="BtnLaunchSeatShuffle_Click">
+                                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                    <TextBlock Text="🪑" FontSize="34" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                                                    <TextBlock Text="스마트 자리 바꾸기" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
+                                                    <TextBlock Text="남녀/성향 매칭 &amp; 책상 셔플 애니메이션" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                                                </StackPanel>
+                                            </Border>
 
-                            <!-- Tool 10: School Scale & Statistics -->
-                            <Border Margin="6" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="18" Cursor="Hand" MouseLeftButtonUp="BtnLaunchSchoolScale_Click">
-                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                    <TextBlock Text="🏫" FontSize="38" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                    <TextBlock Text="전국 학교 규모 · 통계" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="학생수·교원수·학급수·과밀 조회" FontSize="12" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
-                                </StackPanel>
-                            </Border>
+                                            <!-- Tool 8: Noise Traffic Light -->
+                                            <Border Margin="4" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="14,12" Cursor="Hand" MouseLeftButtonUp="BtnLaunchNoiseTrafficLight_Click">
+                                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                    <TextBlock Text="🚦" FontSize="34" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                                                    <TextBlock Text="교실 소음 신호등" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
+                                                    <TextBlock Text="마이크 실시간 dB 감지 &amp; 자동 경고" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                                                </StackPanel>
+                                            </Border>
 
-                            <!-- Tool 11: Noise Traffic Light -->
-                            <Border Margin="6" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="18" Cursor="Hand" MouseLeftButtonUp="BtnLaunchNoiseTrafficLight_Click">
-                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                    <TextBlock Text="🚦" FontSize="38" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                    <TextBlock Text="교실 소음 신호등" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="마이크 실시간 dB 감지 &amp; 신호등" FontSize="12" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
-                                </StackPanel>
-                            </Border>
+                                            <!-- Tool 9: QR Generator -->
+                                            <Border Margin="4" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="14,12" Cursor="Hand" MouseLeftButtonUp="BtnQuickQr_Click">
+                                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                    <TextBlock Text="📱" FontSize="34" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                                                    <TextBlock Text="QR코드 생성 도구" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
+                                                    <TextBlock Text="URL &amp; 학습 안내 텍스트 즉시 QR 변환" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                                                </StackPanel>
+                                            </Border>
 
-                            <!-- Tool 12: Workday & Allowance Calculator -->
-                            <Border Margin="6" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="18" Cursor="Hand" MouseLeftButtonUp="BtnLaunchWorkdayCalculator_Click">
-                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                    <TextBlock Text="🧮" FontSize="38" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                    <TextBlock Text="월 15일 복무 계산기" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="교직수당·급식비 15일 충족 및 연가 한도" FontSize="12" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
-                                </StackPanel>
-                            </Border>
+                                            <!-- Tool 10: Task Checklist -->
+                                            <Border Margin="4" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="14,12" Cursor="Hand" MouseLeftButtonUp="BtnLaunchChecklist_Click">
+                                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                    <TextBlock Text="📋" FontSize="34" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                                                    <TextBlock Text="과제 체크리스트" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
+                                                    <TextBlock Text="학생 제출물 현황 및 과제 검사 체크" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                                                </StackPanel>
+                                            </Border>
 
-                            <!-- Tool 13: Smart Seat Shuffle -->
-                            <Border Margin="6" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="18" Cursor="Hand" MouseLeftButtonUp="BtnLaunchSeatShuffle_Click">
-                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                    <TextBlock Text="🪑" FontSize="38" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                    <TextBlock Text="스마트 자리 바꾸기" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="32종 동물 아바타 연동 책상 셔플" FontSize="12" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
-                                </StackPanel>
-                            </Border>
+                                            <!-- Tool 11: Classroom Soundboard -->
+                                            <Border Margin="4" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="14,12" Cursor="Hand" MouseLeftButtonUp="BtnLaunchSoundboard_Click">
+                                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                    <TextBlock Text="🔔" FontSize="34" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                                                    <TextBlock Text="교실 효과음 사운드보드" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
+                                                    <TextBlock Text="딩동댕·오답 버저·환호·박수 8종 사운드" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                                                </StackPanel>
+                                            </Border>
 
-                            <!-- Tool 14: Classroom Soundboard -->
-                            <Border Margin="6" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="18" Cursor="Hand" MouseLeftButtonUp="BtnLaunchSoundboard_Click">
-                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                    <TextBlock Text="🔔" FontSize="38" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                    <TextBlock Text="원터치 교실 효과음" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="딩동댕·오답 버저·환호·박수 8종 사운드" FontSize="12" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
-                                </StackPanel>
-                            </Border>
+                                            <!-- Tool 12: Period Alarm Settings -->
+                                            <Border Margin="4" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="14,12" Cursor="Hand" MouseLeftButtonUp="BtnOpenPeriodAlarmSettings_Click">
+                                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                    <TextBlock Text="⏰" FontSize="34" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                                                    <TextBlock Text="수업 예비령 설정" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
+                                                    <TextBlock Text="교시 시작 전 대형 카운트다운 &amp; 알람" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                                                </StackPanel>
+                                            </Border>
+                                        </UniformGrid>
+                                    </StackPanel>
+                                </Border>
 
-                            <!-- Tool 15: Digital Signature & Stamp Generator -->
-                            <Border Margin="6" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="18" Cursor="Hand" MouseLeftButtonUp="BtnLaunchSignature_Click">
-                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                    <TextBlock Text="🔏" FontSize="38" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                    <TextBlock Text="전자서명 &amp; 직인 도장" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="한글(HWP) 투명 날인 &amp; 자필 서명 (Alt+S)" FontSize="12" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
-                                </StackPanel>
-                            </Border>
+                                <!-- Section 3: 💼 교무 행정 & 업무 편의 (Administrative & Settings) -->
+                                <Border Margin="0,0,0,8">
+                                    <StackPanel>
+                                        <DockPanel Margin="4,0,4,8">
+                                            <Border DockPanel.Dock="Right" Background="#E0E7FF" CornerRadius="6" Padding="8,3" VerticalAlignment="Center">
+                                                <TextBlock Text="교무 행정 • 개인 편의 설정" FontSize="11" FontWeight="Bold" Foreground="#3730A3"/>
+                                            </Border>
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                <TextBlock Text="💼" FontSize="16" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                                <TextBlock Text="교무 행정 &amp; 업무 편의" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource BeigeTextMain}" VerticalAlignment="Center"/>
+                                                <TextBlock Text="복무 계산, 직인 날인 및 학교 통계" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </DockPanel>
 
-                            <!-- Tool 16: School Scale & Interactive Map -->
-                            <Border Margin="6" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="18" Cursor="Hand" MouseLeftButtonUp="BtnLaunchSchoolScale_Click">
-                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                    <TextBlock Text="🗺️" FontSize="38" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                    <TextBlock Text="전국 학교 지도 &amp; 통계" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="지도 기반 위치·규모·학급수·과밀 분석" FontSize="12" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
-                                </StackPanel>
-                            </Border>
+                                        <UniformGrid Columns="3">
+                                            <!-- Tool 13: Workday Calculator -->
+                                            <Border Margin="4" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="14,12" Cursor="Hand" MouseLeftButtonUp="BtnLaunchWorkdayCalculator_Click">
+                                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                    <TextBlock Text="🧮" FontSize="34" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                                                    <TextBlock Text="월 15일 복무 계산기" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
+                                                    <TextBlock Text="교직수당·급식비 15일 충족 및 연가 한도" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                                                </StackPanel>
+                                            </Border>
 
-                            <!-- Tool 17: Background Tray & Hotkeys -->
-                            <Border Margin="6" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="18" Cursor="Hand" MouseLeftButtonUp="BtnShowHotkeyGuide_Click">
-                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                    <TextBlock Text="⚡" FontSize="38" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                    <TextBlock Text="트레이 &amp; 전역 단축키" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="창을 숨겨도 Alt+1~9로 즉시 도구 소환" FontSize="12" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
-                                </StackPanel>
-                            </Border>
-                        </UniformGrid>
+                                            <!-- Tool 14: Digital Signature [Alt+S] -->
+                                            <Border Margin="4" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="14,12" Cursor="Hand" MouseLeftButtonUp="BtnLaunchSignature_Click">
+                                                <Grid>
+                                                    <Border HorizontalAlignment="Right" VerticalAlignment="Top" Background="{DynamicResource BeigeAccentSoft}" CornerRadius="4" Padding="6,2">
+                                                        <TextBlock Text="Alt+S" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource BeigeAccent}"/>
+                                                    </Border>
+                                                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,4,0,0">
+                                                        <TextBlock Text="🔏" FontSize="34" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                                                        <TextBlock Text="전자서명 &amp; 직인 도장" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
+                                                        <TextBlock Text="한글(HWP) 투명 날인 &amp; 자필 서명" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
+
+                                            <!-- Tool 15: School Scale Map -->
+                                            <Border Margin="4" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="14,12" Cursor="Hand" MouseLeftButtonUp="BtnLaunchSchoolScale_Click">
+                                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                    <TextBlock Text="🗺️" FontSize="34" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                                                    <TextBlock Text="전국 학교 지도 &amp; 통계" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
+                                                    <TextBlock Text="학생수·교원수·학급수·과밀 및 지도 조회" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                                                </StackPanel>
+                                            </Border>
+
+                                            <!-- Tool 16: Hotkey Settings -->
+                                            <Border Margin="4" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="14,12" Cursor="Hand" MouseLeftButtonUp="BtnOpenHotkeySettings_Click">
+                                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                    <TextBlock Text="⌨️" FontSize="34" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                                                    <TextBlock Text="단축키 맞춤 설정" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
+                                                    <TextBlock Text="Alt+1~9 즉각 실행 &amp; 단축키 커스텀" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                                                </StackPanel>
+                                            </Border>
+
+                                            <!-- Tool 17: Background Tray & Hotkey Guide -->
+                                            <Border Margin="4" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="14,12" Cursor="Hand" MouseLeftButtonUp="BtnShowHotkeyGuide_Click">
+                                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                    <TextBlock Text="⚡" FontSize="34" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                                                    <TextBlock Text="단축키 빠른 안내" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
+                                                    <TextBlock Text="전역 단축키 &amp; 트레이 숨김 모드 안내" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                                                </StackPanel>
+                                            </Border>
+                                        </UniformGrid>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
                         </ScrollViewer>
                     </TabItem>
 
