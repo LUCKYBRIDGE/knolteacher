@@ -65,6 +65,8 @@ public partial class App : Application
                 services.AddSingleton<ITtsService, TtsService>();
                 services.AddSingleton<IEarlyLeaveCalculatorService, EarlyLeaveCalculatorService>();
                 services.AddSingleton<IUpdateService, UpdateService>();
+                services.AddSingleton<IStartupService, StartupService>();
+                services.AddSingleton<IDataShareService, DataShareService>();
 
                 // ViewModels
                 services.AddSingleton<MainViewModel>();
@@ -83,6 +85,7 @@ public partial class App : Application
                 services.AddSingleton<SmartSeatShuffleWindow>();
                 services.AddSingleton<ClassroomSoundboardWindow>();
                 services.AddSingleton<DigitalSignatureWindow>();
+                services.AddTransient<TemplateShareWindow>();
             })
             .Build();
     }

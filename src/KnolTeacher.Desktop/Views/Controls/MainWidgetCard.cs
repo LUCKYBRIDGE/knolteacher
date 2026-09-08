@@ -214,11 +214,14 @@ public class MainWidgetCard : ContentControl
         if (IsLocked) return;
         BringToFront();
 
-        double newWidth = ActualWidth + e.HorizontalChange;
-        double newHeight = ActualHeight + e.VerticalChange;
+        double currentW = ActualWidth > 0 ? ActualWidth : Width;
+        double currentH = ActualHeight > 0 ? ActualHeight : Height;
 
-        if (newWidth >= MinWidth) Width = newWidth;
-        if (newHeight >= MinHeight) Height = newHeight;
+        double newWidth = Math.Max(MinWidth, currentW + e.HorizontalChange);
+        double newHeight = Math.Max(MinHeight, currentH + e.VerticalChange);
+
+        Width = newWidth;
+        Height = newHeight;
 
         e.Handled = true;
         Resized?.Invoke(this);
@@ -232,8 +235,24 @@ public class MainWidgetCard : ContentControl
             _prevNormalWidth = ActualWidth > 0 ? ActualWidth : Width;
             _prevNormalHeight = ActualHeight > 0 ? ActualHeight : Height;
 
-            Width = Math.Max(MinWidth, _prevNormalWidth * 1.3);
-            Height = Math.Max(MinHeight, _prevNormalHeight * 1.25);
+            double targetW = Math.Max(MinWidth, _prevNormalWidth * 1.25);
+            double targetH = Math.Max(MinHeight, _prevNormalHeight * 1.2);
+
+            if (VisualParent is Canvas canvas)
+            {
+                targetW = Math.Min(targetW, canvas.ActualWidth > 0 ? canvas.ActualWidth : targetW);
+                targetH = Math.Min(targetH, canvas.ActualHeight > 0 ? canvas.ActualHeight : targetH);
+
+                double left = Canvas.GetLeft(this);
+                double top = Canvas.GetTop(this);
+                if (canvas.ActualWidth > 0 && left + targetW > canvas.ActualWidth)
+                    Canvas.SetLeft(this, Math.Max(0, canvas.ActualWidth - targetW));
+                if (canvas.ActualHeight > 0 && top + targetH > canvas.ActualHeight)
+                    Canvas.SetTop(this, Math.Max(0, canvas.ActualHeight - targetH));
+            }
+
+            Width = targetW;
+            Height = targetH;
             _isExpanded = true;
         }
         else

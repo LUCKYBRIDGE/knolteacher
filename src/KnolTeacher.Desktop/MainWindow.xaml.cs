@@ -68,6 +68,10 @@ public partial class MainWindow : FluentWindow
     private bool _isWidgetLayoutInitialized = false;
     private bool _isWidgetsLocked = false;
     private readonly List<MainWidgetCard> _mainWidgets = new();
+    private readonly IStartupService _startupService;
+    private readonly IDataShareService _dataShareService;
+    private readonly TemplateShareWindow _templateShareWindow;
+    private int _tutorialStep = 1;
 
     public MainWindow(
         MainViewModel viewModel,
@@ -99,7 +103,10 @@ public partial class MainWindow : FluentWindow
         IGlobalHotkeyService hotkeyService,
         IQrCodeService qrCodeService,
         INeisCommentBatchService neisCommentBatchService,
-        ISiteBookmarkService siteBookmarkService)
+        ISiteBookmarkService siteBookmarkService,
+        IStartupService startupService,
+        IDataShareService dataShareService,
+        TemplateShareWindow templateShareWindow)
     {
         DataContext = viewModel;
         _studentDisplayWindow = studentDisplayWindow;
@@ -131,6 +138,10 @@ public partial class MainWindow : FluentWindow
         _qrCodeService = qrCodeService;
         _neisCommentBatchService = neisCommentBatchService;
         _siteBookmarkService = siteBookmarkService;
+        _startupService = startupService;
+        _dataShareService = dataShareService;
+        _templateShareWindow = templateShareWindow;
+        _templateShareWindow.DataChanged += OnExternalDataChanged;
 
         InitializeComponent();
 
@@ -217,6 +228,19 @@ public partial class MainWindow : FluentWindow
 
             // 8. Initialize Main Screen Widgets & Customization
             InitWidgetSystem();
+
+            // 9. Startup Auto-Run Status & Tutorial Auto-Launch
+            ChkAutoStartup.IsChecked = _startupService.IsStartupEnabled();
+
+            string currentVer = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "2.9.0";
+            if (string.IsNullOrEmpty(_configService.LastSeenTutorialVersion))
+            {
+                _ = Dispatcher.InvokeAsync(async () =>
+                {
+                    await Task.Delay(800);
+                    StartTutorial(isFirstRun: true);
+                });
+            }
         }
         catch (Exception ex)
         {
@@ -1858,6 +1882,214 @@ public partial class MainWindow : FluentWindow
 
         UpdateWidgetCheckboxes();
         SaveCurrentWidgetLayout();
+    }
+
+    #endregion
+
+    #region Template Sharing, Startup & Interactive Tutorial
+
+    private void OnExternalDataChanged()
+    {
+        Dispatcher.Invoke(async () =>
+        {
+            RefreshTimetable();
+            await LoadCalendarAsync();
+            await LoadUpcomingDDaysAsync();
+            LoadWidgetLayout();
+        });
+    }
+
+    private void BtnLaunchTemplateShare_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            _templateShareWindow.Owner = this;
+            _templateShareWindow.ShowDialog();
+        }
+        catch
+        {
+            _templateShareWindow.Show();
+        }
+    }
+
+    private void BtnOpenTutorial_Click(object sender, RoutedEventArgs e)
+    {
+        StartTutorial(isFirstRun: false);
+    }
+
+    private void ChkAutoStartup_Click(object sender, RoutedEventArgs e)
+    {
+        bool isEnabled = ChkAutoStartup.IsChecked == true;
+        bool success = _startupService.SetStartupEnabled(isEnabled);
+        if (success)
+        {
+            System.Windows.MessageBox.Show(
+                isEnabled ? "놀티쳐가 윈도우 시작 프로그램으로 등록되었습니다.\r\nPC 부팅 시 자동으로 실행됩니다."
+                          : "시작 프로그램 등록이 해제되었습니다.",
+                "시작 프로그램 설정", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        else
+        {
+            ChkAutoStartup.IsChecked = !isEnabled;
+            System.Windows.MessageBox.Show("시작 프로그램 설정을 변경하지 못했습니다.", "설정 안내", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    private void StartTutorial(bool isFirstRun = true)
+    {
+        _tutorialStep = 1;
+        TutorialOverlay.Visibility = Visibility.Visible;
+        RenderTutorialStep();
+    }
+
+    private void RenderTutorialStep()
+    {
+        TxtTutorialStepBadge.Text = $"{_tutorialStep} / 5 단계";
+        TutorialActionBox.Visibility = Visibility.Visible;
+        BtnTutorialPrev.IsEnabled = _tutorialStep > 1;
+        BtnTutorialNext.Content = "다음 ▶";
+
+        if (_tutorialStep == 1)
+        {
+            MainTabs.SelectedIndex = 0;
+            TxtTutorialStepIcon.Text = "📐";
+            TxtTutorialStepTitle.Text = "메인화면 & 나만의 위젯 커스텀";
+            TxtTutorialStepDesc.Text = "첫 화면에서 시간표, 급식, 날씨, 캘린더, D-Day, 학급 안내를 한눈에 확인할 수 있습니다. 위젯 모서리를 끌어 크기를 조절하고, '위젯 크기·배치 설정'으로 자유롭게 첫 화면을 완성해 보세요.";
+            ChkTutorialAction.Content = "추천 3단 정돈형 위젯 배치 바로 적용하기";
+            ChkTutorialAction.IsChecked = true;
+            TxtTutorialActionHint.Text = "체크 시 시간표, 캘린더, 급식·D-Day가 3개 열로 깔끔하게 정돈됩니다.";
+            UpdateTutorialSpotlight(HeaderWidgetControls);
+        }
+        else if (_tutorialStep == 2)
+        {
+            MainTabs.SelectedIndex = 0;
+            TxtTutorialStepIcon.Text = "⏰";
+            TxtTutorialStepTitle.Text = "시간표 & 수업 시작 1분 전 예비령";
+            TxtTutorialStepDesc.Text = "실시간 교시 남은 시간 카운트다운과 수업 시작 1분 전 집중 차임벨(예비령)을 제공합니다. 엑셀/CSV 양식으로 시간표를 한 번에 불러올 수도 있습니다.";
+            ChkTutorialAction.Content = "수업 시작 1분 전 예비령 알림 차임벨 켜기";
+            ChkTutorialAction.IsChecked = true;
+            TxtTutorialActionHint.Text = "수업 시작 전 학생들의 주의 집중을 돕는 은은한 차임벨과 카운트다운을 켭니다.";
+            UpdateTutorialSpotlight(WidgetTimetable);
+        }
+        else if (_tutorialStep == 3)
+        {
+            MainTabs.SelectedIndex = 0;
+            TxtTutorialStepIcon.Text = "📺";
+            TxtTutorialStepTitle.Text = "학생용 화면 / 전자칠판 놀보드 (F2)";
+            TxtTutorialStepDesc.Text = "F2 키 또는 사이드바 버튼을 누르면 모니터 2(학생 TV/전자칠판)에 놀보드가 열립니다. 화면 판서, 집중 타이머, 실물화상기, 집중벨 등 수업 보조 도구를 자유롭게 배치할 수 있습니다.";
+            ChkTutorialAction.Content = "학생용 화면(모니터 2) 자동 감지 및 배치";
+            ChkTutorialAction.IsChecked = true;
+            TxtTutorialActionHint.Text = "듀얼 모니터 환경에서 학생용 화면을 자동으로 감지하여 놀보드를 우선 띄웁니다.";
+            UpdateTutorialSpotlight(BtnSidebarBoard);
+        }
+        else if (_tutorialStep == 4)
+        {
+            MainTabs.SelectedIndex = 1;
+            TxtTutorialStepIcon.Text = "📋";
+            TxtTutorialStepTitle.Text = "양식 공유 & 시작 프로그램 설정";
+            TxtTutorialStepDesc.Text = "동료 교사와 학생 명렬표, 학사일정, 주간 시간표 엑셀/CSV 양식을 손쉽게 주고받아 로컬에 즉시 반영하세요! PC 부팅 시 놀티쳐가 자동으로 켜지도록 설정할 수도 있습니다.";
+            ChkTutorialAction.Content = "컴퓨터 켤 때 놀티쳐 자동 실행하기";
+            ChkTutorialAction.IsChecked = _startupService.IsStartupEnabled();
+            TxtTutorialActionHint.Text = "아침 출근 후 PC를 켜면 수업 준비가 바로 완료되도록 윈도우 시작 프로그램에 등록합니다.";
+            UpdateTutorialSpotlight(ChkAutoStartup);
+        }
+        else if (_tutorialStep == 5)
+        {
+            MainTabs.SelectedIndex = 0;
+            TxtTutorialStepIcon.Text = "🚀";
+            TxtTutorialStepTitle.Text = "환영합니다! 모든 준비가 완료되었습니다";
+            TxtTutorialStepDesc.Text = "놀티쳐는 선생님의 행복한 교실과 편리한 수업을 진심으로 응원합니다. 언제든 우측 상단 '도움말/튜토리얼' 버튼으로 다시 확인할 수 있습니다.";
+            TutorialActionBox.Visibility = Visibility.Collapsed;
+            BtnTutorialNext.Content = "🚀 놀티쳐 시작하기";
+            UpdateTutorialSpotlight(null);
+        }
+    }
+
+    private void BtnTutorialNext_Click(object sender, RoutedEventArgs e)
+    {
+        if (_tutorialStep == 1 && ChkTutorialAction.IsChecked == true)
+        {
+            ApplyDefaultWidgetLayout();
+            SaveCurrentWidgetLayout();
+        }
+        else if (_tutorialStep == 2 && ChkTutorialAction.IsChecked == true)
+        {
+            _timetableService.SetAllAlarms(true);
+        }
+        else if (_tutorialStep == 3 && ChkTutorialAction.IsChecked == true)
+        {
+            _configService.TimerTargetMonitorIndex = 1;
+            _configService.SaveTimerSettings();
+        }
+        else if (_tutorialStep == 4 && ChkTutorialAction.IsChecked == true)
+        {
+            _startupService.SetStartupEnabled(true);
+            ChkAutoStartup.IsChecked = true;
+        }
+        else if (_tutorialStep == 5)
+        {
+            FinishTutorial();
+            return;
+        }
+
+        _tutorialStep++;
+        RenderTutorialStep();
+    }
+
+    private void BtnTutorialPrev_Click(object sender, RoutedEventArgs e)
+    {
+        if (_tutorialStep > 1)
+        {
+            _tutorialStep--;
+            RenderTutorialStep();
+        }
+    }
+
+    private void BtnTutorialSkip_Click(object sender, RoutedEventArgs e)
+    {
+        FinishTutorial();
+    }
+
+    private void FinishTutorial()
+    {
+        TutorialOverlay.Visibility = Visibility.Collapsed;
+        TutorialSpotlightBorder.Visibility = Visibility.Collapsed;
+        MainTabs.SelectedIndex = 0;
+
+        string currentVer = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "2.9.0";
+        _configService.LastSeenTutorialVersion = currentVer;
+        _configService.SaveTutorialVersion();
+    }
+
+    private void TutorialOverlay_BackgroundClick(object sender, MouseButtonEventArgs e)
+    {
+    }
+
+    private void UpdateTutorialSpotlight(FrameworkElement? target)
+    {
+        if (target == null || !target.IsVisible)
+        {
+            TutorialSpotlightBorder.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        Dispatcher.InvokeAsync(async () =>
+        {
+            await Task.Delay(60);
+            try
+            {
+                var point = target.TranslatePoint(new Point(0, 0), TutorialCanvas);
+                Canvas.SetLeft(TutorialSpotlightBorder, Math.Max(0, point.X - 6));
+                Canvas.SetTop(TutorialSpotlightBorder, Math.Max(0, point.Y - 6));
+                TutorialSpotlightBorder.Width = Math.Max(40, target.ActualWidth + 12);
+                TutorialSpotlightBorder.Height = Math.Max(30, target.ActualHeight + 12);
+                TutorialSpotlightBorder.Visibility = Visibility.Visible;
+            }
+            catch
+            {
+                TutorialSpotlightBorder.Visibility = Visibility.Collapsed;
+            }
+        });
     }
 
     #endregion

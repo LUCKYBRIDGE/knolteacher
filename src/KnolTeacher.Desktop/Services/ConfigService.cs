@@ -20,6 +20,7 @@ public interface IConfigService
     BoardSetStore BoardSetStore { get; set; }
     int TimerTargetMonitorIndex { get; set; }
     MainWidgetLayoutConfig MainWidgetLayout { get; set; }
+    string? LastSeenTutorialVersion { get; set; }
 
     void LoadAll();
     void SaveNeisConfig();
@@ -32,6 +33,7 @@ public interface IConfigService
     void SaveBoardSetStore();
     void SaveTimerSettings();
     void SaveMainWidgetLayout();
+    void SaveTutorialVersion();
 }
 
 public class ConfigService : IConfigService
@@ -54,6 +56,7 @@ public class ConfigService : IConfigService
     public BoardSetStore BoardSetStore { get; set; } = new();
     public int TimerTargetMonitorIndex { get; set; } = 1;
     public MainWidgetLayoutConfig MainWidgetLayout { get; set; } = new();
+    public string? LastSeenTutorialVersion { get; set; }
 
     public ConfigService()
     {
@@ -80,6 +83,7 @@ public class ConfigService : IConfigService
         LoadBoardSetStore();
         LoadTimerSettings();
         LoadMainWidgetLayout();
+        LoadTutorialVersion();
     }
 
     private void LoadNeisConfig()
@@ -421,6 +425,37 @@ public class ConfigService : IConfigService
         {
             string path = Path.Combine(ConfigDir, "main_widget_layout.json");
             string json = JsonSerializer.Serialize(MainWidgetLayout, _jsonOptions);
+            File.WriteAllText(path, json);
+        }
+        catch { }
+    }
+
+    private void LoadTutorialVersion()
+    {
+        string path = Path.Combine(ConfigDir, "tutorial_state.json");
+        if (File.Exists(path))
+        {
+            try
+            {
+                string json = File.ReadAllText(path);
+                using var doc = JsonDocument.Parse(json);
+                if (doc.RootElement.TryGetProperty("last_seen_version", out var prop))
+                {
+                    LastSeenTutorialVersion = prop.GetString();
+                    return;
+                }
+            }
+            catch { }
+        }
+        LastSeenTutorialVersion = null;
+    }
+
+    public void SaveTutorialVersion()
+    {
+        try
+        {
+            string path = Path.Combine(ConfigDir, "tutorial_state.json");
+            string json = JsonSerializer.Serialize(new { last_seen_version = LastSeenTutorialVersion }, _jsonOptions);
             File.WriteAllText(path, json);
         }
         catch { }
