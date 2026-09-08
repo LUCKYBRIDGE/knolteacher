@@ -19,6 +19,7 @@ public interface IConfigService
     AutoNoticePreset AutoNoticePreset { get; set; }
     BoardSetStore BoardSetStore { get; set; }
     int TimerTargetMonitorIndex { get; set; }
+    MainWidgetLayoutConfig MainWidgetLayout { get; set; }
 
     void LoadAll();
     void SaveNeisConfig();
@@ -30,6 +31,7 @@ public interface IConfigService
     void SaveAutoNoticePreset();
     void SaveBoardSetStore();
     void SaveTimerSettings();
+    void SaveMainWidgetLayout();
 }
 
 public class ConfigService : IConfigService
@@ -51,6 +53,7 @@ public class ConfigService : IConfigService
     public AutoNoticePreset AutoNoticePreset { get; set; } = new();
     public BoardSetStore BoardSetStore { get; set; } = new();
     public int TimerTargetMonitorIndex { get; set; } = 1;
+    public MainWidgetLayoutConfig MainWidgetLayout { get; set; } = new();
 
     public ConfigService()
     {
@@ -76,6 +79,7 @@ public class ConfigService : IConfigService
         LoadAutoNoticePreset();
         LoadBoardSetStore();
         LoadTimerSettings();
+        LoadMainWidgetLayout();
     }
 
     private void LoadNeisConfig()
@@ -385,6 +389,38 @@ public class ConfigService : IConfigService
         {
             string path = Path.Combine(ConfigDir, "timer_settings.json");
             string json = JsonSerializer.Serialize(new { target_monitor_index = TimerTargetMonitorIndex }, _jsonOptions);
+            File.WriteAllText(path, json);
+        }
+        catch { }
+    }
+
+    private void LoadMainWidgetLayout()
+    {
+        string path = Path.Combine(ConfigDir, "main_widget_layout.json");
+        if (File.Exists(path))
+        {
+            try
+            {
+                string json = File.ReadAllText(path);
+                var layout = JsonSerializer.Deserialize<MainWidgetLayoutConfig>(json, _jsonOptions);
+                if (layout != null)
+                {
+                    MainWidgetLayout = layout;
+                    return;
+                }
+            }
+            catch { }
+        }
+        MainWidgetLayout = new MainWidgetLayoutConfig();
+        SaveMainWidgetLayout();
+    }
+
+    public void SaveMainWidgetLayout()
+    {
+        try
+        {
+            string path = Path.Combine(ConfigDir, "main_widget_layout.json");
+            string json = JsonSerializer.Serialize(MainWidgetLayout, _jsonOptions);
             File.WriteAllText(path, json);
         }
         catch { }

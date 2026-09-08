@@ -13,6 +13,8 @@ using KnolTeacher.Desktop.Models;
 using KnolTeacher.Desktop.Services;
 using KnolTeacher.Desktop.ViewModels;
 using KnolTeacher.Desktop.Views.Windows;
+using KnolTeacher.Desktop.Views.Controls;
+using System.Linq;
 using MessageBoxButton = System.Windows.MessageBoxButton;
 using MessageBoxResult = System.Windows.MessageBoxResult;
 using MessageBoxImage = System.Windows.MessageBoxImage;
@@ -63,6 +65,9 @@ public partial class MainWindow : FluentWindow
     private DateTime _selectedCalDate = DateTime.Today;
     private List<AcademicScheduleItem> _monthScheduleEvents = new();
     private DateTime _selectedMealDate = DateTime.Today;
+    private bool _isWidgetLayoutInitialized = false;
+    private bool _isWidgetsLocked = false;
+    private readonly List<MainWidgetCard> _mainWidgets = new();
 
     public MainWindow(
         MainViewModel viewModel,
@@ -209,6 +214,9 @@ public partial class MainWindow : FluentWindow
             // 7. Bind NEIS Student Comments DataGrid
             GridNeisComments.ItemsSource = _neisComments;
             UpdateCurrentTargetDisplay();
+
+            // 8. Initialize Main Screen Widgets & Customization
+            InitWidgetSystem();
         }
         catch (Exception ex)
         {
@@ -1466,6 +1474,390 @@ public partial class MainWindow : FluentWindow
             Owner = this
         };
         dlg.ShowDialog();
+    }
+
+    #endregion
+
+    #region Main Screen Widget Management & Customization
+
+    private void InitWidgetSystem()
+    {
+        _mainWidgets.Clear();
+        _mainWidgets.AddRange(new[]
+        {
+            WidgetNotice,
+            WidgetClock,
+            WidgetTimetable,
+            WidgetCalendar,
+            WidgetDDay,
+            WidgetWeather,
+            WidgetMeal
+        });
+
+        foreach (var w in _mainWidgets)
+        {
+            w.Closed += (card) =>
+            {
+                UpdateWidgetCheckboxes();
+                SaveCurrentWidgetLayout();
+            };
+            w.Moved += (card) => SaveCurrentWidgetLayout();
+            w.Resized += (card) => SaveCurrentWidgetLayout();
+        }
+
+        if (_configService.MainWidgetLayout != null)
+        {
+            _isWidgetsLocked = _configService.MainWidgetLayout.IsLocked;
+            UpdateWidgetsLockState();
+        }
+
+        LoadWidgetLayout();
+    }
+
+    private void MainWidgetCanvas_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        if (!_isWidgetLayoutInitialized && e.NewSize.Width > 400 && e.NewSize.Height > 300)
+        {
+            _isWidgetLayoutInitialized = true;
+            LoadWidgetLayout();
+        }
+    }
+
+    private void LoadWidgetLayout()
+    {
+        var cfg = _configService.MainWidgetLayout;
+        if (cfg != null && cfg.Widgets != null && cfg.Widgets.Count > 0)
+        {
+            foreach (var state in cfg.Widgets)
+            {
+                var card = _mainWidgets.FirstOrDefault(w => w.WidgetId == state.Id);
+                if (card != null)
+                {
+                    if (state.Width >= card.MinWidth) card.Width = state.Width;
+                    if (state.Height >= card.MinHeight) card.Height = state.Height;
+
+                    Canvas.SetLeft(card, Math.Max(0, state.X));
+                    Canvas.SetTop(card, Math.Max(0, state.Y));
+                    card.Visibility = state.IsVisible ? Visibility.Visible : Visibility.Collapsed;
+                    if (state.ZIndex > 0) Panel.SetZIndex(card, state.ZIndex);
+                }
+            }
+            _isWidgetsLocked = cfg.IsLocked;
+            UpdateWidgetsLockState();
+            UpdateWidgetCheckboxes();
+        }
+        else
+        {
+            ApplyDefaultWidgetLayout();
+            SaveCurrentWidgetLayout();
+        }
+        UpdateCanvasExtent();
+    }
+
+    private void UpdateCanvasExtent()
+    {
+        double maxRequiredW = WidgetScrollViewer.ActualWidth > 0 ? WidgetScrollViewer.ActualWidth : 1050;
+        double maxRequiredH = WidgetScrollViewer.ActualHeight > 0 ? WidgetScrollViewer.ActualHeight : 720;
+
+        foreach (var c in _mainWidgets)
+        {
+            if (c.Visibility == Visibility.Visible)
+            {
+                double left = Canvas.GetLeft(c);
+                double top = Canvas.GetTop(c);
+                double w = c.ActualWidth > 0 ? c.ActualWidth : c.Width;
+                double h = c.ActualHeight > 0 ? c.ActualHeight : c.Height;
+
+                if (!double.IsNaN(left) && w > 0) maxRequiredW = Math.Max(maxRequiredW, left + w + 20);
+                if (!double.IsNaN(top) && h > 0) maxRequiredH = Math.Max(maxRequiredH, top + h + 20);
+            }
+        }
+
+        MainWidgetCanvas.Width = maxRequiredW;
+        MainWidgetCanvas.Height = maxRequiredH;
+    }
+
+    private void SaveCurrentWidgetLayout()
+    {
+        var cfg = _configService.MainWidgetLayout ?? new MainWidgetLayoutConfig();
+        cfg.IsLocked = _isWidgetsLocked;
+        cfg.Widgets.Clear();
+
+        foreach (var card in _mainWidgets)
+        {
+            cfg.Widgets.Add(new MainWidgetState
+            {
+                Id = card.WidgetId,
+                X = Canvas.GetLeft(card),
+                Y = Canvas.GetTop(card),
+                Width = card.ActualWidth > 0 ? card.ActualWidth : card.Width,
+                Height = card.ActualHeight > 0 ? card.ActualHeight : card.Height,
+                IsVisible = card.Visibility == Visibility.Visible,
+                ZIndex = Panel.GetZIndex(card)
+            });
+        }
+
+        UpdateCanvasExtent();
+        _configService.SaveMainWidgetLayout();
+    }
+
+    private void UpdateWidgetCheckboxes()
+    {
+        ChkWidgetNotice.IsChecked = WidgetNotice.Visibility == Visibility.Visible;
+        ChkWidgetClock.IsChecked = WidgetClock.Visibility == Visibility.Visible;
+        ChkWidgetTimetable.IsChecked = WidgetTimetable.Visibility == Visibility.Visible;
+        ChkWidgetCalendar.IsChecked = WidgetCalendar.Visibility == Visibility.Visible;
+        ChkWidgetDDay.IsChecked = WidgetDDay.Visibility == Visibility.Visible;
+        ChkWidgetWeather.IsChecked = WidgetWeather.Visibility == Visibility.Visible;
+        ChkWidgetMeal.IsChecked = WidgetMeal.Visibility == Visibility.Visible;
+    }
+
+    private void UpdateWidgetsLockState()
+    {
+        foreach (var w in _mainWidgets)
+        {
+            w.IsLocked = _isWidgetsLocked;
+        }
+
+        BtnToggleWidgetLock.Content = _isWidgetsLocked ? "🔒 위젯 잠금됨" : "🔓 위젯 조절 모드";
+        BtnToggleWidgetLock.Foreground = _isWidgetsLocked ? (SolidColorBrush)FindResource("BeigeTextMuted") : (SolidColorBrush)FindResource("BeigeAccent");
+    }
+
+    private void BtnToggleWidgetCustomize_Click(object sender, RoutedEventArgs e)
+    {
+        bool isOpen = WidgetCustomizeBar.Visibility == Visibility.Visible;
+        WidgetCustomizeBar.Visibility = isOpen ? Visibility.Collapsed : Visibility.Visible;
+        UpdateWidgetCheckboxes();
+    }
+
+    private void ChkWidget_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is CheckBox chk && chk.Tag is string tag)
+        {
+            var card = _mainWidgets.FirstOrDefault(w => w.WidgetId == tag);
+            if (card != null)
+            {
+                bool show = chk.IsChecked == true;
+                card.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+
+                if (show)
+                {
+                    card.BringToFront();
+                    double maxLeft = Math.Max(0, MainWidgetCanvas.ActualWidth - card.ActualWidth);
+                    double maxTop = Math.Max(0, MainWidgetCanvas.ActualHeight - card.ActualHeight);
+                    double left = Canvas.GetLeft(card);
+                    double top = Canvas.GetTop(card);
+                    if (double.IsNaN(left) || left > maxLeft) Canvas.SetLeft(card, Math.Max(0, Math.Min(left, maxLeft)));
+                    if (double.IsNaN(top) || top > maxTop) Canvas.SetTop(card, Math.Max(0, Math.Min(top, maxTop)));
+                }
+
+                SaveCurrentWidgetLayout();
+            }
+        }
+    }
+
+    private void BtnToggleWidgetLock_Click(object sender, RoutedEventArgs e)
+    {
+        _isWidgetsLocked = !_isWidgetsLocked;
+        UpdateWidgetsLockState();
+        SaveCurrentWidgetLayout();
+    }
+
+    private void BtnResetWidgetLayout_Click(object sender, RoutedEventArgs e)
+    {
+        ApplyDefaultWidgetLayout();
+        SaveCurrentWidgetLayout();
+    }
+
+    private void BtnSaveWidgetLayout_Click(object sender, RoutedEventArgs e)
+    {
+        SaveCurrentWidgetLayout();
+        System.Windows.MessageBox.Show("현재 메인화면 위젯 배치와 크기가 저장되었습니다.\n다음 실행 시에도 그대로 유지됩니다.", "위젯 배치 저장 완료", MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+
+    private void BtnPresetDefault_Click(object sender, RoutedEventArgs e)
+    {
+        ApplyDefaultWidgetLayout();
+        SaveCurrentWidgetLayout();
+    }
+
+    private void ApplyDefaultWidgetLayout()
+    {
+        double canvasW = Math.Max(MainWidgetCanvas.ActualWidth > 0 ? MainWidgetCanvas.ActualWidth : 1050, 1050);
+        double canvasH = Math.Max(MainWidgetCanvas.ActualHeight > 0 ? MainWidgetCanvas.ActualHeight : 720, 720);
+
+        // Row 0: Notice Banner & Digital Clock
+        double topBarH = 72;
+        double clockW = 280;
+        double bannerW = Math.Max(WidgetNotice.MinWidth, canvasW - clockW - 12);
+
+        WidgetNotice.Width = bannerW;
+        WidgetNotice.Height = topBarH;
+        Canvas.SetLeft(WidgetNotice, 0);
+        Canvas.SetTop(WidgetNotice, 0);
+        WidgetNotice.Visibility = Visibility.Visible;
+
+        WidgetClock.Width = clockW;
+        WidgetClock.Height = topBarH;
+        Canvas.SetLeft(WidgetClock, canvasW - clockW);
+        Canvas.SetTop(WidgetClock, 0);
+        WidgetClock.Visibility = Visibility.Visible;
+
+        // Row 1: 3 Columns
+        double startY = topBarH + 10;
+        double remH = Math.Max(500, canvasH - startY - 10);
+
+        // Column widths
+        double colSpacing = 10;
+        double availableW = canvasW - (colSpacing * 2);
+        double col0W = Math.Round(availableW * 0.36);
+        double col1W = Math.Round(availableW * 0.35);
+        double col2W = availableW - col0W - col1W;
+
+        // Col 0: Timetable
+        WidgetTimetable.Width = col0W;
+        WidgetTimetable.Height = remH;
+        Canvas.SetLeft(WidgetTimetable, 0);
+        Canvas.SetTop(WidgetTimetable, startY);
+        WidgetTimetable.Visibility = Visibility.Visible;
+
+        // Col 1: Calendar & D-Day
+        double calH = Math.Round(remH * 0.65);
+        double ddayH = remH - calH - colSpacing;
+
+        WidgetCalendar.Width = col1W;
+        WidgetCalendar.Height = calH;
+        Canvas.SetLeft(WidgetCalendar, col0W + colSpacing);
+        Canvas.SetTop(WidgetCalendar, startY);
+        WidgetCalendar.Visibility = Visibility.Visible;
+
+        WidgetDDay.Width = col1W;
+        WidgetDDay.Height = ddayH;
+        Canvas.SetLeft(WidgetDDay, col0W + colSpacing);
+        Canvas.SetTop(WidgetDDay, startY + calH + colSpacing);
+        WidgetDDay.Visibility = Visibility.Visible;
+
+        // Col 2: Weather & Lunch Meal
+        double weatherH = 175;
+        double mealH = remH - weatherH - colSpacing;
+
+        WidgetWeather.Width = col2W;
+        WidgetWeather.Height = weatherH;
+        Canvas.SetLeft(WidgetWeather, col0W + col1W + (colSpacing * 2));
+        Canvas.SetTop(WidgetWeather, startY);
+        WidgetWeather.Visibility = Visibility.Visible;
+
+        WidgetMeal.Width = col2W;
+        WidgetMeal.Height = mealH;
+        Canvas.SetLeft(WidgetMeal, col0W + col1W + (colSpacing * 2));
+        Canvas.SetTop(WidgetMeal, startY + weatherH + colSpacing);
+        WidgetMeal.Visibility = Visibility.Visible;
+
+        UpdateWidgetCheckboxes();
+    }
+
+    private void BtnPresetFocusTimetableMeal_Click(object sender, RoutedEventArgs e)
+    {
+        double canvasW = Math.Max(MainWidgetCanvas.ActualWidth > 0 ? MainWidgetCanvas.ActualWidth : 1050, 1050);
+        double canvasH = Math.Max(MainWidgetCanvas.ActualHeight > 0 ? MainWidgetCanvas.ActualHeight : 720, 720);
+
+        double topBarH = 72;
+        double clockW = 280;
+        double bannerW = Math.Max(WidgetNotice.MinWidth, canvasW - clockW - 12);
+
+        WidgetNotice.Width = bannerW;
+        WidgetNotice.Height = topBarH;
+        Canvas.SetLeft(WidgetNotice, 0);
+        Canvas.SetTop(WidgetNotice, 0);
+        WidgetNotice.Visibility = Visibility.Visible;
+
+        WidgetClock.Width = clockW;
+        WidgetClock.Height = topBarH;
+        Canvas.SetLeft(WidgetClock, canvasW - clockW);
+        Canvas.SetTop(WidgetClock, 0);
+        WidgetClock.Visibility = Visibility.Visible;
+
+        double startY = topBarH + 10;
+        double remH = Math.Max(500, canvasH - startY - 10);
+        double colSpacing = 12;
+        double colW = (canvasW - colSpacing) / 2.0;
+
+        WidgetTimetable.Width = colW;
+        WidgetTimetable.Height = remH;
+        Canvas.SetLeft(WidgetTimetable, 0);
+        Canvas.SetTop(WidgetTimetable, startY);
+        WidgetTimetable.Visibility = Visibility.Visible;
+
+        WidgetMeal.Width = colW;
+        WidgetMeal.Height = remH;
+        Canvas.SetLeft(WidgetMeal, colW + colSpacing);
+        Canvas.SetTop(WidgetMeal, startY);
+        WidgetMeal.Visibility = Visibility.Visible;
+
+        WidgetCalendar.Visibility = Visibility.Collapsed;
+        WidgetDDay.Visibility = Visibility.Collapsed;
+        WidgetWeather.Visibility = Visibility.Collapsed;
+
+        UpdateWidgetCheckboxes();
+        SaveCurrentWidgetLayout();
+    }
+
+    private void BtnPresetFocusCalendar_Click(object sender, RoutedEventArgs e)
+    {
+        double canvasW = Math.Max(MainWidgetCanvas.ActualWidth > 0 ? MainWidgetCanvas.ActualWidth : 1050, 1050);
+        double canvasH = Math.Max(MainWidgetCanvas.ActualHeight > 0 ? MainWidgetCanvas.ActualHeight : 720, 720);
+
+        double topBarH = 72;
+        double clockW = 280;
+        double bannerW = Math.Max(WidgetNotice.MinWidth, canvasW - clockW - 12);
+
+        WidgetNotice.Width = bannerW;
+        WidgetNotice.Height = topBarH;
+        Canvas.SetLeft(WidgetNotice, 0);
+        Canvas.SetTop(WidgetNotice, 0);
+        WidgetNotice.Visibility = Visibility.Visible;
+
+        WidgetClock.Width = clockW;
+        WidgetClock.Height = topBarH;
+        Canvas.SetLeft(WidgetClock, canvasW - clockW);
+        Canvas.SetTop(WidgetClock, 0);
+        WidgetClock.Visibility = Visibility.Visible;
+
+        double startY = topBarH + 10;
+        double remH = Math.Max(500, canvasH - startY - 10);
+        double colSpacing = 10;
+        double col0W = Math.Round(canvasW * 0.32);
+        double col1W = Math.Round(canvasW * 0.42);
+        double col2W = canvasW - col0W - col1W - (colSpacing * 2);
+
+        WidgetTimetable.Width = col0W;
+        WidgetTimetable.Height = remH;
+        Canvas.SetLeft(WidgetTimetable, 0);
+        Canvas.SetTop(WidgetTimetable, startY);
+        WidgetTimetable.Visibility = Visibility.Visible;
+
+        WidgetCalendar.Width = col1W;
+        WidgetCalendar.Height = remH;
+        Canvas.SetLeft(WidgetCalendar, col0W + colSpacing);
+        Canvas.SetTop(WidgetCalendar, startY);
+        WidgetCalendar.Visibility = Visibility.Visible;
+
+        WidgetDDay.Width = col2W;
+        WidgetDDay.Height = Math.Round(remH * 0.55);
+        Canvas.SetLeft(WidgetDDay, col0W + col1W + (colSpacing * 2));
+        Canvas.SetTop(WidgetDDay, startY);
+        WidgetDDay.Visibility = Visibility.Visible;
+
+        WidgetMeal.Width = col2W;
+        WidgetMeal.Height = remH - WidgetDDay.Height - colSpacing;
+        Canvas.SetLeft(WidgetMeal, col0W + col1W + (colSpacing * 2));
+        Canvas.SetTop(WidgetMeal, startY + WidgetDDay.Height + colSpacing);
+        WidgetMeal.Visibility = Visibility.Visible;
+
+        WidgetWeather.Visibility = Visibility.Collapsed;
+
+        UpdateWidgetCheckboxes();
+        SaveCurrentWidgetLayout();
     }
 
     #endregion
