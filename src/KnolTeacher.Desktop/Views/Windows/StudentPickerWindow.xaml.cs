@@ -29,7 +29,7 @@ public partial class StudentPickerWindow : Window
     private readonly List<RaceBumper> _bumpers = new();
     private readonly List<RaceRail> _rails = new();
     private readonly List<RotatingLog> _rotatingLogs = new();
-    private readonly List<PoppableBubble> _bubbles = new();
+    private readonly List<BreakablePottery> _potteries = new();
     private readonly List<PopOutSquirrel> _squirrels = new();
     private readonly List<ThrownProjectile> _projectiles = new();
 
@@ -135,30 +135,21 @@ public partial class StudentPickerWindow : Window
             left = c - hw;
             right = c + hw;
         }
-        else if (y <= 3200.0)
+        else if (y <= 3260.0)
         {
-            // Forest Meander 2 into River Rapids (stays wide and spacious until 3200!)
-            double t = (y - 2480.0) / (3200.0 - 2480.0);
-            double c = 340.0 - 30.0 * Math.Sin(t * Math.PI);
+            // Prehistoric River Rapids Flume (stays wide 370px until 3260!)
+            double t = (y - 2480.0) / (3260.0 - 2480.0);
+            double c = 340.0 - 20.0 * Math.Sin(t * Math.PI);
             double hw = 185.0; // width 370
-            left = c - hw;
-            right = c + hw;
-        }
-        else if (y <= 3320.0)
-        {
-            // Compact Angled Funnel ("단축된 깔대기 입구 - 기존 240px의 절반인 120px로 단축")
-            // Over 120px, smoothly tapers diagonally from width 370 (hw 185) down to 160 (hw 80)
-            double t = (y - 3200.0) / (3320.0 - 3200.0);
-            double c = 340.0;
-            double hw = 185.0 - 105.0 * t; // [155, 525] -> [260, 420]
             left = c - hw;
             right = c + hw;
         }
         else
         {
-            // Short Funnel Neck & Harbor Dock (Y = 3320 ~ 3500, width 160)
+            // Narrow 80px Finish Canyon Chute (Y = 3260 ~ 3500, width 80px, hw = 40)
+            // Perfectly straight vertical canyon walls, NO diagonal slide ramp!
             double c = 340.0;
-            double hw = 80.0; // [260, 420]
+            double hw = 40.0; // [300, 380]
             left = c - hw;
             right = c + hw;
         }
@@ -345,7 +336,7 @@ public partial class StudentPickerWindow : Window
     {
         foreach (var b in _bumpers) RaceCanvas.Children.Remove(b.Visual);
         foreach (var l in _rotatingLogs) RaceCanvas.Children.Remove(l.Visual);
-        foreach (var bub in _bubbles) RaceCanvas.Children.Remove(bub.Visual);
+        foreach (var pot in _potteries) RaceCanvas.Children.Remove(pot.Visual);
         foreach (var sq in _squirrels)
         {
             RaceCanvas.Children.Remove(sq.BranchVisual);
@@ -355,7 +346,7 @@ public partial class StudentPickerWindow : Window
         _bumpers.Clear();
         _rails.Clear();
         _rotatingLogs.Clear();
-        _bubbles.Clear();
+        _potteries.Clear();
         _squirrels.Clear();
         _projectiles.Clear();
 
@@ -397,53 +388,52 @@ public partial class StudentPickerWindow : Window
         // Lower Mushroom Forest: Heavy Rotating Log
         AddRotatingLog(380, 2180, 110, 22, -2.0, 0);
 
-        // 3. SMALL CARTOON BUMPERS & OBSTACLES (충분한 최소 간격을 보장하는 최적 분산 배치)
+        // 3. SMALL CARTOON BUMPERS & STONE AGE RELICS (히트박스 1:1 완벽 대응)
         // --- Meadow & Early Forest (Y = 240 ~ 600) ---
-        AddBumper(210, 260, 14, "cartoon_acorn_peg.png");
-        AddBumper(470, 260, 14, "cartoon_acorn_peg.png");
-        AddBumper(340, 330, 15, "cartoon_wood_stump.png");
-        AddBumper(180, 410, 16, "cartoon_flower_bumper.png");
-        AddBumper(500, 410, 16, "cartoon_flower_bumper.png");
-        AddBumper(340, 500, 15, "cartoon_wood_stump.png");
+        AddBumper(210, 260, 15, "cartoon_comb_pottery.png");
+        AddBumper(470, 260, 15, "cartoon_comb_pottery.png");
+        AddBumper(340, 330, 15, "cartoon_handaxe.png");
+        AddBumper(180, 410, 16, "cartoon_chipped_stone.png");
+        AddBumper(500, 410, 16, "cartoon_polished_stone.png");
+        AddBumper(340, 500, 15, "cartoon_comb_pottery.png");
 
-        // --- Canyon Winding Trail (Y = 620 ~ 1350) ---
-        AddBumper(210, 640, 14, "cartoon_acorn_peg.png");
-        AddBumper(380, 640, 14, "cartoon_acorn_peg.png");
-        AddBumper(190, 820, 15, "cartoon_mushroom_purple.png");
-        AddBumper(350, 820, 15, "cartoon_mushroom_red.png");
-        AddBumper(290, 1000, 14, "cartoon_pebble_bumper.png");
-        AddBumper(460, 1000, 14, "cartoon_pebble_bumper.png");
-        AddBumper(340, 1180, 15, "cartoon_wood_stump.png");
+        // --- Canyon & Cave Winding Trail (Y = 620 ~ 1350) ---
+        AddBumper(210, 640, 15, "cartoon_handaxe.png");
+        AddBumper(380, 640, 15, "cartoon_chipped_stone.png");
+        AddBumper(190, 820, 15, "cartoon_polished_stone.png");
+        AddBumper(350, 820, 15, "cartoon_comb_pottery.png");
+        AddBumper(290, 1000, 15, "cartoon_handaxe.png");
+        AddBumper(460, 1000, 15, "cartoon_chipped_stone.png");
+        AddBumper(340, 1180, 15, "cartoon_polished_stone.png");
 
-        // --- Fossil Mesa & Diamond Maze (Y = 1360 ~ 2080) ---
-        // 슬라럼 통로 내부 장애물 전면 제거: 공들이 시원하게 미끄러져 통과할 수 있도록 최소 110px 이상 완전 개방!
-        // 미로 출구 유도 범퍼만 배치 (중앙 260px 완전 개방)
-        AddBumper(210, 2030, 15, "cartoon_flower_bumper.png");
-        AddBumper(470, 2030, 15, "cartoon_flower_bumper.png");
+        // --- Megalith Sanctuary (Y = 1360 ~ 2080) ---
+        AddBumper(210, 2030, 15, "cartoon_comb_pottery.png");
+        AddBumper(470, 2030, 15, "cartoon_handaxe.png");
 
-        // --- Enchanted Mushroom Forest (Y = 2100 ~ 2780) ---
-        AddBumper(280, 2320, 16, "cartoon_mushroom_red.png");
-        AddBumper(480, 2320, 16, "cartoon_mushroom_purple.png");
-        AddBumper(230, 2520, 16, "cartoon_flower_bumper.png");
-        AddBumper(410, 2520, 16, "cartoon_wood_stump.png");
-        AddBumper(340, 2700, 15, "cartoon_mushroom_yellow.png");
+        // --- Primeval Forest (Y = 2100 ~ 2780) ---
+        AddBumper(280, 2320, 16, "cartoon_chipped_stone.png");
+        AddBumper(480, 2320, 16, "cartoon_polished_stone.png");
+        AddBumper(230, 2520, 16, "cartoon_comb_pottery.png");
+        AddBumper(410, 2520, 16, "cartoon_handaxe.png");
+        AddBumper(340, 2700, 15, "cartoon_comb_pottery.png");
 
-        // --- 4. River Rapids Flume & Short Finish Canal (Y = 2800 ~ 3360) ---
-        // 넓은 강물 급류 (가장자리 조약돌 2개, 중앙 240px 완전 개방)
-        AddBumper(210, 2960, 14, "cartoon_pebble_bumper.png");
-        AddBumper(470, 2960, 14, "cartoon_pebble_bumper.png");
+        // --- River Rapids (Y = 2800 ~ 3260) ---
+        AddBumper(210, 2960, 15, "cartoon_polished_stone.png");
+        AddBumper(470, 2960, 15, "cartoon_chipped_stone.png");
 
-        // 단축된 도착 구간 깔대기 직후(Y=3330)의 3개 비눗방울 관문 (도착 직전 3개로 충분!)
-        AddBubble(295, 3330, 20);
-        AddBubble(340, 3330, 22);
-        AddBubble(385, 3330, 20);
+        // 4. 2x2 Breakable Comb Pottery Gauntlet (가로 2개 x 2줄, 총 4개)
+        // 80px 초밀착 피니시 협곡 입구를 가로막아 선두가 깨뜨리며 튕겨나와 극적 역전 연출!
+        AddBreakablePottery(320, 3285, 16.5);
+        AddBreakablePottery(360, 3285, 16.5);
+        AddBreakablePottery(320, 3325, 16.5);
+        AddBreakablePottery(360, 3325, 16.5);
 
-        // --- 5. Perched Animated Squirrels (5마리 청설모 솔방울 표창 투척) ---
-        AddSquirrel(x: 95, y: 780, radius: 26, isFacingRight: true, startDelay: 0.3, projectileAsset: "cartoon_pinecone_shuriken.png");
-        AddSquirrel(x: 585, y: 1150, radius: 26, isFacingRight: false, startDelay: 0.7, projectileAsset: "cartoon_pinecone_shuriken.png");
-        AddSquirrel(x: 135, y: 1520, radius: 26, isFacingRight: true, startDelay: 0.5, projectileAsset: "cartoon_pinecone_shuriken.png");
-        AddSquirrel(x: 530, y: 1720, radius: 26, isFacingRight: false, startDelay: 0.9, projectileAsset: "cartoon_pinecone_shuriken.png");
-        AddSquirrel(x: 195, y: 2320, radius: 26, isFacingRight: true, startDelay: 0.4, projectileAsset: "cartoon_pinecone_shuriken.png");
+        // --- 5. Perched Animated Squirrels (5마리 청설모 솔방울 투척) ---
+        AddSquirrel(x: 95, y: 780, radius: 26, isFacingRight: true, startDelay: 0.3, projectileAsset: "cartoon_pinecone.png");
+        AddSquirrel(x: 585, y: 1150, radius: 26, isFacingRight: false, startDelay: 0.7, projectileAsset: "cartoon_pinecone.png");
+        AddSquirrel(x: 135, y: 1520, radius: 26, isFacingRight: true, startDelay: 0.5, projectileAsset: "cartoon_pinecone.png");
+        AddSquirrel(x: 530, y: 1720, radius: 26, isFacingRight: false, startDelay: 0.9, projectileAsset: "cartoon_pinecone.png");
+        AddSquirrel(x: 195, y: 2320, radius: 26, isFacingRight: true, startDelay: 0.4, projectileAsset: "cartoon_pinecone.png");
     }
 
     private void AddRotatingLog(double x, double y, double length, double thickness, double angularVelocity, double initialAngleDeg)
@@ -460,11 +450,11 @@ public partial class StudentPickerWindow : Window
         RaceCanvas.Children.Add(bumper.Visual);
     }
 
-    private void AddBubble(double x, double y, double radius)
+    private void AddBreakablePottery(double x, double y, double radius)
     {
-        var bubble = new PoppableBubble(x, y, radius);
-        _bubbles.Add(bubble);
-        RaceCanvas.Children.Add(bubble.Visual);
+        var pot = new BreakablePottery(x, y, radius);
+        _potteries.Add(pot);
+        RaceCanvas.Children.Add(pot.Visual);
     }
 
     private void AddSquirrel(double x, double y, double radius, bool isFacingRight, double startDelay, string projectileAsset)
@@ -503,9 +493,9 @@ public partial class StudentPickerWindow : Window
         if (TxtPauseLabel != null) TxtPauseLabel.Text = "일시정지";
         if (BorderPausedBanner != null) BorderPausedBanner.Visibility = Visibility.Collapsed;
 
-        foreach (var b in _bubbles)
+        foreach (var pot in _potteries)
         {
-            b.Reset();
+            pot.Reset();
         }
 
         foreach (var sq in _squirrels)
@@ -692,9 +682,9 @@ public partial class StudentPickerWindow : Window
         {
             log.Update(dt);
         }
-        foreach (var bubble in _bubbles)
+        foreach (var pot in _potteries)
         {
-            bubble.Update(_raceElapsedSeconds);
+            pot.Update(_raceElapsedSeconds);
         }
         foreach (var sq in _squirrels)
         {
@@ -833,9 +823,27 @@ public partial class StudentPickerWindow : Window
                 }
             }
 
-            // 2. Island Collision Watchdogs (Fossil Mesa & 3 Diamond Rocks)
+            // Horizontal Stone Riverbank Barrier at Y = 3260 (outside the 80px chute: X < 300 or X > 380)
+            // No diagonal slide ramp! Bounces cleanly upward and nudges toward central 80px canyon chute!
+            if (r.Y + r.Radius >= 3260.0 && r.Y - r.Radius < 3278.0)
+            {
+                if (r.X < 300.0)
+                {
+                    r.Y = 3260.0 - r.Radius;
+                    r.Vy = -Math.Abs(r.Vy) * 0.7 - 45.0;
+                    r.Vx = Math.Max(r.Vx + 60.0, 50.0);
+                }
+                else if (r.X > 380.0)
+                {
+                    r.Y = 3260.0 - r.Radius;
+                    r.Vy = -Math.Abs(r.Vy) * 0.7 - 45.0;
+                    r.Vx = Math.Min(r.Vx - 60.0, -50.0);
+                }
+            }
+
+            // 2. Island Collision Watchdogs (Megalith Dolmen, Handaxe, Chipped & Polished Stones)
             // Prevents racers from penetrating inside island geometries even at extreme velocities!
-            // Island 1: Dinosaur Fossil Mesa (Y: 1360 ~ 1640)
+            // Island 1: Megalithic Dolmen (고인돌 - Y: 1360 ~ 1640)
             if (r.Y >= 1360.0 && r.Y <= 1640.0)
             {
                 double halfW;
@@ -1024,35 +1032,35 @@ public partial class StudentPickerWindow : Window
                 }
             }
 
-            // Collisions with Poppable Water Bubbles ("부딪히면 사라지는 비눗방울")
-            foreach (var bubble in _bubbles)
+            // Collisions with Breakable Comb Potteries ("부딪히면 와장창 깨지며 튕겨나오는 빗살무늬토기 2x2 관문")
+            foreach (var pot in _potteries)
             {
-                if (bubble.IsPopped) continue;
+                if (pot.IsBroken) continue;
 
-                double dx = r.X - bubble.X;
-                double dy = r.Y - bubble.Y;
+                double dx = r.X - pot.X;
+                double dy = r.Y - pot.Y;
                 double dist = Math.Sqrt(dx * dx + dy * dy);
-                double minDist = r.Radius + bubble.Radius;
+                double minDist = r.Radius + pot.Radius;
 
                 if (dist < minDist)
                 {
-                    // Pop the bubble!
-                    bubble.Pop();
+                    // Shatter the comb pottery! (와장창 깨뜨리기)
+                    pot.Break(RaceCanvas);
 
-                    // Dramatic Race Reversal: 강력한 비눗방울 튕김 & 역전 드라마 연출!
-                    // 선두를 공중으로 높이 붕-! 튕겨 올리고(-270px/s) 외곽으로 밀쳐내며(±150px/s)
-                    // 어지러움 회전 연출을 주어, 뒤따르던 2등·3등 주자가 뚫린 틈으로 역전하도록 유도!
+                    // Dramatic Race Reversal: 빗살무늬토기 파괴 반발 & 역전 드라마 연출!
+                    // 선두를 뒤쪽으로 강하게 튕겨 올리고(-250px/s) 외곽으로 밀쳐내며
+                    // 어지러움 별 연출(0.7초)을 주어, 뒤따르던 2등·3등 주자가 뚫린 틈으로 역전하도록 유도!
                     double nx = dist > 0.001 ? dx / dist : (rand.NextDouble() - 0.5);
                     double ny = dist > 0.001 ? dy / dist : -1.0;
 
-                    // Push out of bubble
-                    r.X = bubble.X + nx * (minDist + 4.0);
-                    r.Y = bubble.Y + ny * (minDist + 4.0);
+                    // Push out of pottery
+                    r.X = pot.X + nx * (minDist + 3.0);
+                    r.Y = pot.Y + ny * (minDist + 3.0);
 
                     // Rebound upwards and deflect horizontally with dizzy spin
-                    r.Vx = (nx >= 0 ? 1.0 : -1.0) * (145.0 + rand.NextDouble() * 75.0);
-                    r.Vy = -270.0 - rand.NextDouble() * 80.0;
-                    r.DizzyTimer = 0.85;
+                    r.Vx = (nx >= 0 ? 1.0 : -1.0) * (110.0 + rand.NextDouble() * 50.0);
+                    r.Vy = -250.0 - rand.NextDouble() * 50.0;
+                    r.DizzyTimer = 0.75;
                 }
             }
 
@@ -1100,15 +1108,12 @@ public partial class StudentPickerWindow : Window
                     RaceCanvas.Children.Remove(proj.Visual);
                     _projectiles.RemoveAt(pIdx);
 
-                    // Skewered by shuriken pinecone! (1타 1피 표창 저격)
-                    // The first character hit absorbs the shuriken and is blasted to the outer wall!
                     double pushDir = Math.Sign(proj.Vx);
                     if (pushDir == 0) pushDir = (r.X < 340) ? -1.0 : 1.0;
 
-                    r.IsBlownByPinecone = true;
-                    r.PineconePushDir = pushDir;
-                    r.Vx = pushDir * 680.0; // High speed shuriken knockback fling to wall
-                    r.Vy = 5.0; // Perfectly level horizontal trajectory
+                    // Skewered by flying pinecone! (1타 1피 솔방울 피격)
+                    // The first character hit absorbs the pinecone and is blasted to the outer wall!
+                    r.HitByPinecone(pushDir);
                 }
             }
 
@@ -1172,7 +1177,7 @@ public partial class StudentPickerWindow : Window
             }
 
             // 5. Finish Line Crossing (Harbor Dock & Confetti)
-            if (r.Y >= FinishY && r.X >= 240 && r.X <= 440)
+            if (r.Y >= FinishY && r.X >= 280 && r.X <= 400)
             {
                 r.IsFinished = true;
                 r.FinishRank = ++_finishedCount;
@@ -2027,12 +2032,12 @@ public class RaceRacer
         };
         Visual.Children.Add(badge);
 
-        // 3. Embedded Shuriken Pinecone ("표창처럼 벽에 꽂히는 솔방울")
+        // 3. Embedded Pinecone ("표창처럼 날아와 벽에 박아놓는 솔방울")
         _pinnedPineconeImg = new Image
         {
-            Width = 34,
-            Height = 34,
-            Source = new BitmapImage(new Uri("pack://application:,,,/assets/race/cartoon_pinecone_shuriken.png")),
+            Width = 36,
+            Height = 40,
+            Source = new BitmapImage(new Uri("pack://application:,,,/assets/race/cartoon_pinecone.png")),
             Visibility = Visibility.Collapsed,
             IsHitTestVisible = false,
             VerticalAlignment = VerticalAlignment.Top,
@@ -2041,7 +2046,7 @@ public class RaceRacer
         RenderOptions.SetBitmapScalingMode(_pinnedPineconeImg, BitmapScalingMode.HighQuality);
         _pinnedPineconeImg.Effect = new DropShadowEffect
         {
-            Color = Color.FromRgb(245, 158, 11),
+            Color = Color.FromRgb(217, 119, 6),
             BlurRadius = 8,
             Opacity = 0.85,
             ShadowDepth = 0
@@ -2078,6 +2083,29 @@ public class RaceRacer
         UpdateVisual();
     }
 
+    public void HitByPinecone(double pushDir)
+    {
+        IsBlownByPinecone = true;
+        PineconePushDir = pushDir;
+        Vx = pushDir * 680.0;
+        Vy = 5.0;
+
+        // 솔방울이 캐릭터에 찰싹 달라붙어 벽으로 날아감
+        _pinnedPineconeImg.Visibility = Visibility.Visible;
+        if (pushDir < 0)
+        {
+            _pinnedPineconeImg.HorizontalAlignment = HorizontalAlignment.Right;
+            _pinnedPineconeImg.Margin = new Thickness(0, 2, -12, 0);
+            _pinnedPineconeImg.RenderTransform = new RotateTransform(25);
+        }
+        else
+        {
+            _pinnedPineconeImg.HorizontalAlignment = HorizontalAlignment.Left;
+            _pinnedPineconeImg.Margin = new Thickness(-12, 2, 0, 0);
+            _pinnedPineconeImg.RenderTransform = new RotateTransform(-25);
+        }
+    }
+
     public void PinToWall(int side, double duration)
     {
         PinnedTimer = duration;
@@ -2091,17 +2119,17 @@ public class RaceRacer
 
         if (side < 0)
         {
-            // Left wall: shuriken blade firmly pins player into the left wall!
+            // Left wall: 솔방울이 캐릭터를 좌측 외벽에 꽉 박아서 잠시 붙들어놓음!
             _pinnedPineconeImg.HorizontalAlignment = HorizontalAlignment.Left;
-            _pinnedPineconeImg.Margin = new Thickness(-14, 3, 0, 0);
-            _pinnedPineconeImg.RenderTransform = new RotateTransform(-45);
+            _pinnedPineconeImg.Margin = new Thickness(-16, 2, 0, 0);
+            _pinnedPineconeImg.RenderTransform = new RotateTransform(-35);
         }
         else
         {
-            // Right wall: shuriken blade firmly pins player into the right wall!
+            // Right wall: 솔방울이 캐릭터를 우측 외벽에 꽉 박아서 잠시 붙들어놓음!
             _pinnedPineconeImg.HorizontalAlignment = HorizontalAlignment.Right;
-            _pinnedPineconeImg.Margin = new Thickness(0, 3, -14, 0);
-            _pinnedPineconeImg.RenderTransform = new RotateTransform(45);
+            _pinnedPineconeImg.Margin = new Thickness(0, 2, -16, 0);
+            _pinnedPineconeImg.RenderTransform = new RotateTransform(35);
         }
     }
 
@@ -2396,64 +2424,74 @@ public class RotatingLog
     }
 }
 
-public class PoppableBubble
+public class BreakablePottery
 {
     public double X { get; }
     public double Y { get; }
     public double Radius { get; }
-    public bool IsPopped { get; private set; }
+    public bool IsBroken { get; private set; }
     public Grid Visual { get; }
 
     private readonly ScaleTransform _scale;
-    private readonly double _floatPhase;
+    private readonly RotateTransform _rot;
 
-    public PoppableBubble(double x, double y, double radius)
+    public BreakablePottery(double x, double y, double radius)
     {
         X = x;
         Y = y;
         Radius = radius;
-        _floatPhase = (x * 0.04) % (Math.PI * 2);
 
         Visual = new Grid
         {
-            Width = radius * 2,
-            Height = radius * 2,
+            Width = radius * 2.2,
+            Height = radius * 2.5,
             RenderTransformOrigin = new Point(0.5, 0.5)
         };
 
+        var group = new TransformGroup();
         _scale = new ScaleTransform(1, 1);
-        Visual.RenderTransform = _scale;
+        _rot = new RotateTransform(0);
+        group.Children.Add(_scale);
+        group.Children.Add(_rot);
+        Visual.RenderTransform = group;
 
         var img = new Image
         {
-            Width = radius * 2,
-            Height = radius * 2,
-            Source = new BitmapImage(new Uri("pack://application:,,,/assets/race/cartoon_bubble.png")),
+            Width = radius * 2.2,
+            Height = radius * 2.5,
+            Source = new BitmapImage(new Uri("pack://application:,,,/assets/race/cartoon_comb_pottery.png")),
             IsHitTestVisible = false
         };
         RenderOptions.SetBitmapScalingMode(img, BitmapScalingMode.HighQuality);
+        img.Effect = new DropShadowEffect
+        {
+            Color = Color.FromRgb(180, 83, 9),
+            BlurRadius = 6,
+            Opacity = 0.7,
+            ShadowDepth = 0
+        };
         Visual.Children.Add(img);
 
-        Canvas.SetLeft(Visual, X - radius);
-        Canvas.SetTop(Visual, Y - radius);
+        Canvas.SetLeft(Visual, X - Visual.Width / 2.0);
+        Canvas.SetTop(Visual, Y - Visual.Height / 2.0);
     }
 
     public void Update(double totalSeconds)
     {
-        if (IsPopped) return;
-        // Gentle bobbing motion
-        double bob = Math.Sin(totalSeconds * 2.8 + _floatPhase) * 3.5;
-        Canvas.SetTop(Visual, (Y + bob) - Radius);
+        if (IsBroken) return;
+        // Subtle prehistoric earthenware wobble
+        double wobble = Math.Sin(totalSeconds * 3.5 + X) * 2.0;
+        _rot.Angle = wobble;
     }
 
-    public void Pop()
+    public void Break(Canvas canvas)
     {
-        if (IsPopped) return;
-        IsPopped = true;
+        if (IsBroken) return;
+        IsBroken = true;
 
-        // Visual pop effect: rapid expansion & fade out
-        var scaleAnim = new DoubleAnimation(1.0, 1.45, TimeSpan.FromMilliseconds(130));
-        var opacityAnim = new DoubleAnimation(1.0, 0.0, TimeSpan.FromMilliseconds(130));
+        // Visual break effect: sudden crack expansion & fade out
+        var scaleAnim = new DoubleAnimation(1.0, 1.35, TimeSpan.FromMilliseconds(110));
+        var opacityAnim = new DoubleAnimation(1.0, 0.0, TimeSpan.FromMilliseconds(110));
         opacityAnim.Completed += (s, e) =>
         {
             Visual.Visibility = Visibility.Collapsed;
@@ -2462,11 +2500,44 @@ public class PoppableBubble
         _scale.BeginAnimation(ScaleTransform.ScaleXProperty, scaleAnim);
         _scale.BeginAnimation(ScaleTransform.ScaleYProperty, scaleAnim);
         Visual.BeginAnimation(UIElement.OpacityProperty, opacityAnim);
+
+        // Spawn 6 terracotta pottery shards flying outward!
+        var rand = new Random();
+        for (int i = 0; i < 6; i++)
+        {
+            var shard = new Border
+            {
+                Width = rand.Next(6, 11),
+                Height = rand.Next(6, 11),
+                Background = new SolidColorBrush(Color.FromArgb(235, 180, 83, 9)),
+                BorderBrush = new SolidColorBrush(Color.FromArgb(255, 69, 26, 3)),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(2),
+                IsHitTestVisible = false
+            };
+            Canvas.SetLeft(shard, X);
+            Canvas.SetTop(shard, Y);
+            canvas.Children.Add(shard);
+
+            double angle = (i * 60.0 + rand.Next(-15, 15)) * Math.PI / 180.0;
+            double dist = rand.Next(25, 45);
+            double targetX = X + Math.Cos(angle) * dist;
+            double targetY = Y + Math.Sin(angle) * dist;
+
+            var animX = new DoubleAnimation(X, targetX, TimeSpan.FromMilliseconds(350));
+            var animY = new DoubleAnimation(Y, targetY, TimeSpan.FromMilliseconds(350));
+            var animFade = new DoubleAnimation(1.0, 0.0, TimeSpan.FromMilliseconds(350));
+            animFade.Completed += (s, e) => canvas.Children.Remove(shard);
+
+            shard.BeginAnimation(Canvas.LeftProperty, animX);
+            shard.BeginAnimation(Canvas.TopProperty, animY);
+            shard.BeginAnimation(UIElement.OpacityProperty, animFade);
+        }
     }
 
     public void Reset()
     {
-        IsPopped = false;
+        IsBroken = false;
         Visual.Visibility = Visibility.Visible;
         Visual.Opacity = 1.0;
         _scale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
@@ -2474,8 +2545,9 @@ public class PoppableBubble
         Visual.BeginAnimation(UIElement.OpacityProperty, null);
         _scale.ScaleX = 1.0;
         _scale.ScaleY = 1.0;
-        Canvas.SetLeft(Visual, X - Radius);
-        Canvas.SetTop(Visual, Y - Radius);
+        _rot.Angle = 0.0;
+        Canvas.SetLeft(Visual, X - Visual.Width / 2.0);
+        Canvas.SetTop(Visual, Y - Visual.Height / 2.0);
     }
 }
 
