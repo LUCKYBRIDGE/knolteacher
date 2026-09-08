@@ -95,8 +95,8 @@
                 <ColumnDefinition Width="180" />
                 <!-- Center: Main Race Camera Viewport (*) -->
                 <ColumnDefinition Width="*" />
-                <!-- Right: Leaderboard (210px) -->
-                <ColumnDefinition Width="210" />
+                <!-- Right: Leaderboard (220px default, resizable up to 580px) -->
+                <ColumnDefinition x:Name="ColLeaderboard" Width="220" MinWidth="180" MaxWidth="580" />
             </Grid.ColumnDefinitions>
 
             <!-- 2-A. LEFT PANEL: 전체맵 (MINIMAP) -->
@@ -239,41 +239,46 @@
                     </StackPanel>
                 </Border>
 
-                <!-- Winner Celebration Overlay -->
-                <Grid x:Name="GridCelebration" Visibility="Collapsed" Background="#D9000000">
-                    <Border Background="#18181B" CornerRadius="24" BorderBrush="#EA580C" BorderThickness="3"
-                            Width="520" Height="420" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="24">
-                        <Border.Effect>
-                            <DropShadowEffect BlurRadius="40" Color="#EA580C" Opacity="0.8"/>
-                        </Border.Effect>
-                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                            <TextBlock Text="🎉 1등 골인! 당첨을 축하합니다! 🎉" FontWeight="Bold" FontSize="20" Foreground="#FDE047" HorizontalAlignment="Center" Margin="0,0,0,16"/>
+                <!-- 🏆 Compact Floating Winner Celebration Toast (레이스를 가리지 않는 상단 토스트 알림) -->
+                <Border x:Name="GridCelebration" Visibility="Collapsed"
+                        HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,48,0,0"
+                        Background="#F20F172A" CornerRadius="20" BorderBrush="#F59E0B" BorderThickness="2.5"
+                        Padding="18,10" Width="430" Height="76" Panel.ZIndex="30" IsHitTestVisible="False">
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="28" Color="#F59E0B" Opacity="0.9" ShadowDepth="0"/>
+                    </Border.Effect>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="54"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="38"/>
+                        </Grid.ColumnDefinitions>
 
-                            <!-- Big Winner Avatar (frameless) -->
-                            <Border Width="130" Height="130" HorizontalAlignment="Center" Margin="0,0,0,14">
-                                <Image x:Name="ImgWinnerAvatar" Width="120" Height="120" RenderOptions.BitmapScalingMode="HighQuality"/>
-                            </Border>
+                        <!-- Winner Avatar with golden ring -->
+                        <Border Grid.Column="0" Width="50" Height="50" CornerRadius="25"
+                                Background="#1E293B" BorderBrush="#F59E0B" BorderThickness="2"
+                                VerticalAlignment="Center" HorizontalAlignment="Left">
+                            <Image x:Name="ImgWinnerAvatar" Width="42" Height="42" RenderOptions.BitmapScalingMode="HighQuality"/>
+                        </Border>
 
-                            <TextBlock x:Name="TxtWinnerTitle" Text="7번 김민준 (판다)" FontWeight="Bold" FontSize="28" Foreground="White" HorizontalAlignment="Center" Margin="0,0,0,6"/>
-                            <TextBlock Text="오늘의 멋진 발표자입니다! 👏" FontSize="15" Foreground="#A1A1AA" HorizontalAlignment="Center" Margin="0,0,0,22"/>
-
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                <Button Content="확인 / 계속하기" Click="BtnDismissCelebration_Click" Width="140" Height="44"
-                                        Background="#3F3F46" Foreground="White" FontWeight="Bold" FontSize="14" BorderThickness="0" Cursor="Hand" Margin="0,0,12,0">
-                                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="10"/></Style></Button.Resources>
-                                </Button>
-                                <Button Content="🚀 다음 뽑기 레이스" Click="BtnNextLaunch_Click" Width="160" Height="44"
-                                        Background="#EA580C" Foreground="White" FontWeight="Bold" FontSize="14" BorderThickness="0" Cursor="Hand">
-                                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="10"/></Style></Button.Resources>
-                                </Button>
-                            </StackPanel>
+                        <!-- Title & Student Info -->
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="10,0,0,0">
+                            <TextBlock Text="🥇 1등 골인! 당첨을 축하합니다!" FontSize="12" FontWeight="Bold" Foreground="#FDE047"/>
+                            <TextBlock x:Name="TxtWinnerTitle" Text="7번 김민준 (판다)" FontSize="18" FontWeight="Bold" Foreground="White" TextTrimming="CharacterEllipsis"/>
                         </StackPanel>
-                    </Border>
-                </Grid>
+
+                        <!-- Sparkle Emoji -->
+                        <TextBlock Grid.Column="2" Text="🎉" FontSize="26" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
+                <!-- Resizable GridSplitter between Viewport and Leaderboard -->
+                <GridSplitter Width="6" HorizontalAlignment="Right" VerticalAlignment="Stretch"
+                              Background="#1E293B" Cursor="SizeWE" ShowsPreview="False" Panel.ZIndex="25"/>
             </Grid>
 
             <!-- 2-C. RIGHT PANEL: 실시간 순위표 (LEADERBOARD) -->
-            <Border Grid.Column="2" Background="#18181B" BorderBrush="#27272A" BorderThickness="1,0,0,0" Padding="12,10">
+            <Border Grid.Column="2" Background="#18181B" BorderBrush="#27272A" BorderThickness="1,0,0,0" Padding="10,10">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -286,13 +291,30 @@
                                 <TextBlock Text="⭐" FontSize="14" Margin="0,0,6,0" VerticalAlignment="Center"/>
                                 <TextBlock Text="실시간 순위표" FontSize="13" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
                             </StackPanel>
-                            <TextBlock Text="클릭 시 시점 전환" FontSize="10" Foreground="#38BDF8" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+
+                            <!-- Toggle 1-Column / 2-Column Expand Button -->
+                            <Button x:Name="BtnToggleLeaderboardWidth" Click="BtnToggleLeaderboardWidth_Click"
+                                    HorizontalAlignment="Right" VerticalAlignment="Center"
+                                    Content="⤢ 2열 확대" Padding="6,2" Height="24"
+                                    Background="#1E293B" Foreground="#38BDF8" BorderBrush="#0284C7" BorderThickness="1"
+                                    FontSize="11" FontWeight="Bold" Cursor="Hand"
+                                    ToolTip="순위표를 2열로 넓혀 모든 학생을 한눈에 봅니다">
+                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
+                            </Button>
                         </Grid>
+                        <TextBlock Text="클릭 시 해당 학생으로 시점 전환 (경계선 드래그 조절 가능)" FontSize="10" Foreground="#64748B"/>
                     </StackPanel>
 
-                    <!-- Scrollable Live Ranks List -->
+                    <!-- Scrollable Live Ranks List (1열/2열 적응형 그리드) -->
                     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                        <StackPanel x:Name="PanelLeaderboard"/>
+                        <Grid x:Name="GridLeaderboardContainer">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition x:Name="ColRank1" Width="*" />
+                                <ColumnDefinition x:Name="ColRank2" Width="0" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel x:Name="PanelLeaderboardCol1" Grid.Column="0" Margin="0,0,2,0"/>
+                            <StackPanel x:Name="PanelLeaderboardCol2" Grid.Column="1" Margin="2,0,0,0"/>
+                        </Grid>
                     </ScrollViewer>
                 </Grid>
             </Border>

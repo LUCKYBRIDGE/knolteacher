@@ -48,6 +48,7 @@ public partial class StudentPickerWindow : Window
     private int _targetCameraRank = 1; // 1 = 1등(선두/기본), 2 = 2등, ..., 14 = 14등 등
     private int? _targetCameraStudentNumber = null;
     private double _leaderboardThrottleTimer = 0;
+    private DispatcherTimer? _celebrationAutoDismissTimer;
 
     public static void GetTrackBoundaries(double y, out double left, out double right)
     {
@@ -358,8 +359,8 @@ public partial class StudentPickerWindow : Window
         _squirrels.Clear();
         _projectiles.Clear();
 
-        // 1. Zone 3 Dinosaur Fossil Mesa & Diamond Maze Guide Rails
-        // A. Dinosaur Fossil Mesa (Y = 1360 ~ 1640)
+        // 1. Zone 3 Giant Acorn & Small Acorns Guide Rails ("거대 도토리와 작은 도토리 길목 분기 레일")
+        // A. Giant Acorn Island (거대 도토리 - Y = 1360 ~ 1640)
         _rails.Add(new RaceRail(340, 1360, 260, 1440, 14));
         _rails.Add(new RaceRail(340, 1360, 420, 1440, 14));
         _rails.Add(new RaceRail(260, 1440, 260, 1570, 14));
@@ -367,19 +368,19 @@ public partial class StudentPickerWindow : Window
         _rails.Add(new RaceRail(260, 1570, 340, 1640, 14));
         _rails.Add(new RaceRail(420, 1570, 340, 1640, 14));
 
-        // B. Upper Center Diamond Rock (Y = 1680 ~ 1810)
+        // B. Upper Center Small Acorn (작은 도토리 1 - 중앙 - Y = 1680 ~ 1810)
         _rails.Add(new RaceRail(340, 1680, 304, 1745, 14));
         _rails.Add(new RaceRail(340, 1680, 376, 1745, 14));
         _rails.Add(new RaceRail(304, 1745, 340, 1810, 14));
         _rails.Add(new RaceRail(376, 1745, 340, 1810, 14));
 
-        // C. Lower-Left Diamond Rock (Y = 1830 ~ 1975)
+        // C. Lower-Left Small Acorn (작은 도토리 2 - 좌측 - Y = 1830 ~ 1975)
         _rails.Add(new RaceRail(230, 1830, 198, 1905, 14));
         _rails.Add(new RaceRail(230, 1830, 262, 1905, 14));
         _rails.Add(new RaceRail(198, 1905, 230, 1975, 14));
         _rails.Add(new RaceRail(262, 1905, 230, 1975, 14));
 
-        // D. Lower-Right Diamond Rock (Y = 1830 ~ 1975)
+        // D. Lower-Right Small Acorn (작은 도토리 3 - 우측 - Y = 1830 ~ 1975)
         _rails.Add(new RaceRail(450, 1830, 418, 1905, 14));
         _rails.Add(new RaceRail(450, 1830, 482, 1905, 14));
         _rails.Add(new RaceRail(418, 1905, 450, 1975, 14));
@@ -751,6 +752,12 @@ public partial class StudentPickerWindow : Window
                 continue; // Skip collisions and gravity while pinned to wall, allowing smooth overtaking!
             }
 
+            if (r.DizzyTimer > 0)
+            {
+                r.DizzyTimer -= dt;
+                if (r.DizzyTimer < 0) r.DizzyTimer = 0;
+            }
+
             r.Vy += gravity * dt;
             r.Vx *= damp;
             r.Vy *= damp;
@@ -1032,19 +1039,20 @@ public partial class StudentPickerWindow : Window
                     // Pop the bubble!
                     bubble.Pop();
 
-                    // Dramatic Race Reversal:
-                    // The bubble absorbs forward momentum, deflecting the leader upwards & outwards,
-                    // momentarily slowing them down so following racers can slip past and overtake!
+                    // Dramatic Race Reversal: 강력한 비눗방울 튕김 & 역전 드라마 연출!
+                    // 선두를 공중으로 높이 붕-! 튕겨 올리고(-270px/s) 외곽으로 밀쳐내며(±150px/s)
+                    // 어지러움 회전 연출을 주어, 뒤따르던 2등·3등 주자가 뚫린 틈으로 역전하도록 유도!
                     double nx = dist > 0.001 ? dx / dist : (rand.NextDouble() - 0.5);
                     double ny = dist > 0.001 ? dy / dist : -1.0;
 
                     // Push out of bubble
-                    r.X = bubble.X + nx * (minDist + 2.0);
-                    r.Y = bubble.Y + ny * (minDist + 2.0);
+                    r.X = bubble.X + nx * (minDist + 4.0);
+                    r.Y = bubble.Y + ny * (minDist + 4.0);
 
-                    // Rebound upwards and deflect horizontally
-                    r.Vx = nx * (65.0 + rand.NextDouble() * 50.0);
-                    r.Vy = -60.0 - rand.NextDouble() * 45.0;
+                    // Rebound upwards and deflect horizontally with dizzy spin
+                    r.Vx = (nx >= 0 ? 1.0 : -1.0) * (145.0 + rand.NextDouble() * 75.0);
+                    r.Vy = -270.0 - rand.NextDouble() * 80.0;
+                    r.DizzyTimer = 0.85;
                 }
             }
 
@@ -1350,10 +1358,37 @@ public partial class StudentPickerWindow : Window
         }
     }
 
+    private void BtnToggleLeaderboardWidth_Click(object sender, RoutedEventArgs e)
+    {
+        if (ColLeaderboard == null) return;
+        bool isWide = ColLeaderboard.Width.Value > 300 || ColLeaderboard.ActualWidth > 300;
+        if (isWide)
+        {
+            ColLeaderboard.Width = new GridLength(220);
+        }
+        else
+        {
+            ColLeaderboard.Width = new GridLength(430);
+        }
+        UpdateLeaderboard();
+    }
+
     private void UpdateLeaderboard()
     {
-        if (PanelLeaderboard == null) return;
-        PanelLeaderboard.Children.Clear();
+        if (PanelLeaderboardCol1 == null || PanelLeaderboardCol2 == null) return;
+        PanelLeaderboardCol1.Children.Clear();
+        PanelLeaderboardCol2.Children.Clear();
+
+        bool isTwoColumn = (ColLeaderboard != null && (ColLeaderboard.Width.Value > 300 || ColLeaderboard.ActualWidth > 300));
+        if (ColRank2 != null)
+        {
+            ColRank2.Width = isTwoColumn ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
+        }
+        if (BtnToggleLeaderboardWidth != null)
+        {
+            BtnToggleLeaderboardWidth.Content = isTwoColumn ? "⤢ 1열 축소" : "⤢ 2열 확대";
+            BtnToggleLeaderboardWidth.ToolTip = isTwoColumn ? "순위표를 기본 1열 크기로 줄입니다" : "순위표를 2열로 넓혀 모든 학생을 한눈에 봅니다";
+        }
 
         // Sort: finished racers by FinishRank, active racers by Y descending
         var sorted = _racers
@@ -1380,6 +1415,8 @@ public partial class StudentPickerWindow : Window
             }
         }
 
+        int halfCount = isTwoColumn ? (int)Math.Ceiling(sorted.Count / 2.0) : sorted.Count;
+
         for (int i = 0; i < sorted.Count; i++)
         {
             var racer = sorted[i];
@@ -1388,8 +1425,8 @@ public partial class StudentPickerWindow : Window
 
             var row = new Border
             {
-                Margin = new Thickness(0, 1, 0, 1),
-                Height = 32,
+                Margin = new Thickness(1, 1, 1, 1),
+                Height = isTwoColumn ? 30 : 32,
                 CornerRadius = new CornerRadius(6),
                 Background = isTracked
                     ? new SolidColorBrush(Color.FromArgb(50, 56, 189, 248))
@@ -1410,7 +1447,7 @@ public partial class StudentPickerWindow : Window
 
             var grid = new Grid();
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(28) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(30) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(28) });
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(22) });
 
@@ -1467,14 +1504,26 @@ public partial class StudentPickerWindow : Window
                     ? new SolidColorBrush(Color.FromRgb(56, 189, 248))
                     : (rank == 1 ? new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FDE047")) : Brushes.White),
                 VerticalAlignment = VerticalAlignment.Center,
-                Margin = new Thickness(6, 0, 0, 0),
+                Margin = new Thickness(4, 0, 0, 0),
                 TextTrimming = TextTrimming.CharacterEllipsis
             };
             Grid.SetColumn(nameText, 2);
             grid.Children.Add(nameText);
 
-            // 🎥 Camera Tracking Indicator Icon
-            if (isTracked)
+            // Finished icon or Camera icon
+            if (racer.IsFinished)
+            {
+                var finishIcon = new TextBlock
+                {
+                    Text = rank <= 3 ? "🏆" : "🏁",
+                    FontSize = 11,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center
+                };
+                Grid.SetColumn(finishIcon, 3);
+                grid.Children.Add(finishIcon);
+            }
+            else if (isTracked)
             {
                 var camIcon = new TextBlock
                 {
@@ -1488,7 +1537,15 @@ public partial class StudentPickerWindow : Window
             }
 
             row.Child = grid;
-            PanelLeaderboard.Children.Add(row);
+
+            if (isTwoColumn && i >= halfCount)
+            {
+                PanelLeaderboardCol2.Children.Add(row);
+            }
+            else
+            {
+                PanelLeaderboardCol1.Children.Add(row);
+            }
         }
     }
 
@@ -1623,11 +1680,28 @@ public partial class StudentPickerWindow : Window
         ImgWinnerAvatar.Source = AnimalAvatarCatalog.GetAvatarBitmap(winner.EffectiveAvatarId);
 
         GridCelebration.Visibility = Visibility.Visible;
+
+        // 1초 뒤 자동 팝업창 종료 (진행 중인 레이스를 가리지 않도록 1.0초 후 자동 닫힘)
+        _celebrationAutoDismissTimer?.Stop();
+        _celebrationAutoDismissTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(1000)
+        };
+        _celebrationAutoDismissTimer.Tick += (s, e) =>
+        {
+            _celebrationAutoDismissTimer.Stop();
+            DismissCelebration();
+        };
+        _celebrationAutoDismissTimer.Start();
     }
 
     private void DismissCelebration()
     {
-        GridCelebration.Visibility = Visibility.Collapsed;
+        _celebrationAutoDismissTimer?.Stop();
+        if (GridCelebration != null)
+        {
+            GridCelebration.Visibility = Visibility.Collapsed;
+        }
     }
 
     private void BtnDismissCelebration_Click(object sender, RoutedEventArgs e) => DismissCelebration();
@@ -1870,6 +1944,7 @@ public class RaceRacer
     public int PinnedSide { get; set; } = 0; // -1: Left wall, 1: Right wall
     public bool IsBlownByPinecone { get; set; } = false;
     public double PineconePushDir { get; set; } = 0;
+    public double DizzyTimer { get; set; } = 0;
 
     public Grid Visual { get; }
     public Ellipse MinimapDot { get; }
@@ -2054,8 +2129,16 @@ public class RaceRacer
             double wiggle = Math.Sin(PinnedTimer * 42.0) * 14.0;
             _rot.Angle = wiggle;
         }
+        else if (DizzyTimer > 0)
+        {
+            // Dizzy mid-air spin with stars!
+            _dizzyBadge.Visibility = Visibility.Visible;
+            double spin = Math.Sin(DizzyTimer * 28.0) * 35.0;
+            _rot.Angle = spin;
+        }
         else
         {
+            _dizzyBadge.Visibility = Visibility.Collapsed;
             // Tilt based on horizontal velocity
             double angle = Math.Clamp(Vx * 0.15, -28.0, 28.0);
             _rot.Angle = angle;
