@@ -324,15 +324,15 @@
                     <Border Background="#27272A" BorderBrush="#3F3F46" BorderThickness="1" CornerRadius="8" Padding="6,0" Margin="0,0,8,0" Height="34">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <!-- Sound Mute/Unmute Toggle -->
-                            <Button x:Name="BtnSoundToggle" Content="🔊" Click="BtnSoundToggle_Click"
-                                    Width="26" Height="26" Background="Transparent" Foreground="#38BDF8" BorderThickness="0"
-                                    FontWeight="Bold" FontSize="13" Cursor="Hand" ToolTip="효과음 음소거 / 해제" Padding="0"/>
+                            <Button x:Name="BtnSoundToggle" Content="🔇" Click="BtnSoundToggle_Click"
+                                    Width="26" Height="26" Background="Transparent" Foreground="#EF4444" BorderThickness="0"
+                                    FontWeight="Bold" FontSize="13" Cursor="Hand" ToolTip="레이스 배경음악 켜기 (기본: 음소거)" Padding="0"/>
                             <!-- Volume Slider -->
-                            <Slider x:Name="SliderSoundVolume" Width="68" Minimum="0" Maximum="100" Value="80"
+                            <Slider x:Name="SliderSoundVolume" Width="68" Minimum="0" Maximum="100" Value="0"
                                     SmallChange="5" LargeChange="10" VerticalAlignment="Center" Margin="4,0,4,0"
-                                    ValueChanged="SliderSoundVolume_ValueChanged" ToolTip="효과음 볼륨 조절" Cursor="Hand"/>
+                                    ValueChanged="SliderSoundVolume_ValueChanged" ToolTip="효과음/배경음 볼륨 조절" Cursor="Hand"/>
                             <!-- Volume Text -->
-                            <TextBlock x:Name="TxtSoundVolume" Text="80%" Foreground="#A1A1AA" FontSize="11" FontWeight="SemiBold"
+                            <TextBlock x:Name="TxtSoundVolume" Text="OFF" Foreground="#A1A1AA" FontSize="11" FontWeight="SemiBold"
                                        VerticalAlignment="Center" Width="28" TextAlignment="Right"/>
                         </StackPanel>
                     </Border>

@@ -18,6 +18,7 @@ public interface ISoundService
     void PlayWhistle();
     void PlayDrumroll();
     void PlayApplause();
+    void StopAll();
 }
 
 public class SoundService : ISoundService
@@ -35,163 +36,128 @@ public class SoundService : ISoundService
     public bool IsMuted
     {
         get => _isMuted;
-        set => _isMuted = value;
+        set
+        {
+            _isMuted = value;
+            if (_isMuted)
+            {
+                StopAll();
+            }
+        }
     }
 
     private double EffectiveVolume => _isMuted ? 0.0 : _masterVolume;
 
+    private readonly object _playbackLock = new();
+    private CancellationTokenSource _cts = new();
+    private SoundPlayer? _activePlayer;
+
+    public void StopAll()
+    {
+        lock (_playbackLock)
+        {
+            try
+            {
+                _cts.Cancel();
+                _cts.Dispose();
+                _cts = new CancellationTokenSource();
+            }
+            catch { }
+
+            try
+            {
+                _activePlayer?.Stop();
+                _activePlayer?.Dispose();
+                _activePlayer = null;
+            }
+            catch { }
+        }
+    }
+
+    private void PlaySoundSafe(Func<double, byte[]> wavGenerator)
+    {
+        double vol = EffectiveVolume;
+        if (vol <= 0.001) return;
+
+        lock (_playbackLock)
+        {
+            // Cancel and stop previous sound immediately so sounds never queue up or linger!
+            try
+            {
+                _cts.Cancel();
+                _cts.Dispose();
+                _cts = new CancellationTokenSource();
+                _activePlayer?.Stop();
+                _activePlayer?.Dispose();
+                _activePlayer = null;
+            }
+            catch { }
+
+            var token = _cts.Token;
+            Task.Run(() =>
+            {
+                if (token.IsCancellationRequested) return;
+                try
+                {
+                    byte[] wav = wavGenerator(vol);
+                    if (token.IsCancellationRequested) return;
+
+                    var ms = new MemoryStream(wav);
+                    var sp = new SoundPlayer(ms);
+
+                    lock (_playbackLock)
+                    {
+                        if (token.IsCancellationRequested)
+                        {
+                            sp.Dispose();
+                            ms.Dispose();
+                            return;
+                        }
+                        _activePlayer = sp;
+                    }
+
+                    sp.PlaySync();
+
+                    lock (_playbackLock)
+                    {
+                        if (_activePlayer == sp) _activePlayer = null;
+                        sp.Dispose();
+                        ms.Dispose();
+                    }
+                }
+                catch { }
+            }, token);
+        }
+    }
+
     public void PlayChime() => PlayAttentionChime();
 
-    public void PlayBeep()
-    {
-        double vol = EffectiveVolume;
-        if (vol <= 0.001) return;
-        Task.Run(() =>
-        {
-            try
-            {
-                byte[] wav = GenerateToneWav(new[] { (880.0, 0.15, 0.5) }, masterVol: vol);
-                using var ms = new MemoryStream(wav);
-                using var sp = new SoundPlayer(ms);
-                sp.PlaySync();
-            }
-            catch { }
-        });
-    }
+    public void PlayBeep() => PlaySoundSafe(v => GenerateToneWav(new[] { (880.0, 0.15, 0.5) }, masterVol: v));
 
-    public void PlayDingDongDang()
+    public void PlayDingDongDang() => PlaySoundSafe(v => GenerateToneWav(new[]
     {
-        double vol = EffectiveVolume;
-        if (vol <= 0.001) return;
-        Task.Run(() =>
-        {
-            try
-            {
-                // C5 (523Hz), E5 (659Hz), G5 (784Hz) harmonic bells
-                byte[] wav = GenerateToneWav(new[]
-                {
-                    (523.25, 0.35, 0.6),
-                    (659.25, 0.35, 0.6),
-                    (783.99, 0.60, 0.6)
-                }, masterVol: vol);
-                using var ms = new MemoryStream(wav);
-                using var sp = new SoundPlayer(ms);
-                sp.PlaySync();
-            }
-            catch { }
-        });
-    }
+        (523.25, 0.35, 0.6),
+        (659.25, 0.35, 0.6),
+        (783.99, 0.60, 0.6)
+    }, masterVol: v));
 
-    public void PlayBuzzer()
-    {
-        double vol = EffectiveVolume;
-        if (vol <= 0.001) return;
-        Task.Run(() =>
-        {
-            try
-            {
-                // Low harsh buzz (140Hz)
-                byte[] wav = GenerateBuzzerWav(140.0, 0.6, masterVol: vol);
-                using var ms = new MemoryStream(wav);
-                using var sp = new SoundPlayer(ms);
-                sp.PlaySync();
-            }
-            catch { }
-        });
-    }
+    public void PlayBuzzer() => PlaySoundSafe(v => GenerateBuzzerWav(140.0, 0.6, masterVol: v));
 
-    public void PlayFanfare()
+    public void PlayFanfare() => PlaySoundSafe(v => GenerateToneWav(new[]
     {
-        double vol = EffectiveVolume;
-        if (vol <= 0.001) return;
-        Task.Run(() =>
-        {
-            try
-            {
-                // Celebratory fanfare: C5, E5, G5, High C6
-                byte[] wav = GenerateToneWav(new[]
-                {
-                    (523.25, 0.18, 0.5),
-                    (659.25, 0.18, 0.5),
-                    (783.99, 0.18, 0.5),
-                    (1046.5, 0.70, 0.6)
-                }, masterVol: vol);
-                using var ms = new MemoryStream(wav);
-                using var sp = new SoundPlayer(ms);
-                sp.PlaySync();
-            }
-            catch { }
-        });
-    }
+        (523.25, 0.18, 0.5),
+        (659.25, 0.18, 0.5),
+        (783.99, 0.18, 0.5),
+        (1046.5, 0.70, 0.6)
+    }, masterVol: v));
 
-    public void PlayAttentionChime()
-    {
-        double vol = EffectiveVolume;
-        if (vol <= 0.001) return;
-        Task.Run(() =>
-        {
-            try
-            {
-                // Resonant Tibetan/Buddhist meditation bell with harmonic overtones
-                byte[] wav = GenerateBellWav(1046.5, 1.8, masterVol: vol);
-                using var ms = new MemoryStream(wav);
-                using var sp = new SoundPlayer(ms);
-                sp.PlaySync();
-            }
-            catch { }
-        });
-    }
+    public void PlayAttentionChime() => PlaySoundSafe(v => GenerateBellWav(1046.5, 1.8, masterVol: v));
 
-    public void PlayWhistle()
-    {
-        double vol = EffectiveVolume;
-        if (vol <= 0.001) return;
-        Task.Run(() =>
-        {
-            try
-            {
-                byte[] wav = GenerateWhistleWav(2800.0, 0.55, masterVol: vol);
-                using var ms = new MemoryStream(wav);
-                using var sp = new SoundPlayer(ms);
-                sp.PlaySync();
-            }
-            catch { }
-        });
-    }
+    public void PlayWhistle() => PlaySoundSafe(v => GenerateWhistleWav(2800.0, 0.55, masterVol: v));
 
-    public void PlayDrumroll()
-    {
-        double vol = EffectiveVolume;
-        if (vol <= 0.001) return;
-        Task.Run(() =>
-        {
-            try
-            {
-                byte[] wav = GenerateDrumrollWav(2.0, masterVol: vol);
-                using var ms = new MemoryStream(wav);
-                using var sp = new SoundPlayer(ms);
-                sp.PlaySync();
-            }
-            catch { }
-        });
-    }
+    public void PlayDrumroll() => PlaySoundSafe(v => GenerateDrumrollWav(2.0, masterVol: v));
 
-    public void PlayApplause()
-    {
-        double vol = EffectiveVolume;
-        if (vol <= 0.001) return;
-        Task.Run(() =>
-        {
-            try
-            {
-                byte[] wav = GenerateApplauseWav(2.5, masterVol: vol);
-                using var ms = new MemoryStream(wav);
-                using var sp = new SoundPlayer(ms);
-                sp.PlaySync();
-            }
-            catch { }
-        });
-    }
+    public void PlayApplause() => PlaySoundSafe(v => GenerateApplauseWav(2.5, masterVol: v));
 
     #region Procedural Audio Synthesizer Helpers
 

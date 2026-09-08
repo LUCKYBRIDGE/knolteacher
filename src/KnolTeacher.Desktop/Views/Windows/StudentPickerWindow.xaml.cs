@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Media;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -33,10 +34,11 @@ public partial class StudentPickerWindow : Window
 
     private DispatcherTimer? _gameTimer;
     private bool _isPlaying = false;
-    private bool _soundEnabled = true;
+    private bool _soundEnabled = false;
     private double _speedMultiplier = 1.0;
     private double _raceElapsedSeconds = 0;
     private DateTime _lastFrameTime = DateTime.UtcNow;
+    private SoundPlayer? _bgmPlayer;
 
     private const double TrackWidth = 680.0;
     private const double TrackHeight = 3500.0;
@@ -128,30 +130,30 @@ public partial class StudentPickerWindow : Window
             left = c - hw;
             right = c + hw;
         }
-        else if (y <= 3240.0)
+        else if (y <= 3080.0)
         {
             // Forest Meander 2 into River Rapids (stays wide and spacious!)
-            double t = (y - 2480.0) / (3240.0 - 2480.0);
+            double t = (y - 2480.0) / (3080.0 - 2480.0);
             double c = 340.0 - 30.0 * Math.Sin(t * Math.PI);
             double hw = 185.0; // width 370
             left = c - hw;
             right = c + hw;
         }
-        else if (y <= 3310.0)
+        else if (y <= 3320.0)
         {
-            // Quick smooth funnel into the short finish canal!
-            double t = (y - 3240.0) / (3310.0 - 3240.0);
-            double s = t * t * (3.0 - 2.0 * t);
+            // Classic Smooth Angled Diagonal Funnel ("깔대기")
+            // Over 240px, smoothly tapers diagonally from width 370 (hw 185) down to 150 (hw 75)
+            double t = (y - 3080.0) / (3320.0 - 3080.0);
             double c = 340.0;
-            double hw = 185.0 - 110.0 * s; // 370 -> 150 (left 265, right 415)
+            double hw = 185.0 - 110.0 * t; // [155, 525] -> [265, 415]
             left = c - hw;
             right = c + hw;
         }
         else
         {
-            // Very short finish canal & dock (Y = 3310 ~ 3500, width 150)
+            // Short Funnel Neck & Harbor Dock (Y = 3320 ~ 3500, width 150)
             double c = 340.0;
-            double hw = 75.0;
+            double hw = 75.0; // [265, 415]
             left = c - hw;
             right = c + hw;
         }
@@ -168,6 +170,10 @@ public partial class StudentPickerWindow : Window
         _displayManager = displayManager ?? (Application.Current as App)?.Services?.GetService(typeof(IDisplayManager)) as IDisplayManager;
         InitializeComponent();
 
+        _soundEnabled = false;
+        _soundService.IsMuted = true;
+        InitBgmPlayer();
+
         Loaded += (s, e) =>
         {
             SetupCourseScenery();
@@ -176,7 +182,7 @@ public partial class StudentPickerWindow : Window
             UpdateCameraViewport(0, force: true);
             if (SliderSoundVolume != null)
             {
-                SliderSoundVolume.Value = Math.Round(_soundService.MasterVolume * 100);
+                SliderSoundVolume.Value = 0;
                 UpdateSoundUi();
             }
         };
@@ -189,8 +195,61 @@ public partial class StudentPickerWindow : Window
             }
         };
 
+        Closing += (s, e) =>
+        {
+            StopBgm();
+            _soundService.StopAll();
+        };
+
         KeyDown += Window_KeyDown;
     }
+
+    #region Racing BGM Controls
+
+    private void InitBgmPlayer()
+    {
+        try
+        {
+            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            string[] candidates = new[]
+            {
+                System.IO.Path.Combine(baseDir, "assets", "race", "race_bgm.wav"),
+                System.IO.Path.Combine(baseDir, "..", "..", "..", "assets", "race", "race_bgm.wav"),
+                System.IO.Path.Combine(Directory.GetCurrentDirectory(), "assets", "race", "race_bgm.wav")
+            };
+            foreach (var p in candidates)
+            {
+                if (File.Exists(p))
+                {
+                    _bgmPlayer = new SoundPlayer(p);
+                    _bgmPlayer.LoadAsync();
+                    break;
+                }
+            }
+        }
+        catch { }
+    }
+
+    private void PlayBgm()
+    {
+        if (!_soundEnabled || _isPaused || !_isPlaying) return;
+        try
+        {
+            _bgmPlayer?.PlayLooping();
+        }
+        catch { }
+    }
+
+    private void StopBgm()
+    {
+        try
+        {
+            _bgmPlayer?.Stop();
+        }
+        catch { }
+    }
+
+    #endregion
 
     public void PositionToDefaultMonitor()
     {
@@ -302,9 +361,9 @@ public partial class StudentPickerWindow : Window
         // Upper Canyon Chicane: Clockwise Rotating Log
         AddRotatingLog(275, 680, 150, 28, 2.2, 15);
 
-        // Fossil Mesa Twin Chute Logs
-        AddRotatingLog(195, 1540, 65, 22, -2.8, -25);
-        AddRotatingLog(485, 1540, 65, 22, 2.8, 25);
+        // Fossil Mesa Twin Rapids Pebble Bumpers (시원하게 통과할 수 있도록 소형 조약돌 범퍼 배치 - 무병목 보장)
+        AddBumper(195, 1540, 13, "cartoon_pebble_bumper.png");
+        AddBumper(485, 1540, 13, "cartoon_pebble_bumper.png");
 
         // Lower Mushroom Forest: Heavy Rotating Log
         AddRotatingLog(380, 2180, 150, 28, -2.0, 0);
@@ -386,7 +445,6 @@ public partial class StudentPickerWindow : Window
         {
             _projectiles.Add(proj);
             RaceCanvas.Children.Add(proj.Visual);
-            if (_soundEnabled && _isPlaying && !_isPaused && IsVisible) _soundService.PlayBeep();
         };
         _squirrels.Add(sq);
         RaceCanvas.Children.Add(sq.BranchVisual);
@@ -402,6 +460,8 @@ public partial class StudentPickerWindow : Window
 
     private void ResetToStartLine()
     {
+        StopBgm();
+        _soundService.StopAll();
         _isPlaying = false;
         _isPaused = false;
         _gameTimer?.Stop();
@@ -510,6 +570,8 @@ public partial class StudentPickerWindow : Window
     {
         if (!_isPlaying || _isPaused) return;
         _isPaused = true;
+        StopBgm();
+        _soundService.StopAll();
         if (TxtPauseIcon != null) TxtPauseIcon.Text = "▶ ";
         if (TxtPauseLabel != null) TxtPauseLabel.Text = "이어하기";
         if (BorderPausedBanner != null) BorderPausedBanner.Visibility = Visibility.Visible;
@@ -520,6 +582,7 @@ public partial class StudentPickerWindow : Window
         if (!_isPlaying || !_isPaused) return;
         _isPaused = false;
         _lastFrameTime = DateTime.UtcNow;
+        if (_soundEnabled) PlayBgm();
         if (TxtPauseIcon != null) TxtPauseIcon.Text = "⏸ ";
         if (TxtPauseLabel != null) TxtPauseLabel.Text = "일시정지";
         if (BorderPausedBanner != null) BorderPausedBanner.Visibility = Visibility.Collapsed;
@@ -554,7 +617,10 @@ public partial class StudentPickerWindow : Window
 
         _lastFrameTime = DateTime.UtcNow;
 
-        if (_soundEnabled && IsVisible) _soundService.PlayBeep();
+        if (_soundEnabled && IsVisible)
+        {
+            PlayBgm();
+        }
 
         if (_gameTimer == null)
         {
@@ -656,17 +722,35 @@ public partial class StudentPickerWindow : Window
                 }
             }
 
-            // 1. Continuous Outer Track Boundaries (Zero wall penetration)
+            // 1. Continuous Outer Track Boundaries (Zero wall penetration & Funnel sliding assist)
             GetTrackBoundaries(r.Y, out double leftWall, out double rightWall);
             if (r.X - r.Radius < leftWall)
             {
                 r.X = leftWall + r.Radius;
-                r.Vx = Math.Abs(r.Vx) * 0.75 + 25;
+                if (r.Y >= 3080.0 && r.Y <= 3320.0)
+                {
+                    // Funnel sliding assist: guide inward & down the diagonal funnel slope!
+                    r.Vx = Math.Max(r.Vx, 45.0);
+                    r.Vy = Math.Max(r.Vy, 80.0);
+                }
+                else
+                {
+                    r.Vx = Math.Abs(r.Vx) * 0.75 + 25;
+                }
             }
             else if (r.X + r.Radius > rightWall)
             {
                 r.X = rightWall - r.Radius;
-                r.Vx = -Math.Abs(r.Vx) * 0.75 - 25;
+                if (r.Y >= 3080.0 && r.Y <= 3320.0)
+                {
+                    // Funnel sliding assist: guide inward & down the diagonal funnel slope!
+                    r.Vx = Math.Min(r.Vx, -45.0);
+                    r.Vy = Math.Max(r.Vy, 80.0);
+                }
+                else
+                {
+                    r.Vx = -Math.Abs(r.Vx) * 0.75 - 25;
+                }
             }
 
             // 2. Island Collision Watchdogs (Fossil Mesa & 3 Diamond Rocks)
@@ -829,13 +913,7 @@ public partial class StudentPickerWindow : Window
             // Collisions with Rotating Logs (회전 통나무 동적 충돌 & 회전력 튕김!)
             foreach (var log in _rotatingLogs)
             {
-                if (log.CheckAndResolveCollision(r, rand, out bool collided))
-                {
-                    if (collided && _soundEnabled && _isPlaying && !_isPaused && IsVisible)
-                    {
-                        _soundService.PlayBeep();
-                    }
-                }
+                log.CheckAndResolveCollision(r, rand, out bool _);
             }
 
             // Collisions with Bumpers (Mushroom & Rune Stones)
@@ -861,7 +939,6 @@ public partial class StudentPickerWindow : Window
                         r.Vx = (-dot * nx * boost) + (rand.NextDouble() - 0.5) * 50;
                         r.Vy = (-dot * ny * boost) - 60;
                         bumper.Flash();
-                        if (_soundEnabled && _isPlaying && !_isPaused && IsVisible) _soundService.PlayBeep();
                     }
                 }
             }
@@ -880,10 +957,6 @@ public partial class StudentPickerWindow : Window
                 {
                     // Pop the bubble!
                     bubble.Pop();
-                    if (_soundEnabled && _isPlaying && !_isPaused && IsVisible)
-                    {
-                        _soundService.PlayBeep();
-                    }
 
                     // Dramatic Race Reversal:
                     // The bubble absorbs forward momentum, deflecting the leader upwards & outwards,
@@ -914,10 +987,6 @@ public partial class StudentPickerWindow : Window
                 if (dist < minDist)
                 {
                     sq.Bump();
-                    if (_soundEnabled && _isPlaying && !_isPaused && IsVisible)
-                    {
-                        _soundService.PlayBeep();
-                    }
 
                     // Push racer out of squirrel hitbox
                     double nx = dist > 0.001 ? dx / dist : (sq.IsFacingRight ? 1.0 : -1.0);
@@ -948,8 +1017,6 @@ public partial class StudentPickerWindow : Window
                     proj.Destroy();
                     RaceCanvas.Children.Remove(proj.Visual);
                     _projectiles.RemoveAt(pIdx);
-
-                    if (_soundEnabled && _isPlaying && !_isPaused && IsVisible) _soundService.PlayBeep();
 
                     // Strong disruptive knockback impulse from high-speed pinecone!
                     double pushDir = Math.Sign(proj.Vx);
@@ -1190,6 +1257,12 @@ public partial class StudentPickerWindow : Window
 
     private void TriggerWinnerCelebration(StudentItem winner)
     {
+        StopBgm();
+        if (_soundEnabled)
+        {
+            _soundService.PlayFanfare();
+        }
+
         _studentService.PickedStudentNumbers.Add(winner.Number);
 
         TxtWinnerTitle.Text = $"{winner.Number}번 {winner.Name} ({winner.AvatarName})";
@@ -1242,6 +1315,8 @@ public partial class StudentPickerWindow : Window
 
     private void BtnInitAll_Click(object sender, RoutedEventArgs e)
     {
+        StopBgm();
+        _soundService.StopAll();
         _studentService.ResetPicked();
         ResetToStartLine();
         MessageBox.Show("추첨 기록 및 제외 명단이 초기화되었습니다.", "초기화", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -1270,6 +1345,18 @@ public partial class StudentPickerWindow : Window
     {
         _soundEnabled = !_soundEnabled;
         _soundService.IsMuted = !_soundEnabled;
+        if (!_soundEnabled)
+        {
+            StopBgm();
+            _soundService.StopAll();
+        }
+        else
+        {
+            if (_isPlaying && !_isPaused)
+            {
+                PlayBgm();
+            }
+        }
         UpdateSoundUi();
     }
 
@@ -1277,21 +1364,29 @@ public partial class StudentPickerWindow : Window
     {
         if (TxtSoundVolume == null || _soundService == null) return;
         int vol = (int)Math.Round(SliderSoundVolume.Value);
-        TxtSoundVolume.Text = $"{vol}%";
+        TxtSoundVolume.Text = vol == 0 ? "OFF" : $"{vol}%";
         _soundService.MasterVolume = vol / 100.0;
         if (vol == 0)
         {
             _soundEnabled = false;
             _soundService.IsMuted = true;
+            StopBgm();
+            _soundService.StopAll();
             BtnSoundToggle.Content = "🔇";
             BtnSoundToggle.Foreground = new SolidColorBrush(Color.FromRgb(239, 68, 68));
+            BtnSoundToggle.ToolTip = "레이스 배경음악 켜기 (기본: 음소거)";
         }
         else
         {
             _soundEnabled = true;
             _soundService.IsMuted = false;
+            if (_isPlaying && !_isPaused)
+            {
+                PlayBgm();
+            }
             BtnSoundToggle.Content = "🔊";
             BtnSoundToggle.Foreground = new SolidColorBrush(Color.FromRgb(56, 189, 248));
+            BtnSoundToggle.ToolTip = "배경음악 음소거하기";
         }
     }
 
@@ -1302,6 +1397,7 @@ public partial class StudentPickerWindow : Window
         {
             BtnSoundToggle.Content = "🔊";
             BtnSoundToggle.Foreground = new SolidColorBrush(Color.FromRgb(56, 189, 248));
+            BtnSoundToggle.ToolTip = "배경음악 음소거하기";
             if (SliderSoundVolume.Value <= 0) SliderSoundVolume.Value = 80;
             TxtSoundVolume.Text = $"{(int)Math.Round(SliderSoundVolume.Value)}%";
             _soundService.MasterVolume = SliderSoundVolume.Value / 100.0;
@@ -1310,6 +1406,8 @@ public partial class StudentPickerWindow : Window
         {
             BtnSoundToggle.Content = "🔇";
             BtnSoundToggle.Foreground = new SolidColorBrush(Color.FromRgb(239, 68, 68));
+            BtnSoundToggle.ToolTip = "레이스 배경음악 켜기 (기본: 음소거)";
+            TxtSoundVolume.Text = "OFF";
         }
     }
 
@@ -1368,6 +1466,8 @@ public partial class StudentPickerWindow : Window
 
     public void StopAndReset()
     {
+        StopBgm();
+        _soundService.StopAll();
         _isPlaying = false;
         _isPaused = false;
         _gameTimer?.Stop();
