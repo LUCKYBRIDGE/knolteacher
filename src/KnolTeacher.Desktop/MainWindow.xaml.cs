@@ -144,18 +144,23 @@ public partial class MainWindow : FluentWindow
     {
         try
         {
-            // Responsive Screen Bounds Clamp: Ensure MainWindow never overflows the monitor work area
+            // Responsive Screen Bounds: Open comfortably on modern classroom displays (1080p / 1440p) without clipping
             var workArea = SystemParameters.WorkArea;
             if (workArea.Width > 0 && workArea.Height > 0)
             {
-                if (Width > workArea.Width - 16.0)
+                double targetWidth = 1340;
+                double targetHeight = 870;
+
+                // For Full HD (1920x1080) and higher resolutions
+                if (workArea.Width >= 1600 && workArea.Height >= 900)
                 {
-                    Width = Math.Max(MinWidth, workArea.Width - 24.0);
+                    targetWidth = 1360;
+                    targetHeight = 870;
                 }
-                if (Height > workArea.Height - 16.0)
-                {
-                    Height = Math.Max(MinHeight, workArea.Height - 24.0);
-                }
+
+                Width = Math.Max(MinWidth, Math.Min(targetWidth, workArea.Width - 24.0));
+                Height = Math.Max(MinHeight, Math.Min(targetHeight, workArea.Height - 24.0));
+
                 Left = Math.Max(workArea.Left + 12.0, workArea.Left + (workArea.Width - Width) / 2.0);
                 Top = Math.Max(workArea.Top + 12.0, workArea.Top + (workArea.Height - Height) / 2.0);
             }

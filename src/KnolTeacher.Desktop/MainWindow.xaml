@@ -9,8 +9,8 @@
         d:DataContext="{d:DesignInstance vm:MainViewModel}"
         Title="놀티쳐 (KnolTeacher v3.0.0 - 스마트 교사용 올인원 도구)"
         Icon="/assets/app_icon.ico"
-        Height="780" Width="1240"
-        MinHeight="640" MinWidth="960"
+        Height="870" Width="1340"
+        MinHeight="700" MinWidth="1050"
         Background="{DynamicResource BeigeAppBg}"
         WindowStartupLocation="CenterScreen">
     <Grid>
@@ -437,12 +437,12 @@
                             <!-- Row 1: 3-Column Core Workspace -->
                             <Grid Grid.Row="1">
                                 <Grid.ColumnDefinitions>
-                                    <!-- Col 0: Timetable & Period Alarms (2.8*) -->
-                                    <ColumnDefinition Width="2.8*" />
-                                    <!-- Col 1: Academic Calendar & D-Days (3.2*) -->
+                                    <!-- Col 0: Timetable & Period Alarms (3.2*) -->
                                     <ColumnDefinition Width="3.2*" />
-                                    <!-- Col 2: Weather & Lunch Menu (2.6*) -->
-                                    <ColumnDefinition Width="2.6*" />
+                                    <!-- Col 1: Academic Calendar & D-Days (3.1*) -->
+                                    <ColumnDefinition Width="3.1*" />
+                                    <!-- Col 2: Weather & Lunch Menu (2.7*) -->
+                                    <ColumnDefinition Width="2.7*" />
                                 </Grid.ColumnDefinitions>
 
                                 <!-- Column 0: Timetable Card -->
@@ -482,30 +482,51 @@
                                         </Grid>
 
                                         <!-- Timetable List -->
-                                        <ListBox x:Name="ListTimetable" Grid.Row="1" BorderThickness="0" Background="Transparent" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                                        <ListBox x:Name="ListTimetable" Grid.Row="1" BorderThickness="0" Background="Transparent"
+                                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                            <ListBox.ItemContainerStyle>
+                                                <Style TargetType="ListBoxItem">
+                                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                                    <Setter Property="Padding" Value="0" />
+                                                    <Setter Property="Margin" Value="0,0,0,4" />
+                                                    <Setter Property="BorderThickness" Value="0" />
+                                                    <Setter Property="Background" Value="Transparent" />
+                                                    <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                                                    <Setter Property="Template">
+                                                        <Setter.Value>
+                                                            <ControlTemplate TargetType="ListBoxItem">
+                                                                <ContentPresenter />
+                                                            </ControlTemplate>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </Style>
+                                            </ListBox.ItemContainerStyle>
                                             <ListBox.ItemTemplate>
                                                 <DataTemplate>
-                                                    <Border Background="{DynamicResource BeigeCardInner}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="8" Padding="10,6" Margin="0,0,0,5">
+                                                    <Border Background="{DynamicResource BeigeCardInner}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="8" Padding="9,6">
                                                         <Grid>
                                                             <Grid.ColumnDefinitions>
-                                                                <ColumnDefinition Width="54" />
-                                                                <ColumnDefinition Width="*" />
+                                                                <!-- Col 0: Badge (1교시, 점심 등) -->
                                                                 <ColumnDefinition Width="Auto" />
+                                                                <!-- Col 1: Subject + Tag (DockPanel prevents unconstrained blowouts) -->
+                                                                <ColumnDefinition Width="*" />
+                                                                <!-- Col 2: Time Range & Quick Action Buttons -->
                                                                 <ColumnDefinition Width="Auto" />
                                                             </Grid.ColumnDefinitions>
-                                                            <Border Grid.Column="0" Background="{DynamicResource BeigeAccentSoft}" CornerRadius="5" Padding="4,2" HorizontalAlignment="Left" VerticalAlignment="Center">
+                                                            <Border Grid.Column="0" Background="{DynamicResource BeigeAccentSoft}" CornerRadius="5" Padding="5,2" VerticalAlignment="Center" Margin="0,0,8,0">
                                                                 <TextBlock Text="{Binding DisplayBadge}" FontWeight="Bold" Foreground="{DynamicResource BeigeAccent}" FontSize="11"/>
                                                             </Border>
-                                                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="6,0,0,0">
-                                                                <TextBlock Text="{Binding Subject}" FontWeight="Bold" FontSize="12" Foreground="{DynamicResource BeigeTextMain}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                                                <Border Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="3" Padding="3,1" Margin="5,0,0,0" VerticalAlignment="Center">
-                                                                    <TextBlock Text="{Binding Tag}" FontSize="9" Foreground="{DynamicResource BeigeTextMuted}"/>
+                                                            <DockPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,8,0" LastChildFill="True">
+                                                                <Border DockPanel.Dock="Right" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="3" Padding="4,1" Margin="6,0,0,0" VerticalAlignment="Center">
+                                                                    <TextBlock Text="{Binding Tag}" FontSize="9.5" Foreground="{DynamicResource BeigeTextMuted}"/>
                                                                 </Border>
-                                                            </StackPanel>
-                                                            <TextBlock Grid.Column="2" Text="{Binding TimeRange}" Foreground="{DynamicResource BeigeTextMuted}" FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                                            <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
-                                                                <Button Content="⏱️" Click="BtnItemTimer_Click" Tag="{Binding}" Width="22" Height="22" Padding="0" Background="Transparent" BorderThickness="0" Cursor="Hand" ToolTip="이 교시 타이머 실행"/>
-                                                                <Button Content="✏️" Click="BtnEditSubject_Click" Tag="{Binding}" Width="22" Height="22" Padding="0" Background="Transparent" BorderThickness="0" Cursor="Hand" ToolTip="과목 수정"/>
+                                                                <TextBlock Text="{Binding Subject}" FontWeight="Bold" FontSize="12" Foreground="{DynamicResource BeigeTextMain}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                                            </DockPanel>
+                                                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                                                <TextBlock Text="{Binding TimeRange}" Foreground="{DynamicResource BeigeTextMuted}" FontSize="10.5" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                                                <Button Content="⏱️" Click="BtnItemTimer_Click" Tag="{Binding}" Width="20" Height="20" Padding="0" Background="Transparent" BorderThickness="0" Cursor="Hand" ToolTip="이 교시 타이머 실행" Margin="0,0,2,0"/>
+                                                                <Button Content="✏️" Click="BtnEditSubject_Click" Tag="{Binding}" Width="20" Height="20" Padding="0" Background="Transparent" BorderThickness="0" Cursor="Hand" ToolTip="과목 수정"/>
                                                             </StackPanel>
                                                         </Grid>
                                                     </Border>
@@ -515,7 +536,7 @@
                                     </Grid>
                                 </Border>
 
-                                <!-- Column 1: Academic Calendar & D-Days (3.2*) -->
+                                <!-- Column 1: Academic Calendar & D-Days (3.1*) -->
                                 <Grid Grid.Column="1" Margin="0,0,8,0">
                                     <Grid.RowDefinitions>
                                         <!-- Row 0: Academic Calendar (Takes remaining or auto) -->
@@ -528,42 +549,50 @@
                                     <Border Grid.Row="0" Margin="0,0,0,8" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="12,10">
                                         <Grid>
                                             <Grid.RowDefinitions>
-                                                <!-- Header (month nav) -->
+                                                <!-- Row 0: Title & Tools Header -->
                                                 <RowDefinition Height="Auto" />
-                                                <!-- Weekday headers -->
+                                                <!-- Row 1: Dedicated Month Navigator Bar -->
                                                 <RowDefinition Height="Auto" />
-                                                <!-- Calendar 7-col grid -->
+                                                <!-- Row 2: Weekday headers -->
+                                                <RowDefinition Height="Auto" />
+                                                <!-- Row 3: Calendar 7-col grid -->
                                                 <RowDefinition Height="*" />
-                                                <!-- Selected day detail box -->
+                                                <!-- Row 4: Selected day detail box -->
                                                 <RowDefinition Height="Auto" />
                                             </Grid.RowDefinitions>
 
-                                            <!-- Header: Month Selector -->
+                                            <!-- Row 0: Title & Tools Header -->
                                             <Grid Grid.Row="0" Margin="0,0,0,6">
                                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                                     <TextBlock Text="📅" FontSize="13" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                                                    <TextBlock Text="학사일정 달력" FontWeight="Bold" FontSize="13" Foreground="{DynamicResource BeigeTextMain}" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="학사일정" FontWeight="Bold" FontSize="13" Foreground="{DynamicResource BeigeTextMain}" VerticalAlignment="Center"/>
                                                 </StackPanel>
                                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                                                    <Button x:Name="BtnCalPrev" Click="BtnCalPrev_Click" Content="◀" Width="24" Height="22" Padding="0" Background="{DynamicResource BeigeCardInner}" Foreground="{DynamicResource BeigeTextSub}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="10" Cursor="Hand">
+                                                    <Button x:Name="BtnCalToday" Click="BtnCalToday_Click" Content="오늘" Padding="6,2" Margin="0,0,3,0" Background="{DynamicResource BeigeCardInner}" Foreground="{DynamicResource BeigeTextMain}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="10" Cursor="Hand">
                                                         <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
                                                     </Button>
-                                                    <TextBlock x:Name="TxtCalMonthYear" Text="2026년 9월" FontWeight="Bold" FontSize="12" Foreground="{DynamicResource BeigeAccent}" VerticalAlignment="Center" Margin="6,0"/>
-                                                    <Button x:Name="BtnCalNext" Click="BtnCalNext_Click" Content="▶" Width="24" Height="22" Padding="0" Background="{DynamicResource BeigeCardInner}" Foreground="{DynamicResource BeigeTextSub}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="10" Cursor="Hand">
-                                                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
-                                                    </Button>
-                                                    <Button x:Name="BtnCalToday" Click="BtnCalToday_Click" Content="오늘" Padding="6,2" Margin="4,0,0,0" Background="{DynamicResource BeigeCardInner}" Foreground="{DynamicResource BeigeTextMain}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="10" Cursor="Hand">
-                                                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
-                                                    </Button>
-                                                    <Button Click="BtnRefreshAcademicCalendar_Click" Content="🔄" Width="22" Height="22" Padding="0" Margin="3,0,0,0" Background="Transparent" BorderThickness="0" Cursor="Hand" ToolTip="나이스 학사일정 새로고침"/>
-                                                    <Button x:Name="BtnEarlyLeaveQuickCalc" Click="BtnEarlyLeaveQuickCalc_Click" Content="🏖️ 15일 복무" Padding="6,2" Margin="4,0,0,0" Background="#FEF3C7" Foreground="#B45309" BorderBrush="#FCD34D" BorderThickness="1" FontSize="10" FontWeight="Bold" Cursor="Hand" ToolTip="이 달의 15일 소정근무일 및 조퇴/연가 가능일 자동 계산">
+                                                    <Button Click="BtnRefreshAcademicCalendar_Click" Content="🔄" Width="22" Height="22" Padding="0" Margin="0,0,3,0" Background="Transparent" BorderThickness="0" Cursor="Hand" ToolTip="나이스 학사일정 새로고침"/>
+                                                    <Button x:Name="BtnEarlyLeaveQuickCalc" Click="BtnEarlyLeaveQuickCalc_Click" Content="🏖️ 15일 복무" Padding="6,2" Background="#FEF3C7" Foreground="#B45309" BorderBrush="#FCD34D" BorderThickness="1" FontSize="10" FontWeight="Bold" Cursor="Hand" ToolTip="이 달의 15일 소정근무일 및 조퇴/연가 가능일 자동 계산">
                                                         <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
                                                     </Button>
                                                 </StackPanel>
                                             </Grid>
 
-                                            <!-- Weekday header (일 월 화 수 목 금 토) -->
-                                            <UniformGrid Grid.Row="1" Columns="7" Margin="0,0,0,4">
+                                            <!-- Row 1: Dedicated Month Navigator Bar (Prev Month | Centered Month/Year | Next Month) -->
+                                            <Border Grid.Row="1" Background="{DynamicResource BeigeCardInner}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="6" Padding="6,3" Margin="0,0,0,6">
+                                                <Grid>
+                                                    <Button x:Name="BtnCalPrev" Click="BtnCalPrev_Click" Content="◀" Width="24" Height="22" Padding="0" HorizontalAlignment="Left" Background="Transparent" Foreground="{DynamicResource BeigeTextSub}" BorderThickness="0" FontSize="10" Cursor="Hand" ToolTip="이전 달">
+                                                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
+                                                    </Button>
+                                                    <TextBlock x:Name="TxtCalMonthYear" Text="2026년 9월" FontWeight="Bold" FontSize="12.5" Foreground="{DynamicResource BeigeAccent}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                    <Button x:Name="BtnCalNext" Click="BtnCalNext_Click" Content="▶" Width="24" Height="22" Padding="0" HorizontalAlignment="Right" Background="Transparent" Foreground="{DynamicResource BeigeTextSub}" BorderThickness="0" FontSize="10" Cursor="Hand" ToolTip="다음 달">
+                                                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
+                                                    </Button>
+                                                </Grid>
+                                            </Border>
+
+                                            <!-- Row 2: Weekday header (일 월 화 수 목 금 토) -->
+                                            <UniformGrid Grid.Row="2" Columns="7" Margin="0,0,0,4">
                                                 <TextBlock Text="일" Foreground="#EF4444" FontWeight="Bold" FontSize="10" HorizontalAlignment="Center"/>
                                                 <TextBlock Text="월" Foreground="{DynamicResource BeigeTextMuted}" FontWeight="Bold" FontSize="10" HorizontalAlignment="Center"/>
                                                 <TextBlock Text="화" Foreground="{DynamicResource BeigeTextMuted}" FontWeight="Bold" FontSize="10" HorizontalAlignment="Center"/>
@@ -573,8 +602,8 @@
                                                 <TextBlock Text="토" Foreground="#3B82F6" FontWeight="Bold" FontSize="10" HorizontalAlignment="Center"/>
                                             </UniformGrid>
 
-                                            <!-- Day Cells ItemsControl -->
-                                            <ItemsControl x:Name="ListCalendarCells" Grid.Row="2">
+                                            <!-- Row 3: Day Cells ItemsControl -->
+                                            <ItemsControl x:Name="ListCalendarCells" Grid.Row="3">
                                                 <ItemsControl.ItemsPanel>
                                                     <ItemsPanelTemplate>
                                                         <UniformGrid Columns="7" />
@@ -594,8 +623,8 @@
                                                 </ItemsControl.ItemTemplate>
                                             </ItemsControl>
 
-                                            <!-- Selected Day Detail preview -->
-                                            <Border Grid.Row="3" Background="{DynamicResource BeigeCardInner}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="6" Padding="8,5" Margin="0,5,0,0">
+                                            <!-- Row 4: Selected Day Detail preview -->
+                                            <Border Grid.Row="4" Background="{DynamicResource BeigeCardInner}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="6" Padding="8,5" Margin="0,5,0,0">
                                                 <Grid>
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="Auto" />
