@@ -437,12 +437,12 @@ public partial class StudentPickerWindow : Window
         AddBubble(340, 3325, 24);
         AddBubble(385, 3325, 22);
 
-        // --- 5. Perched Animated Squirrels (5마리 청설모 솔방울 투척) ---
-        AddSquirrel(x: 95, y: 780, radius: 26, isFacingRight: true, startDelay: 0.3, projectileAsset: "cartoon_pinecone.png");
-        AddSquirrel(x: 585, y: 1150, radius: 26, isFacingRight: false, startDelay: 0.7, projectileAsset: "cartoon_pinecone.png");
-        AddSquirrel(x: 135, y: 1520, radius: 26, isFacingRight: true, startDelay: 0.5, projectileAsset: "cartoon_pinecone.png");
-        AddSquirrel(x: 530, y: 1720, radius: 26, isFacingRight: false, startDelay: 0.9, projectileAsset: "cartoon_pinecone.png");
-        AddSquirrel(x: 195, y: 2320, radius: 26, isFacingRight: true, startDelay: 0.4, projectileAsset: "cartoon_pinecone.png");
+        // --- 5. Perched Animated Squirrels (5마리 청설모 솔방울 표창 투척) ---
+        AddSquirrel(x: 95, y: 780, radius: 26, isFacingRight: true, startDelay: 0.3, projectileAsset: "cartoon_pinecone_shuriken.png");
+        AddSquirrel(x: 585, y: 1150, radius: 26, isFacingRight: false, startDelay: 0.7, projectileAsset: "cartoon_pinecone_shuriken.png");
+        AddSquirrel(x: 135, y: 1520, radius: 26, isFacingRight: true, startDelay: 0.5, projectileAsset: "cartoon_pinecone_shuriken.png");
+        AddSquirrel(x: 530, y: 1720, radius: 26, isFacingRight: false, startDelay: 0.9, projectileAsset: "cartoon_pinecone_shuriken.png");
+        AddSquirrel(x: 195, y: 2320, radius: 26, isFacingRight: true, startDelay: 0.4, projectileAsset: "cartoon_pinecone_shuriken.png");
     }
 
     private void AddRotatingLog(double x, double y, double length, double thickness, double angularVelocity, double initialAngleDeg)
@@ -1096,14 +1096,15 @@ public partial class StudentPickerWindow : Window
                     RaceCanvas.Children.Remove(proj.Visual);
                     _projectiles.RemoveAt(pIdx);
 
-                    // Skewered by shuriken pinecone! Hurled directly towards the outer wall
+                    // Skewered by shuriken pinecone! (1타 1피 표창 저격)
+                    // The first character hit absorbs the shuriken and is blasted to the outer wall!
                     double pushDir = Math.Sign(proj.Vx);
                     if (pushDir == 0) pushDir = (r.X < 340) ? -1.0 : 1.0;
 
                     r.IsBlownByPinecone = true;
                     r.PineconePushDir = pushDir;
-                    r.Vx = pushDir * 580.0; // High speed fling to wall
-                    r.Vy = 10.0; // Level horizontal trajectory
+                    r.Vx = pushDir * 680.0; // High speed shuriken knockback fling to wall
+                    r.Vy = 5.0; // Perfectly level horizontal trajectory
                 }
             }
 
@@ -1111,8 +1112,33 @@ public partial class StudentPickerWindow : Window
             for (int j = i + 1; j < _racers.Count; j++)
             {
                 var o = _racers[j];
-                if (o.IsFinished || o.PinnedTimer > 0 || o.IsBlownByPinecone) continue;
-                if (r.PinnedTimer > 0 || r.IsBlownByPinecone) continue;
+                if (o.IsFinished || o.PinnedTimer > 0) continue;
+                if (r.PinnedTimer > 0) continue;
+
+                // If one racer is flying from pinecone shuriken impact:
+                // Only the primary victim gets pinned to the wall!
+                // Any racers in the trajectory are just lightly nudged aside with a cartoon bump, NOT chained/pinned!
+                if (r.IsBlownByPinecone || o.IsBlownByPinecone)
+                {
+                    double bdx = o.X - r.X;
+                    double bdy = o.Y - r.Y;
+                    double bdist = Math.Sqrt(bdx * bdx + bdy * bdy);
+                    double bminDist = r.Radius + o.Radius;
+                    if (bdist < bminDist && bdist > 0.001)
+                    {
+                        if (r.IsBlownByPinecone)
+                        {
+                            o.Vy += (rand.NextDouble() - 0.5) * 50.0;
+                            o.Vx += (rand.NextDouble() - 0.5) * 40.0;
+                        }
+                        else
+                        {
+                            r.Vy += (rand.NextDouble() - 0.5) * 50.0;
+                            r.Vx += (rand.NextDouble() - 0.5) * 40.0;
+                        }
+                    }
+                    continue;
+                }
 
                 double dx = o.X - r.X;
                 double dy = o.Y - r.Y;
@@ -1933,15 +1959,22 @@ public class RaceRacer
         // 3. Embedded Shuriken Pinecone ("표창처럼 벽에 꽂히는 솔방울")
         _pinnedPineconeImg = new Image
         {
-            Width = 28,
-            Height = 32,
-            Source = new BitmapImage(new Uri("pack://application:,,,/assets/race/cartoon_pinecone.png")),
+            Width = 34,
+            Height = 34,
+            Source = new BitmapImage(new Uri("pack://application:,,,/assets/race/cartoon_pinecone_shuriken.png")),
             Visibility = Visibility.Collapsed,
             IsHitTestVisible = false,
             VerticalAlignment = VerticalAlignment.Top,
             RenderTransformOrigin = new Point(0.5, 0.5)
         };
         RenderOptions.SetBitmapScalingMode(_pinnedPineconeImg, BitmapScalingMode.HighQuality);
+        _pinnedPineconeImg.Effect = new DropShadowEffect
+        {
+            Color = Color.FromRgb(245, 158, 11),
+            BlurRadius = 8,
+            Opacity = 0.85,
+            ShadowDepth = 0
+        };
         Visual.Children.Add(_pinnedPineconeImg);
 
         // 4. Dizzy Stars Badge ("💫 머리 위 회전 별")
@@ -1987,17 +2020,17 @@ public class RaceRacer
 
         if (side < 0)
         {
-            // Left wall: pinecone pins player into the left wall!
+            // Left wall: shuriken blade firmly pins player into the left wall!
             _pinnedPineconeImg.HorizontalAlignment = HorizontalAlignment.Left;
-            _pinnedPineconeImg.Margin = new Thickness(-10, 6, 0, 0);
-            _pinnedPineconeImg.RenderTransform = new RotateTransform(-75);
+            _pinnedPineconeImg.Margin = new Thickness(-14, 3, 0, 0);
+            _pinnedPineconeImg.RenderTransform = new RotateTransform(-45);
         }
         else
         {
-            // Right wall: pinecone pins player into the right wall!
+            // Right wall: shuriken blade firmly pins player into the right wall!
             _pinnedPineconeImg.HorizontalAlignment = HorizontalAlignment.Right;
-            _pinnedPineconeImg.Margin = new Thickness(0, 6, -10, 0);
-            _pinnedPineconeImg.RenderTransform = new RotateTransform(75);
+            _pinnedPineconeImg.Margin = new Thickness(0, 3, -14, 0);
+            _pinnedPineconeImg.RenderTransform = new RotateTransform(45);
         }
     }
 
@@ -2021,8 +2054,8 @@ public class RaceRacer
 
         if (PinnedTimer > 0)
         {
-            // Cartoon struggle/wiggle animation (trying to pull free from the pinned wall!)
-            double wiggle = Math.Sin(PinnedTimer * 32.0) * 12.0;
+            // Rapid cartoon struggle & quiver animation (trying to pull free from the pinned wall!)
+            double wiggle = Math.Sin(PinnedTimer * 42.0) * 14.0;
             _rot.Angle = wiggle;
         }
         else
@@ -2543,8 +2576,8 @@ public class PopOutSquirrel
                         _hasThrownThisCycle = true;
                         double throwX = IsFacingRight ? (X + 42) : (X - 42);
                         double throwY = Y - 2;
-                        // Laser-straight horizontal shuriken throw across track!
-                        double vx = (IsFacingRight ? 1.0 : -1.0) * 460.0;
+                        // Razor-sharp horizontal ninja shuriken throw across track (780 px/s)!
+                        double vx = (IsFacingRight ? 1.0 : -1.0) * 780.0;
                         double vy = 0.0;
                         OnThrowProjectile?.Invoke(new ThrownProjectile(throwX, throwY, vx, vy, ProjectileAsset));
                     }
@@ -2614,17 +2647,50 @@ public class ThrownProjectile
         Vx = vx;
         Vy = vy;
 
-        double size = 44;
+        double size = 42;
+        bool movingRight = vx > 0;
+
         Visual = new Grid
         {
-            Width = size,
+            Width = size + 44, // Extra width for motion speed trail
             Height = size,
             RenderTransformOrigin = new Point(0.5, 0.5),
             IsHitTestVisible = false
         };
 
+        // 1. Wind Slash / Speed Trail (공기를 가르는 잔상 스피드라인)
+        var speedTrail = new Border
+        {
+            Width = 38,
+            Height = 6,
+            CornerRadius = new CornerRadius(3),
+            Background = new LinearGradientBrush(
+                movingRight
+                    ? Color.FromArgb(160, 254, 240, 138)
+                    : Color.FromArgb(0, 254, 240, 138),
+                movingRight
+                    ? Color.FromArgb(0, 254, 240, 138)
+                    : Color.FromArgb(160, 254, 240, 138),
+                new Point(movingRight ? 1 : 0, 0.5),
+                new Point(movingRight ? 0 : 1, 0.5)),
+            HorizontalAlignment = movingRight ? HorizontalAlignment.Left : HorizontalAlignment.Right,
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(movingRight ? 4 : 0, 0, movingRight ? 0 : 4, 0),
+            IsHitTestVisible = false
+        };
+        Visual.Children.Add(speedTrail);
+
+        // 2. Rotating 4-Pointed Pinecone Shuriken Star
+        var shurikenGrid = new Grid
+        {
+            Width = size,
+            Height = size,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            RenderTransformOrigin = new Point(0.5, 0.5)
+        };
         _rot = new RotateTransform(0);
-        Visual.RenderTransform = _rot;
+        shurikenGrid.RenderTransform = _rot;
 
         var img = new Image
         {
@@ -2633,10 +2699,20 @@ public class ThrownProjectile
             Source = new BitmapImage(new Uri($"pack://application:,,,/assets/race/{assetName}")),
         };
         RenderOptions.SetBitmapScalingMode(img, BitmapScalingMode.HighQuality);
-        Visual.Children.Add(img);
+        shurikenGrid.Children.Add(img);
 
-        Canvas.SetLeft(Visual, X - size / 2.0);
-        Canvas.SetTop(Visual, Y - size / 2.0);
+        shurikenGrid.Effect = new DropShadowEffect
+        {
+            Color = Color.FromRgb(245, 158, 11), // Golden amber glow
+            BlurRadius = 8,
+            Opacity = 0.85,
+            ShadowDepth = 0
+        };
+
+        Visual.Children.Add(shurikenGrid);
+
+        Canvas.SetLeft(Visual, X - Visual.Width / 2.0);
+        Canvas.SetTop(Visual, Y - Visual.Height / 2.0);
     }
 
     public void Update(double dt)
@@ -2650,7 +2726,7 @@ public class ThrownProjectile
             return;
         }
 
-        // Shuriken straight horizontal flight across track (no gravity drop)
+        // Razor-sharp horizontal shuriken flight across track
         X += Vx * dt;
         Y += Vy * dt;
 
@@ -2658,19 +2734,19 @@ public class ThrownProjectile
         StudentPickerWindow.GetTrackBoundaries(Y, out double pLeft, out double pRight);
         if (Vx > 0 && X + Radius >= pRight)
         {
-            // Shuriken embeds into far right wall and vanishes
+            // Shuriken embeds into far right wall and vanishes with thunk
             Destroy();
             return;
         }
         else if (Vx < 0 && X - Radius <= pLeft)
         {
-            // Shuriken embeds into far left wall and vanishes
+            // Shuriken embeds into far left wall and vanishes with thunk
             Destroy();
             return;
         }
 
-        // Fast ninja star / shuriken spin
-        _angle += Math.Sign(Vx) * dt * 720.0;
+        // High-speed whirling ninja spin (1440 deg/s = 4 full rotations per second!)
+        _angle += Math.Sign(Vx) * dt * 1440.0;
         _rot.Angle = _angle;
 
         Canvas.SetLeft(Visual, X - Visual.Width / 2.0);
