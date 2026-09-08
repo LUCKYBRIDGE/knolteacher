@@ -162,11 +162,8 @@
                                    Source="pack://application:,,,/assets/race/cartoon_start_banner.png"/>
 
                             <!-- ================================================= -->
-                            <!-- FINISH WATER SLIDE & ARCH                         -->
+                            <!-- FINISH WATER SLIDE & CELEBRATION DOCK             -->
                             <!-- ================================================= -->
-                            <!-- 카툰 결승 아치 (Y = 3305 ~ 3370, 좁은 수로 130px 위에 완벽 배치) -->
-                            <Image Canvas.Left="245" Canvas.Top="3305" Width="190" Height="65"
-                                   Source="pack://application:,,,/assets/race/cartoon_finish_arch.png"/>
 
                             <!-- 결승 수로 동적 물보라 (골인 시 애니메이션 발동) -->
                             <Image x:Name="ImgWaterSplash" Canvas.Left="270" Canvas.Top="3330" Width="140" Height="70"

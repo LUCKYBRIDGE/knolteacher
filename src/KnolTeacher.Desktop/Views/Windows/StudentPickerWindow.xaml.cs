@@ -134,10 +134,10 @@ public partial class StudentPickerWindow : Window
             left = c - hw;
             right = c + hw;
         }
-        else if (y <= 3080.0)
+        else if (y <= 3200.0)
         {
-            // Forest Meander 2 into River Rapids (stays wide and spacious!)
-            double t = (y - 2480.0) / (3080.0 - 2480.0);
+            // Forest Meander 2 into River Rapids (stays wide and spacious until 3200!)
+            double t = (y - 2480.0) / (3200.0 - 2480.0);
             double c = 340.0 - 30.0 * Math.Sin(t * Math.PI);
             double hw = 185.0; // width 370
             left = c - hw;
@@ -145,19 +145,19 @@ public partial class StudentPickerWindow : Window
         }
         else if (y <= 3320.0)
         {
-            // Classic Smooth Angled Diagonal Funnel ("깔대기")
-            // Over 240px, smoothly tapers diagonally from width 370 (hw 185) down to 150 (hw 75)
-            double t = (y - 3080.0) / (3320.0 - 3080.0);
+            // Compact Angled Funnel ("단축된 깔대기 입구 - 기존 240px의 절반인 120px로 단축")
+            // Over 120px, smoothly tapers diagonally from width 370 (hw 185) down to 160 (hw 80)
+            double t = (y - 3200.0) / (3320.0 - 3200.0);
             double c = 340.0;
-            double hw = 185.0 - 110.0 * t; // [155, 525] -> [265, 415]
+            double hw = 185.0 - 105.0 * t; // [155, 525] -> [260, 420]
             left = c - hw;
             right = c + hw;
         }
         else
         {
-            // Short Funnel Neck & Harbor Dock (Y = 3320 ~ 3500, width 150)
+            // Short Funnel Neck & Harbor Dock (Y = 3320 ~ 3500, width 160)
             double c = 340.0;
-            double hw = 75.0; // [265, 415]
+            double hw = 80.0; // [260, 420]
             left = c - hw;
             right = c + hw;
         }
@@ -385,16 +385,16 @@ public partial class StudentPickerWindow : Window
         _rails.Add(new RaceRail(418, 1905, 450, 1975, 14));
         _rails.Add(new RaceRail(482, 1905, 450, 1975, 14));
 
-        // 2. ROTATING LOGS (회전 통나무 동적 장애물!)
+        // 2. ROTATING LOGS (회전 통나무 동적 장애물 - 폭을 110px로 최적화하여 좌우 통로 120px 이상 완전 개방)
         // Upper Canyon Chicane: Clockwise Rotating Log
-        AddRotatingLog(275, 680, 150, 28, 2.2, 15);
+        AddRotatingLog(275, 680, 110, 22, 2.2, 15);
 
         // Fossil Mesa Twin Rapids Pebble Bumpers (시원하게 통과할 수 있도록 소형 조약돌 범퍼 배치 - 무병목 보장)
         AddBumper(195, 1540, 13, "cartoon_pebble_bumper.png");
         AddBumper(485, 1540, 13, "cartoon_pebble_bumper.png");
 
         // Lower Mushroom Forest: Heavy Rotating Log
-        AddRotatingLog(380, 2180, 150, 28, -2.0, 0);
+        AddRotatingLog(380, 2180, 110, 22, -2.0, 0);
 
         // 3. SMALL CARTOON BUMPERS & OBSTACLES (충분한 최소 간격을 보장하는 최적 분산 배치)
         // --- Meadow & Early Forest (Y = 240 ~ 600) ---
@@ -432,10 +432,10 @@ public partial class StudentPickerWindow : Window
         AddBumper(210, 2960, 14, "cartoon_pebble_bumper.png");
         AddBumper(470, 2960, 14, "cartoon_pebble_bumper.png");
 
-        // 도착지점 바로 직전(Y=3325)의 3개 비눗방울 관문 (도착 직전 3개로 충분!)
-        AddBubble(295, 3325, 22);
-        AddBubble(340, 3325, 24);
-        AddBubble(385, 3325, 22);
+        // 단축된 도착 구간 깔대기 직후(Y=3330)의 3개 비눗방울 관문 (도착 직전 3개로 충분!)
+        AddBubble(295, 3330, 20);
+        AddBubble(340, 3330, 22);
+        AddBubble(385, 3330, 20);
 
         // --- 5. Perched Animated Squirrels (5마리 청설모 솔방울 표창 투척) ---
         AddSquirrel(x: 95, y: 780, radius: 26, isFacingRight: true, startDelay: 0.3, projectileAsset: "cartoon_pinecone_shuriken.png");
@@ -769,18 +769,23 @@ public partial class StudentPickerWindow : Window
             r.X += r.Vx * dt;
             r.Y += r.Vy * dt;
 
-            // Anti-jam watchdog: actively propel any racer getting slow or stuck above finish
+            // Anti-jam & flow watchdog: actively propel any racer getting slow or stuck above finish
             if (r.Y > 160 && r.Y < FinishY)
             {
-                if (Math.Abs(r.Vx) < 14.0 && r.Vy < 30.0)
+                if (r.Vy < 35.0 && r.PinnedTimer <= 0)
+                {
+                    r.Vy += 90.0 * dt; // Gentle forward drive ensuring zero bottlenecks
+                }
+
+                if (Math.Abs(r.Vx) < 14.0 && r.Vy < 35.0)
                 {
                     r.StuckTimer += dt;
-                    if (r.StuckTimer > 0.25)
+                    if (r.StuckTimer > 0.20)
                     {
                         // Direct impulse downhill toward the track center
                         double centerNudge = (340.0 - r.X);
                         r.Vx += Math.Sign(centerNudge) * (50.0 + rand.NextDouble() * 30.0);
-                        r.Vy = Math.Max(r.Vy + 90.0, 130.0 + rand.NextDouble() * 60.0);
+                        r.Vy = Math.Max(r.Vy + 90.0, 140.0 + rand.NextDouble() * 60.0);
                         r.StuckTimer = 0;
                     }
                 }
@@ -800,15 +805,10 @@ public partial class StudentPickerWindow : Window
                     // Pinned to the left wall like a target hit by a shuriken!
                     r.PinToWall(-1, 1.35);
                 }
-                else if (r.Y >= 3080.0 && r.Y <= 3320.0)
-                {
-                    // Funnel sliding assist: guide inward & down the diagonal funnel slope!
-                    r.Vx = Math.Max(r.Vx, 45.0);
-                    r.Vy = Math.Max(r.Vy, 80.0);
-                }
                 else
                 {
-                    r.Vx = Math.Abs(r.Vx) * 0.75 + 25;
+                    // Regular bouncy wall collision (끝의 깔대기 구간도 미끄러지지 않고 기존 벽면처럼 통-! 튕김)
+                    r.Vx = Math.Abs(r.Vx) * 0.8 + 35.0;
                 }
             }
             else if (r.X + r.Radius > rightWall)
@@ -819,15 +819,10 @@ public partial class StudentPickerWindow : Window
                     // Pinned to the right wall like a target hit by a shuriken!
                     r.PinToWall(1, 1.35);
                 }
-                else if (r.Y >= 3080.0 && r.Y <= 3320.0)
-                {
-                    // Funnel sliding assist: guide inward & down the diagonal funnel slope!
-                    r.Vx = Math.Min(r.Vx, -45.0);
-                    r.Vy = Math.Max(r.Vy, 80.0);
-                }
                 else
                 {
-                    r.Vx = -Math.Abs(r.Vx) * 0.75 - 25;
+                    // Regular bouncy wall collision (끝의 깔대기 구간도 미끄러지지 않고 기존 벽면처럼 통-! 튕김)
+                    r.Vx = -Math.Abs(r.Vx) * 0.8 - 35.0;
                 }
             }
 
@@ -1013,9 +1008,10 @@ public partial class StudentPickerWindow : Window
                     double dot = r.Vx * nx + r.Vy * ny;
                     if (dot < 0)
                     {
-                        double boost = 1.35;
-                        r.Vx = (-dot * nx * boost) + (rand.NextDouble() - 0.5) * 50;
-                        r.Vy = (-dot * ny * boost) - 60;
+                        double boost = 1.25;
+                        r.Vx = (-dot * nx * boost) + (nx >= 0 ? 32.0 : -32.0);
+                        // Ensure balls deflect around the bumper without flying backwards into traffic
+                        r.Vy = Math.Max(-dot * ny * boost, 45.0);
                         bumper.Flash();
                     }
                 }
@@ -2309,7 +2305,7 @@ public class RotatingLog
                 double newRelVy = relVy + impulse * ny;
 
                 r.Vx = logVx + newRelVx + (rand.NextDouble() - 0.5) * 40;
-                r.Vy = logVy + newRelVy + 15;
+                r.Vy = Math.Max(logVy + newRelVy + 25, 45.0);
             }
             return true;
         }
