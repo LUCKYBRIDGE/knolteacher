@@ -10,8 +10,8 @@
         d:DataContext="{d:DesignInstance vm:MainViewModel}"
         Title="놀티쳐 (KnolTeacher v3.0.0 - 스마트 교사용 올인원 도구)"
         Icon="/assets/app_icon.ico"
-        Height="870" Width="1340"
-        MinHeight="700" MinWidth="1050"
+        Height="960" Width="1680"
+        MinHeight="800" MinWidth="1280"
         Background="{DynamicResource BeigeAppBg}"
         WindowStartupLocation="CenterScreen">
     <ui:FluentWindow.Resources>
@@ -274,13 +274,13 @@
                             </Button>
 
                             <!-- 🌟 Pinky-NE Classroom Banner -->
-                            <Border Margin="0,4,0,4" Background="#FFF1F2" BorderBrush="#FECDD3" BorderThickness="1" CornerRadius="8" Padding="10,8" Cursor="Hand" MouseLeftButtonUp="BannerPinky_Click" ToolTip="핑키네(Pinky-NE) 교실자료실 &amp; 놀퀴즈 바로가기 (pinky-ne.com)">
+                            <Border Margin="0,4,0,4" Background="{DynamicResource BeigeCardInner}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="8" Padding="10,8" Cursor="Hand" MouseLeftButtonUp="BannerPinky_Click" ToolTip="핑키네(Pinky-NE) 교실자료실 &amp; 놀퀴즈 바로가기 (pinky-ne.com)">
                                 <StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="🌟" FontSize="12" Margin="0,0,6,0"/>
-                                        <TextBlock Text="핑키네 (Pinky-NE)" FontWeight="Bold" FontSize="11" Foreground="#BE123C"/>
+                                        <TextBlock Text="핑키네 (Pinky-NE)" FontWeight="Bold" FontSize="11" Foreground="{DynamicResource BeigeAccent}"/>
                                     </StackPanel>
-                                    <TextBlock Text="초등 교실자료실 &amp; 놀퀴즈 ↗" FontSize="10" Foreground="#E11D48" Margin="0,2,0,0"/>
+                                    <TextBlock Text="초등 교실자료실 &amp; 놀퀴즈 ↗" FontSize="10" Foreground="{DynamicResource BeigeTextSub}" Margin="0,2,0,0"/>
                                 </StackPanel>
                             </Border>
 
@@ -496,6 +496,10 @@
                                             </Button>
                                             <!-- Save -->
                                             <Button Click="BtnSaveWidgetLayout_Click" Content="💾 배치 저장" Padding="12,5" Background="{DynamicResource BeigeAccent}" Foreground="White" BorderThickness="0" FontSize="11" FontWeight="Bold" Cursor="Hand" ToolTip="현재 배치 및 크기를 사용자 기본값으로 영구 저장">
+                                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                                            </Button>
+                                            <!-- Done / Exit Edit Mode -->
+                                            <Button Click="BtnDoneWidgetCustomize_Click" Content="✓ 설정 완료" Padding="12,5" Margin="6,0,0,0" Background="{DynamicResource BeigeCardBg}" Foreground="{DynamicResource BeigeTextMain}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="11" FontWeight="Bold" Cursor="Hand" ToolTip="위젯 편집을 완료하고 일반 뷰 모드로 전환합니다 (크기 조절 및 닫기 버튼 숨김)">
                                                 <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
                                             </Button>
                                         </StackPanel>

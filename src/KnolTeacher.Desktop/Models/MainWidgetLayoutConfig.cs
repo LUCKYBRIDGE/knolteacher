@@ -15,6 +15,7 @@ public class MainWidgetState
 
 public class MainWidgetLayoutConfig
 {
+    public int LayoutVersion { get; set; } = 2;
     public bool IsLocked { get; set; } = false;
     public string ActivePreset { get; set; } = "default";
     public List<MainWidgetState> Widgets { get; set; } = new();

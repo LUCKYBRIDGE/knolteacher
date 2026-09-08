@@ -160,19 +160,13 @@ public partial class MainWindow : FluentWindow
     {
         try
         {
-            // Responsive Screen Bounds: Open comfortably on modern classroom displays (1080p / 1440p) without clipping
+            // Responsive Screen Bounds: Open generously on modern classroom displays (1080p / 1440p) with spacious, unclipped layout
             var workArea = SystemParameters.WorkArea;
             if (workArea.Width > 0 && workArea.Height > 0)
             {
-                double targetWidth = 1340;
-                double targetHeight = 870;
-
-                // For Full HD (1920x1080) and higher resolutions
-                if (workArea.Width >= 1600 && workArea.Height >= 900)
-                {
-                    targetWidth = 1360;
-                    targetHeight = 870;
-                }
+                // Takes ~92% width and ~94% height of screen work area for an open, airy desktop classroom feel
+                double targetWidth = Math.Max(1360, Math.Min(1680, workArea.Width * 0.92));
+                double targetHeight = Math.Max(840, Math.Min(980, workArea.Height * 0.94));
 
                 Width = Math.Max(MinWidth, Math.Min(targetWidth, workArea.Width - 24.0));
                 Height = Math.Max(MinHeight, Math.Min(targetHeight, workArea.Height - 24.0));
@@ -1520,6 +1514,7 @@ public partial class MainWindow : FluentWindow
 
         foreach (var w in _mainWidgets)
         {
+            w.IsEditMode = false;
             w.Closed += (card) =>
             {
                 UpdateWidgetCheckboxes();
@@ -1550,7 +1545,7 @@ public partial class MainWindow : FluentWindow
     private void LoadWidgetLayout()
     {
         var cfg = _configService.MainWidgetLayout;
-        if (cfg != null && cfg.Widgets != null && cfg.Widgets.Count > 0)
+        if (cfg != null && cfg.LayoutVersion >= 2 && cfg.Widgets != null && cfg.Widgets.Count > 0)
         {
             foreach (var state in cfg.Widgets)
             {
@@ -1604,6 +1599,7 @@ public partial class MainWindow : FluentWindow
     private void SaveCurrentWidgetLayout()
     {
         var cfg = _configService.MainWidgetLayout ?? new MainWidgetLayoutConfig();
+        cfg.LayoutVersion = 2;
         cfg.IsLocked = _isWidgetsLocked;
         cfg.Widgets.Clear();
 
@@ -1647,11 +1643,36 @@ public partial class MainWindow : FluentWindow
         BtnToggleWidgetLock.Foreground = _isWidgetsLocked ? (SolidColorBrush)FindResource("BeigeTextMuted") : (SolidColorBrush)FindResource("BeigeAccent");
     }
 
+    public void SetWidgetEditMode(bool editMode)
+    {
+        WidgetCustomizeBar.Visibility = editMode ? Visibility.Visible : Visibility.Collapsed;
+        if (editMode)
+        {
+            BtnToggleWidgetCustomize.Background = (Brush)FindResource("BeigeAccent");
+            BtnToggleWidgetCustomize.Foreground = Brushes.White;
+        }
+        else
+        {
+            BtnToggleWidgetCustomize.Background = (Brush)FindResource("BeigeAccentSoft");
+            BtnToggleWidgetCustomize.Foreground = (Brush)FindResource("BeigeAccent");
+        }
+
+        foreach (var w in _mainWidgets)
+        {
+            w.IsEditMode = editMode;
+        }
+        UpdateWidgetCheckboxes();
+    }
+
     private void BtnToggleWidgetCustomize_Click(object sender, RoutedEventArgs e)
     {
         bool isOpen = WidgetCustomizeBar.Visibility == Visibility.Visible;
-        WidgetCustomizeBar.Visibility = isOpen ? Visibility.Collapsed : Visibility.Visible;
-        UpdateWidgetCheckboxes();
+        SetWidgetEditMode(!isOpen);
+    }
+
+    private void BtnDoneWidgetCustomize_Click(object sender, RoutedEventArgs e)
+    {
+        SetWidgetEditMode(false);
     }
 
     private void ChkWidget_Click(object sender, RoutedEventArgs e)
@@ -1666,6 +1687,7 @@ public partial class MainWindow : FluentWindow
 
                 if (show)
                 {
+                    card.IsEditMode = WidgetCustomizeBar.Visibility == Visibility.Visible;
                     card.BringToFront();
                     double maxLeft = Math.Max(0, MainWidgetCanvas.ActualWidth - card.ActualWidth);
                     double maxTop = Math.Max(0, MainWidgetCanvas.ActualHeight - card.ActualHeight);
@@ -1707,12 +1729,20 @@ public partial class MainWindow : FluentWindow
 
     private void ApplyDefaultWidgetLayout()
     {
-        double canvasW = Math.Max(MainWidgetCanvas.ActualWidth > 0 ? MainWidgetCanvas.ActualWidth : 1050, 1050);
-        double canvasH = Math.Max(MainWidgetCanvas.ActualHeight > 0 ? MainWidgetCanvas.ActualHeight : 720, 720);
+        double availableWidth = WidgetScrollViewer.ActualWidth > 200
+            ? WidgetScrollViewer.ActualWidth - 24
+            : Math.Max(1400, ActualWidth > 300 ? ActualWidth - 260 : 1400);
+
+        double availableHeight = WidgetScrollViewer.ActualHeight > 200
+            ? WidgetScrollViewer.ActualHeight - 24
+            : Math.Max(780, ActualHeight > 200 ? ActualHeight - 180 : 780);
+
+        double canvasW = Math.Max(1200, availableWidth);
+        double canvasH = Math.Max(750, availableHeight);
 
         // Row 0: Notice Banner & Digital Clock
-        double topBarH = 72;
-        double clockW = 280;
+        double topBarH = 76;
+        double clockW = 320;
         double bannerW = Math.Max(WidgetNotice.MinWidth, canvasW - clockW - 12);
 
         WidgetNotice.Width = bannerW;
@@ -1728,15 +1758,15 @@ public partial class MainWindow : FluentWindow
         WidgetClock.Visibility = Visibility.Visible;
 
         // Row 1: 3 Columns
-        double startY = topBarH + 10;
-        double remH = Math.Max(500, canvasH - startY - 10);
+        double startY = topBarH + 12;
+        double remH = Math.Max(580, canvasH - startY - 12);
 
         // Column widths
-        double colSpacing = 10;
-        double availableW = canvasW - (colSpacing * 2);
-        double col0W = Math.Round(availableW * 0.36);
-        double col1W = Math.Round(availableW * 0.35);
-        double col2W = availableW - col0W - col1W;
+        double colSpacing = 12;
+        double contentW = canvasW - (colSpacing * 2);
+        double col0W = Math.Round(contentW * 0.36);
+        double col1W = Math.Round(contentW * 0.35);
+        double col2W = contentW - col0W - col1W;
 
         // Col 0: Timetable
         WidgetTimetable.Width = col0W;
@@ -1762,7 +1792,7 @@ public partial class MainWindow : FluentWindow
         WidgetDDay.Visibility = Visibility.Visible;
 
         // Col 2: Weather & Lunch Meal
-        double weatherH = 175;
+        double weatherH = 185;
         double mealH = remH - weatherH - colSpacing;
 
         WidgetWeather.Width = col2W;
@@ -1782,11 +1812,19 @@ public partial class MainWindow : FluentWindow
 
     private void BtnPresetFocusTimetableMeal_Click(object sender, RoutedEventArgs e)
     {
-        double canvasW = Math.Max(MainWidgetCanvas.ActualWidth > 0 ? MainWidgetCanvas.ActualWidth : 1050, 1050);
-        double canvasH = Math.Max(MainWidgetCanvas.ActualHeight > 0 ? MainWidgetCanvas.ActualHeight : 720, 720);
+        double availableWidth = WidgetScrollViewer.ActualWidth > 200
+            ? WidgetScrollViewer.ActualWidth - 24
+            : Math.Max(1400, ActualWidth > 300 ? ActualWidth - 260 : 1400);
 
-        double topBarH = 72;
-        double clockW = 280;
+        double availableHeight = WidgetScrollViewer.ActualHeight > 200
+            ? WidgetScrollViewer.ActualHeight - 24
+            : Math.Max(780, ActualHeight > 200 ? ActualHeight - 180 : 780);
+
+        double canvasW = Math.Max(1200, availableWidth);
+        double canvasH = Math.Max(750, availableHeight);
+
+        double topBarH = 76;
+        double clockW = 320;
         double bannerW = Math.Max(WidgetNotice.MinWidth, canvasW - clockW - 12);
 
         WidgetNotice.Width = bannerW;
@@ -1801,8 +1839,8 @@ public partial class MainWindow : FluentWindow
         Canvas.SetTop(WidgetClock, 0);
         WidgetClock.Visibility = Visibility.Visible;
 
-        double startY = topBarH + 10;
-        double remH = Math.Max(500, canvasH - startY - 10);
+        double startY = topBarH + 12;
+        double remH = Math.Max(580, canvasH - startY - 12);
         double colSpacing = 12;
         double colW = (canvasW - colSpacing) / 2.0;
 
@@ -1828,11 +1866,19 @@ public partial class MainWindow : FluentWindow
 
     private void BtnPresetFocusCalendar_Click(object sender, RoutedEventArgs e)
     {
-        double canvasW = Math.Max(MainWidgetCanvas.ActualWidth > 0 ? MainWidgetCanvas.ActualWidth : 1050, 1050);
-        double canvasH = Math.Max(MainWidgetCanvas.ActualHeight > 0 ? MainWidgetCanvas.ActualHeight : 720, 720);
+        double availableWidth = WidgetScrollViewer.ActualWidth > 200
+            ? WidgetScrollViewer.ActualWidth - 24
+            : Math.Max(1400, ActualWidth > 300 ? ActualWidth - 260 : 1400);
 
-        double topBarH = 72;
-        double clockW = 280;
+        double availableHeight = WidgetScrollViewer.ActualHeight > 200
+            ? WidgetScrollViewer.ActualHeight - 24
+            : Math.Max(780, ActualHeight > 200 ? ActualHeight - 180 : 780);
+
+        double canvasW = Math.Max(1200, availableWidth);
+        double canvasH = Math.Max(750, availableHeight);
+
+        double topBarH = 76;
+        double clockW = 320;
         double bannerW = Math.Max(WidgetNotice.MinWidth, canvasW - clockW - 12);
 
         WidgetNotice.Width = bannerW;
@@ -1847,12 +1893,13 @@ public partial class MainWindow : FluentWindow
         Canvas.SetTop(WidgetClock, 0);
         WidgetClock.Visibility = Visibility.Visible;
 
-        double startY = topBarH + 10;
-        double remH = Math.Max(500, canvasH - startY - 10);
-        double colSpacing = 10;
-        double col0W = Math.Round(canvasW * 0.32);
-        double col1W = Math.Round(canvasW * 0.42);
-        double col2W = canvasW - col0W - col1W - (colSpacing * 2);
+        double startY = topBarH + 12;
+        double remH = Math.Max(580, canvasH - startY - 12);
+        double colSpacing = 12;
+        double contentW = canvasW - (colSpacing * 2);
+        double col0W = Math.Round(contentW * 0.32);
+        double col1W = Math.Round(contentW * 0.42);
+        double col2W = contentW - col0W - col1W;
 
         WidgetTimetable.Width = col0W;
         WidgetTimetable.Height = remH;

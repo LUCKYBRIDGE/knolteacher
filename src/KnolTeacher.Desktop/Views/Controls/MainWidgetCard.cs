@@ -20,7 +20,10 @@ public class MainWidgetCard : ContentControl
         DependencyProperty.Register(nameof(Icon), typeof(string), typeof(MainWidgetCard), new PropertyMetadata("📌"));
 
     public static readonly DependencyProperty IsLockedProperty =
-        DependencyProperty.Register(nameof(IsLocked), typeof(bool), typeof(MainWidgetCard), new PropertyMetadata(false, OnIsLockedChanged));
+        DependencyProperty.Register(nameof(IsLocked), typeof(bool), typeof(MainWidgetCard), new PropertyMetadata(false, OnModeOrLockChanged));
+
+    public static readonly DependencyProperty IsEditModeProperty =
+        DependencyProperty.Register(nameof(IsEditMode), typeof(bool), typeof(MainWidgetCard), new PropertyMetadata(false, OnModeOrLockChanged));
 
     public static readonly DependencyProperty DefaultWidthProperty =
         DependencyProperty.Register(nameof(DefaultWidth), typeof(double), typeof(MainWidgetCard), new PropertyMetadata(320.0));
@@ -50,6 +53,12 @@ public class MainWidgetCard : ContentControl
     {
         get => (bool)GetValue(IsLockedProperty);
         set => SetValue(IsLockedProperty, value);
+    }
+
+    public bool IsEditMode
+    {
+        get => (bool)GetValue(IsEditModeProperty);
+        set => SetValue(IsEditModeProperty, value);
     }
 
     public double DefaultWidth
@@ -118,7 +127,7 @@ public class MainWidgetCard : ContentControl
         {
             _btnToggleSize.Click += (s, e) =>
             {
-                if (IsLocked) return;
+                if (!IsEditMode || IsLocked) return;
                 ToggleSize();
             };
         }
@@ -127,29 +136,49 @@ public class MainWidgetCard : ContentControl
         {
             _btnClose.Click += (s, e) =>
             {
+                if (!IsEditMode) return;
                 Visibility = Visibility.Collapsed;
                 Closed?.Invoke(this);
             };
         }
 
-        UpdateLockVisuals();
+        UpdateModeVisuals();
     }
 
-    private static void OnIsLockedChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    private static void OnModeOrLockChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         if (d is MainWidgetCard card)
         {
-            card.UpdateLockVisuals();
+            card.UpdateModeVisuals();
         }
     }
 
-    private void UpdateLockVisuals()
+    public void UpdateModeVisuals()
     {
-        if (_headerBar != null) _headerBar.Cursor = IsLocked ? Cursors.Arrow : Cursors.SizeAll;
-        if (_resizeThumb != null) _resizeThumb.Visibility = IsLocked ? Visibility.Collapsed : Visibility.Visible;
-        if (_lockIcon != null) _lockIcon.Visibility = IsLocked ? Visibility.Visible : Visibility.Collapsed;
-        if (_dragGrip != null) _dragGrip.Visibility = IsLocked ? Visibility.Collapsed : Visibility.Visible;
-        if (_btnToggleSize != null) _btnToggleSize.IsEnabled = !IsLocked;
+        if (!IsEditMode)
+        {
+            // View Mode: Completely hide resize grips, close buttons, toggle size buttons, and drag grips
+            if (_headerBar != null) _headerBar.Cursor = Cursors.Arrow;
+            if (_resizeThumb != null) _resizeThumb.Visibility = Visibility.Collapsed;
+            if (_btnClose != null) _btnClose.Visibility = Visibility.Collapsed;
+            if (_btnToggleSize != null) _btnToggleSize.Visibility = Visibility.Collapsed;
+            if (_dragGrip != null) _dragGrip.Visibility = Visibility.Collapsed;
+            if (_lockIcon != null) _lockIcon.Visibility = IsLocked ? Visibility.Visible : Visibility.Collapsed;
+        }
+        else
+        {
+            // Edit Mode: Show controls according to lock state
+            if (_headerBar != null) _headerBar.Cursor = IsLocked ? Cursors.Arrow : Cursors.SizeAll;
+            if (_resizeThumb != null) _resizeThumb.Visibility = IsLocked ? Visibility.Collapsed : Visibility.Visible;
+            if (_btnClose != null) _btnClose.Visibility = Visibility.Visible;
+            if (_btnToggleSize != null)
+            {
+                _btnToggleSize.Visibility = Visibility.Visible;
+                _btnToggleSize.IsEnabled = !IsLocked;
+            }
+            if (_dragGrip != null) _dragGrip.Visibility = IsLocked ? Visibility.Collapsed : Visibility.Visible;
+            if (_lockIcon != null) _lockIcon.Visibility = IsLocked ? Visibility.Visible : Visibility.Collapsed;
+        }
     }
 
     public void BringToFront()
@@ -160,7 +189,7 @@ public class MainWidgetCard : ContentControl
     private void HeaderBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         BringToFront();
-        if (IsLocked) return;
+        if (!IsEditMode || IsLocked) return;
 
         if (e.ClickCount == 2)
         {
@@ -211,7 +240,7 @@ public class MainWidgetCard : ContentControl
 
     private void ResizeThumb_DragDelta(object sender, DragDeltaEventArgs e)
     {
-        if (IsLocked) return;
+        if (!IsEditMode || IsLocked) return;
         BringToFront();
 
         double currentW = ActualWidth > 0 ? ActualWidth : Width;

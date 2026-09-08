@@ -237,9 +237,24 @@
                     <!-- Minimap Box (전체 5개 구간 및 코스가 한눈에 보이는 고화질 미니맵) -->
                     <Border Grid.Row="1" Background="#0F172A" CornerRadius="12" BorderBrush="#334155" BorderThickness="1.5" ClipToBounds="True">
                         <Canvas x:Name="MinimapCanvas" Width="154" Height="620" ClipToBounds="True">
-                            <!-- 5개 구역 배경 레이어 -->
-                            <!-- 1. High-resolution rendered Minimap Background matching the full 3500px track -->
-                            <Image Source="pack://application:,,,/assets/race/race_minimap_bg.png" Width="154" Height="620" IsHitTestVisible="False"/>
+                            <!-- 5개 구역 세련된 다크 테마 벡터 존 인디케이터 (알록달록한 이미지 제거) -->
+                            <StackPanel Width="154" Height="620" IsHitTestVisible="False">
+                                <Border Height="106" Background="#111827" BorderBrush="#1F2937" BorderThickness="0,0,0,1" Padding="6,4">
+                                    <TextBlock Text="🏁 출발" Foreground="#64748B" FontSize="10" FontWeight="Bold"/>
+                                </Border>
+                                <Border Height="133" Background="#0F172A" BorderBrush="#1E293B" BorderThickness="0,0,0,1" Padding="6,4">
+                                    <TextBlock Text="🪵 슬라롬" Foreground="#64748B" FontSize="10" FontWeight="Bold"/>
+                                </Border>
+                                <Border Height="133" Background="#111827" BorderBrush="#1F2937" BorderThickness="0,0,0,1" Padding="6,4">
+                                    <TextBlock Text="🌲 고인돌" Foreground="#64748B" FontSize="10" FontWeight="Bold"/>
+                                </Border>
+                                <Border Height="124" Background="#0F172A" BorderBrush="#1E293B" BorderThickness="0,0,0,1" Padding="6,4">
+                                    <TextBlock Text="🍄 원시림" Foreground="#64748B" FontSize="10" FontWeight="Bold"/>
+                                </Border>
+                                <Border Height="124" Background="#0C192E" Padding="6,4">
+                                    <TextBlock Text="🏆 결승 수로" Foreground="#38BDF8" FontSize="10" FontWeight="Bold"/>
+                                </Border>
+                            </StackPanel>
 
                             <!-- Live dots representing students on minimap -->
                             <Canvas x:Name="MinimapDotsLayer" Width="154" Height="620"/>
@@ -271,11 +286,22 @@
                         <Canvas x:Name="RaceCanvas" Width="680" Height="3500" ClipToBounds="True">
 
                             <!-- ================================================= -->
-                            <!-- UNIFIED HIGH-RESOLUTION RACE TRACK BACKGROUND     -->
+                            <!-- SLEEK DARK-SLATE VECTOR TRACK BACKGROUND          -->
                             <!-- ================================================= -->
-                            <Image Canvas.Left="0" Canvas.Top="0" Width="680" Height="3500"
-                                   Source="pack://application:,,,/assets/race/race_track_bg.png"
-                                   IsHitTestVisible="False"/>
+                            <Rectangle Canvas.Left="0" Canvas.Top="0" Width="680" Height="3500" Fill="#0D1520" IsHitTestVisible="False"/>
+                            <Rectangle Canvas.Left="339" Canvas.Top="160" Width="2" Height="3100" Fill="#1E293B" Opacity="0.5" IsHitTestVisible="False"/>
+                            
+                            <!-- Track Distance Guide Ticks -->
+                            <TextBlock Canvas.Left="15" Canvas.Top="500" Text="— 500m —" Foreground="#334155" FontSize="11" FontWeight="Bold" IsHitTestVisible="False"/>
+                            <TextBlock Canvas.Left="15" Canvas.Top="1000" Text="— 1000m —" Foreground="#334155" FontSize="11" FontWeight="Bold" IsHitTestVisible="False"/>
+                            <TextBlock Canvas.Left="15" Canvas.Top="1500" Text="— 1500m —" Foreground="#334155" FontSize="11" FontWeight="Bold" IsHitTestVisible="False"/>
+                            <TextBlock Canvas.Left="15" Canvas.Top="2000" Text="— 2000m —" Foreground="#334155" FontSize="11" FontWeight="Bold" IsHitTestVisible="False"/>
+                            <TextBlock Canvas.Left="15" Canvas.Top="2500" Text="— 2500m —" Foreground="#334155" FontSize="11" FontWeight="Bold" IsHitTestVisible="False"/>
+                            <TextBlock Canvas.Left="15" Canvas.Top="3000" Text="— 3000m —" Foreground="#334155" FontSize="11" FontWeight="Bold" IsHitTestVisible="False"/>
+                            
+                            <!-- Finish Line Water Basin Base -->
+                            <Rectangle Canvas.Left="260" Canvas.Top="3320" Width="160" Height="140" Fill="#0C2548" RadiusX="12" RadiusY="12" IsHitTestVisible="False"/>
+                            <Border Canvas.Left="260" Canvas.Top="3320" Width="160" Height="140" BorderBrush="#0284C7" BorderThickness="2" CornerRadius="12" IsHitTestVisible="False"/>
 
                             <!-- ================================================= -->
                             <!-- START BANNER (출발 축하 페스티벌 아치 배너)         -->
