@@ -26,21 +26,21 @@
                         <Border Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="12"
+                                CornerRadius="14"
                                 SnapsToDevicePixels="True">
                             <Border.Effect>
-                                <DropShadowEffect BlurRadius="16" Opacity="0.08" ShadowDepth="2" Color="#000000"/>
+                                <DropShadowEffect BlurRadius="20" Opacity="0.06" ShadowDepth="2" Color="#3E3835"/>
                             </Border.Effect>
                             <Grid>
                                 <Grid.RowDefinitions>
-                                    <RowDefinition Height="36" />
+                                    <RowDefinition Height="38" />
                                     <RowDefinition Height="*" />
                                 </Grid.RowDefinitions>
 
                                 <!-- Header Bar -->
                                 <Border Grid.Row="0" x:Name="PART_HeaderBar"
                                         Background="{DynamicResource BeigeCardInner}"
-                                        CornerRadius="11,11,0,0"
+                                        CornerRadius="13,13,0,0"
                                         BorderBrush="{DynamicResource BeigeCardBorder}"
                                         BorderThickness="0,0,0,1"
                                         Cursor="SizeAll">
@@ -356,13 +356,92 @@
                 </Grid.RowDefinitions>
 
                 <!-- Global Top Header Bar -->
-                <Border Grid.Row="0" Margin="0,0,0,10" Padding="4,0,4,8" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="0,0,0,1">
+                <Border Grid.Row="0" Margin="0,0,0,12" Padding="4,0,4,10" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="0,0,0,1">
                     <Grid>
-                        <TextBlock x:Name="TxtViewTitle" Text="📅 오늘의 일과 &amp; 급식" FontSize="17" FontWeight="Bold" Foreground="{DynamicResource BeigeTextMain}" VerticalAlignment="Center"/>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock x:Name="TxtViewTitle" Text="📅 오늘의 일과 &amp; 급식" FontSize="17" FontWeight="Bold" Foreground="{DynamicResource BeigeTextMain}"/>
+                            <TextBlock Text="초등 교사용 올인원 스마트 교실 대시보드" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}" Margin="1,2,0,0"/>
+                        </StackPanel>
                         <Button x:Name="BtnCheckVersion" Visibility="Collapsed" />
 
-                        <!-- Top Right Controls for Tab 0: Widget Layout & Sizing -->
+                        <!-- Top Right Controls for Tab 0: Fast Classroom Tools Dock & Widget Sizing -->
                         <StackPanel x:Name="HeaderWidgetControls" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <!-- Fast 1-Click Classroom Tools Dock (Quick Actions) -->
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
+                                <Button Click="BtnLaunchBoard_Click"
+                                        Background="{DynamicResource BeigeAccent}"
+                                        Foreground="White"
+                                        BorderThickness="0"
+                                        Padding="10,5"
+                                        Margin="0,0,5,0"
+                                        FontSize="11"
+                                        FontWeight="Bold"
+                                        Cursor="Hand"
+                                        ToolTip="학생용 화면(모니터 2) 놀보드 열기 (F2)">
+                                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="📺 " FontSize="12" VerticalAlignment="Center"/>
+                                        <TextBlock Text="놀보드 F2" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+
+                                <Button Click="BtnLaunchDrawing_Click"
+                                        Background="{DynamicResource BeigeCardInner}"
+                                        Foreground="{DynamicResource BeigeTextMain}"
+                                        BorderBrush="{DynamicResource BeigeCardBorder}"
+                                        BorderThickness="1"
+                                        Padding="8,5"
+                                        Margin="0,0,5,0"
+                                        FontSize="11"
+                                        FontWeight="SemiBold"
+                                        Cursor="Hand"
+                                        ToolTip="화면 일시정지 및 판서 모드 (Alt+2)">
+                                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="✏️ " FontSize="11" VerticalAlignment="Center"/>
+                                        <TextBlock Text="판서 Alt+2" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+
+                                <Button Click="BtnLaunchTimer_Click"
+                                        Background="{DynamicResource BeigeCardInner}"
+                                        Foreground="{DynamicResource BeigeTextMain}"
+                                        BorderBrush="{DynamicResource BeigeCardBorder}"
+                                        BorderThickness="1"
+                                        Padding="8,5"
+                                        Margin="0,0,5,0"
+                                        FontSize="11"
+                                        FontWeight="SemiBold"
+                                        Cursor="Hand"
+                                        ToolTip="교실 집중 타이머 &amp; 차임벨 (Alt+3)">
+                                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="⏱️ " FontSize="11" VerticalAlignment="Center"/>
+                                        <TextBlock Text="타이머 Alt+3" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+
+                                <Button Click="BtnLaunchPicker_Click"
+                                        Background="{DynamicResource BeigeCardInner}"
+                                        Foreground="{DynamicResource BeigeTextMain}"
+                                        BorderBrush="{DynamicResource BeigeCardBorder}"
+                                        BorderThickness="1"
+                                        Padding="8,5"
+                                        Margin="0,0,8,0"
+                                        FontSize="11"
+                                        FontWeight="SemiBold"
+                                        Cursor="Hand"
+                                        ToolTip="동물 아바타 발표자 추첨 레이스 (Alt+8)">
+                                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="🎲 " FontSize="11" VerticalAlignment="Center"/>
+                                        <TextBlock Text="추첨 Alt+8" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+
+                                <Border Width="1" Height="20" Background="{DynamicResource BeigeCardBorder}" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                            </StackPanel>
+
                             <Button x:Name="BtnOpenTemplateShare"
                                     Click="BtnLaunchTemplateShare_Click"
                                     Background="{DynamicResource BeigeCardInner}"
@@ -378,7 +457,7 @@
                                 <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                     <TextBlock Text="📋 " FontSize="11" VerticalAlignment="Center"/>
-                                    <TextBlock Text="양식·데이터 공유" VerticalAlignment="Center"/>
+                                    <TextBlock Text="양식·공유" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
 
@@ -414,7 +493,7 @@
                                 <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                     <TextBlock Text="📐 " FontSize="12" VerticalAlignment="Center"/>
-                                    <TextBlock Text="위젯 크기·배치 설정" VerticalAlignment="Center"/>
+                                    <TextBlock Text="위젯 설정" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
                         </StackPanel>
