@@ -201,7 +201,7 @@ public partial class App : Application
                                 }
                                 else
                                 {
-                                    displayManager.MoveToStudentMonitor(timerWindow, maximize: false);
+                                    timerWindow.PositionToDefaultMonitor();
                                     timerWindow.Show();
                                     timerWindow.Activate();
                                     HudNotificationWindow.Instance.ShowToast("⏱️", "교실 집중 타이머 (Alt+3)");

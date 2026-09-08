@@ -381,9 +381,9 @@ public partial class StudentPickerWindow : Window
         // Upper Canyon Chicane: Clockwise Rotating Log
         AddRotatingLog(275, 680, 110, 22, 2.2, 15);
 
-        // Fossil Mesa Twin Rapids Pebble Bumpers (시원하게 통과할 수 있도록 소형 조약돌 범퍼 배치 - 무병목 보장)
-        AddBumper(195, 1540, 13, "cartoon_pebble_bumper.png");
-        AddBumper(485, 1540, 13, "cartoon_pebble_bumper.png");
+        // Fossil Mesa Twin Rapids Stone Age Relic Bumpers (선사시대 유물 범퍼 배치 - 무병목 보장)
+        AddBumper(195, 1540, 15, "cartoon_handaxe.png");
+        AddBumper(485, 1540, 15, "cartoon_chipped_stone.png");
 
         // Lower Mushroom Forest: Heavy Rotating Log
         AddRotatingLog(380, 2180, 110, 22, -2.0, 0);
@@ -838,6 +838,21 @@ public partial class StudentPickerWindow : Window
                     r.Y = 3260.0 - r.Radius;
                     r.Vy = -Math.Abs(r.Vy) * 0.7 - 45.0;
                     r.Vx = Math.Min(r.Vx - 60.0, -50.0);
+                }
+            }
+
+            // Smooth corner rounding at 80px canyon mouth (Y = 3245 ~ 3275) to guarantee zero corner jams
+            if (r.Y >= 3245.0 && r.Y <= 3275.0)
+            {
+                if (r.X >= 280.0 && r.X <= 305.0)
+                {
+                    r.Vx = Math.Max(r.Vx + 80.0, 60.0);
+                    r.Vy = Math.Max(r.Vy, 75.0);
+                }
+                else if (r.X >= 375.0 && r.X <= 400.0)
+                {
+                    r.Vx = Math.Min(r.Vx - 80.0, -60.0);
+                    r.Vy = Math.Max(r.Vy, 75.0);
                 }
             }
 

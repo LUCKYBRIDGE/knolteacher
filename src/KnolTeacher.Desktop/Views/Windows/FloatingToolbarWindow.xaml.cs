@@ -89,7 +89,7 @@ public partial class FloatingToolbarWindow : Window
         if (_timerWindow.IsVisible) _timerWindow.Hide();
         else
         {
-            _displayManager?.MoveToStudentMonitor(_timerWindow, maximize: false);
+            _timerWindow.PositionToDefaultMonitor();
             _timerWindow.Show();
             _timerWindow.Activate();
         }

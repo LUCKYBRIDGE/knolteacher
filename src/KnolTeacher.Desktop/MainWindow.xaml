@@ -394,7 +394,43 @@
                                             </ListBox.ItemContainerStyle>
                                             <ListBox.ItemTemplate>
                                                 <DataTemplate>
-                                                    <Border Background="{DynamicResource BeigeCardInner}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="8" Padding="9,6">
+                                                    <Border Background="{DynamicResource BeigeCardInner}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="8" Padding="9,6" Cursor="Hand" ToolTip="우클릭하여 과목명/태그/타이머를 빠르게 수정할 수 있습니다 (더블클릭 시 바로 수정)">
+                                                        <Border.ContextMenu>
+                                                            <ContextMenu>
+                                                                <MenuItem Header="✏️ 과목명 직접 수정..." Click="MenuEditSubject_Click"/>
+                                                                <Separator/>
+                                                                <MenuItem Header="📚 빠른 과목 변경">
+                                                                    <MenuItem Header="국어" Click="MenuQuickSubject_Click" Tag="국어"/>
+                                                                    <MenuItem Header="수학" Click="MenuQuickSubject_Click" Tag="수학"/>
+                                                                    <MenuItem Header="사회" Click="MenuQuickSubject_Click" Tag="사회"/>
+                                                                    <MenuItem Header="과학" Click="MenuQuickSubject_Click" Tag="과학"/>
+                                                                    <MenuItem Header="영어" Click="MenuQuickSubject_Click" Tag="영어"/>
+                                                                    <MenuItem Header="체육" Click="MenuQuickSubject_Click" Tag="체육"/>
+                                                                    <MenuItem Header="음악" Click="MenuQuickSubject_Click" Tag="음악"/>
+                                                                    <MenuItem Header="미술" Click="MenuQuickSubject_Click" Tag="미술"/>
+                                                                    <MenuItem Header="도덕" Click="MenuQuickSubject_Click" Tag="도덕"/>
+                                                                    <MenuItem Header="실과" Click="MenuQuickSubject_Click" Tag="실과"/>
+                                                                    <Separator/>
+                                                                    <MenuItem Header="창체 (창의적 체험활동)" Click="MenuQuickSubject_Click" Tag="창체"/>
+                                                                    <MenuItem Header="동아리" Click="MenuQuickSubject_Click" Tag="동아리"/>
+                                                                    <MenuItem Header="자율 / 안전" Click="MenuQuickSubject_Click" Tag="자율"/>
+                                                                    <MenuItem Header="진로활동" Click="MenuQuickSubject_Click" Tag="진로"/>
+                                                                </MenuItem>
+                                                                <MenuItem Header="🏷️ 수업 구분(태그) 설정">
+                                                                    <MenuItem Header="담임 수업" Click="MenuQuickTag_Click" Tag="담임"/>
+                                                                    <MenuItem Header="전담 수업" Click="MenuQuickTag_Click" Tag="전담"/>
+                                                                    <MenuItem Header="교과 교실 (특별실)" Click="MenuQuickTag_Click" Tag="특별실"/>
+                                                                    <MenuItem Header="온라인 / 원격" Click="MenuQuickTag_Click" Tag="원격"/>
+                                                                    <Separator/>
+                                                                    <MenuItem Header="태그 없음" Click="MenuQuickTag_Click" Tag=""/>
+                                                                </MenuItem>
+                                                                <Separator/>
+                                                                <MenuItem Header="⏱️ 이 교시 40분 타이머 바로 실행" Click="MenuItemTimer_Click"/>
+                                                                <MenuItem Header="🔔 이 교시 예비 알람 토글" Click="MenuItemToggleAlarm_Click"/>
+                                                                <Separator/>
+                                                                <MenuItem Header="🧹 빈 시간으로 비우기" Click="MenuClearSubject_Click"/>
+                                                            </ContextMenu>
+                                                        </Border.ContextMenu>
                                                         <Grid>
                                                             <Grid.ColumnDefinitions>
                                                                 <!-- Col 0: Badge (1교시, 점심 등) -->

@@ -561,7 +561,7 @@ public partial class MainWindow : FluentWindow
         if (_timerWindow.IsVisible) _timerWindow.Hide();
         else
         {
-            _displayManager.MoveToStudentMonitor(_timerWindow, maximize: false);
+            _timerWindow.PositionToDefaultMonitor();
             _timerWindow.Show();
             _timerWindow.Activate();
         }
@@ -587,9 +587,115 @@ public partial class MainWindow : FluentWindow
         if (_timerWindow.IsVisible) _timerWindow.Hide();
         else
         {
-            _displayManager.MoveToStudentMonitor(_timerWindow, maximize: false);
+            _timerWindow.PositionToDefaultMonitor();
             _timerWindow.Show();
             _timerWindow.Activate();
+        }
+    }
+
+    private PeriodItem? GetPeriodItemFromMenuItem(object sender)
+    {
+        if (sender is System.Windows.Controls.MenuItem menuItem)
+        {
+            DependencyObject current = menuItem;
+            while (current != null)
+            {
+                if (current is ContextMenu cm)
+                {
+                    if (cm.PlacementTarget is FrameworkElement fe && fe.DataContext is PeriodItem item)
+                    {
+                        return item;
+                    }
+                    break;
+                }
+                current = LogicalTreeHelper.GetParent(current) ?? VisualTreeHelper.GetParent(current);
+            }
+        }
+        return null;
+    }
+
+    private void MenuEditSubject_Click(object sender, RoutedEventArgs e)
+    {
+        var item = GetPeriodItemFromMenuItem(sender);
+        if (item != null && !item.IsLunch)
+        {
+            var dlg = new PromptInputDialog($"{item.Name} 과목 수정", $"{item.Name} 과목명을 입력하세요:", item.Subject)
+            {
+                Owner = this
+            };
+
+            if (dlg.ShowDialog() == true && !string.IsNullOrWhiteSpace(dlg.InputText))
+            {
+                _timetableService.UpdateTodayPeriodSubject(item.Period - 1, dlg.InputText, item.Tag);
+                RefreshTimetable();
+                HudNotificationWindow.Instance.ShowToast("✏️", $"{item.Name} 과목이 '{dlg.InputText}'(으)로 변경되었습니다.");
+            }
+        }
+    }
+
+    private void MenuQuickSubject_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is System.Windows.Controls.MenuItem mi && mi.Tag is string subject && !string.IsNullOrWhiteSpace(subject))
+        {
+            var item = GetPeriodItemFromMenuItem(sender);
+            if (item != null && !item.IsLunch)
+            {
+                _timetableService.UpdateTodayPeriodSubject(item.Period - 1, subject, item.Tag);
+                RefreshTimetable();
+                HudNotificationWindow.Instance.ShowToast("📚", $"{item.Name} 과목이 '{subject}'(으)로 변경되었습니다.");
+            }
+        }
+    }
+
+    private void MenuQuickTag_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is System.Windows.Controls.MenuItem mi && mi.Tag is string tag)
+        {
+            var item = GetPeriodItemFromMenuItem(sender);
+            if (item != null && !item.IsLunch)
+            {
+                _timetableService.UpdateTodayPeriodSubject(item.Period - 1, item.Subject, tag);
+                RefreshTimetable();
+                string tagMsg = string.IsNullOrWhiteSpace(tag) ? "태그가 해제되었습니다." : $"'{tag}' 태그로 설정되었습니다.";
+                HudNotificationWindow.Instance.ShowToast("🏷️", $"{item.Name} {tagMsg}");
+            }
+        }
+    }
+
+    private void MenuItemTimer_Click(object sender, RoutedEventArgs e)
+    {
+        var item = GetPeriodItemFromMenuItem(sender);
+        if (item != null)
+        {
+            if (_timerWindow.IsVisible) _timerWindow.Hide();
+            else
+            {
+                _timerWindow.PositionToDefaultMonitor();
+                _timerWindow.Show();
+                _timerWindow.Activate();
+            }
+        }
+    }
+
+    private void MenuItemToggleAlarm_Click(object sender, RoutedEventArgs e)
+    {
+        var item = GetPeriodItemFromMenuItem(sender);
+        if (item != null && !item.IsLunch)
+        {
+            _timetableService.TogglePeriodAlarm(item.Period);
+            RefreshTimetable();
+            HudNotificationWindow.Instance.ShowToast(item.AlarmEnabled ? "🔔" : "🔕", $"{item.Name} 알람 상태가 변경되었습니다.");
+        }
+    }
+
+    private void MenuClearSubject_Click(object sender, RoutedEventArgs e)
+    {
+        var item = GetPeriodItemFromMenuItem(sender);
+        if (item != null && !item.IsLunch)
+        {
+            _timetableService.UpdateTodayPeriodSubject(item.Period - 1, "-", "");
+            RefreshTimetable();
+            HudNotificationWindow.Instance.ShowToast("🧹", $"{item.Name} 과목이 비워졌습니다.");
         }
     }
 
@@ -834,7 +940,7 @@ public partial class MainWindow : FluentWindow
         if (_timerWindow.IsVisible) _timerWindow.Hide();
         else
         {
-            _displayManager.MoveToStudentMonitor(_timerWindow, maximize: false);
+            _timerWindow.PositionToDefaultMonitor();
             _timerWindow.Show();
             _timerWindow.Activate();
         }

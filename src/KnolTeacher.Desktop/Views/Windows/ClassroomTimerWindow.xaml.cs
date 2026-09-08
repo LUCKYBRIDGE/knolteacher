@@ -17,12 +17,14 @@ public partial class ClassroomTimerWindow : Window
     private int _initialSeconds = 300;
     private bool _isRunning = false;
     private bool _isPieMode = false;
+    private readonly IConfigService? _configService;
     private int _currentMonitorIndex = 1;
 
-    public ClassroomTimerWindow(ISoundService soundService, IDisplayManager? displayManager = null)
+    public ClassroomTimerWindow(ISoundService soundService, IDisplayManager? displayManager = null, IConfigService? configService = null)
     {
         _soundService = soundService;
         _displayManager = displayManager ?? (Application.Current as App)?.Services?.GetService(typeof(IDisplayManager)) as IDisplayManager;
+        _configService = configService ?? (Application.Current as App)?.Services?.GetService(typeof(IConfigService)) as IConfigService;
         InitializeComponent();
 
         _timer = new DispatcherTimer
@@ -40,8 +42,17 @@ public partial class ClassroomTimerWindow : Window
     {
         if (_displayManager != null)
         {
-            _currentMonitorIndex = _displayManager.RecommendedStudentMonitorIndex;
-            _displayManager.MoveToStudentMonitor(this, maximize: false);
+            int preferred = _configService?.TimerTargetMonitorIndex ?? 1;
+            if (preferred == 1 && _displayManager.ScreenCount >= 2)
+            {
+                _currentMonitorIndex = 1;
+                _displayManager.MoveToStudentMonitor(this, maximize: false);
+            }
+            else
+            {
+                _currentMonitorIndex = 0;
+                _displayManager.MoveWindowToScreen(this, 0, maximize: false);
+            }
             UpdateMonitorButtonText();
         }
     }
@@ -60,6 +71,12 @@ public partial class ClassroomTimerWindow : Window
         _currentMonitorIndex = _currentMonitorIndex == 1 ? 0 : 1;
         _displayManager.MoveWindowToScreen(this, _currentMonitorIndex, maximize: false);
         UpdateMonitorButtonText();
+
+        if (_configService != null)
+        {
+            _configService.TimerTargetMonitorIndex = _currentMonitorIndex;
+            _configService.SaveTimerSettings();
+        }
     }
 
     private void Timer_Tick(object? sender, EventArgs e)

@@ -18,6 +18,7 @@ public interface IConfigService
     ChecklistStore ChecklistStore { get; set; }
     AutoNoticePreset AutoNoticePreset { get; set; }
     BoardSetStore BoardSetStore { get; set; }
+    int TimerTargetMonitorIndex { get; set; }
 
     void LoadAll();
     void SaveNeisConfig();
@@ -28,6 +29,7 @@ public interface IConfigService
     void SaveChecklistStore();
     void SaveAutoNoticePreset();
     void SaveBoardSetStore();
+    void SaveTimerSettings();
 }
 
 public class ConfigService : IConfigService
@@ -48,6 +50,7 @@ public class ConfigService : IConfigService
     public ChecklistStore ChecklistStore { get; set; } = new();
     public AutoNoticePreset AutoNoticePreset { get; set; } = new();
     public BoardSetStore BoardSetStore { get; set; } = new();
+    public int TimerTargetMonitorIndex { get; set; } = 1;
 
     public ConfigService()
     {
@@ -72,6 +75,7 @@ public class ConfigService : IConfigService
         LoadChecklistStore();
         LoadAutoNoticePreset();
         LoadBoardSetStore();
+        LoadTimerSettings();
     }
 
     private void LoadNeisConfig()
@@ -350,6 +354,37 @@ public class ConfigService : IConfigService
         {
             string path = Path.Combine(ConfigDir, "board_set_store.json");
             string json = JsonSerializer.Serialize(BoardSetStore, _jsonOptions);
+            File.WriteAllText(path, json);
+        }
+        catch { }
+    }
+
+    private void LoadTimerSettings()
+    {
+        string path = Path.Combine(ConfigDir, "timer_settings.json");
+        if (File.Exists(path))
+        {
+            try
+            {
+                string json = File.ReadAllText(path);
+                using var doc = JsonDocument.Parse(json);
+                if (doc.RootElement.TryGetProperty("target_monitor_index", out var elem))
+                {
+                    TimerTargetMonitorIndex = elem.GetInt32();
+                    return;
+                }
+            }
+            catch { }
+        }
+        TimerTargetMonitorIndex = 1; // Default: 1 (모니터 2 / 학생용 전자칠판 권장)
+    }
+
+    public void SaveTimerSettings()
+    {
+        try
+        {
+            string path = Path.Combine(ConfigDir, "timer_settings.json");
+            string json = JsonSerializer.Serialize(new { target_monitor_index = TimerTargetMonitorIndex }, _jsonOptions);
             File.WriteAllText(path, json);
         }
         catch { }
