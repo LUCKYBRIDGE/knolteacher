@@ -4,7 +4,7 @@
         Title="📖 나이스(NEIS) 평어 일괄입력 상세 사용 가이드"
         Height="640" Width="760"
         WindowStartupLocation="CenterOwner"
-        Background="#F8F5EE">
+        Background="{DynamicResource BeigeAppBg}">
     <Grid Margin="20">
         <Grid.RowDefinitions>
             <!-- Header -->

@@ -5,7 +5,7 @@
         MinHeight="550" MinWidth="480"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
-        Background="#F8F5EE">
+        Background="{DynamicResource BeigeAppBg}">
     <Grid Margin="18,16,18,16">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -21,7 +21,7 @@
             <StackPanel>
                 <!-- Title -->
                 <TextBlock Text="예약 제목" FontWeight="Bold" FontSize="12" Foreground="#44403C" Margin="0,0,0,4"/>
-                <TextBox x:Name="TbTitle" Height="34" FontSize="13" Padding="8,4" Margin="0,0,0,14" Background="White" BorderBrush="#DBCDBA"/>
+                <TextBox x:Name="TbTitle" Height="34" FontSize="13" Padding="8,4" Margin="0,0,0,14" Background="White" BorderBrush="{DynamicResource BeigeCardBorder}"/>
 
                 <!-- Action Type -->
                 <TextBlock Text="실행 동작" FontWeight="Bold" FontSize="12" Foreground="#44403C" Margin="0,0,0,4"/>
@@ -79,7 +79,7 @@
 
                 <!-- Memo -->
                 <TextBlock Text="메모 (선택)" FontWeight="Bold" FontSize="12" Foreground="#44403C" Margin="0,0,0,4"/>
-                <TextBox x:Name="TbMemo" Height="50" TextWrapping="Wrap" AcceptsReturn="True" Padding="8,4" Background="White" BorderBrush="#DBCDBA" Margin="0,0,0,10"/>
+                <TextBox x:Name="TbMemo" Height="50" TextWrapping="Wrap" AcceptsReturn="True" Padding="8,4" Background="White" BorderBrush="{DynamicResource BeigeCardBorder}" Margin="0,0,0,10"/>
             </StackPanel>
         </ScrollViewer>
 

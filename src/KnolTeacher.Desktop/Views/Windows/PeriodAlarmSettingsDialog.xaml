@@ -5,7 +5,7 @@
         Height="700" Width="820"
         MinHeight="580" MinWidth="720"
         WindowStartupLocation="CenterOwner"
-        Background="#F8F5EE">
+        Background="{DynamicResource BeigeAppBg}">
     <Grid Margin="20">
         <Grid.RowDefinitions>
             <!-- Header & System Guide -->

@@ -4,7 +4,7 @@
         Title="⌨️ 단축키 맞춤 커스텀 설정"
         Height="580" Width="680"
         WindowStartupLocation="CenterOwner"
-        Background="#F8F5EE">
+        Background="{DynamicResource BeigeAppBg}">
     <Grid Margin="18">
         <Grid.RowDefinitions>
             <!-- Header -->
@@ -54,7 +54,7 @@
                                     </ComboBox>
 
                                     <!-- Key Input -->
-                                    <TextBox Grid.Column="3" Text="{Binding Key}" Width="65" Height="30" FontSize="12" FontWeight="Bold" FontFamily="Consolas" TextAlignment="Center" VerticalContentAlignment="Center" Background="White" BorderBrush="#DBCDBA"/>
+                                    <TextBox Grid.Column="3" Text="{Binding Key}" Width="65" Height="30" FontSize="12" FontWeight="Bold" FontFamily="Consolas" TextAlignment="Center" VerticalContentAlignment="Center" Background="White" BorderBrush="{DynamicResource BeigeCardBorder}"/>
                                 </Grid>
                             </Border>
                         </DataTemplate>

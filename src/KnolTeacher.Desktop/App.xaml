@@ -8,22 +8,22 @@
                 <ResourceDictionary Source="pack://application:,,,/Wpf.Ui;component/Resources/Wpf.Ui.xaml" />
             </ResourceDictionary.MergedDictionaries>
 
-            <!-- 🌾 KnolTeacher Warm Beige Theme Palette -->
-            <SolidColorBrush x:Key="BeigeAppBg" Color="#F8F5EE" />
-            <SolidColorBrush x:Key="BeigeSidebarBg" Color="#ECE3D4" />
-            <SolidColorBrush x:Key="BeigeSidebarHover" Color="#DFD2BE" />
-            <SolidColorBrush x:Key="BeigeAccent" Color="#B45309" />
-            <SolidColorBrush x:Key="BeigeAccentHover" Color="#92400E" />
-            <SolidColorBrush x:Key="BeigeAccentSoft" Color="#FEF3C7" />
+            <!-- 💎 KnolTeacher Studio Clean & Indigo Palette (Default) -->
+            <SolidColorBrush x:Key="BeigeAppBg" Color="#F8FAFC" />
+            <SolidColorBrush x:Key="BeigeSidebarBg" Color="#F1F5F9" />
+            <SolidColorBrush x:Key="BeigeSidebarHover" Color="#E2E8F0" />
+            <SolidColorBrush x:Key="BeigeAccent" Color="#2563EB" />
+            <SolidColorBrush x:Key="BeigeAccentHover" Color="#1D4ED8" />
+            <SolidColorBrush x:Key="BeigeAccentSoft" Color="#EFF6FF" />
             <SolidColorBrush x:Key="BeigeCardBg" Color="#FFFFFF" />
-            <SolidColorBrush x:Key="BeigeCardInner" Color="#FCFBF9" />
-            <SolidColorBrush x:Key="BeigeCardBorder" Color="#DBCDBA" />
-            <SolidColorBrush x:Key="BeigeTextMain" Color="#1C1917" />
-            <SolidColorBrush x:Key="BeigeTextSub" Color="#44403C" />
-            <SolidColorBrush x:Key="BeigeTextMuted" Color="#78716C" />
-            <SolidColorBrush x:Key="BeigeLunchBg" Color="#FBF7F0" />
-            <SolidColorBrush x:Key="BeigeLunchBorder" Color="#E7DAC7" />
-            <SolidColorBrush x:Key="BeigeLunchText" Color="#92400E" />
+            <SolidColorBrush x:Key="BeigeCardInner" Color="#F8FAFC" />
+            <SolidColorBrush x:Key="BeigeCardBorder" Color="#E2E8F0" />
+            <SolidColorBrush x:Key="BeigeTextMain" Color="#0F172A" />
+            <SolidColorBrush x:Key="BeigeTextSub" Color="#334155" />
+            <SolidColorBrush x:Key="BeigeTextMuted" Color="#64748B" />
+            <SolidColorBrush x:Key="BeigeLunchBg" Color="#FFFBEB" />
+            <SolidColorBrush x:Key="BeigeLunchBorder" Color="#FDE68A" />
+            <SolidColorBrush x:Key="BeigeLunchText" Color="#B45309" />
             <BooleanToVisibilityConverter x:Key="BoolToVisConverter" />
 
             <!-- Global Font: Malgun Gothic for crisp Korean typography -->

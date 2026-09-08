@@ -248,6 +248,20 @@ public partial class MainWindow : FluentWindow
         {
             TxtBigClockTime.Text = DateTime.Now.ToString("HH:mm:ss");
             TxtBigClockDate.Text = DateTime.Now.ToString("yyyy년 M월 d일 (ddd)");
+
+            if (TxtHeaderGreeting != null)
+            {
+                int hour = DateTime.Now.Hour;
+                string greeting = hour switch
+                {
+                    < 9 => "활기찬 아침입니다! 🌅",
+                    < 12 => "즐거운 오전 수업 시간입니다! 🌿",
+                    < 13 => "맛있는 점심시간입니다! 🍱",
+                    < 17 => "보람찬 오후 시간입니다! ✨",
+                    _ => "오늘 하루도 수고 많으셨습니다! 🌙"
+                };
+                TxtHeaderGreeting.Text = greeting;
+            }
         }
         catch { }
     }
@@ -271,12 +285,30 @@ public partial class MainWindow : FluentWindow
             TxtCurrentPeriodStatus.Text = $"🟢 현재: {cur.Name} ({cur.Subject}) - 잔여 {rem}분";
             TxtCurrentPeriodStatus.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#059669"));
             TxtMiniClockPeriod.Text = cur.Name;
+
+            if (TxtLivePeriodStatus != null)
+            {
+                TxtLivePeriodStatus.Text = $"{cur.Name} ({cur.Subject}) • {rem}분 남음";
+                DotLiveStatus.Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#10B981"));
+                TxtLivePeriodStatus.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#047857"));
+                PillLivePeriodStatus.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#ECFDF5"));
+                PillLivePeriodStatus.BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#A7F3D0"));
+            }
         }
         else
         {
             TxtCurrentPeriodStatus.Text = "☕ 현재: 쉬는 시간 / 수업 준비 중";
             TxtCurrentPeriodStatus.Foreground = (SolidColorBrush)FindResource("BeigeAccent");
             TxtMiniClockPeriod.Text = "쉬는 시간";
+
+            if (TxtLivePeriodStatus != null)
+            {
+                TxtLivePeriodStatus.Text = "☕ 쉬는 시간 / 수업 준비";
+                DotLiveStatus.Fill = (Brush)FindResource("BeigeAccent");
+                TxtLivePeriodStatus.Foreground = (Brush)FindResource("BeigeAccent");
+                PillLivePeriodStatus.Background = (Brush)FindResource("BeigeAccentSoft");
+                PillLivePeriodStatus.BorderBrush = (Brush)FindResource("BeigeCardBorder");
+            }
         }
     }
 
@@ -805,6 +837,12 @@ public partial class MainWindow : FluentWindow
                 NavBtnNeis.Background = accentBrush;
                 NavBtnNeis.Foreground = Brushes.White;
                 TxtViewTitle.Text = "📝 나이스 평어 일괄입력 도구";
+            }
+
+            // Tab 0 specific widget customization button visibility
+            if (BtnToggleWidgetCustomize != null)
+            {
+                BtnToggleWidgetCustomize.Visibility = (index == 0) ? Visibility.Visible : Visibility.Collapsed;
             }
         }
     }
