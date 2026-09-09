@@ -16,6 +16,7 @@
     <SelfContained>true</SelfContained>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
     <ApplicationIcon>assets\app_icon.ico</ApplicationIcon>
     <Version>3.0.6</Version>
     <AssemblyVersion>3.0.6.0</AssemblyVersion>

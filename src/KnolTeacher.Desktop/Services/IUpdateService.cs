@@ -7,12 +7,13 @@ namespace KnolTeacher.Desktop.Services;
 public class UpdateInfo
 {
     public bool HasUpdate { get; set; }
-    public string CurrentVersion { get; set; } = "v3.0.2";
+    public string CurrentVersion { get; set; } = "v3.0.6";
     public string LatestVersion { get; set; } = string.Empty;
     public string ReleaseTitle { get; set; } = string.Empty;
     public string ReleaseNotes { get; set; } = string.Empty;
     public string DownloadUrl { get; set; } = string.Empty;
     public string AssetName { get; set; } = string.Empty;
+    public string AssetDigest { get; set; } = string.Empty;
     public long AssetSize { get; set; }
     public string HtmlUrl { get; set; } = string.Empty;
 }
