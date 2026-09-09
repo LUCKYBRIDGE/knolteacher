@@ -849,40 +849,25 @@ public partial class MainWindow : FluentWindow
                 overrideItem.UseGlobal = false;
 
                 string toastMsg = "";
-                switch (mode)
+                if (mode == "travel" || mode == "travel_10")
                 {
-                    case "travel_10":
-                        overrideItem.LeadStartMinutes = 10;
-                        overrideItem.LeadStartSeconds = 0;
-                        overrideItem.LeadEndMinutes = 3;
-                        overrideItem.LeadEndSeconds = 0;
-                        overrideItem.PreNoticeText = $"🎒 다음 시간은 {item.Subject} 이동수업입니다! 이동시간을 고려하여 교과서와 준비물을 챙겨 전담실로 조용히 이동합시다.";
-                        toastMsg = $"{item.Name} 이동수업(10분 전) 알람으로 설정되었습니다.";
-                        break;
-                    case "special_7":
-                        overrideItem.LeadStartMinutes = 7;
-                        overrideItem.LeadStartSeconds = 0;
-                        overrideItem.LeadEndMinutes = 2;
-                        overrideItem.LeadEndSeconds = 0;
-                        overrideItem.PreNoticeText = $"🏃 다음 시간은 {item.Subject} 특별실 수업입니다! 필요한 준비물을 챙겨 특별실로 이동해 주세요.";
-                        toastMsg = $"{item.Name} 특별실 이동(7분 전) 알람으로 설정되었습니다.";
-                        break;
-                    case "specialist_5":
-                        overrideItem.LeadStartMinutes = 5;
-                        overrideItem.LeadStartSeconds = 0;
-                        overrideItem.LeadEndMinutes = 0;
-                        overrideItem.LeadEndSeconds = 0;
-                        overrideItem.PreNoticeText = $"👨‍🏫 다음 시간은 {item.Subject} 전담 선생님 수업입니다! 바르게 앉아 전담 선생님을 맞이합시다.";
-                        toastMsg = $"{item.Name} 전담 수업(5분 전) 알람으로 설정되었습니다.";
-                        break;
-                    case "regular_5":
-                        overrideItem.LeadStartMinutes = 5;
-                        overrideItem.LeadStartSeconds = 0;
-                        overrideItem.LeadEndMinutes = 3;
-                        overrideItem.LeadEndSeconds = 0;
-                        overrideItem.PreNoticeText = $"🔔 다음 시간 {item.Name} ({item.Subject}) 준비 시간입니다! 자리에 앉아 교과서를 펴주세요.";
-                        toastMsg = $"{item.Name} 일반 수업(5분 전) 알람으로 설정되었습니다.";
-                        break;
+                    overrideItem.ClassType = "travel";
+                    overrideItem.LeadStartMinutes = sysCfg.TravelGlobalConfig.LeadStartMinutes > 0 ? sysCfg.TravelGlobalConfig.LeadStartMinutes : 10;
+                    overrideItem.LeadStartSeconds = sysCfg.TravelGlobalConfig.LeadStartSeconds;
+                    overrideItem.LeadEndMinutes = sysCfg.TravelGlobalConfig.LeadEndMinutes;
+                    overrideItem.LeadEndSeconds = sysCfg.TravelGlobalConfig.LeadEndSeconds;
+                    overrideItem.PreNoticeText = $"🎒 다음 시간은 {item.Subject} 이동수업입니다! 필요한 준비물을 챙겨 조용히 이동합시다.";
+                    toastMsg = $"{item.Name} 이동수업({overrideItem.LeadStartMinutes}분 전) 알람으로 설정되었습니다.";
+                }
+                else
+                {
+                    overrideItem.ClassType = "classroom";
+                    overrideItem.LeadStartMinutes = sysCfg.GlobalConfig.LeadStartMinutes > 0 ? sysCfg.GlobalConfig.LeadStartMinutes : 5;
+                    overrideItem.LeadStartSeconds = sysCfg.GlobalConfig.LeadStartSeconds;
+                    overrideItem.LeadEndMinutes = sysCfg.GlobalConfig.LeadEndMinutes;
+                    overrideItem.LeadEndSeconds = sysCfg.GlobalConfig.LeadEndSeconds;
+                    overrideItem.PreNoticeText = $"🔔 다음 시간 {item.Name} ({item.Subject}) 준비 시간입니다! 자리에 앉아 교과서를 펴주세요.";
+                    toastMsg = $"{item.Name} 교실수업({overrideItem.LeadStartMinutes}분 전) 알람으로 설정되었습니다.";
                 }
 
                 _configService.SavePeriodAlarmConfig();

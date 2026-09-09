@@ -12,6 +12,7 @@ public class PeriodCountdownItem : INotifyPropertyChanged
     private string _name = "일괄 기본값";
     private bool _enabled = true;
     private bool _useGlobal = true;
+    private string _classType = "classroom"; // "classroom" (교실수업) or "travel" (이동수업)
     private int _leadStartMinutes = 5;
     private int _leadStartSeconds = 0;
     private int _leadEndMinutes = 3;
@@ -21,6 +22,46 @@ public class PeriodCountdownItem : INotifyPropertyChanged
     private string _postNoticeText = "👏 수업 준비 완료! 자리에 모두 착석했습니다.";
     private bool _playSoundChime = true;
     private int _autoCloseSeconds = 8;
+
+    [JsonPropertyName("class_type")]
+    public string ClassType
+    {
+        get => string.IsNullOrEmpty(_classType) ? "classroom" : _classType;
+        set
+        {
+            if (SetField(ref _classType, value))
+            {
+                OnPropertyChanged(nameof(IsTravelClass));
+                OnPropertyChanged(nameof(IsClassroomClass));
+                OnPropertyChanged(nameof(ClassTypeBadgeText));
+            }
+        }
+    }
+
+    [JsonIgnore]
+    public bool IsTravelClass
+    {
+        get => ClassType == "travel";
+        set
+        {
+            if (value) ClassType = "travel";
+            else ClassType = "classroom";
+        }
+    }
+
+    [JsonIgnore]
+    public bool IsClassroomClass
+    {
+        get => ClassType != "travel";
+        set
+        {
+            if (value) ClassType = "classroom";
+            else ClassType = "travel";
+        }
+    }
+
+    [JsonIgnore]
+    public string ClassTypeBadgeText => IsTravelClass ? "🎒 이동수업" : "🏫 교실수업";
 
     [JsonPropertyName("period_number")]
     public int PeriodNumber
@@ -183,9 +224,10 @@ public class PeriodAlarmSystemConfig
     public PeriodCountdownItem GlobalConfig { get; set; } = new()
     {
         PeriodNumber = 0,
-        Name = "일괄 기본값",
+        Name = "교실수업 기본값",
         Enabled = true,
         UseGlobal = false,
+        ClassType = "classroom",
         LeadStartMinutes = 5,
         LeadStartSeconds = 0,
         LeadEndMinutes = 3,
@@ -197,15 +239,57 @@ public class PeriodAlarmSystemConfig
         AutoCloseSeconds = 8
     };
 
+    [JsonPropertyName("travel_global")]
+    public PeriodCountdownItem TravelGlobalConfig { get; set; } = new()
+    {
+        PeriodNumber = 0,
+        Name = "이동수업 기본값",
+        Enabled = true,
+        UseGlobal = false,
+        ClassType = "travel",
+        LeadStartMinutes = 10,
+        LeadStartSeconds = 0,
+        LeadEndMinutes = 3,
+        LeadEndSeconds = 0,
+        TargetMonitorIndex = 1,
+        PreNoticeText = "🎒 다음 시간 {교시} ({과목}) 이동수업입니다! 이동시간을 고려하여 필요한 준비물을 챙겨 조용히 이동합시다.",
+        PostNoticeText = "👏 이동 완료! 자리에 모두 착석했습니다.",
+        PlaySoundChime = true,
+        AutoCloseSeconds = 8
+    };
+
     [JsonPropertyName("overrides")]
     public Dictionary<string, PeriodCountdownItem> PeriodOverrides { get; set; } = new();
 
     public PeriodCountdownItem GetEffectiveConfig(int period)
     {
         string key = period.ToString();
-        if (PeriodOverrides.TryGetValue(key, out var item) && !item.UseGlobal)
+        if (PeriodOverrides.TryGetValue(key, out var item))
         {
-            return item;
+            if (!item.UseGlobal)
+            {
+                return item;
+            }
+
+            // When item delegates to global defaults, resolve according to its ClassType
+            var baseConfig = item.ClassType == "travel" ? TravelGlobalConfig : GlobalConfig;
+            return new PeriodCountdownItem
+            {
+                PeriodNumber = item.PeriodNumber,
+                Name = item.Name,
+                Enabled = item.Enabled && baseConfig.Enabled,
+                UseGlobal = true,
+                ClassType = item.ClassType,
+                LeadStartMinutes = baseConfig.LeadStartMinutes,
+                LeadStartSeconds = baseConfig.LeadStartSeconds,
+                LeadEndMinutes = baseConfig.LeadEndMinutes,
+                LeadEndSeconds = baseConfig.LeadEndSeconds,
+                TargetMonitorIndex = baseConfig.TargetMonitorIndex,
+                PreNoticeText = baseConfig.PreNoticeText,
+                PostNoticeText = baseConfig.PostNoticeText,
+                PlaySoundChime = baseConfig.PlaySoundChime,
+                AutoCloseSeconds = baseConfig.AutoCloseSeconds
+            };
         }
         return GlobalConfig;
     }
@@ -221,6 +305,7 @@ public class PeriodAlarmSystemConfig
                 Name = $"{p}교시",
                 Enabled = true,
                 UseGlobal = true,
+                ClassType = "classroom",
                 LeadStartMinutes = 5,
                 LeadStartSeconds = 0,
                 LeadEndMinutes = 3,

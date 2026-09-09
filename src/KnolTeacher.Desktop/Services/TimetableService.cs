@@ -333,21 +333,15 @@ public class TimetableService : ITimetableService
                 copy.AlarmBadgeBg = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F1F5F9"));
                 copy.AlarmBadgeFg = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#94A3B8"));
             }
-            else if (eff.LeadStartMinutes >= 10)
+            else if (eff.ClassType == "travel" || eff.LeadStartMinutes >= 10)
             {
-                copy.AlarmBadgeText = $"🎒 {eff.LeadStartMinutes}분전";
+                copy.AlarmBadgeText = $"🎒 이동 {eff.LeadStartMinutes}분전";
                 copy.AlarmBadgeBg = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#EEF2FF"));
                 copy.AlarmBadgeFg = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4F46E5"));
             }
-            else if (eff.LeadStartMinutes == 7)
-            {
-                copy.AlarmBadgeText = $"🏃 {eff.LeadStartMinutes}분전";
-                copy.AlarmBadgeBg = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FEF3C7"));
-                copy.AlarmBadgeFg = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#B45309"));
-            }
             else
             {
-                copy.AlarmBadgeText = $"🔔 {eff.LeadStartMinutes}분전";
+                copy.AlarmBadgeText = $"🏫 교실 {eff.LeadStartMinutes}분전";
                 copy.AlarmBadgeBg = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#ECFDF5"));
                 copy.AlarmBadgeFg = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#059669"));
             }

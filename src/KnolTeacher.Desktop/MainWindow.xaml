@@ -580,10 +580,8 @@
                                                                 <MenuItem Header="⏱️ 이 교시 40분 타이머 바로 실행" Click="MenuItemTimer_Click"/>
                                                                 <MenuItem Header="🔔 이 교시 예비 알람 토글 (ON/OFF)" Click="MenuItemToggleAlarm_Click"/>
                                                                 <Separator/>
-                                                                <MenuItem Header="🎒 이동 수업 알람 설정 (10분 전~3분 전)" Click="MenuQuickPeriodTravel_Click" Tag="travel_10"/>
-                                                                <MenuItem Header="🏃 특별실 이동 알람 설정 (7분 전~2분 전)" Click="MenuQuickPeriodTravel_Click" Tag="special_7"/>
-                                                                <MenuItem Header="👨‍🏫 전담 수업 알람 설정 (5분 전~0초)" Click="MenuQuickPeriodTravel_Click" Tag="specialist_5"/>
-                                                                <MenuItem Header="🔔 일반 수업 알람 설정 (5분 전~3분 전)" Click="MenuQuickPeriodTravel_Click" Tag="regular_5"/>
+                                                                <MenuItem Header="🏫 교실수업 알람으로 설정 (기본 5분 전)" Click="MenuQuickPeriodTravel_Click" Tag="classroom"/>
+                                                                <MenuItem Header="🎒 이동수업 알람으로 설정 (기본 10분 전)" Click="MenuQuickPeriodTravel_Click" Tag="travel"/>
                                                                 <MenuItem Header="🔕 이 교시 알람 삭제(끄기)" Click="MenuQuickPeriodDisable_Click"/>
                                                                 <Separator/>
                                                                 <MenuItem Header="🧹 빈 시간으로 비우기" Click="MenuClearSubject_Click"/>
@@ -640,7 +638,7 @@
 
                                                             <!-- Quick action icon (timer / edit / alarm badge) -->
                                                             <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                                                <Button Click="BtnItemTimer_Click" Tag="{Binding}" Margin="0,0,6,0" Padding="7,2" Background="{Binding AlarmBadgeBg}" Foreground="{Binding AlarmBadgeFg}" FontWeight="Bold" FontSize="10.5" BorderThickness="0" Cursor="Hand" Visibility="{Binding AlarmBadgeVisibility}" ToolTip="이 교시 시작 전 알람 설정 (이동수업/전담수업/삭제)">
+                                                                <Button Click="BtnItemTimer_Click" Tag="{Binding}" Margin="0,0,6,0" Padding="7,2" Background="{Binding AlarmBadgeBg}" Foreground="{Binding AlarmBadgeFg}" FontWeight="Bold" FontSize="10.5" BorderThickness="0" Cursor="Hand" Visibility="{Binding AlarmBadgeVisibility}" ToolTip="이 교시 시작 전 알람 설정 (교실수업/이동수업/직접수정/삭제)">
                                                                     <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
                                                                     <TextBlock Text="{Binding AlarmBadgeText}"/>
                                                                 </Button>

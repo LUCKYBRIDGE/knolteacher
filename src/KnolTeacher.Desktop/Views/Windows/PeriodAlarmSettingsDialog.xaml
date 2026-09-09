@@ -38,17 +38,22 @@
                 </Style>
             </TabControl.Resources>
 
-            <!-- TAB 1: 일괄 기본 설정 -->
-            <TabItem Header="🌐 전체 일괄 기본 설정">
+            <!-- TAB 1: 교실수업 & 이동수업 일괄 기본 설정 -->
+            <TabItem Header="🌐 수업 형태별 일괄 기본 설정">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16">
                     <StackPanel>
                         <!-- Enable Checkbox -->
                         <CheckBox x:Name="ChkGlobalEnabled" Content="수업 시작 전 예비 카운트다운 알람 시스템 사용" IsChecked="True" FontWeight="Bold" FontSize="13" Foreground="#1C1917" Margin="0,0,0,16"/>
 
-                        <!-- Timing Section (Minutes + Seconds) -->
-                        <Border Background="#FAF7F2" CornerRadius="8" BorderBrush="#E7DAC7" BorderThickness="1" Padding="14" Margin="0,0,0,14">
+                        <!-- 1. Classroom Class Timing Section (교실수업 기본) -->
+                        <Border Background="#F0FDF4" CornerRadius="8" BorderBrush="#BBF7D0" BorderThickness="1.5" Padding="14" Margin="0,0,0,14">
                             <StackPanel>
-                                <TextBlock Text="⏱️ 카운트다운 실행 시점 (분·초 단위 정밀 설정)" FontWeight="Bold" FontSize="12" Foreground="#44403C" Margin="0,0,0,10"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                    <Border Background="#059669" CornerRadius="4" Padding="6,2" Margin="0,0,8,0">
+                                        <TextBlock Text="🏫 교실수업 기본 알람" FontWeight="Bold" FontSize="12" Foreground="White"/>
+                                    </Border>
+                                    <TextBlock Text="일반 교실 수업 (기본 5분 전)" FontSize="11.5" Foreground="#047857" VerticalAlignment="Center"/>
+                                </StackPanel>
                                 <Grid Margin="0,0,0,10">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
@@ -58,7 +63,7 @@
 
                                     <!-- Start Lead -->
                                     <StackPanel Grid.Column="0">
-                                        <TextBlock Text="1. 타이머 화면 표시 (시작 시점):" FontSize="11" Foreground="#78716C" Margin="0,0,0,4"/>
+                                        <TextBlock Text="시작 시점 (타이머 표시):" FontSize="11" Foreground="#065F46" Margin="0,0,0,4"/>
                                         <StackPanel Orientation="Horizontal">
                                             <TextBlock Text="수업 시작" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
                                             <TextBox x:Name="TbStartMin" Text="5" Width="36" Height="30" FontSize="12" FontWeight="Bold" TextAlignment="Center" VerticalContentAlignment="Center" TextChanged="TimeCalc_TextChanged"/>
@@ -68,11 +73,11 @@
                                         </StackPanel>
                                     </StackPanel>
 
-                                    <TextBlock Grid.Column="1" Text="▶" FontSize="16" Foreground="#B45309" VerticalAlignment="Center" Margin="10,0"/>
+                                    <TextBlock Grid.Column="1" Text="▶" FontSize="16" Foreground="#059669" VerticalAlignment="Center" Margin="10,0"/>
 
                                     <!-- End Lead -->
                                     <StackPanel Grid.Column="2">
-                                        <TextBlock Text="2. 카운트다운 목표 (종료 시점):" FontSize="11" Foreground="#78716C" Margin="0,0,0,4"/>
+                                        <TextBlock Text="종료 시점 (카운트다운 목표):" FontSize="11" Foreground="#065F46" Margin="0,0,0,4"/>
                                         <StackPanel Orientation="Horizontal">
                                             <TextBlock Text="수업 시작" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
                                             <TextBox x:Name="TbEndMin" Text="3" Width="36" Height="30" FontSize="12" FontWeight="Bold" TextAlignment="Center" VerticalContentAlignment="Center" TextChanged="TimeCalc_TextChanged"/>
@@ -83,46 +88,99 @@
                                     </StackPanel>
                                 </Grid>
 
-                                <!-- Calculated Duration Badge -->
-                                <Border Background="#E0F2FE" CornerRadius="6" Padding="10,6">
-                                    <TextBlock x:Name="TxtCalculatedDuration" Text="💡 화면에 대형 타이머가 2분 00초 동안 카운트다운됩니다." FontWeight="Bold" FontSize="12" Foreground="#0369A1"/>
+                                <Border Background="#DCFCE7" CornerRadius="6" Padding="10,6" Margin="0,0,0,10">
+                                    <TextBlock x:Name="TxtCalculatedDuration" Text="💡 교실수업: 대형 타이머가 2분 00초 동안 카운트다운됩니다." FontWeight="Bold" FontSize="11.5" Foreground="#15803D"/>
                                 </Border>
+
+                                <TextBlock Text="💬 교실수업 대형 화면 안내 문구:" FontSize="11" Foreground="#065F46" Margin="0,0,0,4"/>
+                                <TextBox x:Name="TbPreNotice" Text="🔔 다음 시간 {교시} ({과목}) 준비 시간입니다! 자리에 앉아 교과서를 펴주세요." Height="32" FontSize="11.5" Padding="8,4"/>
                             </StackPanel>
                         </Border>
 
-                        <!-- Monitor Selector -->
-                        <TextBlock Text="🖥️ 타이머를 띄울 모니터 선택" FontWeight="Bold" FontSize="12" Foreground="#44403C" Margin="0,0,0,4"/>
-                        <ComboBox x:Name="CbMonitorSelect" Height="32" MinHeight="32" FontSize="12" Margin="0,0,0,14">
-                            <ComboBoxItem Content="📺 2번 모니터 (학생용 전자칠판 / TV) (권장)" Tag="1" IsSelected="True"/>
-                            <ComboBoxItem Content="💻 1번 주 모니터 (교사용 PC 본 화면)" Tag="0"/>
-                            <ComboBoxItem Content="🖱️ 현재 마우스 커서가 위치한 모니터" Tag="-1"/>
-                        </ComboBox>
+                        <!-- 2. Travel Class Timing Section (이동수업 기본) -->
+                        <Border Background="#EEF2FF" CornerRadius="8" BorderBrush="#C7D2FE" BorderThickness="1.5" Padding="14" Margin="0,0,0,14">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                    <Border Background="#4F46E5" CornerRadius="4" Padding="6,2" Margin="0,0,8,0">
+                                        <TextBlock Text="🎒 이동수업 기본 알람" FontWeight="Bold" FontSize="12" Foreground="White"/>
+                                    </Border>
+                                    <TextBlock Text="과학실, 미술실, 체육관, 음악실 등 이동수업 (기본 10분 전)" FontSize="11.5" Foreground="#4338CA" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
 
-                        <!-- Notice Text Inputs -->
-                        <TextBlock Text="💬 카운트다운 동안 크게 띄울 안내 문구 (사전 설정)" FontWeight="Bold" FontSize="12" Foreground="#44403C" Margin="0,0,0,4"/>
-                        <TextBox x:Name="TbPreNotice" Text="🔔 다음 시간 {교시} ({과목}) 준비 시간입니다! 자리에 앉아 교과서를 펴주세요." Height="34" FontSize="12" Padding="8,4" Margin="0,0,0,10"/>
-                        <TextBlock Text="* 문구 내 {교시}와 {과목}은 실제 시간표의 교시와 과목명으로 자동 치환됩니다." FontSize="10" Foreground="#78716C" Margin="0,0,0,14"/>
+                                    <!-- Travel Start Lead -->
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="시작 시점 (타이머 표시):" FontSize="11" Foreground="#3730A3" Margin="0,0,0,4"/>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="수업 시작" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                            <TextBox x:Name="TbTravelStartMin" Text="10" Width="36" Height="30" FontSize="12" FontWeight="Bold" TextAlignment="Center" VerticalContentAlignment="Center" TextChanged="TimeCalc_TextChanged"/>
+                                            <TextBlock Text="분" FontSize="12" VerticalAlignment="Center" Margin="4,0,6,0"/>
+                                            <TextBox x:Name="TbTravelStartSec" Text="00" Width="36" Height="30" FontSize="12" FontWeight="Bold" TextAlignment="Center" VerticalContentAlignment="Center" TextChanged="TimeCalc_TextChanged"/>
+                                            <TextBlock Text="초 전부터" FontSize="12" VerticalAlignment="Center" Margin="4,0,0,0"/>
+                                        </StackPanel>
+                                    </StackPanel>
 
-                        <TextBlock Text="💬 카운트다운 종료 시 띄울 완료 문구" FontWeight="Bold" FontSize="12" Foreground="#44403C" Margin="0,0,0,4"/>
-                        <TextBox x:Name="TbPostNotice" Text="👏 수업 준비 완료! 자리에 모두 착석했습니다." Height="34" FontSize="12" Padding="8,4" Margin="0,0,0,14"/>
+                                    <TextBlock Grid.Column="1" Text="▶" FontSize="16" Foreground="#4F46E5" VerticalAlignment="Center" Margin="10,0"/>
 
-                        <!-- Options & Test Button -->
-                        <Grid Margin="0,0,0,10">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                                <CheckBox x:Name="ChkSoundChime" Content="카운트다운 종료 시 차임벨 재생" IsChecked="True" FontWeight="SemiBold" Margin="0,0,14,0"/>
-                                <TextBlock Text="종료 후 자동 닫힘:" FontSize="11" Foreground="#78716C" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                                <TextBox x:Name="TbAutoCloseSec" Text="8" Width="30" Height="26" FontSize="11" TextAlignment="Center" VerticalContentAlignment="Center"/>
-                                <TextBlock Text="초" FontSize="11" Foreground="#78716C" VerticalAlignment="Center" Margin="2,0,0,0"/>
+                                    <!-- Travel End Lead -->
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="종료 시점 (카운트다운 목표):" FontSize="11" Foreground="#3730A3" Margin="0,0,0,4"/>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="수업 시작" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                            <TextBox x:Name="TbTravelEndMin" Text="3" Width="36" Height="30" FontSize="12" FontWeight="Bold" TextAlignment="Center" VerticalContentAlignment="Center" TextChanged="TimeCalc_TextChanged"/>
+                                            <TextBlock Text="분" FontSize="12" VerticalAlignment="Center" Margin="4,0,6,0"/>
+                                            <TextBox x:Name="TbTravelEndSec" Text="00" Width="36" Height="30" FontSize="12" FontWeight="Bold" TextAlignment="Center" VerticalContentAlignment="Center" TextChanged="TimeCalc_TextChanged"/>
+                                            <TextBlock Text="초 전까지" FontSize="12" VerticalAlignment="Center" Margin="4,0,0,0"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Grid>
+
+                                <Border Background="#E0E7FF" CornerRadius="6" Padding="10,6" Margin="0,0,0,10">
+                                    <TextBlock x:Name="TxtTravelCalculatedDuration" Text="💡 이동수업: 대형 타이머가 7분 00초 동안 카운트다운됩니다." FontWeight="Bold" FontSize="11.5" Foreground="#3730A3"/>
+                                </Border>
+
+                                <TextBlock Text="💬 이동수업 대형 화면 안내 문구:" FontSize="11" Foreground="#3730A3" Margin="0,0,0,4"/>
+                                <TextBox x:Name="TbTravelPreNotice" Text="🎒 다음 시간 {교시} ({과목}) 이동수업입니다! 필요한 준비물을 챙겨 조용히 이동합시다." Height="32" FontSize="11.5" Padding="8,4"/>
                             </StackPanel>
+                        </Border>
 
-                            <Button Grid.Column="1" Content="⚡ 지금 10초 테스트 미리보기" Click="BtnTestRun_Click" Height="34" Padding="14,0" Background="#0284C7" Foreground="White" FontWeight="Bold" FontSize="12" BorderThickness="0" Cursor="Hand">
-                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
-                            </Button>
-                        </Grid>
+                        <!-- Common Options Box -->
+                        <Border Background="#FAF7F2" CornerRadius="8" BorderBrush="#E7DAC7" BorderThickness="1" Padding="14" Margin="0,0,0,14">
+                            <StackPanel>
+                                <!-- Monitor Selector -->
+                                <TextBlock Text="🖥️ 타이머를 띄울 모니터 선택" FontWeight="Bold" FontSize="12" Foreground="#44403C" Margin="0,0,0,4"/>
+                                <ComboBox x:Name="CbMonitorSelect" Height="32" MinHeight="32" FontSize="12" Margin="0,0,0,12">
+                                    <ComboBoxItem Content="📺 2번 모니터 (학생용 전자칠판 / TV) (권장)" Tag="1" IsSelected="True"/>
+                                    <ComboBoxItem Content="💻 1번 주 모니터 (교사용 PC 본 화면)" Tag="0"/>
+                                    <ComboBoxItem Content="🖱️ 현재 마우스 커서가 위치한 모니터" Tag="-1"/>
+                                </ComboBox>
+
+                                <TextBlock Text="💬 카운트다운 종료 시 띄울 착석 완료 문구" FontWeight="Bold" FontSize="12" Foreground="#44403C" Margin="0,0,0,4"/>
+                                <TextBox x:Name="TbPostNotice" Text="👏 수업 준비 완료! 자리에 모두 착석했습니다." Height="32" FontSize="12" Padding="8,4" Margin="0,0,0,12"/>
+
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <CheckBox x:Name="ChkSoundChime" Content="종료 시 차임벨 재생" IsChecked="True" FontWeight="SemiBold" Margin="0,0,14,0"/>
+                                        <TextBlock Text="종료 후 자동 닫힘:" FontSize="11" Foreground="#78716C" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                        <TextBox x:Name="TbAutoCloseSec" Text="8" Width="30" Height="26" FontSize="11" TextAlignment="Center" VerticalContentAlignment="Center"/>
+                                        <TextBlock Text="초" FontSize="11" Foreground="#78716C" VerticalAlignment="Center" Margin="2,0,0,0"/>
+                                    </StackPanel>
+
+                                    <Button Grid.Column="1" Content="⚡ 지금 10초 테스트 미리보기" Click="BtnTestRun_Click" Height="32" Padding="14,0" Background="#0284C7" Foreground="White" FontWeight="Bold" FontSize="12" BorderThickness="0" Cursor="Hand">
+                                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                                    </Button>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
@@ -131,7 +189,7 @@
             <TabItem Header="📅 교시별 개별 맞춤 설정 (1~7교시)">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16">
                     <StackPanel>
-                        <TextBlock Text="특정 교시(예: 점심 후 5교시나 아침 1교시)에만 다른 예비 시간이나 문구를 지정할 수 있습니다." FontSize="11" Foreground="#78716C" Margin="0,0,0,12"/>
+                        <TextBlock Text="각 교시를 '교실수업' 또는 '이동수업'으로 지정할 수 있으며, 특정 이동수업은 분·초를 직접 수동 입력하여 개별 조정할 수 있습니다." FontSize="11.5" Foreground="#78716C" Margin="0,0,0,12"/>
                         <ItemsControl x:Name="ListPeriodOverrides">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
@@ -142,7 +200,7 @@
                                                 <RowDefinition Height="Auto" />
                                             </Grid.RowDefinitions>
 
-                                            <!-- Row 0: Period Title & Use Global Toggle & Quick Presets -->
+                                            <!-- Row 0: Period Title, Mode Radio, Use Global Toggle & Quick Presets -->
                                             <Grid Grid.Row="0">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="*" />
@@ -153,15 +211,19 @@
                                                         <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="12" Foreground="White"/>
                                                     </Border>
                                                     <CheckBox IsChecked="{Binding Enabled}" Content="알람 켜기" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                                    
+                                                    <!-- Mode Indicator / Radio -->
+                                                    <RadioButton GroupName="{Binding Name}" IsChecked="{Binding IsClassroomClass}" Content="🏫 교실" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                                    <RadioButton GroupName="{Binding Name}" IsChecked="{Binding IsTravelClass}" Content="🎒 이동" FontWeight="SemiBold" Foreground="#4F46E5" VerticalAlignment="Center" Margin="0,0,12,0"/>
+
                                                     <CheckBox IsChecked="{Binding UseGlobal}" Content="🌐 일괄 기본값 사용" FontWeight="SemiBold" Foreground="#0284C7" VerticalAlignment="Center"/>
                                                 </StackPanel>
 
                                                 <!-- Quick Travel / Disable Action Buttons for This Period -->
                                                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                                    <Button Content="🎒 이동10분전" Click="BtnQuickPreset_Click" Tag="travel_10" Margin="0,0,4,0" Padding="6,2" FontSize="10.5" Background="#EEF2FF" Foreground="#4F46E5" FontWeight="Bold" BorderThickness="0" Cursor="Hand" ToolTip="이동수업 10분 전 시작 ~ 3분 전 종료"/>
-                                                    <Button Content="🏃 특별실7분전" Click="BtnQuickPreset_Click" Tag="special_7" Margin="0,0,4,0" Padding="6,2" FontSize="10.5" Background="#FEF3C7" Foreground="#B45309" FontWeight="Bold" BorderThickness="0" Cursor="Hand" ToolTip="특별실 7분 전 시작 ~ 2분 전 종료"/>
-                                                    <Button Content="👨‍🏫 전담5분전" Click="BtnQuickPreset_Click" Tag="specialist_5" Margin="0,0,4,0" Padding="6,2" FontSize="10.5" Background="#ECFDF5" Foreground="#059669" FontWeight="Bold" BorderThickness="0" Cursor="Hand" ToolTip="전담수업 5분 전 시작 ~ 0초 종료"/>
-                                                    <Button Content="🗑️ 끄기" Click="BtnQuickDisable_Click" Padding="6,2" FontSize="10.5" Background="#FEE2E2" Foreground="#DC2626" FontWeight="Bold" BorderThickness="0" Cursor="Hand" ToolTip="이 교시 알람 삭제(끄기)"/>
+                                                    <Button Content="🏫 교실" Click="BtnQuickPreset_Click" Tag="classroom" Margin="0,0,4,0" Padding="8,2" FontSize="10.5" Background="#ECFDF5" Foreground="#059669" FontWeight="Bold" BorderThickness="0" Cursor="Hand" ToolTip="교실수업 기본값 적용"/>
+                                                    <Button Content="🎒 이동" Click="BtnQuickPreset_Click" Tag="travel" Margin="0,0,4,0" Padding="8,2" FontSize="10.5" Background="#EEF2FF" Foreground="#4F46E5" FontWeight="Bold" BorderThickness="0" Cursor="Hand" ToolTip="이동수업 기본값 적용"/>
+                                                    <Button Content="🗑️ 끄기" Click="BtnQuickDisable_Click" Padding="8,2" FontSize="10.5" Background="#FEE2E2" Foreground="#DC2626" FontWeight="Bold" BorderThickness="0" Cursor="Hand" ToolTip="이 교시 알람 끄기"/>
                                                 </StackPanel>
                                             </Grid>
 

@@ -97,24 +97,18 @@
                         </Grid>
 
                         <!-- Preset Quick Buttons for Duration & Classroom Travel -->
-                        <TextBlock Text="⚡ 수업 형태별 이동시간 프리셋 (클릭 시 시간 및 안내문구 자동 적용):" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource BeigeTextMuted}" Margin="0,0,0,6"/>
-                        <WrapPanel Margin="0,0,0,10">
-                            <Button Content="🎒 이동 수업 (10분 전~3분 전)" Click="BtnPresetTravel_Click" Tag="travel_10" Padding="10,5" Margin="0,0,6,6" Background="#EEF2FF" Foreground="#4F46E5" FontWeight="Bold" FontSize="11" BorderThickness="0" Cursor="Hand" ToolTip="과학실, 미술실, 체육관 등 이동시간이 긴 수업에 적합">
+                        <TextBlock Text="⚡ 수업 형태 선택 (클릭 시 기본값 자동 적용):" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource BeigeTextMuted}" Margin="0,0,0,6"/>
+                        <WrapPanel Margin="0,0,0,8">
+                            <Button x:Name="BtnPresetClassroom" Content="🏫 교실 수업 (기본 5분 전)" Click="BtnPresetTravel_Click" Tag="classroom" Padding="12,6" Margin="0,0,8,6" Background="#ECFDF5" Foreground="#059669" FontWeight="Bold" FontSize="11.5" BorderThickness="0" Cursor="Hand" ToolTip="일반 교실 수업 (기본 5분 전 시작 ~ 3분 전 종료)">
                                 <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
                             </Button>
-                            <Button Content="🏃 특별실 이동 (7분 전~2분 전)" Click="BtnPresetTravel_Click" Tag="special_7" Padding="10,5" Margin="0,0,6,6" Background="#FEF3C7" Foreground="#B45309" FontWeight="Bold" FontSize="11" BorderThickness="0" Cursor="Hand" ToolTip="컴퓨터실, 어학실, 도서관 등 교내 특별실 이동">
-                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
-                            </Button>
-                            <Button Content="👨‍🏫 전담 수업 (5분 전~0초)" Click="BtnPresetTravel_Click" Tag="specialist_5" Padding="10,5" Margin="0,0,6,6" Background="#ECFDF5" Foreground="#059669" FontWeight="Bold" FontSize="11" BorderThickness="0" Cursor="Hand" ToolTip="전담 교사 수업 준비 및 학생 사전 착석 지도">
-                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
-                            </Button>
-                            <Button Content="🔔 일반 수업 (5분 전~3분 전)" Click="BtnPresetTravel_Click" Tag="regular_5" Padding="10,5" Margin="0,0,6,6" Background="#F1F5F9" Foreground="#334155" FontSize="11" Cursor="Hand">
-                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
-                            </Button>
-                            <Button Content="⚡ 직전 준비 (3분 전~0초)" Click="BtnPresetTravel_Click" Tag="fast_3" Padding="10,5" Margin="0,0,6,6" Background="#F1F5F9" Foreground="#334155" FontSize="11" Cursor="Hand">
+                            <Button x:Name="BtnPresetTravel" Content="🎒 이동 수업 (기본 10분 전)" Click="BtnPresetTravel_Click" Tag="travel" Padding="12,6" Margin="0,0,8,6" Background="#EEF2FF" Foreground="#4F46E5" FontWeight="Bold" FontSize="11.5" BorderThickness="0" Cursor="Hand" ToolTip="과학실, 미술실, 체육관 등 이동수업 (기본 10분 전 시작 ~ 3분 전 종료)">
                                 <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
                             </Button>
                         </WrapPanel>
+                        <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="10,6" Margin="0,0,0,10">
+                            <TextBlock Text="💡 특정 이동수업의 경우 위 1, 2번에서 분·초를 직접 입력하여 원하는 시간(예: 8분 전, 12분 전 등)으로 자유롭게 수동 조정할 수 있습니다." FontSize="11" Foreground="#0284C7" LineHeight="16"/>
+                        </Border>
 
                         <!-- Calculated Duration Badge -->
                         <Border Background="#E0F2FE" BorderBrush="#BAE6FD" BorderThickness="1" CornerRadius="8" Padding="12,8">

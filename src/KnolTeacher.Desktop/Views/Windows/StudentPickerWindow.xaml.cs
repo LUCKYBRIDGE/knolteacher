@@ -49,6 +49,10 @@ public partial class StudentPickerWindow : Window
     private int? _targetCameraStudentNumber = null;
     private double _leaderboardThrottleTimer = 0;
     private DispatcherTimer? _celebrationAutoDismissTimer;
+    private bool _isManualCameraMode = false;
+    private double _manualCameraTrackY = 0;
+    private double _manualCameraTimer = 0;
+    private bool _isDraggingMinimap = false;
 
     public static void GetTrackBoundaries(double y, out double left, out double right)
     {
@@ -398,35 +402,37 @@ public partial class StudentPickerWindow : Window
 
         // 3. SMALL CARTOON BUMPERS & STONE AGE RELICS (히트박스 1:1 완벽 대응)
         // --- Meadow & Early Forest (Y = 240 ~ 600) ---
-        AddBumper(210, 260, 15, "cartoon_comb_pottery.png");
-        AddBumper(470, 260, 15, "cartoon_comb_pottery.png");
+        AddBreakablePottery(210, 260, 16);
+        AddBreakablePottery(470, 260, 16);
         AddBumper(340, 330, 15, "cartoon_handaxe.png");
         AddBumper(180, 410, 16, "cartoon_chipped_stone.png");
         AddBumper(500, 410, 16, "cartoon_polished_stone.png");
-        AddBumper(340, 500, 15, "cartoon_comb_pottery.png");
+        AddBreakablePottery(340, 500, 16);
 
         // --- Canyon & Cave Winding Trail (Y = 620 ~ 1350) ---
         AddBumper(210, 640, 15, "cartoon_handaxe.png");
         AddBumper(380, 640, 15, "cartoon_chipped_stone.png");
         AddBumper(190, 820, 15, "cartoon_polished_stone.png");
-        AddBumper(350, 820, 15, "cartoon_comb_pottery.png");
+        AddBreakablePottery(350, 820, 16);
         AddBumper(290, 1000, 15, "cartoon_handaxe.png");
         AddBumper(460, 1000, 15, "cartoon_chipped_stone.png");
+        AddBreakablePottery(380, 1100, 16);
         AddBumper(340, 1180, 15, "cartoon_polished_stone.png");
 
         // --- Megalith Sanctuary (Y = 1360 ~ 2080) ---
-        AddBumper(210, 2030, 15, "cartoon_comb_pottery.png");
+        AddBreakablePottery(210, 2030, 16);
         AddBumper(470, 2030, 15, "cartoon_handaxe.png");
 
         // --- Primeval Forest (Y = 2100 ~ 2780) ---
         AddBumper(280, 2320, 16, "cartoon_chipped_stone.png");
         AddBumper(480, 2320, 16, "cartoon_polished_stone.png");
-        AddBumper(230, 2520, 16, "cartoon_comb_pottery.png");
+        AddBreakablePottery(230, 2520, 16);
         AddBumper(410, 2520, 16, "cartoon_handaxe.png");
-        AddBumper(340, 2700, 15, "cartoon_comb_pottery.png");
+        AddBreakablePottery(340, 2700, 16);
 
         // --- River Rapids (Y = 2800 ~ 3260) ---
         AddBumper(210, 2960, 15, "cartoon_polished_stone.png");
+        AddBreakablePottery(340, 3050, 16);
         AddBumper(470, 2960, 15, "cartoon_chipped_stone.png");
 
         // 4. 2x2 Breakable Comb Pottery Gauntlet (가로 2개 x 2줄, 총 4개)
@@ -1071,19 +1077,19 @@ public partial class StudentPickerWindow : Window
                     pot.Break(RaceCanvas);
 
                     // Dramatic Race Reversal: 빗살무늬토기 파괴 반발 & 역전 드라마 연출!
-                    // 선두를 뒤쪽으로 강하게 튕겨 올리고(-250px/s) 외곽으로 밀쳐내며
-                    // 어지러움 별 연출(0.7초)을 주어, 뒤따르던 2등·3등 주자가 뚫린 틈으로 역전하도록 유도!
+                    // 선두를 뒤쪽으로 대폭 강하게 튕겨 올리고 외곽으로 밀쳐내며
+                    // 어지러움 별 연출을 주어, 뒤따르던 2등·3등 주자가 뚫린 틈으로 역전하도록 유도!
                     double nx = dist > 0.001 ? dx / dist : (rand.NextDouble() - 0.5);
                     double ny = dist > 0.001 ? dy / dist : -1.0;
 
                     // Push out of pottery
-                    r.X = pot.X + nx * (minDist + 3.0);
-                    r.Y = pot.Y + ny * (minDist + 3.0);
+                    r.X = pot.X + nx * (minDist + 4.0);
+                    r.Y = pot.Y + ny * (minDist + 4.0);
 
-                    // Rebound upwards and deflect horizontally with dizzy spin
-                    r.Vx = (nx >= 0 ? 1.0 : -1.0) * (110.0 + rand.NextDouble() * 50.0);
-                    r.Vy = -250.0 - rand.NextDouble() * 50.0;
-                    r.DizzyTimer = 0.75;
+                    // Rebound upwards and deflect horizontally with dizzy spin (초강력 반발 및 튕김)
+                    r.Vx = (nx >= 0 ? 1.0 : -1.0) * (240.0 + rand.NextDouble() * 120.0);
+                    r.Vy = -460.0 - rand.NextDouble() * 140.0;
+                    r.DizzyTimer = 1.1;
                 }
             }
 
@@ -1264,6 +1270,45 @@ public partial class StudentPickerWindow : Window
         RaceWorldScale.ScaleX = scale;
         RaceWorldScale.ScaleY = scale;
 
+        // Manual minimap navigation mode (미니맵 클릭/드래그로 특정 구간 뷰포트 탐색)
+        if (_isManualCameraMode)
+        {
+            if (!_isDraggingMinimap && dt > 0)
+            {
+                _manualCameraTimer -= dt;
+                if (_manualCameraTimer <= 0)
+                {
+                    _isManualCameraMode = false;
+                    if (BtnCameraReset1st != null && _targetCameraRank == 1 && !_targetCameraStudentNumber.HasValue)
+                    {
+                        BtnCameraReset1st.Visibility = Visibility.Collapsed;
+                    }
+                }
+            }
+
+            foreach (var r in _racers)
+            {
+                r.SetCameraFocus(false);
+            }
+
+            double manualTargetY = _manualCameraTrackY;
+            double manualTargetOffset = Math.Max(0, manualTargetY * scale - viewportHeight * 0.5);
+            double manualMaxOffset = Math.Max(0, TrackHeight * scale - viewportHeight);
+            manualTargetOffset = Math.Clamp(manualTargetOffset, 0, manualMaxOffset);
+
+            if (force || _isDraggingMinimap)
+            {
+                RaceScrollViewer.ScrollToVerticalOffset(manualTargetOffset);
+            }
+            else
+            {
+                double current = RaceScrollViewer.VerticalOffset;
+                double alpha = 1.0 - Math.Exp(-12.0 * Math.Max(dt, 0.001));
+                RaceScrollViewer.ScrollToVerticalOffset(current + (manualTargetOffset - current) * alpha);
+            }
+            return;
+        }
+
         // Current standings
         var sorted = _racers
             .OrderBy(r => r.IsFinished ? 0 : 1)
@@ -1384,6 +1429,54 @@ public partial class StudentPickerWindow : Window
             Canvas.SetTop(MinimapViewportBox, Math.Clamp(scrollY * scaleY, 0, mapH - 30));
             MinimapViewportBox.Height = Math.Clamp(viewH * scaleY, 20, mapH);
         }
+    }
+
+    private void MinimapCanvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        _isDraggingMinimap = true;
+        MinimapCanvas.CaptureMouse();
+        Point pos = e.GetPosition(MinimapCanvas);
+        HandleMinimapScrub(pos);
+    }
+
+    private void MinimapCanvas_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (_isDraggingMinimap)
+        {
+            Point pos = e.GetPosition(MinimapCanvas);
+            HandleMinimapScrub(pos);
+        }
+    }
+
+    private void MinimapCanvas_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (_isDraggingMinimap)
+        {
+            _isDraggingMinimap = false;
+            MinimapCanvas.ReleaseMouseCapture();
+        }
+    }
+
+    private void HandleMinimapScrub(Point pos)
+    {
+        if (MinimapCanvas == null || RaceScrollViewer == null || RaceViewport == null) return;
+        double mapH = MinimapCanvas.ActualHeight;
+        if (mapH <= 1) return;
+
+        double clampedY = Math.Clamp(pos.Y, 0, mapH);
+        double trackY = (clampedY / mapH) * TrackHeight;
+
+        _isManualCameraMode = true;
+        _manualCameraTrackY = trackY;
+        _manualCameraTimer = 6.0; // 6초간 수동 시점 유지 후 선두 추적 복귀
+
+        if (BtnCameraReset1st != null)
+        {
+            BtnCameraReset1st.Visibility = Visibility.Visible;
+        }
+
+        UpdateCameraViewport(0, force: true);
+        UpdateMinimap();
     }
 
     private void BtnToggleLeaderboardWidth_Click(object sender, RoutedEventArgs e)
@@ -1602,6 +1695,8 @@ public partial class StudentPickerWindow : Window
 
     public void SetCameraRank(int rank, bool notifyCombo = true)
     {
+        _isManualCameraMode = false;
+        _isDraggingMinimap = false;
         int total = Math.Max(1, _racers.Count);
         _targetCameraRank = Math.Clamp(rank, 1, total);
         _targetCameraStudentNumber = null;
@@ -1632,6 +1727,8 @@ public partial class StudentPickerWindow : Window
 
     public void SetCameraTargetStudent(int studentNumber)
     {
+        _isManualCameraMode = false;
+        _isDraggingMinimap = false;
         _targetCameraStudentNumber = studentNumber;
 
         var sorted = _racers
@@ -2245,19 +2342,6 @@ public class RaceBumper
         Visual.RenderTransformOrigin = new Point(0.5, 0.5);
         Visual.RenderTransform = _scale;
 
-        // Ground shadow for spatial grounding
-        var shadow = new Ellipse
-        {
-            Width = radius * 1.7,
-            Height = radius * 0.75,
-            Fill = new SolidColorBrush(Color.FromArgb(70, 15, 10, 5)),
-            VerticalAlignment = VerticalAlignment.Bottom,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            Margin = new Thickness(0, 0, 0, -3),
-            IsHitTestVisible = false
-        };
-        Visual.Children.Add(shadow);
-
         var img = new Image
         {
             Width = radius * 2,
@@ -2323,18 +2407,6 @@ public class RotatingLog
         Visual.RenderTransformOrigin = new Point(0.5, 0.5);
         Visual.RenderTransform = _rotateTransform;
 
-        // Soft drop shadow rotating underneath the log
-        var shadow = new Border
-        {
-            Width = length * 0.94,
-            Height = Visual.Height * 0.75,
-            Background = new SolidColorBrush(Color.FromArgb(90, 15, 10, 5)),
-            CornerRadius = new CornerRadius(thickness * 0.45),
-            Margin = new Thickness(0, 8, 0, 0),
-            IsHitTestVisible = false
-        };
-        Visual.Children.Add(shadow);
-
         var img = new Image
         {
             Width = length,
@@ -2343,20 +2415,6 @@ public class RotatingLog
         };
         RenderOptions.SetBitmapScalingMode(img, BitmapScalingMode.HighQuality);
         Visual.Children.Add(img);
-
-        // Center bronze/gold rivet axle cap
-        var rivet = new Ellipse
-        {
-            Width = 18,
-            Height = 18,
-            Fill = new SolidColorBrush(Color.FromRgb(245, 158, 11)),
-            Stroke = new SolidColorBrush(Color.FromRgb(69, 26, 3)),
-            StrokeThickness = 2.5,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            VerticalAlignment = VerticalAlignment.Center,
-            IsHitTestVisible = false
-        };
-        Visual.Children.Add(rivet);
 
         Canvas.SetLeft(Visual, X - Visual.Width / 2.0);
         Canvas.SetTop(Visual, Y - Visual.Height / 2.0);
@@ -2486,13 +2544,6 @@ public class BreakablePottery
             IsHitTestVisible = false
         };
         RenderOptions.SetBitmapScalingMode(img, BitmapScalingMode.HighQuality);
-        img.Effect = new DropShadowEffect
-        {
-            Color = Color.FromRgb(180, 83, 9),
-            BlurRadius = 6,
-            Opacity = 0.7,
-            ShadowDepth = 0
-        };
         Visual.Children.Add(img);
 
         Canvas.SetLeft(Visual, X - Visual.Width / 2.0);
@@ -2513,7 +2564,7 @@ public class BreakablePottery
         IsBroken = true;
 
         // Visual break effect: sudden crack expansion & fade out
-        var scaleAnim = new DoubleAnimation(1.0, 1.35, TimeSpan.FromMilliseconds(110));
+        var scaleAnim = new DoubleAnimation(1.0, 1.45, TimeSpan.FromMilliseconds(110));
         var opacityAnim = new DoubleAnimation(1.0, 0.0, TimeSpan.FromMilliseconds(110));
         opacityAnim.Completed += (s, e) =>
         {
@@ -2524,14 +2575,14 @@ public class BreakablePottery
         _scale.BeginAnimation(ScaleTransform.ScaleYProperty, scaleAnim);
         Visual.BeginAnimation(UIElement.OpacityProperty, opacityAnim);
 
-        // Spawn 6 terracotta pottery shards flying outward!
+        // Spawn 10 terracotta pottery shards flying outward! (와장창 깨지는 화려한 파편 효과)
         var rand = new Random();
-        for (int i = 0; i < 6; i++)
+        for (int i = 0; i < 10; i++)
         {
             var shard = new Border
             {
-                Width = rand.Next(6, 11),
-                Height = rand.Next(6, 11),
+                Width = rand.Next(6, 12),
+                Height = rand.Next(6, 12),
                 Background = new SolidColorBrush(Color.FromArgb(235, 180, 83, 9)),
                 BorderBrush = new SolidColorBrush(Color.FromArgb(255, 69, 26, 3)),
                 BorderThickness = new Thickness(1),
@@ -2542,14 +2593,14 @@ public class BreakablePottery
             Canvas.SetTop(shard, Y);
             canvas.Children.Add(shard);
 
-            double angle = (i * 60.0 + rand.Next(-15, 15)) * Math.PI / 180.0;
-            double dist = rand.Next(25, 45);
+            double angle = (i * 36.0 + rand.Next(-14, 14)) * Math.PI / 180.0;
+            double dist = rand.Next(35, 75);
             double targetX = X + Math.Cos(angle) * dist;
             double targetY = Y + Math.Sin(angle) * dist;
 
-            var animX = new DoubleAnimation(X, targetX, TimeSpan.FromMilliseconds(350));
-            var animY = new DoubleAnimation(Y, targetY, TimeSpan.FromMilliseconds(350));
-            var animFade = new DoubleAnimation(1.0, 0.0, TimeSpan.FromMilliseconds(350));
+            var animX = new DoubleAnimation(X, targetX, TimeSpan.FromMilliseconds(380));
+            var animY = new DoubleAnimation(Y, targetY, TimeSpan.FromMilliseconds(380));
+            var animFade = new DoubleAnimation(1.0, 0.0, TimeSpan.FromMilliseconds(380));
             animFade.Completed += (s, e) => canvas.Children.Remove(shard);
 
             shard.BeginAnimation(Canvas.LeftProperty, animX);

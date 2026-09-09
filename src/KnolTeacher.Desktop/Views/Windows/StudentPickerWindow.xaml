@@ -238,7 +238,11 @@
 
                     <!-- Minimap Box (전체 5개 구간 및 코스가 한눈에 보이는 고화질 미니맵) -->
                     <Border Grid.Row="1" Background="#0F172A" CornerRadius="12" BorderBrush="#334155" BorderThickness="1.5" ClipToBounds="True">
-                        <Canvas x:Name="MinimapCanvas" Width="154" Height="620" ClipToBounds="True">
+                        <Canvas x:Name="MinimapCanvas" Width="154" Height="620" ClipToBounds="True" Cursor="Hand" Background="Transparent"
+                                MouseLeftButtonDown="MinimapCanvas_MouseLeftButtonDown"
+                                MouseMove="MinimapCanvas_MouseMove"
+                                MouseLeftButtonUp="MinimapCanvas_MouseLeftButtonUp"
+                                ToolTip="클릭하거나 드래그하여 해당 코스 위치로 시점을 이동합니다">
                             <!-- 5개 구역 세련된 다크 테마 벡터 존 인디케이터 (알록달록한 이미지 제거) -->
                             <StackPanel Width="154" Height="620" IsHitTestVisible="False">
                                 <Border Height="106" Background="#111827" BorderBrush="#1F2937" BorderThickness="0,0,0,1" Padding="6,4">
@@ -259,7 +263,7 @@
                             </StackPanel>
 
                             <!-- Live dots representing students on minimap -->
-                            <Canvas x:Name="MinimapDotsLayer" Width="154" Height="620"/>
+                            <Canvas x:Name="MinimapDotsLayer" Width="154" Height="620" IsHitTestVisible="False"/>
 
                             <!-- Current Camera Viewport Finder Box -->
                             <Border x:Name="MinimapViewportBox" Canvas.Left="0" Canvas.Top="0" Width="154" Height="150"
