@@ -2,8 +2,13 @@ name: Release
 
 on:
   push:
+    branches:
+      - main
     tags:
       - "v*"
+    paths:
+      - "release/release-version.txt"
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -12,10 +17,10 @@ jobs:
   release:
     name: Publish all-in-one Windows executable
     runs-on: windows-latest
-    timeout-minutes: 40
+    timeout-minutes: 45
 
     steps:
-      - name: Checkout tagged commit
+      - name: Checkout release commit
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -25,34 +30,67 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
-      - name: Verify tag belongs to main
-        shell: pwsh
-        run: |
-          git fetch origin main
-          git merge-base --is-ancestor HEAD origin/main
-          if ($LASTEXITCODE -ne 0) {
-            throw "Release tags must point to a commit contained in main."
-          }
-
-      - name: Verify tag matches centralized version
+      - name: Resolve and verify release version
         shell: pwsh
         run: |
           [xml]$props = Get-Content "Directory.Build.props"
-          $version = [string]$props.Project.PropertyGroup.KnolTeacherVersion
-          if ([string]::IsNullOrWhiteSpace($version)) {
+          $centralVersion = [string]$props.Project.PropertyGroup.KnolTeacherVersion
+          if ([string]::IsNullOrWhiteSpace($centralVersion)) {
             throw "Directory.Build.props does not define KnolTeacherVersion."
           }
 
-          $expectedTag = "v$version"
-          if ($env:GITHUB_REF_NAME -ne $expectedTag) {
-            throw "Tag '$env:GITHUB_REF_NAME' does not match centralized version '$expectedTag'."
+          $centralTag = "v$centralVersion"
+          $isTagRun = $env:GITHUB_REF_TYPE -eq "tag"
+
+          if ($isTagRun) {
+            if ($env:GITHUB_REF_NAME -ne $centralTag) {
+              throw "Tag '$env:GITHUB_REF_NAME' does not match centralized version '$centralTag'."
+            }
+            $releaseTag = $env:GITHUB_REF_NAME
           }
+          else {
+            if (-not (Test-Path -LiteralPath "release/release-version.txt")) {
+              throw "release/release-version.txt is required for promotion releases."
+            }
+
+            $promoteVersion = (Get-Content -LiteralPath "release/release-version.txt" -Raw).Trim()
+            if ($promoteVersion -ne $centralVersion) {
+              throw "Promotion version '$promoteVersion' does not match centralized version '$centralVersion'."
+            }
+            $releaseTag = $centralTag
+          }
+
+          git fetch origin main --tags
+          git merge-base --is-ancestor HEAD origin/main
+          if ($LASTEXITCODE -ne 0) {
+            throw "Release commits must be contained in main."
+          }
+
+          $existingTagCommit = $null
+          git rev-parse --verify --quiet "refs/tags/$releaseTag" *> $null
+          if ($LASTEXITCODE -eq 0) {
+            $existingTagCommit = (git rev-list -n 1 $releaseTag).Trim()
+            if ($existingTagCommit -ne $env:GITHUB_SHA) {
+              throw "Tag '$releaseTag' already exists on commit '$existingTagCommit', not current release commit '$env:GITHUB_SHA'."
+            }
+          }
+
+          "RELEASE_TAG=$releaseTag" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "RELEASE_VERSION=$centralVersion" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "TAG_ALREADY_EXISTS=$([bool]$existingTagCommit)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+          Write-Host "Release version: $centralVersion"
+          Write-Host "Release tag    : $releaseTag"
+          Write-Host "Tag exists     : $([bool]$existingTagCommit)"
 
       - name: Restore
         run: dotnet restore KnolTeacher.sln
 
       - name: Build
         run: dotnet build KnolTeacher.sln -c Release --no-restore
+
+      - name: Test
+        run: dotnet test KnolTeacher.sln -c Release --no-build --no-restore --logger "console;verbosity=normal"
 
       - name: Build all-in-one package
         shell: cmd
@@ -71,29 +109,43 @@ jobs:
             throw "Release output must contain exactly one file: 놀티쳐.exe"
           }
 
-          [xml]$props = Get-Content "Directory.Build.props"
-          $expectedVersion = [string]$props.Project.PropertyGroup.KnolTeacherVersion
           $embeddedVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo((Resolve-Path $releaseAsset)).FileVersion
           if ([string]::IsNullOrWhiteSpace($embeddedVersion)) {
             throw "Release executable has no embedded FileVersion."
           }
 
-          $embeddedCore = ([version]$embeddedVersion)
+          $embeddedCore = [version]$embeddedVersion
           $embeddedSemVer = "$($embeddedCore.Major).$($embeddedCore.Minor).$($embeddedCore.Build)"
-          if ($embeddedSemVer -ne $expectedVersion) {
-            throw "Embedded executable version '$embeddedSemVer' does not match centralized version '$expectedVersion'."
+          if ($embeddedSemVer -ne $env:RELEASE_VERSION) {
+            throw "Embedded executable version '$embeddedSemVer' does not match release version '$env:RELEASE_VERSION'."
           }
 
           $hash = (Get-FileHash -LiteralPath $releaseAsset -Algorithm SHA256).Hash.ToLowerInvariant()
-          Write-Host "Release version: $embeddedSemVer"
           Write-Host "Release SHA-256: $hash"
+          "RELEASE_SHA256=$hash" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Create release tag when promoted from main
+        if: env.TAG_ALREADY_EXISTS != 'True'
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$env:RELEASE_TAG" "$env:GITHUB_SHA" -m "KnolTeacher $env:RELEASE_TAG"
+          git push origin "$env:RELEASE_TAG"
 
       - name: Create GitHub Release
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$env:GITHUB_REF_NAME" "dist-net/놀티쳐.exe" `
+          gh release view "$env:RELEASE_TAG" *> $null
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "Release '$env:RELEASE_TAG' already exists. Nothing to do."
+            exit 0
+          }
+
+          gh release create "$env:RELEASE_TAG" "dist-net/놀티쳐.exe" `
             --verify-tag `
-            --title "$env:GITHUB_REF_NAME" `
-            --generate-notes
+            --title "$env:RELEASE_TAG" `
+            --generate-notes `
+            --notes "SHA-256: $env:RELEASE_SHA256"
