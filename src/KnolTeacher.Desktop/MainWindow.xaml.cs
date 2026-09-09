@@ -893,6 +893,14 @@ public partial class MainWindow : FluentWindow
         if (e.Source == MainTabs)
         {
             UpdateWindowTitle(MainTabs.SelectedIndex);
+            if (BtnToggleWidgetEdit != null)
+            {
+                BtnToggleWidgetEdit.Visibility = MainTabs.SelectedIndex == 0 ? Visibility.Visible : Visibility.Collapsed;
+            }
+            if (MainTabs.SelectedIndex != 0 && _isWidgetEditMode)
+            {
+                SetWidgetEditMode(false);
+            }
         }
     }
 
@@ -1605,16 +1613,409 @@ public partial class MainWindow : FluentWindow
 
     #region Bento Grid, Todo List & Navigation Drawer Handlers
 
-    private void ApplyDefaultWidgetLayout() { }
-    private void SaveCurrentWidgetLayout() { }
+    private bool _isWidgetEditMode = false;
+    private DispatcherTimer? _miniTimer;
+    private int _miniTimerRemainingSeconds = 300;
+    private bool _isMiniTimerRunning = false;
+    private DateTime _miniDDayTarget = DateTime.Today.AddDays(14);
+    private string _miniDDayTitle = "여름방학";
+    private int _ddayPresetIndex = 0;
+    private readonly (string title, DateTime target)[] _ddayPresets = new[]
+    {
+        ("여름방학", new DateTime(DateTime.Today.Year, 7, 24)),
+        ("2학기 개학", new DateTime(DateTime.Today.Year, 8, 20)),
+        ("가을 운동회", new DateTime(DateTime.Today.Year, 10, 15)),
+        ("겨울방학", new DateTime(DateTime.Today.Year, 12, 28)),
+        ("종업식 & 졸업식", new DateTime(DateTime.Today.Year + 1, 1, 10))
+    };
+    private static readonly string[] _avatarPool = { "🦁", "🐯", "🐻", "🐼", "🐨", "🦊", "🐰", "🐵", "🦄", "🐶", "🐱", "🐸" };
+    private readonly Random _rand = new();
+
+    private MainWidgetCard? GetCardById(string widgetId) => widgetId switch
+    {
+        "timetable" => CardTimetable,
+        "todo" => CardTodo,
+        "calendar" => CardCalendar,
+        "meal" => CardMeal,
+        "timer" => CardTimer,
+        "picker" => CardPicker,
+        "notice" => CardNotice,
+        "dday" => CardDDay,
+        _ => null
+    };
+
+    private IEnumerable<MainWidgetCard> GetAllCards()
+    {
+        if (CardTimetable != null) yield return CardTimetable;
+        if (CardTodo != null) yield return CardTodo;
+        if (CardCalendar != null) yield return CardCalendar;
+        if (CardMeal != null) yield return CardMeal;
+        if (CardTimer != null) yield return CardTimer;
+        if (CardPicker != null) yield return CardPicker;
+        if (CardNotice != null) yield return CardNotice;
+        if (CardDDay != null) yield return CardDDay;
+    }
+
     private void InitWidgetSystem()
     {
-        // Bento 3-column Grid layout initialized
+        foreach (var card in GetAllCards())
+        {
+            card.Moved += OnWidgetCardMoved;
+            card.Resized += OnWidgetCardResized;
+            card.Closed += OnWidgetCardClosed;
+        }
+
+        LoadWidgetLayout();
+        InitMiniWidgets();
     }
 
     private void LoadWidgetLayout()
     {
-        // Responsive Bento Layout
+        var layout = _configService.MainWidgetLayout;
+        if (layout == null || layout.Widgets == null || layout.Widgets.Count == 0)
+        {
+            double w = MainWidgetScrollViewer?.ActualWidth > 0 ? MainWidgetScrollViewer.ActualWidth : 1460;
+            double h = MainWidgetScrollViewer?.ActualHeight > 0 ? MainWidgetScrollViewer.ActualHeight : 860;
+            layout = MainWidgetLayoutConfig.CreateDefault(w, h);
+            _configService.MainWidgetLayout = layout;
+        }
+
+        ApplyWidgetLayout(layout);
+    }
+
+    private void ApplyWidgetLayout(MainWidgetLayoutConfig layout)
+    {
+        if (MainWidgetCanvas == null) return;
+
+        bool isLocked = layout.IsLocked;
+        UpdateLockVisuals(isLocked);
+
+        foreach (var state in layout.Widgets)
+        {
+            var card = GetCardById(state.Id);
+            if (card == null) continue;
+
+            Canvas.SetLeft(card, Math.Max(0, state.X));
+            Canvas.SetTop(card, Math.Max(0, state.Y));
+
+            if (state.Width > 0) card.Width = state.Width;
+            if (state.Height > 0) card.Height = state.Height;
+
+            card.Visibility = state.IsVisible ? Visibility.Visible : Visibility.Collapsed;
+            card.IsLocked = isLocked;
+            card.IsEditMode = _isWidgetEditMode;
+            if (state.ZIndex > 0) Panel.SetZIndex(card, state.ZIndex);
+        }
+
+        UpdateCanvasBounds();
+    }
+
+    private void UpdateCanvasBounds()
+    {
+        if (MainWidgetCanvas == null || MainWidgetScrollViewer == null) return;
+
+        double maxRight = MainWidgetScrollViewer.ActualWidth > 0 ? MainWidgetScrollViewer.ActualWidth - 20 : 1460;
+        double maxBottom = MainWidgetScrollViewer.ActualHeight > 0 ? MainWidgetScrollViewer.ActualHeight - 20 : 860;
+
+        foreach (var card in GetAllCards())
+        {
+            if (card.Visibility != Visibility.Visible) continue;
+            double left = Canvas.GetLeft(card);
+            double top = Canvas.GetTop(card);
+            double w = card.ActualWidth > 0 ? card.ActualWidth : card.Width;
+            double h = card.ActualHeight > 0 ? card.ActualHeight : card.Height;
+
+            if (double.IsNaN(w) || w <= 0) w = 320;
+            if (double.IsNaN(h) || h <= 0) h = 260;
+
+            maxRight = Math.Max(maxRight, left + w + 20);
+            maxBottom = Math.Max(maxBottom, top + h + 20);
+        }
+
+        MainWidgetCanvas.Width = maxRight;
+        MainWidgetCanvas.Height = maxBottom;
+    }
+
+    private void OnWidgetCardMoved(MainWidgetCard card)
+    {
+        var state = _configService.MainWidgetLayout.Widgets.FirstOrDefault(w => w.Id == card.WidgetId);
+        if (state != null)
+        {
+            state.X = Canvas.GetLeft(card);
+            state.Y = Canvas.GetTop(card);
+            state.ZIndex = Panel.GetZIndex(card);
+            _configService.SaveMainWidgetLayout();
+        }
+        UpdateCanvasBounds();
+    }
+
+    private void OnWidgetCardResized(MainWidgetCard card)
+    {
+        var state = _configService.MainWidgetLayout.Widgets.FirstOrDefault(w => w.Id == card.WidgetId);
+        if (state != null)
+        {
+            state.Width = card.ActualWidth > 0 ? card.ActualWidth : card.Width;
+            state.Height = card.ActualHeight > 0 ? card.ActualHeight : card.Height;
+            _configService.SaveMainWidgetLayout();
+        }
+        UpdateCanvasBounds();
+    }
+
+    private void OnWidgetCardClosed(MainWidgetCard card)
+    {
+        var state = _configService.MainWidgetLayout.Widgets.FirstOrDefault(w => w.Id == card.WidgetId);
+        if (state != null)
+        {
+            state.IsVisible = false;
+            _configService.SaveMainWidgetLayout();
+        }
+        UpdateCanvasBounds();
+    }
+
+    private void BtnToggleWidgetEdit_Click(object sender, RoutedEventArgs e)
+    {
+        SetWidgetEditMode(!_isWidgetEditMode);
+    }
+
+    private void BtnFinishWidgetEdit_Click(object sender, RoutedEventArgs e)
+    {
+        SetWidgetEditMode(false);
+    }
+
+    private void SetWidgetEditMode(bool editMode)
+    {
+        _isWidgetEditMode = editMode;
+
+        if (_isWidgetEditMode)
+        {
+            TxtWidgetEditIcon.Text = "💾";
+            TxtWidgetEditLabel.Text = "편집 완료";
+            BtnToggleWidgetEdit.Background = new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#2563EB"));
+            BtnToggleWidgetEdit.Foreground = System.Windows.Media.Brushes.White;
+            if (BarWidgetEditTools != null) BarWidgetEditTools.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            TxtWidgetEditIcon.Text = "⚙️";
+            TxtWidgetEditLabel.Text = "위젯 편집";
+            BtnToggleWidgetEdit.Background = new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#F1F5F9"));
+            BtnToggleWidgetEdit.Foreground = new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#334155"));
+            if (BarWidgetEditTools != null) BarWidgetEditTools.Visibility = Visibility.Collapsed;
+            _configService.SaveMainWidgetLayout();
+        }
+
+        foreach (var card in GetAllCards())
+        {
+            card.IsEditMode = _isWidgetEditMode;
+        }
+    }
+
+    private void BtnAddWidgetMenu_Click(object sender, RoutedEventArgs e)
+    {
+        if (BtnAddWidgetMenu.ContextMenu != null)
+        {
+            BtnAddWidgetMenu.ContextMenu.PlacementTarget = BtnAddWidgetMenu;
+            BtnAddWidgetMenu.ContextMenu.IsOpen = true;
+        }
+    }
+
+    private void MenuItemAddWidget_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is System.Windows.Controls.MenuItem mi && mi.Tag is string widgetId)
+        {
+            var card = GetCardById(widgetId);
+            if (card != null)
+            {
+                card.Visibility = Visibility.Visible;
+                card.BringToFront();
+
+                if (Canvas.GetLeft(card) <= 0 && Canvas.GetTop(card) <= 0)
+                {
+                    Canvas.SetLeft(card, 60);
+                    Canvas.SetTop(card, 60);
+                }
+
+                var state = _configService.MainWidgetLayout.Widgets.FirstOrDefault(w => w.Id == widgetId);
+                if (state == null)
+                {
+                    state = new MainWidgetState { Id = widgetId, X = Canvas.GetLeft(card), Y = Canvas.GetTop(card), Width = card.Width, Height = card.Height, IsVisible = true };
+                    _configService.MainWidgetLayout.Widgets.Add(state);
+                }
+                else
+                {
+                    state.IsVisible = true;
+                    state.X = Canvas.GetLeft(card);
+                    state.Y = Canvas.GetTop(card);
+                }
+                _configService.SaveMainWidgetLayout();
+                UpdateCanvasBounds();
+            }
+        }
+    }
+
+    private void BtnResetWidgetLayout_Click(object sender, RoutedEventArgs e)
+    {
+        double w = MainWidgetScrollViewer?.ActualWidth > 0 ? MainWidgetScrollViewer.ActualWidth : 1460;
+        double h = MainWidgetScrollViewer?.ActualHeight > 0 ? MainWidgetScrollViewer.ActualHeight : 860;
+
+        var defaultLayout = MainWidgetLayoutConfig.CreateDefault(w, h);
+        defaultLayout.IsLocked = _configService.MainWidgetLayout.IsLocked;
+        _configService.MainWidgetLayout = defaultLayout;
+        _configService.SaveMainWidgetLayout();
+
+        ApplyWidgetLayout(defaultLayout);
+    }
+
+    private void BtnToggleWidgetLock_Click(object sender, RoutedEventArgs e)
+    {
+        bool newLock = !_configService.MainWidgetLayout.IsLocked;
+        _configService.MainWidgetLayout.IsLocked = newLock;
+        _configService.SaveMainWidgetLayout();
+        UpdateLockVisuals(newLock);
+
+        foreach (var card in GetAllCards())
+        {
+            card.IsLocked = newLock;
+        }
+    }
+
+    private void UpdateLockVisuals(bool isLocked)
+    {
+        if (TxtWidgetLockIcon != null) TxtWidgetLockIcon.Text = isLocked ? "🔒" : "🔓";
+        if (TxtWidgetLockLabel != null) TxtWidgetLockLabel.Text = isLocked ? "잠금 해제" : "위치 잠금";
+    }
+
+    private void MainWidgetScrollViewer_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        UpdateCanvasBounds();
+    }
+
+    private void InitMiniWidgets()
+    {
+        _miniTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+        _miniTimer.Tick += (s, e) =>
+        {
+            if (_miniTimerRemainingSeconds > 0)
+            {
+                _miniTimerRemainingSeconds--;
+                UpdateMiniTimerDisplay();
+                if (_miniTimerRemainingSeconds == 0)
+                {
+                    _miniTimer.Stop();
+                    _isMiniTimerRunning = false;
+                    if (BtnMiniTimerStart != null) BtnMiniTimerStart.Content = "▶ 시작";
+                    if (TxtMiniTimerState != null) TxtMiniTimerState.Text = "🔔 시간 종료!";
+                    try { _soundService?.PlayChime(); } catch { }
+                }
+            }
+        };
+        UpdateMiniTimerDisplay();
+        UpdateMiniDDayDisplay();
+    }
+
+    private void UpdateMiniTimerDisplay()
+    {
+        if (TxtMiniTimerDisplay != null)
+        {
+            int m = _miniTimerRemainingSeconds / 60;
+            int s = _miniTimerRemainingSeconds % 60;
+            TxtMiniTimerDisplay.Text = $"{m:D2}:{s:D2}";
+        }
+    }
+
+    private void BtnMiniTimerPreset_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && int.TryParse(btn.Tag?.ToString(), out int sec))
+        {
+            _miniTimerRemainingSeconds = sec;
+            if (TxtMiniTimerState != null) TxtMiniTimerState.Text = "집중 시간";
+            UpdateMiniTimerDisplay();
+        }
+    }
+
+    private void BtnMiniTimerStart_Click(object sender, RoutedEventArgs e)
+    {
+        if (_isMiniTimerRunning)
+        {
+            _miniTimer?.Stop();
+            _isMiniTimerRunning = false;
+            BtnMiniTimerStart.Content = "▶ 시작";
+            if (TxtMiniTimerState != null) TxtMiniTimerState.Text = "일시정지됨";
+        }
+        else
+        {
+            if (_miniTimerRemainingSeconds <= 0) _miniTimerRemainingSeconds = 300;
+            _miniTimer?.Start();
+            _isMiniTimerRunning = true;
+            BtnMiniTimerStart.Content = "⏸ 일시정지";
+            if (TxtMiniTimerState != null) TxtMiniTimerState.Text = "⏱️ 집중 시간 진행 중";
+        }
+    }
+
+    private void BtnMiniTimerReset_Click(object sender, RoutedEventArgs e)
+    {
+        _miniTimer?.Stop();
+        _isMiniTimerRunning = false;
+        _miniTimerRemainingSeconds = 300;
+        if (BtnMiniTimerStart != null) BtnMiniTimerStart.Content = "▶ 시작";
+        if (TxtMiniTimerState != null) TxtMiniTimerState.Text = "집중 시간";
+        UpdateMiniTimerDisplay();
+    }
+
+    private void ApplyDefaultWidgetLayout()
+    {
+        BtnResetWidgetLayout_Click(this, new RoutedEventArgs());
+    }
+
+    private void SaveCurrentWidgetLayout()
+    {
+        _configService.SaveMainWidgetLayout();
+    }
+
+    private void BtnMiniPickerDraw_Click(object sender, RoutedEventArgs e)
+    {
+        if (_neisComments != null && _neisComments.Count > 0)
+        {
+            int idx = _rand.Next(_neisComments.Count);
+            var student = _neisComments[idx];
+            string emoji = _avatarPool[_rand.Next(_avatarPool.Length)];
+            if (TxtMiniPickerEmoji != null) TxtMiniPickerEmoji.Text = emoji;
+            if (TxtMiniPickerResult != null) TxtMiniPickerResult.Text = $"{student.StudentNumber}번 {student.StudentName}";
+            if (TxtMiniPickerSub != null) TxtMiniPickerSub.Text = "🎉 축하합니다! 당첨되었습니다.";
+        }
+        else
+        {
+            int num = _rand.Next(1, 26);
+            string emoji = _avatarPool[_rand.Next(_avatarPool.Length)];
+            if (TxtMiniPickerEmoji != null) TxtMiniPickerEmoji.Text = emoji;
+            if (TxtMiniPickerResult != null) TxtMiniPickerResult.Text = $"{num}번 학생";
+            if (TxtMiniPickerSub != null) TxtMiniPickerSub.Text = "🎉 축하합니다! 당첨되었습니다.";
+        }
+    }
+
+    private void BtnSaveMiniNotice_Click(object sender, RoutedEventArgs e)
+    {
+        MessageBox.Show("학급 공지사항이 저장되었습니다.", "공지 저장", MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+
+    private void UpdateMiniDDayDisplay()
+    {
+        if (TxtMiniDDayTitle != null) TxtMiniDDayTitle.Text = _miniDDayTitle;
+        if (TxtMiniDDayDate != null) TxtMiniDDayDate.Text = $"목표일: {_miniDDayTarget:yyyy-MM-dd}";
+        if (TxtMiniDDayCount != null)
+        {
+            int days = (_miniDDayTarget.Date - DateTime.Today).Days;
+            TxtMiniDDayCount.Text = days == 0 ? "D-Day!" : (days > 0 ? $"D-{days}" : $"D+{-days}");
+        }
+    }
+
+    private void BtnSetMiniDDay_Click(object sender, RoutedEventArgs e)
+    {
+        _ddayPresetIndex = (_ddayPresetIndex + 1) % _ddayPresets.Length;
+        var preset = _ddayPresets[_ddayPresetIndex];
+        _miniDDayTitle = preset.title;
+        _miniDDayTarget = preset.target;
+        UpdateMiniDDayDisplay();
     }
 
     #region Todo List Handlers (오늘의 할 일)

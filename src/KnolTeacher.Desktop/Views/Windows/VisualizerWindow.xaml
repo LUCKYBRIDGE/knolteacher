@@ -3,60 +3,100 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
-        Title="실물화상기" Height="700" Width="1000"
+        Title="실물화상기 - 놀티쳐" Height="720" Width="1120"
         WindowStartupLocation="Manual"
         Icon="/assets/app_icon.ico"
-        Background="#0F172A">
-    <Grid>
-        <Grid.RowDefinitions>
-            <!-- Top Toolbar -->
-            <RowDefinition Height="50" />
-            <!-- Camera Viewport -->
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
+        Background="#090D16">
+    <Grid Background="#090D16">
+        <!-- 1. Full Viewport Camera Stream (100% 화면 채움) -->
+        <Image x:Name="CameraImage" Stretch="Uniform" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
 
-        <!-- Top Controls -->
-        <Border Grid.Row="0" Background="#1E293B" BorderBrush="#334155" BorderThickness="0,0,0,1" Padding="12,0">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
+        <!-- 2. Floating Top HUD Dock (Glassmorphism Overlay) -->
+        <Border x:Name="TopHudBar" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,14,0,0"
+                Background="#EE0F172A" BorderBrush="#334155" BorderThickness="1.5" CornerRadius="16"
+                Padding="12,7" Opacity="0.95">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="20" Opacity="0.65" ShadowDepth="4" Color="#000000"/>
+            </Border.Effect>
 
-                <!-- Left: Device Selector -->
-                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="📷 장치:" Foreground="White" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                    <ComboBox x:Name="CbCameras" Width="180" SelectionChanged="CbCameras_SelectionChanged" Margin="0,0,10,0"/>
-                    <Button Content="🔄 새로고침" Click="BtnRefresh_Click" Padding="8,4" Background="#334155" Foreground="White" BorderThickness="0"/>
-                </StackPanel>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <!-- Group 1: Device Selection -->
+                <TextBlock Text="📷" FontSize="13" Foreground="#94A3B8" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                <ComboBox x:Name="CbCameras" Width="140" Height="28" SelectionChanged="CbCameras_SelectionChanged"
+                          Background="#1E293B" Foreground="White" BorderBrush="#475569" FontSize="11" Margin="0,0,4,0"/>
+                <Button Content="🔄" ToolTip="카메라 장치 목록 새로고침" Click="BtnRefresh_Click"
+                        Width="28" Height="28" Background="#334155" Foreground="White" BorderThickness="0" Cursor="Hand" Margin="0,0,10,0"/>
 
-                <!-- Center: Video Control Actions -->
-                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <Button Content="🔄 90° 회전" Click="BtnRotate_Click" Margin="0,0,6,0" Padding="8,4" Background="#334155" Foreground="White" BorderThickness="0"/>
-                    <Button Content="↔ 좌우반전" Click="BtnFlipH_Click" Margin="0,0,6,0" Padding="8,4" Background="#334155" Foreground="White" BorderThickness="0"/>
-                    <Button Content="↕ 상하반전" Click="BtnFlipV_Click" Margin="0,0,6,0" Padding="8,4" Background="#334155" Foreground="White" BorderThickness="0"/>
-                    
-                    <ToggleButton x:Name="BtnFreeze" Content="⏸ 정지" Checked="BtnFreeze_Checked" Unchecked="BtnFreeze_Unchecked" Margin="0,0,6,0" Padding="8,4" Background="#334155" Foreground="White" BorderThickness="0"/>
-                    <ToggleButton x:Name="BtnDocEnhance" Content="📄 문서강조" Checked="BtnDocEnhance_Checked" Unchecked="BtnDocEnhance_Unchecked" Margin="0,0,10,0" Padding="8,4" Background="#334155" Foreground="White" BorderThickness="0"/>
+                <Separator Margin="0,2,10,2" Width="1" Background="#334155"/>
 
-                    <Button Content="📸 스냅샷 캡처" Click="BtnSnapshot_Click" Padding="10,4" Background="#0284C7" Foreground="White" FontWeight="Bold" BorderThickness="0"/>
-                </StackPanel>
+                <!-- Group 2: Focus Controls (원터치 AF / MF 슬라이더 및 스텝 버튼) -->
+                <Border Background="#1E293B" CornerRadius="8" Padding="3" Margin="0,0,8,0">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <ToggleButton x:Name="BtnAfToggle" Content="⚡ AF" IsChecked="True"
+                                      Checked="BtnAfToggle_Checked" Unchecked="BtnAfToggle_Unchecked"
+                                      Padding="7,3" Height="26" Background="#0284C7" Foreground="White" BorderThickness="0"
+                                      FontSize="11" FontWeight="Bold" Cursor="Hand" ToolTip="원터치 자동 초점 (AF) 켜기 / 끄기"/>
 
-                <!-- Right: Status / Close -->
-                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Button x:Name="BtnSwitchMonitor" Content="📺 모니터 2" Click="BtnSwitchMonitor_Click" Padding="8,4" Margin="0,0,10,0" Background="#1E293B" Foreground="#38BDF8" BorderBrush="#0284C7" BorderThickness="1" FontSize="11" FontWeight="Bold" Cursor="Hand" ToolTip="실물화상기 창을 모니터 1 ↔ 모니터 2로 즉시 이동"/>
-                    <TextBlock x:Name="TxtStatus" Text="대기 중" Foreground="#38BDF8" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                    <Button Content="✕ 닫기" Click="BtnClose_Click" Padding="10,4" Background="#DC2626" Foreground="White" BorderThickness="0"/>
-                </StackPanel>
-            </Grid>
+                        <Button x:Name="BtnFocusStepDown" Content="➖" ToolTip="초점 거리 줄이기 (가까이)" Click="BtnFocusStepDown_Click"
+                                Width="24" Height="26" Background="Transparent" Foreground="White" BorderThickness="0" Cursor="Hand" Margin="3,0,0,0"/>
+
+                        <Slider x:Name="SliderFocus" Width="75" Minimum="0" Maximum="100" Value="50" IsEnabled="False"
+                                VerticalAlignment="Center" ValueChanged="SliderFocus_ValueChanged" ToolTip="수동 초점 미세조절 (MF)" Margin="2,0,2,0"/>
+
+                        <Button x:Name="BtnFocusStepUp" Content="➕" ToolTip="초점 거리 늘리기 (멀리)" Click="BtnFocusStepUp_Click"
+                                Width="24" Height="26" Background="Transparent" Foreground="White" BorderThickness="0" Cursor="Hand" Margin="0,0,4,0"/>
+
+                        <TextBlock x:Name="TxtFocusLabel" Text="AF 자동" Foreground="#38BDF8" FontSize="10" FontWeight="SemiBold"
+                                   VerticalAlignment="Center" Width="44" TextAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+
+                <Separator Margin="0,2,10,2" Width="1" Background="#334155"/>
+
+                <!-- Group 3: Image Quality & Transform -->
+                <ToggleButton x:Name="BtnSharpenToggle" Content="✨ 선명화" Checked="BtnSharpenToggle_Checked" Unchecked="BtnSharpenToggle_Unchecked"
+                              Padding="8,4" Height="28" Background="#1E293B" Foreground="#A7F3D0" BorderBrush="#059669" BorderThickness="1"
+                              FontSize="11" FontWeight="SemiBold" Cursor="Hand" Margin="0,0,5,0"
+                              ToolTip="교재 및 인쇄물 텍스트 윤곽 선명화 필터 (Unsharp Mask)"/>
+
+                <ToggleButton x:Name="BtnDocEnhance" Content="📄 문서강조" Checked="BtnDocEnhance_Checked" Unchecked="BtnDocEnhance_Unchecked"
+                              Padding="8,4" Height="28" Background="#334155" Foreground="White" BorderThickness="0" FontSize="11" Cursor="Hand" Margin="0,0,5,0"
+                              ToolTip="흑백 텍스트 고대비 강조 (이진화)"/>
+
+                <Button Content="🔄 90°" ToolTip="오른쪽으로 90도 회전" Click="BtnRotate_Click"
+                        Padding="7,4" Height="28" Background="#334155" Foreground="White" BorderThickness="0" FontSize="11" Cursor="Hand" Margin="0,0,4,0"/>
+                <Button Content="↔" ToolTip="좌우 반전" Click="BtnFlipH_Click"
+                        Width="26" Height="28" Background="#334155" Foreground="White" BorderThickness="0" FontSize="11" Cursor="Hand" Margin="0,0,4,0"/>
+                <Button Content="↕" ToolTip="상하 반전" Click="BtnFlipV_Click"
+                        Width="26" Height="28" Background="#334155" Foreground="White" BorderThickness="0" FontSize="11" Cursor="Hand" Margin="0,0,5,0"/>
+
+                <ToggleButton x:Name="BtnFreeze" Content="⏸ 정지" Checked="BtnFreeze_Checked" Unchecked="BtnFreeze_Unchecked"
+                              Padding="8,4" Height="28" Background="#334155" Foreground="White" BorderThickness="0" FontSize="11" Cursor="Hand" Margin="0,0,10,0"
+                              ToolTip="화면 일시 정지"/>
+
+                <Separator Margin="0,2,10,2" Width="1" Background="#334155"/>
+
+                <!-- Group 4: Classroom Actions -->
+                <Button x:Name="BtnSnapshot" Content="📸 캡처" ToolTip="현재 화면 스냅샷 저장" Click="BtnSnapshot_Click"
+                        Padding="9,4" Height="28" Background="#0284C7" Foreground="White" FontWeight="Bold" FontSize="11" BorderThickness="0" Cursor="Hand" Margin="0,0,5,0"/>
+
+                <Button x:Name="BtnAnnotate" Content="✏️ 판서" ToolTip="현재 실물화상기 화면 위에서 즉시 판서하기 (Alt+2)" Click="BtnAnnotate_Click"
+                        Padding="9,4" Height="28" Background="#4F46E5" Foreground="White" FontWeight="Bold" FontSize="11" BorderThickness="0" Cursor="Hand" Margin="0,0,5,0"/>
+
+                <Button x:Name="BtnSwitchMonitor" Content="📺 모니터 2" Click="BtnSwitchMonitor_Click"
+                        Padding="8,4" Height="28" Margin="0,0,8,0" Background="#1E293B" Foreground="#38BDF8" BorderBrush="#0284C7" BorderThickness="1"
+                        FontSize="11" FontWeight="Bold" Cursor="Hand" ToolTip="실물화상기 창을 모니터 1 ↔ 모니터 2로 즉시 이동"/>
+
+                <Button Content="✕" ToolTip="실물화상기 닫기" Click="BtnClose_Click"
+                        Width="28" Height="28" Background="#DC2626" Foreground="White" FontWeight="Bold" BorderThickness="0" Cursor="Hand"/>
+            </StackPanel>
         </Border>
 
-        <!-- Video Viewport -->
-        <Border Grid.Row="1" Background="Black" ClipToBounds="True">
-            <Image x:Name="CameraImage" Stretch="Uniform" />
+        <!-- 3. Bottom Status Pill -->
+        <Border HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="14"
+                Background="#CC0F172A" BorderBrush="#334155" BorderThickness="1" CornerRadius="8" Padding="10,5">
+            <TextBlock x:Name="TxtStatus" Text="대기 중" Foreground="#38BDF8" FontSize="11" FontWeight="SemiBold"/>
         </Border>
     </Grid>
 </Window>

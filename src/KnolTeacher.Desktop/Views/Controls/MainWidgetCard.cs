@@ -215,11 +215,25 @@ public class MainWidgetCard : ContentControl
             double newLeft = currentPos.X - _dragStartPoint.X;
             double newTop = currentPos.Y - _dragStartPoint.Y;
 
-            double maxLeft = Math.Max(0, canvas.ActualWidth - ActualWidth);
-            double maxTop = Math.Max(0, canvas.ActualHeight - ActualHeight);
+            if (canvas.ActualWidth > 0 && canvas.ActualWidth > ActualWidth)
+            {
+                double maxLeft = Math.Max(0, canvas.ActualWidth - ActualWidth);
+                newLeft = Math.Max(0, Math.Min(newLeft, maxLeft));
+            }
+            else
+            {
+                newLeft = Math.Max(0, newLeft);
+            }
 
-            newLeft = Math.Max(0, Math.Min(newLeft, maxLeft));
-            newTop = Math.Max(0, Math.Min(newTop, maxTop));
+            if (canvas.ActualHeight > 0 && canvas.ActualHeight > ActualHeight)
+            {
+                double maxTop = Math.Max(0, canvas.ActualHeight - ActualHeight);
+                newTop = Math.Max(0, Math.Min(newTop, maxTop));
+            }
+            else
+            {
+                newTop = Math.Max(0, newTop);
+            }
 
             Canvas.SetLeft(this, newLeft);
             Canvas.SetTop(this, newTop);
@@ -246,8 +260,11 @@ public class MainWidgetCard : ContentControl
         double currentW = ActualWidth > 0 ? ActualWidth : Width;
         double currentH = ActualHeight > 0 ? ActualHeight : Height;
 
-        double newWidth = Math.Max(MinWidth, currentW + e.HorizontalChange);
-        double newHeight = Math.Max(MinHeight, currentH + e.VerticalChange);
+        double minW = MinWidth > 0 ? MinWidth : 260;
+        double minH = MinHeight > 0 ? MinHeight : 180;
+
+        double newWidth = Math.Max(minW, currentW + e.HorizontalChange);
+        double newHeight = Math.Max(minH, currentH + e.VerticalChange);
 
         Width = newWidth;
         Height = newHeight;

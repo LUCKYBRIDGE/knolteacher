@@ -55,7 +55,7 @@ public class ConfigService : IConfigService
     public AutoNoticePreset AutoNoticePreset { get; set; } = new();
     public BoardSetStore BoardSetStore { get; set; } = new();
     public int TimerTargetMonitorIndex { get; set; } = 1;
-    public MainWidgetLayoutConfig MainWidgetLayout { get; set; } = new();
+    public MainWidgetLayoutConfig MainWidgetLayout { get; set; } = MainWidgetLayoutConfig.CreateDefault();
     public string? LastSeenTutorialVersion { get; set; }
 
     public ConfigService()
@@ -407,7 +407,7 @@ public class ConfigService : IConfigService
             {
                 string json = File.ReadAllText(path);
                 var layout = JsonSerializer.Deserialize<MainWidgetLayoutConfig>(json, _jsonOptions);
-                if (layout != null)
+                if (layout != null && layout.Widgets != null && layout.Widgets.Count > 0)
                 {
                     MainWidgetLayout = layout;
                     return;
@@ -415,7 +415,7 @@ public class ConfigService : IConfigService
             }
             catch { }
         }
-        MainWidgetLayout = new MainWidgetLayoutConfig();
+        MainWidgetLayout = MainWidgetLayoutConfig.CreateDefault();
         SaveMainWidgetLayout();
     }
 

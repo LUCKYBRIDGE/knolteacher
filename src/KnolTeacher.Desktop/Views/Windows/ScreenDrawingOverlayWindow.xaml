@@ -5,12 +5,15 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
-        Title="화면 전체 판서 (Alt+2)"
+        Title="스마트 화면 &amp; 칠판 판서 (Alt+2)"
         WindowStyle="None"
         Topmost="True"
         ShowInTaskbar="False"
         WindowStartupLocation="Manual">
     <Grid>
+        <!-- Solid / Grid Board Background -->
+        <Border x:Name="BoardBackground" Visibility="Collapsed" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+
         <!-- Background Freeze Image -->
         <Image x:Name="FreezeImage" Stretch="Fill" />
 
@@ -24,43 +27,69 @@
                 IsHitTestVisible="True" />
 
         <!-- Floating Top Toolbar (Draggable) -->
-        <Border HorizontalAlignment="Center" VerticalAlignment="Top"
+        <Border x:Name="ToolbarBorder" HorizontalAlignment="Center" VerticalAlignment="Top"
                 Margin="0,16,0,0"
-                Background="#EE1E293B" CornerRadius="12"
-                BorderBrush="#475569" BorderThickness="1.5"
-                Padding="12,8"
+                Background="#EE0F172A" CornerRadius="16"
+                BorderBrush="#334155" BorderThickness="1.5"
+                Padding="14,8"
                 MouseLeftButtonDown="Toolbar_MouseLeftButtonDown">
             <Border.Effect>
-                <DropShadowEffect BlurRadius="15" Opacity="0.5" ShadowDepth="4"/>
+                <DropShadowEffect BlurRadius="18" Opacity="0.6" ShadowDepth="4" Color="#000000"/>
             </Border.Effect>
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                <TextBlock Text="✏️ 화면 판서" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" Margin="4,0,12,0"/>
+                <TextBlock Text="✏️ 판서 스튜디오" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" Margin="2,0,12,0" FontSize="13"/>
+
+                <!-- Background Modes (원터치 배경 전환) -->
+                <Border Background="#1E293B" CornerRadius="8" Padding="3" Margin="0,0,10,0">
+                    <StackPanel Orientation="Horizontal">
+                        <RadioButton x:Name="RbBgScreen" Content="🖼️ 화면" IsChecked="True" Checked="RbBg_Checked" Tag="screen" Foreground="White" FontSize="11" Margin="0,0,4,0" Cursor="Hand" ToolTip="현재 화면 캡처 정지 주석"/>
+                        <RadioButton x:Name="RbBgChalkboard" Content="🟩 칠판" Checked="RbBg_Checked" Tag="chalkboard" Foreground="White" FontSize="11" Margin="0,0,4,0" Cursor="Hand" ToolTip="아늑한 초록칠판 판서 모드"/>
+                        <RadioButton x:Name="RbBgWhiteboard" Content="⬜ 화이트" Checked="RbBg_Checked" Tag="whiteboard" Foreground="White" FontSize="11" Margin="0,0,4,0" Cursor="Hand" ToolTip="깔끔한 화이트보드 판서 모드"/>
+                        <RadioButton x:Name="RbBgGrid" Content="📐 모눈" Checked="RbBg_Checked" Tag="grid" Foreground="White" FontSize="11" Cursor="Hand" ToolTip="수학·도형 수업용 모눈종이 판서 모드"/>
+                    </StackPanel>
+                </Border>
+
+                <Separator Margin="0,2,8,2" Width="1" Background="#334155"/>
 
                 <!-- Tool Toggles -->
-                <RadioButton x:Name="RbPen" Content="펜" IsChecked="True" Checked="RbPen_Checked" Foreground="White" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                <RadioButton x:Name="RbHighlighter" Content="형광펜" Checked="RbHighlighter_Checked" Foreground="White" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                <RadioButton x:Name="RbEraser" Content="획 지우개" Checked="RbEraser_Checked" Foreground="White" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                <RadioButton x:Name="RbPen" Content="펜" IsChecked="True" Checked="RbPen_Checked" Foreground="White" Margin="0,0,6,0" VerticalAlignment="Center" Cursor="Hand"/>
+                <RadioButton x:Name="RbHighlighter" Content="형광펜" Checked="RbHighlighter_Checked" Foreground="White" Margin="0,0,6,0" VerticalAlignment="Center" Cursor="Hand"/>
+                <RadioButton x:Name="RbEraser" Content="지우개" Checked="RbEraser_Checked" Foreground="White" Margin="0,0,10,0" VerticalAlignment="Center" Cursor="Hand"/>
+
+                <!-- Pen Thickness Selection -->
+                <Border Background="#1E293B" CornerRadius="6" Padding="4,2" Margin="0,0,10,0">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Content="●" FontSize="7" Click="BtnStrokeWidth_Click" Tag="2" Width="20" Height="20" Background="Transparent" Foreground="#94A3B8" BorderThickness="0" Cursor="Hand" ToolTip="얇게 (2pt)"/>
+                        <Button Content="●" FontSize="10" Click="BtnStrokeWidth_Click" Tag="4" Width="20" Height="20" Background="Transparent" Foreground="#38BDF8" BorderThickness="0" Cursor="Hand" ToolTip="보통 (4pt)"/>
+                        <Button Content="●" FontSize="14" Click="BtnStrokeWidth_Click" Tag="8" Width="20" Height="20" Background="Transparent" Foreground="#94A3B8" BorderThickness="0" Cursor="Hand" ToolTip="굵게 (8pt)"/>
+                        <Button Content="●" FontSize="18" Click="BtnStrokeWidth_Click" Tag="16" Width="20" Height="20" Background="Transparent" Foreground="#94A3B8" BorderThickness="0" Cursor="Hand" ToolTip="아주 굵게 (16pt)"/>
+                    </StackPanel>
+                </Border>
 
                 <!-- Quick Colors -->
-                <Button Width="20" Height="20" Background="#EF4444" Click="BtnColor_Click" Tag="#EF4444" Margin="0,0,4,0" ToolTip="빨강"/>
-                <Button Width="20" Height="20" Background="#FDE047" Click="BtnColor_Click" Tag="#FDE047" Margin="0,0,4,0" ToolTip="노랑"/>
-                <Button Width="20" Height="20" Background="#38BDF8" Click="BtnColor_Click" Tag="#38BDF8" Margin="0,0,4,0" ToolTip="파랑"/>
-                <Button Width="20" Height="20" Background="#22C55E" Click="BtnColor_Click" Tag="#22C55E" Margin="0,0,4,0" ToolTip="초록"/>
-                <Button Width="20" Height="20" Background="#FFFFFF" Click="BtnColor_Click" Tag="#FFFFFF" Margin="0,0,10,0" ToolTip="흰색"/>
+                <Button Width="20" Height="20" Background="#EF4444" Click="BtnColor_Click" Tag="#EF4444" Margin="0,0,4,0" ToolTip="빨강" Cursor="Hand"/>
+                <Button Width="20" Height="20" Background="#FDE047" Click="BtnColor_Click" Tag="#FDE047" Margin="0,0,4,0" ToolTip="노랑" Cursor="Hand"/>
+                <Button Width="20" Height="20" Background="#38BDF8" Click="BtnColor_Click" Tag="#38BDF8" Margin="0,0,4,0" ToolTip="하늘" Cursor="Hand"/>
+                <Button Width="20" Height="20" Background="#22C55E" Click="BtnColor_Click" Tag="#22C55E" Margin="0,0,4,0" ToolTip="초록" Cursor="Hand"/>
+                <Button Width="20" Height="20" Background="#FFFFFF" Click="BtnColor_Click" Tag="#FFFFFF" Margin="0,0,4,0" ToolTip="흰색" Cursor="Hand"/>
+                <Button Width="20" Height="20" Background="#1E293B" BorderBrush="#64748B" BorderThickness="1" Click="BtnColor_Click" Tag="#1E293B" Margin="0,0,10,0" ToolTip="검정" Cursor="Hand"/>
 
-                <Separator Margin="0,2,8,2" Width="1" Background="#475569"/>
+                <Separator Margin="0,2,8,2" Width="1" Background="#334155"/>
 
                 <!-- Math 교구 Tools -->
                 <Button Content="📏 자" Click="BtnToggleRuler_Click" Margin="0,0,4,0" Padding="8,3" Background="#334155" Foreground="#38BDF8" FontWeight="Bold" BorderThickness="0" Cursor="Hand" ToolTip="0~20cm 직선자 (각도 회전 및 측정)"/>
                 <Button Content="📐 삼각자" Click="BtnToggleTriangle_Click" Margin="0,0,4,0" Padding="8,3" Background="#334155" Foreground="#38BDF8" FontWeight="Bold" BorderThickness="0" Cursor="Hand" ToolTip="45°-45°-90° 삼각자"/>
                 <Button Content="🧭 각도기" Click="BtnToggleProtractor_Click" Margin="0,0,10,0" Padding="8,3" Background="#334155" Foreground="#FDE047" FontWeight="Bold" BorderThickness="0" Cursor="Hand" ToolTip="180° 반원 각도기"/>
 
-                <!-- Actions -->
-                <Button Content="↩ 실행취소" Click="BtnUndo_Click" Margin="0,0,6,0" Padding="8,3" Background="#334155" Foreground="White" BorderThickness="0"/>
-                <Button Content="🗑 지우기" Click="BtnClear_Click" Margin="0,0,12,0" Padding="8,3" Background="#DC2626" Foreground="White" BorderThickness="0"/>
+                <Separator Margin="0,2,8,2" Width="1" Background="#334155"/>
+
+                <!-- Actions: Save, Undo, Clear, Exit -->
+                <Button Content="💾 저장" Click="BtnSaveDrawing_Click" Margin="0,0,6,0" Padding="9,4" Background="#0284C7" Foreground="White" FontWeight="Bold" BorderThickness="0" Cursor="Hand" ToolTip="현재 판서 화면을 클립보드에 복사하고 사진 폴더에 저장"/>
+                <Button Content="↩ 실행취소" Click="BtnUndo_Click" Margin="0,0,6,0" Padding="8,4" Background="#334155" Foreground="White" BorderThickness="0" Cursor="Hand"/>
+                <Button Content="🗑 지우기" Click="BtnClear_Click" Margin="0,0,10,0" Padding="8,4" Background="#DC2626" Foreground="White" BorderThickness="0" Cursor="Hand"/>
 
                 <!-- Exit -->
-                <Button Content="✕ 판서 종료 (ESC)" Click="BtnClose_Click" Padding="10,4" Background="#E11D48" Foreground="White" FontWeight="Bold" BorderThickness="0"/>
+                <Button Content="✕ 판서 종료 (ESC)" Click="BtnClose_Click" Padding="10,4" Background="#E11D48" Foreground="White" FontWeight="Bold" BorderThickness="0" Cursor="Hand"/>
             </StackPanel>
         </Border>
     </Grid>
