@@ -42,6 +42,7 @@ public class StudentManagerService : IStudentManagerService
         WriteIndented = true,
         Encoder = JavaScriptEncoder.Create(UnicodeRanges.All)
     };
+    private bool _preserveBackupOnNextSave;
 
     public List<StudentItem> Students { get; private set; } = new();
     public HashSet<int> PickedStudentNumbers { get; } = new();
@@ -57,6 +58,7 @@ public class StudentManagerService : IStudentManagerService
     public void LoadRoster()
     {
         string path = Path.Combine(_configService.ConfigDir, "student_roster.json");
+        _preserveBackupOnNextSave = false;
 
         if (TryLoadRosterFile(path, out var container, out bool hasPersistFlag, out bool hasUseNamesFlag))
         {
@@ -69,15 +71,12 @@ public class StudentManagerService : IStudentManagerService
         {
             ApplyLoadedRoster(container!, hasPersistFlag, hasUseNamesFlag);
 
-            if (SafeLocalFileStore.TryRestorePrimaryFromBackup(path))
-            {
-                App.BootLog("[StudentManager] Recovered local roster from .bak file and repaired primary.");
-            }
-            else
-            {
-                App.BootLog("[StudentManager] Recovered local roster from .bak file; primary repair was unavailable.");
-            }
+            bool repaired = SafeLocalFileStore.TryRestorePrimaryFromBackup(path);
+            _preserveBackupOnNextSave = !repaired;
 
+            App.BootLog(repaired
+                ? "[StudentManager] Recovered local roster from .bak file and repaired primary."
+                : "[StudentManager] Recovered local roster from .bak file; preserving backup on next save.");
             return;
         }
 
@@ -201,6 +200,7 @@ public class StudentManagerService : IStudentManagerService
         PickedStudentNumbers.Clear();
         UseNamesInPicker = false;
         PersistPersonalDetails = false;
+        _preserveBackupOnNextSave = false;
     }
 
     public void SaveRoster()
@@ -220,7 +220,11 @@ public class StudentManagerService : IStudentManagerService
             };
 
             string json = JsonSerializer.Serialize(container, _saveOptions);
-            SafeLocalFileStore.WriteAllTextAtomic(path, json);
+            SafeLocalFileStore.WriteAllTextAtomic(
+                path,
+                json,
+                preserveExistingBackup: _preserveBackupOnNextSave);
+            _preserveBackupOnNextSave = false;
         }
         catch (Exception ex)
         {
