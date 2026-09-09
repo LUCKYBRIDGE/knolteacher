@@ -4,6 +4,7 @@ using System.IO;
 using System.Net.Http;
 using System.Reflection;
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,17 +14,14 @@ namespace KnolTeacher.Desktop.Services;
 
 public class UpdateService : IUpdateService
 {
-    // If version metadata is unexpectedly unavailable, prefer a conservative low version
-    // so the updater can still recover by offering the latest valid GitHub Release.
     public const string FallbackVersion = "v0.0.0";
-
-    // GitHub may normalize non-ASCII Release asset names. Keep the user-facing/local
-    // executable name Korean, while accepting the stable ASCII transport name.
     public const string LocalExecutableName = "놀티쳐.exe";
     public const string PrimaryReleaseAssetName = "KnolTeacher.exe";
     public const string LegacyReleaseAssetName = "놀티쳐.exe";
 
     private const string LatestReleaseApi = "https://api.github.com/repos/LUCKYBRIDGE/knolteacher/releases/latest";
+    private const string UpdateSuccessMarkerFile = "update_completed.txt";
+    private const string UpdateFailureMarkerFile = "update_failed.txt";
 
     public string CurrentVersion
     {
@@ -39,24 +37,19 @@ public class UpdateService : IUpdateService
             }
             catch
             {
-                // Fall through to executable file metadata.
             }
 
             try
             {
                 string? executablePath = Environment.ProcessPath;
-                if (!string.IsNullOrWhiteSpace(executablePath))
+                if (!string.IsNullOrWhiteSpace(executablePath) &&
+                    TryGetExecutableVersion(executablePath, out string fileVersion))
                 {
-                    string? fileVersion = FileVersionInfo.GetVersionInfo(executablePath).FileVersion;
-                    if (Version.TryParse(fileVersion, out var parsed) && parsed.Build >= 0)
-                    {
-                        return $"v{parsed.Major}.{parsed.Minor}.{parsed.Build}";
-                    }
+                    return fileVersion;
                 }
             }
             catch
             {
-                // Fall through to the recovery version below.
             }
 
             return FallbackVersion;
@@ -100,8 +93,6 @@ public class UpdateService : IUpdateService
 
             if (root.TryGetProperty("assets", out var assetsProp) && assetsProp.ValueKind == JsonValueKind.Array)
             {
-                // Prefer the stable ASCII GitHub transport name, but remain compatible
-                // with any older Release that successfully retained the Korean name.
                 foreach (string acceptedName in new[] { PrimaryReleaseAssetName, LegacyReleaseAssetName })
                 {
                     foreach (var asset in assetsProp.EnumerateArray())
@@ -133,7 +124,6 @@ public class UpdateService : IUpdateService
                 }
             }
 
-            // 업데이트가 있어도 정식 단일 실행 파일이 없는 Release는 사용자에게 제안하지 않는다.
             if (result.HasUpdate && string.IsNullOrWhiteSpace(result.DownloadUrl))
             {
                 Debug.WriteLine($"Latest release {latestTag} has no supported KnolTeacher executable asset.");
@@ -142,7 +132,7 @@ public class UpdateService : IUpdateService
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"CheckForUpdatesAsync error: {ex.Message}");
+            Debug.WriteLine($"CheckForUpdatesAsync error: {ex.GetType().Name}");
         }
 
         return result;
@@ -177,8 +167,6 @@ public class UpdateService : IUpdateService
 
         string tempDir = Path.Combine(Path.GetTempPath(), "KnolTeacherUpdates");
         Directory.CreateDirectory(tempDir);
-        // Whatever the GitHub transport name is, normalize the downloaded file to the
-        // actual local product executable name before replacement.
         string destPath = Path.Combine(tempDir, LocalExecutableName);
 
         try
@@ -224,6 +212,13 @@ public class UpdateService : IUpdateService
                 throw new InvalidDataException("업데이트 파일 SHA-256 검증에 실패했습니다. 파일을 적용하지 않습니다.");
             }
 
+            if (!TryGetExecutableVersion(destPath, out string downloadedVersion) ||
+                !IsSameProductVersion(downloadedVersion, updateInfo.LatestVersion))
+            {
+                throw new InvalidDataException(
+                    $"다운로드된 실행 파일 버전이 Release 버전과 일치하지 않습니다. Release={updateInfo.LatestVersion}, File={downloadedVersion}");
+            }
+
             return destPath;
         }
         catch
@@ -245,51 +240,80 @@ public class UpdateService : IUpdateService
             throw new InvalidDataException($"로컬 적용용 놀티쳐 실행 파일이 아닙니다: {Path.GetFileName(downloadedFilePath)}");
         }
 
-        string? currentExe = Environment.ProcessPath;
-        int currentPid = Process.GetCurrentProcess().Id;
-
-        if (string.IsNullOrWhiteSpace(currentExe))
+        if (!TryGetExecutableVersion(downloadedFilePath, out string downloadedVersion))
         {
-            Process.Start(new ProcessStartInfo(downloadedFilePath) { UseShellExecute = true });
-            Application.Current.Shutdown();
-            return;
+            throw new InvalidDataException("다운로드된 실행 파일의 버전 정보를 확인할 수 없습니다.");
         }
 
-        string scriptPath = Path.Combine(Path.GetTempPath(), $"knol_updater_{Guid.NewGuid():N}.cmd");
-        string scriptContent = $@"@echo off
-chcp 65001 > nul
-echo [놀티쳐] 최신 버전으로 자동 업데이트 진행 중...
-timeout /t 2 /nobreak > nul
+        string? runningExe = Environment.ProcessPath;
+        if (string.IsNullOrWhiteSpace(runningExe))
+        {
+            throw new InvalidOperationException("현재 실행 중인 놀티쳐 경로를 확인할 수 없어 안전하게 업데이트할 수 없습니다.");
+        }
 
-:waitloop
-tasklist /fi ""PID eq {currentPid}"" | find ""{currentPid}"" > nul
-if not errorlevel 1 (
-    timeout /t 1 /nobreak > nul
-    goto waitloop
-)
+        string installDirectory = Path.GetDirectoryName(runningExe) ?? AppContext.BaseDirectory;
+        string targetExe = Path.Combine(installDirectory, LocalExecutableName);
+        string expectedHash = ComputeSha256Hex(downloadedFilePath);
+        int currentPid = Process.GetCurrentProcess().Id;
 
-copy /y ""{downloadedFilePath}"" ""{currentExe}"" > nul
-if errorlevel 1 (
-    start """" ""{downloadedFilePath}""
-    del ""%~f0""
-    exit
-)
+        string configDir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+            ".knol_teacher_desk");
+        string successMarker = Path.Combine(configDir, UpdateSuccessMarkerFile);
+        string failureMarker = Path.Combine(configDir, UpdateFailureMarkerFile);
 
-start """" ""{currentExe}""
-del ""%~f0""
-";
-        File.WriteAllText(scriptPath, scriptContent, System.Text.Encoding.Default);
+        string scriptPath = Path.Combine(Path.GetTempPath(), $"knol_updater_{Guid.NewGuid():N}.ps1");
+        string script = BuildPowerShellUpdaterScript(
+            downloadedFilePath,
+            targetExe,
+            runningExe,
+            successMarker,
+            failureMarker,
+            expectedHash,
+            downloadedVersion,
+            currentPid,
+            scriptPath);
+
+        File.WriteAllText(scriptPath, script, new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
 
         var psi = new ProcessStartInfo
         {
-            FileName = "cmd.exe",
-            Arguments = $"/c \"{scriptPath}\"",
+            FileName = "powershell.exe",
+            Arguments = $"-NoProfile -ExecutionPolicy Bypass -File \"{scriptPath}\"",
             CreateNoWindow = true,
             UseShellExecute = false
         };
 
         Process.Start(psi);
         Application.Current.Shutdown();
+    }
+
+    public bool TryConsumeUpdateCompletion(out string version)
+    {
+        version = string.Empty;
+        string path = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+            ".knol_teacher_desk",
+            UpdateSuccessMarkerFile);
+
+        try
+        {
+            if (!File.Exists(path)) return false;
+            string value = File.ReadAllText(path).Trim();
+            File.Delete(path);
+            if (!Version.TryParse(value.TrimStart('v', 'V'), out var parsed) || parsed.Build < 0)
+            {
+                return false;
+            }
+
+            version = $"v{parsed.Major}.{parsed.Minor}.{parsed.Build}";
+            return IsSameProductVersion(version, CurrentVersion);
+        }
+        catch
+        {
+            version = string.Empty;
+            return false;
+        }
     }
 
     public static bool IsNewerVersion(string latestTag, string currentVersion)
@@ -305,11 +329,49 @@ del ""%~f0""
         return string.Compare(cleanLatest, cleanCurrent, StringComparison.OrdinalIgnoreCase) > 0;
     }
 
+    public static bool IsSameProductVersion(string left, string right)
+    {
+        if (!Version.TryParse(left.TrimStart('v', 'V').Trim(), out var a) ||
+            !Version.TryParse(right.TrimStart('v', 'V').Trim(), out var b))
+        {
+            return false;
+        }
+
+        return a.Major == b.Major && a.Minor == b.Minor && a.Build == b.Build;
+    }
+
     public static bool IsAcceptedReleaseAssetName(string? assetName)
     {
         if (string.IsNullOrWhiteSpace(assetName)) return false;
         return string.Equals(assetName, PrimaryReleaseAssetName, StringComparison.OrdinalIgnoreCase) ||
                string.Equals(assetName, LegacyReleaseAssetName, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool TryGetExecutableVersion(string filePath, out string version)
+    {
+        version = string.Empty;
+        try
+        {
+            string? raw = FileVersionInfo.GetVersionInfo(filePath).FileVersion;
+            if (!Version.TryParse(raw, out var parsed) || parsed.Build < 0)
+            {
+                return false;
+            }
+
+            version = $"v{parsed.Major}.{parsed.Minor}.{parsed.Build}";
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static string ComputeSha256Hex(string filePath)
+    {
+        using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        using var sha = SHA256.Create();
+        return Convert.ToHexString(sha.ComputeHash(stream));
     }
 
     private static async Task<bool> VerifySha256Async(string filePath, string digest, CancellationToken cancellationToken)
@@ -342,6 +404,84 @@ del ""%~f0""
         return CryptographicOperations.FixedTimeEquals(actual, expected);
     }
 
+    private static string BuildPowerShellUpdaterScript(
+        string source,
+        string target,
+        string runningExe,
+        string successMarker,
+        string failureMarker,
+        string expectedHash,
+        string expectedVersion,
+        int currentPid,
+        string scriptPath)
+    {
+        string sourcePs = EscapePowerShellLiteral(source);
+        string targetPs = EscapePowerShellLiteral(target);
+        string runningPs = EscapePowerShellLiteral(runningExe);
+        string successPs = EscapePowerShellLiteral(successMarker);
+        string failurePs = EscapePowerShellLiteral(failureMarker);
+        string scriptPs = EscapePowerShellLiteral(scriptPath);
+
+        return $@"$ErrorActionPreference = 'Stop'
+$source = '{sourcePs}'
+$target = '{targetPs}'
+$running = '{runningPs}'
+$successMarker = '{successPs}'
+$failureMarker = '{failurePs}'
+$expectedHash = '{expectedHash}'
+$expectedVersion = '{expectedVersion}'
+$scriptPath = '{scriptPs}'
+
+try {{
+    try {{ Wait-Process -Id {currentPid} -ErrorAction SilentlyContinue }} catch {{ }}
+
+    $copied = $false
+    for ($i = 0; $i -lt 12; $i++) {{
+        try {{
+            Copy-Item -LiteralPath $source -Destination $target -Force
+            $actualHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $target).Hash.ToUpperInvariant()
+            if ($actualHash -eq $expectedHash) {{
+                $copied = $true
+                break
+            }}
+        }} catch {{ }}
+        Start-Sleep -Milliseconds 500
+    }}
+
+    if (-not $copied) {{ throw 'verified replacement failed' }}
+
+    $markerDir = Split-Path -Parent $successMarker
+    New-Item -ItemType Directory -Path $markerDir -Force | Out-Null
+    Set-Content -LiteralPath $successMarker -Value $expectedVersion -Encoding UTF8
+    if (Test-Path -LiteralPath $failureMarker) {{ Remove-Item -LiteralPath $failureMarker -Force -ErrorAction SilentlyContinue }}
+
+    if (($running -ne $target) -and (Test-Path -LiteralPath $running)) {{
+        Remove-Item -LiteralPath $running -Force -ErrorAction SilentlyContinue
+    }}
+
+    Start-Process -FilePath $target
+    Start-Sleep -Milliseconds 700
+    Remove-Item -LiteralPath $source -Force -ErrorAction SilentlyContinue
+}}
+catch {{
+    try {{
+        $markerDir = Split-Path -Parent $failureMarker
+        New-Item -ItemType Directory -Path $markerDir -Force | Out-Null
+        Set-Content -LiteralPath $failureMarker -Value 'replacement_failed' -Encoding UTF8
+        if (Test-Path -LiteralPath $target) {{ Start-Process -FilePath $target }}
+        elseif (Test-Path -LiteralPath $running) {{ Start-Process -FilePath $running }}
+    }} catch {{ }}
+}}
+finally {{
+    Start-Sleep -Milliseconds 500
+    Remove-Item -LiteralPath $scriptPath -Force -ErrorAction SilentlyContinue
+}}
+";
+    }
+
+    private static string EscapePowerShellLiteral(string value)
+        => value.Replace("'", "''", StringComparison.Ordinal);
+
     private static void TryDelete(string path)
     {
         try
@@ -353,7 +493,6 @@ del ""%~f0""
         }
         catch
         {
-            // 임시 업데이트 파일 정리 실패는 원래 예외를 가리지 않는다.
         }
     }
 }

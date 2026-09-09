@@ -25,4 +25,14 @@ public class UpdateServiceContractTests
     {
         Assert.Equal(expected, UpdateService.IsNewerVersion(latest, current));
     }
+
+    [Theory]
+    [InlineData("v3.0.9", "3.0.9.0", true)]
+    [InlineData("3.0.9", "v3.0.9", true)]
+    [InlineData("v3.0.9", "v3.0.8", false)]
+    [InlineData("invalid", "v3.0.9", false)]
+    public void SameProductVersion_UsesMajorMinorBuild(string left, string right, bool expected)
+    {
+        Assert.Equal(expected, UpdateService.IsSameProductVersion(left, right));
+    }
 }
