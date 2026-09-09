@@ -139,19 +139,90 @@ jobs:
           git tag -a "$env:RELEASE_TAG" "$env:GITHUB_SHA" -m "KnolTeacher $env:RELEASE_TAG"
           git push origin "$env:RELEASE_TAG"
 
-      - name: Create GitHub Release
+      - name: Create GitHub Release metadata
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release view "$env:RELEASE_TAG" *> $null
-          if ($LASTEXITCODE -eq 0) {
-            Write-Host "Release '$env:RELEASE_TAG' already exists. Nothing to do."
-            exit 0
+          gh api "repos/$env:GITHUB_REPOSITORY/releases/tags/$env:RELEASE_TAG" *> $null
+          $releaseLookupExitCode = $LASTEXITCODE
+          $global:LASTEXITCODE = 0
+
+          if ($releaseLookupExitCode -eq 0) {
+            Write-Host "Release '$env:RELEASE_TAG' already exists. Reusing release metadata."
+          }
+          elseif ($releaseLookupExitCode -eq 1) {
+            gh release create "$env:RELEASE_TAG" `
+              --verify-tag `
+              --title "$env:RELEASE_TAG" `
+              --generate-notes `
+              --notes "SHA-256: $env:RELEASE_SHA256"
+            if ($LASTEXITCODE -ne 0) {
+              throw "Unable to create GitHub Release '$env:RELEASE_TAG'."
+            }
+          }
+          else {
+            throw "Unable to determine whether release '$env:RELEASE_TAG' exists."
           }
 
-          gh release create "$env:RELEASE_TAG" "dist-net/놀티쳐.exe" `
-            --verify-tag `
-            --title "$env:RELEASE_TAG" `
-            --generate-notes `
-            --notes "SHA-256: $env:RELEASE_SHA256"
+      - name: Upload exact-name release asset
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $releaseAsset = (Resolve-Path -LiteralPath "dist-net/놀티쳐.exe").Path
+          $releaseJson = gh api "repos/$env:GITHUB_REPOSITORY/releases/tags/$env:RELEASE_TAG" | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0 -or $null -eq $releaseJson.id) {
+            throw "Unable to resolve release '$env:RELEASE_TAG' after creation."
+          }
+
+          # Release contract: one downloadable executable only.
+          foreach ($asset in @($releaseJson.assets)) {
+            gh api --method DELETE "repos/$env:GITHUB_REPOSITORY/releases/assets/$($asset.id)" *> $null
+            if ($LASTEXITCODE -ne 0) {
+              throw "Unable to remove stale release asset '$($asset.name)'."
+            }
+          }
+
+          $encodedName = [Uri]::EscapeDataString("놀티쳐.exe")
+          $uploadUri = "https://uploads.github.com/repos/$env:GITHUB_REPOSITORY/releases/$($releaseJson.id)/assets?name=$encodedName"
+          $headers = @{
+            Authorization = "Bearer $env:GH_TOKEN"
+            Accept = "application/vnd.github+json"
+            "X-GitHub-Api-Version" = "2022-11-28"
+          }
+
+          Invoke-RestMethod `
+            -Uri $uploadUri `
+            -Method Post `
+            -Headers $headers `
+            -ContentType "application/octet-stream" `
+            -InFile $releaseAsset | Out-Null
+
+          $verifiedRelease = gh api "repos/$env:GITHUB_REPOSITORY/releases/tags/$env:RELEASE_TAG" | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0) {
+            throw "Unable to verify uploaded release asset."
+          }
+
+          $assets = @($verifiedRelease.assets)
+          if ($assets.Count -ne 1) {
+            throw "Release must contain exactly one asset; found $($assets.Count)."
+          }
+
+          $uploaded = $assets[0]
+          if ($uploaded.name -ne "놀티쳐.exe") {
+            throw "Release asset name must be exactly '놀티쳐.exe'; found '$($uploaded.name)'."
+          }
+
+          $expectedDigest = "sha256:$env:RELEASE_SHA256"
+          if (-not [string]::IsNullOrWhiteSpace([string]$uploaded.digest) -and $uploaded.digest -ne $expectedDigest) {
+            throw "Release asset digest '$($uploaded.digest)' does not match '$expectedDigest'."
+          }
+
+          $localLength = (Get-Item -LiteralPath $releaseAsset).Length
+          if ([long]$uploaded.size -ne $localLength) {
+            throw "Release asset size '$($uploaded.size)' does not match local file size '$localLength'."
+          }
+
+          Write-Host "Verified release asset: $($uploaded.name)"
+          Write-Host "Verified release SHA-256: $env:RELEASE_SHA256"
