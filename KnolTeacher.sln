@@ -7,6 +7,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{9D5F02CF-EB4
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KnolTeacher.Desktop", "src\KnolTeacher.Desktop\KnolTeacher.Desktop.csproj", "{BC875D91-4C97-4999-882B-21BA225C2E9A}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{A7A34404-4C52-43E5-AE0E-ED340D22473D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KnolTeacher.Tests", "tests\KnolTeacher.Tests\KnolTeacher.Tests.csproj", "{25B68491-EC45-4A34-B7D1-8708EDDD87ED}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -20,8 +24,13 @@ Global
 		{BC875D91-4C97-4999-882B-21BA225C2E9A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BC875D91-4C97-4999-882B-21BA225C2E9A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BC875D91-4C97-4999-882B-21BA225C2E9A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{25B68491-EC45-4A34-B7D1-8708EDDD87ED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{25B68491-EC45-4A34-B7D1-8708EDDD87ED}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{25B68491-EC45-4A34-B7D1-8708EDDD87ED}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{25B68491-EC45-4A34-B7D1-8708EDDD87ED}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{BC875D91-4C97-4999-882B-21BA225C2E9A} = {9D5F02CF-EB48-4B3A-B77A-8AE879CBBBFC}
+		{25B68491-EC45-4A34-B7D1-8708EDDD87ED} = {A7A34404-4C52-43E5-AE0E-ED340D22473D}
 	EndGlobalSection
 EndGlobal
