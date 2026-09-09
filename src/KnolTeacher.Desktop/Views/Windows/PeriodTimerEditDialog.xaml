@@ -96,19 +96,25 @@
                             </StackPanel>
                         </Grid>
 
-                        <!-- Preset Quick Buttons for Duration -->
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                            <TextBlock Text="빠른 설정:" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                            <Button Content="5분 전부터 0초(직전)까지" Click="BtnPresetTiming_Click" Tag="5,0,0,0" Padding="8,3" Margin="0,0,6,0" Background="#F1F5F9" Foreground="#334155" FontSize="11" Cursor="Hand">
-                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
+                        <!-- Preset Quick Buttons for Duration & Classroom Travel -->
+                        <TextBlock Text="⚡ 수업 형태별 이동시간 프리셋 (클릭 시 시간 및 안내문구 자동 적용):" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource BeigeTextMuted}" Margin="0,0,0,6"/>
+                        <WrapPanel Margin="0,0,0,10">
+                            <Button Content="🎒 이동 수업 (10분 전~3분 전)" Click="BtnPresetTravel_Click" Tag="travel_10" Padding="10,5" Margin="0,0,6,6" Background="#EEF2FF" Foreground="#4F46E5" FontWeight="Bold" FontSize="11" BorderThickness="0" Cursor="Hand" ToolTip="과학실, 미술실, 체육관 등 이동시간이 긴 수업에 적합">
+                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
                             </Button>
-                            <Button Content="5분 전~3분 전(총 2분)" Click="BtnPresetTiming_Click" Tag="5,0,3,0" Padding="8,3" Margin="0,0,6,0" Background="#F1F5F9" Foreground="#334155" FontSize="11" Cursor="Hand">
-                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
+                            <Button Content="🏃 특별실 이동 (7분 전~2분 전)" Click="BtnPresetTravel_Click" Tag="special_7" Padding="10,5" Margin="0,0,6,6" Background="#FEF3C7" Foreground="#B45309" FontWeight="Bold" FontSize="11" BorderThickness="0" Cursor="Hand" ToolTip="컴퓨터실, 어학실, 도서관 등 교내 특별실 이동">
+                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
                             </Button>
-                            <Button Content="3분 전부터 0초까지" Click="BtnPresetTiming_Click" Tag="3,0,0,0" Padding="8,3" Background="#F1F5F9" Foreground="#334155" FontSize="11" Cursor="Hand">
-                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
+                            <Button Content="👨‍🏫 전담 수업 (5분 전~0초)" Click="BtnPresetTravel_Click" Tag="specialist_5" Padding="10,5" Margin="0,0,6,6" Background="#ECFDF5" Foreground="#059669" FontWeight="Bold" FontSize="11" BorderThickness="0" Cursor="Hand" ToolTip="전담 교사 수업 준비 및 학생 사전 착석 지도">
+                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
                             </Button>
-                        </StackPanel>
+                            <Button Content="🔔 일반 수업 (5분 전~3분 전)" Click="BtnPresetTravel_Click" Tag="regular_5" Padding="10,5" Margin="0,0,6,6" Background="#F1F5F9" Foreground="#334155" FontSize="11" Cursor="Hand">
+                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                            </Button>
+                            <Button Content="⚡ 직전 준비 (3분 전~0초)" Click="BtnPresetTravel_Click" Tag="fast_3" Padding="10,5" Margin="0,0,6,6" Background="#F1F5F9" Foreground="#334155" FontSize="11" Cursor="Hand">
+                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                            </Button>
+                        </WrapPanel>
 
                         <!-- Calculated Duration Badge -->
                         <Border Background="#E0F2FE" BorderBrush="#BAE6FD" BorderThickness="1" CornerRadius="8" Padding="12,8">
@@ -170,11 +176,15 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
-            <Button Grid.Column="0" Content="⏱️ 40분 수업 타이머 즉시 실행" Click="BtnLaunchClassTimer_Click" Height="36" Padding="12,0" Margin="0,0,8,0" Background="#F1F5F9" Foreground="#334155" FontWeight="Bold" BorderThickness="0" Cursor="Hand" ToolTip="수업 진행 중 일반 집중 타이머를 엽니다.">
+            <Button Grid.Column="0" Content="⏱️ 40분 타이머 바로 실행" Click="BtnLaunchClassTimer_Click" Height="36" Padding="12,0" Margin="0,0,8,0" Background="#F1F5F9" Foreground="#334155" FontWeight="Bold" BorderThickness="0" Cursor="Hand" ToolTip="수업 진행 중 일반 집중 타이머를 엽니다.">
                 <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
             </Button>
 
-            <Button Grid.Column="1" Content="🌐 전체 교시 일괄 설정..." Click="BtnOpenGlobalSettings_Click" Height="36" Padding="12,0" Background="{DynamicResource BeigeCardBg}" Foreground="{DynamicResource BeigeTextMuted}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" Cursor="Hand">
+            <Button Grid.Column="1" Content="🌐 전체 일괄 설정..." Click="BtnOpenGlobalSettings_Click" Height="36" Padding="12,0" Background="{DynamicResource BeigeCardBg}" Foreground="{DynamicResource BeigeTextMuted}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" Cursor="Hand">
+                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+            </Button>
+
+            <Button Grid.Column="2" Content="🗑️ 이 교시 알람 삭제(끄기)" Click="BtnDeleteAlarm_Click" Height="36" Padding="14,0" Margin="10,0,0,0" HorizontalAlignment="Left" Background="#FEE2E2" Foreground="#DC2626" FontWeight="Bold" BorderThickness="0" Cursor="Hand" ToolTip="이 교시의 시작 전 예비 알람을 완전히 끕니다.">
                 <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
             </Button>
 

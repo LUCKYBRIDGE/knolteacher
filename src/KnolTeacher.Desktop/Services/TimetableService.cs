@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Windows.Media;
 using KnolTeacher.Desktop.Models;
 
 namespace KnolTeacher.Desktop.Services;
@@ -314,6 +315,43 @@ public class TimetableService : ITimetableService
 
             // Current active period check
             copy.IsCurrentPeriod = string.Compare(currentHm, copy.Start) >= 0 && string.Compare(currentHm, copy.End) <= 0;
+
+            // Alarm badge info
+            var periodAlarmCfg = _configService.PeriodAlarmConfig;
+            var eff = periodAlarmCfg.GetEffectiveConfig(p.Period);
+            bool alarmOn = p.AlarmEnabled && periodAlarmCfg.GlobalConfig.Enabled && eff.Enabled;
+
+            if (p.IsLunch)
+            {
+                copy.AlarmBadgeText = "";
+                copy.AlarmBadgeBg = Brushes.Transparent;
+                copy.AlarmBadgeFg = Brushes.Transparent;
+            }
+            else if (!alarmOn)
+            {
+                copy.AlarmBadgeText = "🔕 끔";
+                copy.AlarmBadgeBg = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F1F5F9"));
+                copy.AlarmBadgeFg = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#94A3B8"));
+            }
+            else if (eff.LeadStartMinutes >= 10)
+            {
+                copy.AlarmBadgeText = $"🎒 {eff.LeadStartMinutes}분전";
+                copy.AlarmBadgeBg = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#EEF2FF"));
+                copy.AlarmBadgeFg = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4F46E5"));
+            }
+            else if (eff.LeadStartMinutes == 7)
+            {
+                copy.AlarmBadgeText = $"🏃 {eff.LeadStartMinutes}분전";
+                copy.AlarmBadgeBg = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FEF3C7"));
+                copy.AlarmBadgeFg = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#B45309"));
+            }
+            else
+            {
+                copy.AlarmBadgeText = $"🔔 {eff.LeadStartMinutes}분전";
+                copy.AlarmBadgeBg = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#ECFDF5"));
+                copy.AlarmBadgeFg = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#059669"));
+            }
+
             result.Add(copy);
         }
 

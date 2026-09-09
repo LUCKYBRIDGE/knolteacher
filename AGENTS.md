@@ -5,7 +5,7 @@
 ## 1. 현재 구현 기준
 
 - 제품: 놀티쳐 (KnolTeacher)
-- 현재 기준 버전: v3.0.0
+- 현재 기준 버전: v3.0.1
 - 주력 구현: C# / .NET 8 / WPF
 - 솔루션: `KnolTeacher.sln`
 - 앱 프로젝트: `src/KnolTeacher.Desktop/KnolTeacher.Desktop.csproj`

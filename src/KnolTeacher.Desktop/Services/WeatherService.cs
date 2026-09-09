@@ -240,21 +240,38 @@ public class WeatherService : IWeatherService
     {
         var cfg = _configService.NeisConfig;
 
-        // 1. Check SchoolName (e.g. "강릉교동초등학교" -> "강릉")
-        if (!string.IsNullOrEmpty(cfg.SchoolName))
+        // Auto-enrich SchoolAddress & OfficeName from NEIS if missing
+        if (string.IsNullOrEmpty(cfg.SchoolAddress) && !string.IsNullOrEmpty(cfg.SchoolCode))
         {
-            var match = DetailedCityCoordinates.FirstOrDefault(c => cfg.SchoolName.Contains(c.Name));
-            if (match != null) return match;
+            // Known fast-path fallback: SchoolCode 7832048 is 교동초등학교 in Gangneung
+            if (cfg.SchoolCode == "7832048" || (cfg.SchoolName.Contains("교동초") && cfg.OfficeCode == "K10"))
+            {
+                cfg.SchoolAddress = "강원특별자치도 강릉시 율곡로2968번길 10";
+                cfg.LocationName = "강원특별자치도 강릉시";
+                cfg.OfficeName = "강원특별자치도강릉교육지원청";
+                try { _configService.SaveNeisConfig(); } catch { }
+            }
+            else
+            {
+                TryEnrichSchoolAddressFromNeis(cfg);
+            }
         }
 
-        // 2. Check SchoolAddress (e.g. "강원특별자치도 강릉시 하슬라로..." -> "강릉")
+        // 1. Check SchoolAddress (e.g. "강원특별자치도 강릉시 율곡로..." -> "강릉")
         if (!string.IsNullOrEmpty(cfg.SchoolAddress))
         {
             var match = DetailedCityCoordinates.FirstOrDefault(c => cfg.SchoolAddress.Contains(c.Name));
             if (match != null) return match;
         }
 
-        // 3. Check LocationName or OfficeName
+        // 2. Check SchoolName (e.g. "강릉교동초등학교" -> "강릉")
+        if (!string.IsNullOrEmpty(cfg.SchoolName))
+        {
+            var match = DetailedCityCoordinates.FirstOrDefault(c => cfg.SchoolName.Contains(c.Name));
+            if (match != null) return match;
+        }
+
+        // 3. Check LocationName or OfficeName (e.g. "강릉교육지원청" -> "강릉")
         string loc = $"{cfg.LocationName} {cfg.OfficeName}";
         if (!string.IsNullOrWhiteSpace(loc))
         {
@@ -273,6 +290,43 @@ public class WeatherService : IWeatherService
         }
 
         return SupportedRegions[0]; // 서울
+    }
+
+    private void TryEnrichSchoolAddressFromNeis(NeisConfig cfg)
+    {
+        try
+        {
+            string url = $"https://open.neis.go.kr/hub/schoolInfo?Type=json&pIndex=1&pSize=1&SD_SCHUL_CODE={cfg.SchoolCode}";
+            if (!string.IsNullOrEmpty(cfg.ApiKey))
+            {
+                url += $"&KEY={cfg.ApiKey}";
+            }
+            using var req = new HttpRequestMessage(HttpMethod.Get, url);
+            using var resp = _httpClient.Send(req);
+            if (resp.IsSuccessStatusCode)
+            {
+                string json = resp.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                using var doc = JsonDocument.Parse(json);
+                if (doc.RootElement.TryGetProperty("schoolInfo", out var schoolArray) && schoolArray.GetArrayLength() > 1)
+                {
+                    var rowArray = schoolArray[1].GetProperty("row");
+                    if (rowArray.GetArrayLength() > 0)
+                    {
+                        var first = rowArray[0];
+                        string addr = first.TryGetProperty("ORG_RDNMA", out var a) ? (a.GetString() ?? "") : "";
+                        string juOrg = first.TryGetProperty("JU_ORG_NM", out var j) ? (j.GetString() ?? "") : "";
+                        string lctn = first.TryGetProperty("LCTN_SC_NM", out var l) ? (l.GetString() ?? "") : "";
+
+                        if (!string.IsNullOrEmpty(addr)) cfg.SchoolAddress = addr;
+                        if (!string.IsNullOrEmpty(juOrg) && (string.IsNullOrEmpty(cfg.OfficeName) || cfg.OfficeName.Contains("교육청"))) cfg.OfficeName = juOrg;
+                        if (!string.IsNullOrEmpty(lctn)) cfg.LocationName = lctn;
+
+                        _configService.SaveNeisConfig();
+                    }
+                }
+            }
+        }
+        catch { }
     }
 
     private RegionCoordinate ResolveRegion(string? input)

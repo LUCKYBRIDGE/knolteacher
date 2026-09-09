@@ -149,6 +149,56 @@ public partial class PeriodTimerEditDialog : Window
         TxtCalculatedDuration.Text = $"💡 수업 시작 {sMin}분 {sSec:D2}초 전 화면에 대형 타이머가 켜져 총 {dMin}분 {dSec:D2}초 동안 작동합니다.";
     }
 
+    private void BtnPresetTravel_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.Tag is string mode)
+        {
+            ChkEnabled.IsChecked = true;
+            ChkUseGlobal.IsChecked = false;
+            UpdateGlobalToggleState();
+
+            switch (mode)
+            {
+                case "travel_10": // 이동수업 10분 전 ~ 3분 전
+                    TbStartMin.Text = "10";
+                    TbStartSec.Text = "00";
+                    TbEndMin.Text = "3";
+                    TbEndSec.Text = "00";
+                    TbPreNotice.Text = $"🎒 다음 시간은 {_periodItem.Subject} 이동수업입니다! 이동시간을 고려하여 교과서와 준비물을 챙겨 전담실로 조용히 이동합시다.";
+                    break;
+                case "special_7": // 특별실 7분 전 ~ 2분 전
+                    TbStartMin.Text = "7";
+                    TbStartSec.Text = "00";
+                    TbEndMin.Text = "2";
+                    TbEndSec.Text = "00";
+                    TbPreNotice.Text = $"🏃 다음 시간은 {_periodItem.Subject} 특별실 수업입니다! 필요한 준비물을 챙겨 특별실로 이동해 주세요.";
+                    break;
+                case "specialist_5": // 전담수업 5분 전 ~ 0초
+                    TbStartMin.Text = "5";
+                    TbStartSec.Text = "00";
+                    TbEndMin.Text = "0";
+                    TbEndSec.Text = "00";
+                    TbPreNotice.Text = $"👨‍🏫 다음 시간은 {_periodItem.Subject} 전담 선생님 수업입니다! 바르게 앉아 선생님을 맞이합시다.";
+                    break;
+                case "regular_5": // 일반수업 5분 전 ~ 3분 전
+                    TbStartMin.Text = "5";
+                    TbStartSec.Text = "00";
+                    TbEndMin.Text = "3";
+                    TbEndSec.Text = "00";
+                    TbPreNotice.Text = $"🔔 다음 시간 {_periodItem.Name} ({_periodItem.Subject}) 준비 시간입니다! 자리에 앉아 교과서를 펴주세요.";
+                    break;
+                case "fast_3": // 직전 3분 전 ~ 0초
+                    TbStartMin.Text = "3";
+                    TbStartSec.Text = "00";
+                    TbEndMin.Text = "0";
+                    TbEndSec.Text = "00";
+                    TbPreNotice.Text = $"🔔 곧 {_periodItem.Name} ({_periodItem.Subject}) 수업이 시작됩니다! 모든 준비를 마쳐주세요.";
+                    break;
+            }
+            UpdateTimeCalculation();
+        }
+    }
+
     private void BtnPresetTiming_Click(object sender, RoutedEventArgs e)
     {
         if (sender is Button btn && btn.Tag is string tag)
@@ -242,6 +292,31 @@ public partial class PeriodTimerEditDialog : Window
         Close();
     }
 
+    private void BtnDeleteAlarm_Click(object sender, RoutedEventArgs e)
+    {
+        ChkEnabled.IsChecked = false;
+        _itemConfig.Enabled = false;
+        _itemConfig.UseGlobal = false;
+
+        var sysCfg = _configService.PeriodAlarmConfig;
+        sysCfg.PeriodOverrides[_periodItem.Period.ToString()] = _itemConfig;
+        _configService.SavePeriodAlarmConfig();
+
+        if (_timetableService != null)
+        {
+            var p = _timetableService.GetPeriods().FirstOrDefault(x => x.Period == _periodItem.Period);
+            if (p != null)
+            {
+                p.AlarmEnabled = false;
+                _timetableService.SavePeriods(_timetableService.GetPeriods());
+            }
+        }
+
+        HudNotificationWindow.Instance.ShowToast("🔕", $"{_periodItem.Name} 시작 전 알람이 삭제(꺼짐)되었습니다.");
+        DialogResult = true;
+        Close();
+    }
+
     private void BtnSave_Click(object sender, RoutedEventArgs e)
     {
         int sMin = int.TryParse(TbStartMin.Text, out int sm) ? Math.Max(0, sm) : 5;
@@ -271,6 +346,16 @@ public partial class PeriodTimerEditDialog : Window
         var sysCfg = _configService.PeriodAlarmConfig;
         sysCfg.PeriodOverrides[_periodItem.Period.ToString()] = _itemConfig;
         _configService.SavePeriodAlarmConfig();
+
+        if (_timetableService != null)
+        {
+            var p = _timetableService.GetPeriods().FirstOrDefault(x => x.Period == _periodItem.Period);
+            if (p != null)
+            {
+                p.AlarmEnabled = _itemConfig.Enabled;
+                _timetableService.SavePeriods(_timetableService.GetPeriods());
+            }
+        }
 
         HudNotificationWindow.Instance.ShowToast("🔔", $"{_periodItem.Name} 시작 전 타이머 설정이 저장되었습니다.");
         DialogResult = true;

@@ -588,12 +588,22 @@ public partial class MainWindow : FluentWindow
         {
             if (ComboWeatherRegion.Items.Count == 0)
             {
-                // 1. Resolve school-specific local region (e.g. 강릉 for 강릉교동초등학교)
+                // 1. Resolve school-specific local region (e.g. 강릉 for 교동초등학교)
                 var schoolRegion = _weatherService.ResolveSchoolRegion();
                 string schoolTag = $"🏫 {schoolRegion.Name} (우리학교)";
                 ComboWeatherRegion.Items.Add(schoolTag);
 
-                // 2. Add other regions
+                // 2. Add other local cities in the same jurisdiction/province (e.g. 원주, 춘천, 속초, 동해...)
+                var localCities = _weatherService.DetailedCityCoordinates
+                    .Where(c => c.OfficeCode == schoolRegion.OfficeCode && c.Name != schoolRegion.Name)
+                    .OrderBy(c => c.Name)
+                    .ToList();
+                foreach (var c in localCities)
+                {
+                    ComboWeatherRegion.Items.Add(c.Name);
+                }
+
+                // 3. Add other provinces
                 foreach (var r in _weatherService.SupportedRegions)
                 {
                     if (r.Name != schoolRegion.Name)
@@ -813,6 +823,117 @@ public partial class MainWindow : FluentWindow
             _timetableService.TogglePeriodAlarm(item.Period);
             RefreshTimetable();
             HudNotificationWindow.Instance.ShowToast(item.AlarmEnabled ? "🔔" : "🔕", $"{item.Name} 알람 상태가 변경되었습니다.");
+        }
+    }
+
+    private void MenuQuickPeriodTravel_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is System.Windows.Controls.MenuItem mi && mi.Tag is string mode)
+        {
+            var item = GetPeriodItemFromMenuItem(sender);
+            if (item != null && !item.IsLunch)
+            {
+                var sysCfg = _configService.PeriodAlarmConfig;
+                string key = item.Period.ToString();
+                if (!sysCfg.PeriodOverrides.TryGetValue(key, out var overrideItem))
+                {
+                    overrideItem = new PeriodCountdownItem
+                    {
+                        PeriodNumber = item.Period,
+                        Name = item.Name
+                    };
+                    sysCfg.PeriodOverrides[key] = overrideItem;
+                }
+
+                overrideItem.Enabled = true;
+                overrideItem.UseGlobal = false;
+
+                string toastMsg = "";
+                switch (mode)
+                {
+                    case "travel_10":
+                        overrideItem.LeadStartMinutes = 10;
+                        overrideItem.LeadStartSeconds = 0;
+                        overrideItem.LeadEndMinutes = 3;
+                        overrideItem.LeadEndSeconds = 0;
+                        overrideItem.PreNoticeText = $"🎒 다음 시간은 {item.Subject} 이동수업입니다! 이동시간을 고려하여 교과서와 준비물을 챙겨 전담실로 조용히 이동합시다.";
+                        toastMsg = $"{item.Name} 이동수업(10분 전) 알람으로 설정되었습니다.";
+                        break;
+                    case "special_7":
+                        overrideItem.LeadStartMinutes = 7;
+                        overrideItem.LeadStartSeconds = 0;
+                        overrideItem.LeadEndMinutes = 2;
+                        overrideItem.LeadEndSeconds = 0;
+                        overrideItem.PreNoticeText = $"🏃 다음 시간은 {item.Subject} 특별실 수업입니다! 필요한 준비물을 챙겨 특별실로 이동해 주세요.";
+                        toastMsg = $"{item.Name} 특별실 이동(7분 전) 알람으로 설정되었습니다.";
+                        break;
+                    case "specialist_5":
+                        overrideItem.LeadStartMinutes = 5;
+                        overrideItem.LeadStartSeconds = 0;
+                        overrideItem.LeadEndMinutes = 0;
+                        overrideItem.LeadEndSeconds = 0;
+                        overrideItem.PreNoticeText = $"👨‍🏫 다음 시간은 {item.Subject} 전담 선생님 수업입니다! 바르게 앉아 전담 선생님을 맞이합시다.";
+                        toastMsg = $"{item.Name} 전담 수업(5분 전) 알람으로 설정되었습니다.";
+                        break;
+                    case "regular_5":
+                        overrideItem.LeadStartMinutes = 5;
+                        overrideItem.LeadStartSeconds = 0;
+                        overrideItem.LeadEndMinutes = 3;
+                        overrideItem.LeadEndSeconds = 0;
+                        overrideItem.PreNoticeText = $"🔔 다음 시간 {item.Name} ({item.Subject}) 준비 시간입니다! 자리에 앉아 교과서를 펴주세요.";
+                        toastMsg = $"{item.Name} 일반 수업(5분 전) 알람으로 설정되었습니다.";
+                        break;
+                }
+
+                _configService.SavePeriodAlarmConfig();
+
+                var p = _timetableService.GetPeriods().FirstOrDefault(x => x.Period == item.Period);
+                if (p != null)
+                {
+                    p.AlarmEnabled = true;
+                    _timetableService.SavePeriods(_timetableService.GetPeriods());
+                }
+
+                RefreshTimetable();
+                HudNotificationWindow.Instance.ShowToast("🔔", toastMsg);
+            }
+        }
+    }
+
+    private void MenuQuickPeriodDisable_Click(object sender, RoutedEventArgs e)
+    {
+        var item = GetPeriodItemFromMenuItem(sender);
+        if (item != null && !item.IsLunch)
+        {
+            var sysCfg = _configService.PeriodAlarmConfig;
+            string key = item.Period.ToString();
+            if (sysCfg.PeriodOverrides.TryGetValue(key, out var overrideItem))
+            {
+                overrideItem.Enabled = false;
+                overrideItem.UseGlobal = false;
+            }
+            else
+            {
+                overrideItem = new PeriodCountdownItem
+                {
+                    PeriodNumber = item.Period,
+                    Name = item.Name,
+                    Enabled = false,
+                    UseGlobal = false
+                };
+                sysCfg.PeriodOverrides[key] = overrideItem;
+            }
+            _configService.SavePeriodAlarmConfig();
+
+            var p = _timetableService.GetPeriods().FirstOrDefault(x => x.Period == item.Period);
+            if (p != null)
+            {
+                p.AlarmEnabled = false;
+                _timetableService.SavePeriods(_timetableService.GetPeriods());
+            }
+
+            RefreshTimetable();
+            HudNotificationWindow.Instance.ShowToast("🔕", $"{item.Name} 알람이 삭제(꺼짐)되었습니다.");
         }
     }
 

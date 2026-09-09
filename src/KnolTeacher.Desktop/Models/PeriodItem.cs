@@ -2,6 +2,8 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
+using System.Windows;
+using System.Windows.Media;
 
 namespace KnolTeacher.Desktop.Models;
 
@@ -16,6 +18,9 @@ public class PeriodItem : INotifyPropertyChanged
     private bool _isLunch;
     private bool _alarmEnabled = true;
     private bool _isCurrentPeriod;
+    private string _alarmBadgeText = "🔔 5분전";
+    private Brush _alarmBadgeBg = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#EEF2FF"));
+    private Brush _alarmBadgeFg = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4F46E5"));
 
     [JsonPropertyName("period")]
     public int Period
@@ -93,6 +98,30 @@ public class PeriodItem : INotifyPropertyChanged
 
     [JsonIgnore]
     public string DisplayBadge => IsLunch ? "점심" : $"{Period}교시";
+
+    [JsonIgnore]
+    public string AlarmBadgeText
+    {
+        get => _alarmBadgeText;
+        set => SetField(ref _alarmBadgeText, value);
+    }
+
+    [JsonIgnore]
+    public Brush AlarmBadgeBg
+    {
+        get => _alarmBadgeBg;
+        set => SetField(ref _alarmBadgeBg, value);
+    }
+
+    [JsonIgnore]
+    public Brush AlarmBadgeFg
+    {
+        get => _alarmBadgeFg;
+        set => SetField(ref _alarmBadgeFg, value);
+    }
+
+    [JsonIgnore]
+    public Visibility AlarmBadgeVisibility => IsLunch ? Visibility.Collapsed : Visibility.Visible;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 

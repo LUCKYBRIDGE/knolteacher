@@ -18,7 +18,6 @@ public partial class ClassroomCountdownOverlayWindow : Window
     private int _remainingSeconds;
     private int _initialSeconds;
     private bool _isCompleted = false;
-    private int _autoCloseSecondsRemaining;
 
     public ClassroomCountdownOverlayWindow(
         PeriodCountdownItem config,
@@ -34,7 +33,6 @@ public partial class ClassroomCountdownOverlayWindow : Window
         int duration = overrideDurationSeconds ?? _config.CountdownDurationSeconds;
         _initialSeconds = Math.Max(1, duration);
         _remainingSeconds = _initialSeconds;
-        _autoCloseSecondsRemaining = Math.Max(3, _config.AutoCloseSeconds);
 
         TxtPeriodBadge.Text = $"🕒 {periodName} ({subjectName}) 수업 준비";
         string notice = (_config.PreNoticeText ?? "")
@@ -140,24 +138,17 @@ public partial class ClassroomCountdownOverlayWindow : Window
 
                 if (_config.PlaySoundChime)
                 {
-                    _soundService?.PlayChime();
+                    try
+                    {
+                        _soundService?.PlayChime();
+                    }
+                    catch { }
                 }
-
-                TxtAutoCloseNotice.Text = $"{_autoCloseSecondsRemaining}초 후 자동으로 닫힙니다...";
             }
         }
         else
         {
             UpdateDigitsDisplay();
-            _autoCloseSecondsRemaining--;
-            if (_autoCloseSecondsRemaining <= 0)
-            {
-                CloseWindow();
-            }
-            else
-            {
-                TxtAutoCloseNotice.Text = $"{_autoCloseSecondsRemaining}초 후 자동으로 닫힙니다...";
-            }
         }
     }
 
@@ -192,6 +183,7 @@ public partial class ClassroomCountdownOverlayWindow : Window
             }
 
             PbProgress.Value = 0;
+            TxtAutoCloseNotice.Text = $"수업 시간 도달 (경과: {oMin}분 {oSec:D2}초) · Esc 또는 우측 '화면 닫기'로 종료";
         }
     }
 
