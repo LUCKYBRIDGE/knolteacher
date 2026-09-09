@@ -13,7 +13,9 @@ namespace KnolTeacher.Desktop.Services;
 
 public class UpdateService : IUpdateService
 {
-    public const string FallbackVersion = "v3.0.6";
+    // If version metadata is unexpectedly unavailable, prefer a conservative low version
+    // so the updater can still recover by offering the latest valid GitHub Release.
+    public const string FallbackVersion = "v0.0.0";
     public const string ReleaseAssetName = "놀티쳐.exe";
 
     private const string LatestReleaseApi = "https://api.github.com/repos/LUCKYBRIDGE/knolteacher/releases/latest";
@@ -25,12 +27,34 @@ public class UpdateService : IUpdateService
             try
             {
                 var ver = Assembly.GetExecutingAssembly().GetName().Version;
-                return ver != null ? $"v{ver.Major}.{ver.Minor}.{ver.Build}" : FallbackVersion;
+                if (ver != null && ver.Major >= 0 && ver.Minor >= 0 && ver.Build >= 0)
+                {
+                    return $"v{ver.Major}.{ver.Minor}.{ver.Build}";
+                }
             }
             catch
             {
-                return FallbackVersion;
+                // Fall through to executable file metadata.
             }
+
+            try
+            {
+                string? executablePath = Environment.ProcessPath;
+                if (!string.IsNullOrWhiteSpace(executablePath))
+                {
+                    string? fileVersion = FileVersionInfo.GetVersionInfo(executablePath).FileVersion;
+                    if (Version.TryParse(fileVersion, out var parsed) && parsed.Build >= 0)
+                    {
+                        return $"v{parsed.Major}.{parsed.Minor}.{parsed.Build}";
+                    }
+                }
+            }
+            catch
+            {
+                // Fall through to the recovery version below.
+            }
+
+            return FallbackVersion;
         }
     }
 
