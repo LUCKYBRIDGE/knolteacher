@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
@@ -20,17 +19,31 @@ public partial class StudentRosterManageDialog : Window
 
         foreach (var s in _studentService.Students)
         {
-            EditableStudents.Add(new StudentItem
-            {
-                Number = s.Number,
-                Name = s.Name,
-                Gender = s.Gender,
-                AvatarId = s.EffectiveAvatarId
-            });
+            EditableStudents.Add(CloneStudent(s));
         }
 
         TbStudentCount.Text = EditableStudents.Count.ToString();
+        ChkPersistPersonalDetails.IsChecked = _studentService.PersistPersonalDetails;
+        ChkUseNamesInPicker.IsChecked = _studentService.PersistPersonalDetails && _studentService.UseNamesInPicker;
         ItemsStudents.ItemsSource = EditableStudents;
+        UpdatePrivacyOptionState();
+    }
+
+    private void PrivacyOption_Changed(object sender, RoutedEventArgs e)
+    {
+        UpdatePrivacyOptionState();
+    }
+
+    private void UpdatePrivacyOptionState()
+    {
+        if (ChkUseNamesInPicker == null || ChkPersistPersonalDetails == null) return;
+
+        bool persist = ChkPersistPersonalDetails.IsChecked == true;
+        ChkUseNamesInPicker.IsEnabled = persist;
+        if (!persist)
+        {
+            ChkUseNamesInPicker.IsChecked = false;
+        }
     }
 
     private void BtnChangeAvatar_Click(object sender, RoutedEventArgs e)
@@ -44,17 +57,12 @@ public partial class StudentRosterManageDialog : Window
             if (dlg.ShowDialog() == true)
             {
                 student.AvatarId = dlg.SelectedAvatarId;
-                // Trigger refresh by removing & reinserting or re-binding
                 int idx = EditableStudents.IndexOf(student);
                 if (idx >= 0)
                 {
-                    EditableStudents[idx] = new StudentItem
-                    {
-                        Number = student.Number,
-                        Name = student.Name,
-                        Gender = student.Gender,
-                        AvatarId = dlg.SelectedAvatarId
-                    };
+                    var replacement = CloneStudent(student);
+                    replacement.AvatarId = dlg.SelectedAvatarId;
+                    EditableStudents[idx] = replacement;
                 }
             }
         }
@@ -64,17 +72,12 @@ public partial class StudentRosterManageDialog : Window
     {
         var rand = new Random();
         var allIds = AnimalAvatarCatalog.Avatars.Select(a => a.Id).OrderBy(_ => rand.Next()).ToList();
-        
+
         for (int i = 0; i < EditableStudents.Count; i++)
         {
-            string av = allIds[i % allIds.Count];
-            EditableStudents[i] = new StudentItem
-            {
-                Number = EditableStudents[i].Number,
-                Name = EditableStudents[i].Name,
-                Gender = EditableStudents[i].Gender,
-                AvatarId = av
-            };
+            var replacement = CloneStudent(EditableStudents[i]);
+            replacement.AvatarId = allIds[i % allIds.Count];
+            EditableStudents[i] = replacement;
         }
     }
 
@@ -89,21 +92,46 @@ public partial class StudentRosterManageDialog : Window
             EditableStudents.Add(new StudentItem
             {
                 Number = i,
-                Name = $"학생 {i}",
                 AvatarId = $"avatar_{((i - 1) % 32) + 1:D2}"
             });
         }
+
+        // Regenerating a roster is an explicit return to privacy-first number-only mode.
+        ChkPersistPersonalDetails.IsChecked = false;
+        ChkUseNamesInPicker.IsChecked = false;
     }
 
     private void BtnSave_Click(object sender, RoutedEventArgs e)
     {
+        bool persistPersonalDetails = ChkPersistPersonalDetails.IsChecked == true;
+
         _studentService.Students.Clear();
-        foreach (var s in EditableStudents)
+        foreach (var s in EditableStudents.OrderBy(s => s.Number))
         {
-            _studentService.Students.Add(s);
+            _studentService.Students.Add(persistPersonalDetails ? CloneStudent(s) : s.ToNumberOnlyCopy(keepAvatar: true));
         }
+
+        _studentService.PersistPersonalDetails = persistPersonalDetails;
+        _studentService.UseNamesInPicker = persistPersonalDetails && ChkUseNamesInPicker.IsChecked == true;
+        _studentService.ResetPicked();
         _studentService.SaveRoster();
+
         DialogResult = true;
         Close();
+    }
+
+    private static StudentItem CloneStudent(StudentItem student)
+    {
+        return new StudentItem
+        {
+            Number = student.Number,
+            Name = student.Name,
+            Gender = student.Gender,
+            Role = student.Role,
+            BirthDate = student.BirthDate,
+            Contact = student.Contact,
+            Note = student.Note,
+            AvatarId = student.AvatarId
+        };
     }
 }
