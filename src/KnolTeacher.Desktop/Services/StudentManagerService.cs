@@ -68,7 +68,16 @@ public class StudentManagerService : IStudentManagerService
         if (TryLoadRosterFile(backupPath, out container, out hasPersistFlag, out hasUseNamesFlag))
         {
             ApplyLoadedRoster(container!, hasPersistFlag, hasUseNamesFlag);
-            App.BootLog("[StudentManager] Recovered local roster from .bak file.");
+
+            if (SafeLocalFileStore.TryRestorePrimaryFromBackup(path))
+            {
+                App.BootLog("[StudentManager] Recovered local roster from .bak file and repaired primary.");
+            }
+            else
+            {
+                App.BootLog("[StudentManager] Recovered local roster from .bak file; primary repair was unavailable.");
+            }
+
             return;
         }
 
