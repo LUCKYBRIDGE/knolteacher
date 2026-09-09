@@ -7,7 +7,7 @@ namespace KnolTeacher.Desktop.Services;
 /// <summary>
 /// Local-only persistence helper for small KnolTeacher text/JSON files.
 /// Writes to a sibling temporary file, flushes it to disk, then atomically replaces
-/// the destination while keeping one local .bak copy of the previous valid file.
+/// the destination while keeping a local .bak copy according to the caller's policy.
 /// No cloud or remote storage is involved.
 /// </summary>
 public static class SafeLocalFileStore
@@ -46,7 +46,8 @@ public static class SafeLocalFileStore
         string path,
         string content,
         Encoding? encoding = null,
-        bool preserveExistingBackup = false)
+        bool preserveExistingBackup = false,
+        bool scrubPreviousContent = false)
     {
         if (string.IsNullOrWhiteSpace(path))
         {
@@ -68,6 +69,26 @@ public static class SafeLocalFileStore
         try
         {
             WriteTempFile(tempPath, content, encoding);
+
+            if (scrubPreviousContent)
+            {
+                // Privacy-first mode: never preserve the previous primary/backup because it may
+                // contain names or other details that the user explicitly disabled.
+                DeleteOrThrow(backupPath);
+
+                if (File.Exists(path))
+                {
+                    File.Replace(tempPath, path, destinationBackupFileName: null, ignoreMetadataErrors: true);
+                }
+                else
+                {
+                    File.Move(tempPath, path);
+                }
+
+                // Keep recovery capability, but the backup now contains only the newly sanitized content.
+                WriteSnapshotAtomic(backupPath, content, encoding);
+                return;
+            }
 
             if (File.Exists(path))
             {
@@ -150,6 +171,28 @@ public static class SafeLocalFileStore
         TryDelete(BackupPath(path));
     }
 
+    private static void WriteSnapshotAtomic(string path, string content, Encoding encoding)
+    {
+        string tempPath = path + $".snapshot.{Guid.NewGuid():N}";
+        try
+        {
+            WriteTempFile(tempPath, content, encoding);
+            if (File.Exists(path))
+            {
+                File.Replace(tempPath, path, destinationBackupFileName: null, ignoreMetadataErrors: true);
+            }
+            else
+            {
+                File.Move(tempPath, path);
+            }
+        }
+        catch
+        {
+            TryDelete(tempPath);
+            throw;
+        }
+    }
+
     private static void WriteTempFile(string tempPath, string content, Encoding encoding)
     {
         using var stream = new FileStream(
@@ -163,6 +206,14 @@ public static class SafeLocalFileStore
         writer.Write(content);
         writer.Flush();
         stream.Flush(flushToDisk: true);
+    }
+
+    private static void DeleteOrThrow(string path)
+    {
+        if (File.Exists(path))
+        {
+            File.Delete(path);
+        }
     }
 
     private static void TryDelete(string path)
