@@ -149,6 +149,25 @@ public class CalendarDayCell
     public bool HasTeacherEvent => TeacherEvents.Count > 0;
     public System.Windows.Visibility TeacherDotVisibility => HasTeacherEvent ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
     public string TeacherDotColor => TeacherEvents.Count > 0 && !string.IsNullOrEmpty(TeacherEvents[0].Color) ? TeacherEvents[0].Color : "#10B981";
+
+    public List<CalendarDayLabel> Labels { get; set; } = new();
+    public bool HasLabels => Labels.Count > 0;
+    public List<CalendarDayLabel> VisibleLabels => Labels.Take(2).ToList();
+    public bool HasMoreLabels => Labels.Count > 2;
+    public int MoreLabelsCount => Math.Max(0, Labels.Count - 2);
+    public string MoreLabelsText => $"+{MoreLabelsCount}";
+    public System.Windows.Visibility MoreLabelsVisibility => HasMoreLabels ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
+}
+
+public class CalendarDayLabel
+{
+    public string Title { get; set; } = string.Empty;
+    public string TimeText { get; set; } = string.Empty;
+    public string BackgroundColor { get; set; } = "#EFF6FF";
+    public string TextColor { get; set; } = "#1D4ED8";
+    public string BorderColor { get; set; } = "#BFDBFE";
+    public bool IsAcademic { get; set; } = false;
+    public string FullTooltip { get; set; } = string.Empty;
 }
 
 

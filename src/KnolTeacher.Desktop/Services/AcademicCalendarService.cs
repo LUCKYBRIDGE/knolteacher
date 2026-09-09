@@ -192,14 +192,18 @@ public class AcademicCalendarService : IAcademicCalendarService
         for (int i = startDayOfWeek - 1; i >= 0; i--)
         {
             var date = new DateTime(prevMonth.Year, prevMonth.Month, daysInPrevMonth - i);
+            string dateKey = date.ToString("yyyyMMdd");
             string isoDate = date.ToString("yyyy-MM-dd");
+            var dayEvents = events.Where(e => e.RawDate == dateKey).ToList();
             var tEvents = teacherEvents?.Where(t => t.Date == isoDate).ToList() ?? new();
             cells.Add(new CalendarDayCell
             {
                 Date = date,
                 IsCurrentMonth = false,
                 IsSelected = selectedDate.HasValue && selectedDate.Value.Date == date.Date,
-                TeacherEvents = tEvents
+                Events = dayEvents,
+                TeacherEvents = tEvents,
+                Labels = BuildDayLabels(dayEvents, tEvents)
             });
         }
 
@@ -218,7 +222,8 @@ public class AcademicCalendarService : IAcademicCalendarService
                 IsCurrentMonth = true,
                 IsSelected = selectedDate.HasValue && selectedDate.Value.Date == date.Date,
                 Events = dayEvents,
-                TeacherEvents = tEvents
+                TeacherEvents = tEvents,
+                Labels = BuildDayLabels(dayEvents, tEvents)
             });
         }
 
@@ -230,18 +235,83 @@ public class AcademicCalendarService : IAcademicCalendarService
         for (int d = 1; d <= remaining; d++)
         {
             var date = new DateTime(nextMonth.Year, nextMonth.Month, d);
+            string dateKey = date.ToString("yyyyMMdd");
             string isoDate = date.ToString("yyyy-MM-dd");
+            var dayEvents = events.Where(e => e.RawDate == dateKey).ToList();
             var tEvents = teacherEvents?.Where(t => t.Date == isoDate).ToList() ?? new();
             cells.Add(new CalendarDayCell
             {
                 Date = date,
                 IsCurrentMonth = false,
                 IsSelected = selectedDate.HasValue && selectedDate.Value.Date == date.Date,
-                TeacherEvents = tEvents
+                Events = dayEvents,
+                TeacherEvents = tEvents,
+                Labels = BuildDayLabels(dayEvents, tEvents)
             });
         }
 
         return cells;
+    }
+
+    private List<CalendarDayLabel> BuildDayLabels(List<AcademicScheduleItem> academicEvents, List<TeacherCalendarEvent> teacherEvents)
+    {
+        var list = new List<CalendarDayLabel>();
+
+        // 1. Academic schedule items
+        foreach (var ev in academicEvents)
+        {
+            bool isHoliday = ev.IsHoliday;
+            list.Add(new CalendarDayLabel
+            {
+                Title = ev.EventName,
+                IsAcademic = true,
+                BackgroundColor = isHoliday ? "#FEE2E2" : "#FEF3C7",
+                TextColor = isHoliday ? "#B91C1C" : "#92400E",
+                BorderColor = isHoliday ? "#FECACA" : "#FDE68A",
+                FullTooltip = $"[학사] {ev.EventName}"
+            });
+        }
+
+        // 2. Teacher custom events
+        var sortedTeacherEvents = teacherEvents
+            .OrderBy(t => t.IsAllDay ? 0 : 1)
+            .ThenBy(t => t.Time)
+            .ToList();
+
+        foreach (var t in sortedTeacherEvents)
+        {
+            string bg, fg, border;
+            switch (t.Color)
+            {
+                case "#10B981": // green
+                    bg = "#ECFDF5"; fg = "#047857"; border = "#A7F3D0"; break;
+                case "#F59E0B": // orange
+                    bg = "#FFFBEB"; fg = "#B45309"; border = "#FDE68A"; break;
+                case "#EF4444": // red
+                    bg = "#FEF2F2"; fg = "#B91C1C"; border = "#FECACA"; break;
+                case "#8B5CF6": // purple
+                    bg = "#F5F3FF"; fg = "#6D28D9"; border = "#DDD6FE"; break;
+                default:        // blue
+                    bg = "#EFF6FF"; fg = "#1D4ED8"; border = "#BFDBFE"; break;
+            }
+
+            string displayTitle = t.IsAllDay || string.IsNullOrEmpty(t.Time)
+                ? t.Title
+                : $"{t.Time} {t.Title}";
+
+            list.Add(new CalendarDayLabel
+            {
+                Title = displayTitle,
+                TimeText = t.IsAllDay ? "종일" : t.Time,
+                BackgroundColor = bg,
+                TextColor = fg,
+                BorderColor = border,
+                IsAcademic = false,
+                FullTooltip = $"[일정] {displayTitle}{(string.IsNullOrEmpty(t.Memo) ? "" : $"\n{t.Memo}")}"
+            });
+        }
+
+        return list;
     }
 
     private List<AcademicScheduleItem> GenerateDefaultSchedule(int year)
