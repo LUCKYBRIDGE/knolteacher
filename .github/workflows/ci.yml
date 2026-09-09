@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   build:
-    name: Build and verify .NET 8 WPF package
+    name: Build, test and verify .NET 8 WPF package
     runs-on: windows-latest
     timeout-minutes: 30
 
@@ -110,6 +110,9 @@ jobs:
 
       - name: Build
         run: dotnet build KnolTeacher.sln -c Release --no-restore
+
+      - name: Test persistence and service contracts
+        run: dotnet test KnolTeacher.sln -c Release --no-build --no-restore --logger "console;verbosity=normal"
 
       - name: Verify all-in-one desktop package
         shell: cmd
