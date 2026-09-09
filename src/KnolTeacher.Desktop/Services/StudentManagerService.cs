@@ -13,22 +13,30 @@ public interface IStudentManagerService
 {
     List<StudentItem> Students { get; }
     HashSet<int> PickedStudentNumbers { get; }
+    bool UseNamesInPicker { get; set; }
+    bool PersistPersonalDetails { get; set; }
+
     void LoadRoster();
     StudentItem? PickRandom(bool excludePicked = true);
     void ResetPicked();
     List<List<StudentItem>> CreateGroups(int groupSize);
     List<StudentItem> ShuffleForSeating();
+    void ConfigureNumberOnlyRoster(int studentCount);
     void SaveRoster();
     void UpdateStudentAvatar(int studentNumber, string avatarId);
 }
 
 public class StudentManagerService : IStudentManagerService
 {
+    private const int DefaultStudentCount = 25;
+
     private readonly IConfigService _configService;
     private readonly Random _random = new();
 
     public List<StudentItem> Students { get; private set; } = new();
     public HashSet<int> PickedStudentNumbers { get; } = new();
+    public bool UseNamesInPicker { get; set; }
+    public bool PersistPersonalDetails { get; set; }
 
     public StudentManagerService(IConfigService configService)
     {
@@ -49,20 +57,52 @@ public class StudentManagerService : IStudentManagerService
                     PropertyNameCaseInsensitive = true,
                     Encoder = JavaScriptEncoder.Create(UnicodeRanges.All)
                 };
+
+                bool hasPersistPersonalDetailsFlag = false;
+                bool hasUseNamesFlag = false;
+                using (var doc = JsonDocument.Parse(json))
+                {
+                    if (doc.RootElement.ValueKind == JsonValueKind.Object)
+                    {
+                        hasPersistPersonalDetailsFlag = doc.RootElement.TryGetProperty("persist_personal_details", out _);
+                        hasUseNamesFlag = doc.RootElement.TryGetProperty("use_names_in_picker", out _);
+                    }
+                }
+
                 var container = JsonSerializer.Deserialize<StudentRosterContainer>(json, options);
                 if (container?.Students != null && container.Students.Count > 0)
                 {
-                    Students = container.Students;
-                    return;
+                    Students = container.Students
+                        .Where(s => s.Number > 0)
+                        .OrderBy(s => s.Number)
+                        .ToList();
+
+                    if (Students.Count > 0)
+                    {
+                        // Backward compatibility: old roster files did not have the explicit persistence flag.
+                        // If they already contain personal fields, preserve those values instead of silently erasing them.
+                        PersistPersonalDetails = hasPersistPersonalDetailsFlag
+                            ? container.PersistPersonalDetails
+                            : Students.Any(HasPersonalDetails);
+
+                        UseNamesInPicker = hasUseNamesFlag
+                            ? container.UseNamesInPicker
+                            : false;
+
+                        return;
+                    }
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                App.BootLog($"[StudentManager] Failed to load local roster: {ex.GetType().Name}");
+            }
         }
 
-        // Default Sample Roster if not found
-        Students = Enumerable.Range(1, 20)
-            .Select(i => new StudentItem { Number = i, Name = $"학생 {i}" })
-            .ToList();
+        // Privacy-first default: no names or other personal fields are required.
+        ConfigureNumberOnlyRoster(DefaultStudentCount);
+        UseNamesInPicker = false;
+        PersistPersonalDetails = false;
     }
 
     public StudentItem? PickRandom(bool excludePicked = true)
@@ -75,7 +115,6 @@ public class StudentManagerService : IStudentManagerService
         {
             if (excludePicked && Students.Count > 0)
             {
-                // All students picked -> Auto reset or return null
                 ResetPicked();
                 available = Students;
             }
@@ -116,12 +155,33 @@ public class StudentManagerService : IStudentManagerService
         return Students.OrderBy(_ => _random.Next()).ToList();
     }
 
+    public void ConfigureNumberOnlyRoster(int studentCount)
+    {
+        studentCount = Math.Clamp(studentCount, 1, 60);
+        Students = Enumerable.Range(1, studentCount)
+            .Select(i => new StudentItem { Number = i })
+            .ToList();
+        PickedStudentNumbers.Clear();
+        UseNamesInPicker = false;
+        PersistPersonalDetails = false;
+    }
+
     public void SaveRoster()
     {
         try
         {
             string path = Path.Combine(_configService.ConfigDir, "student_roster.json");
-            var container = new StudentRosterContainer { Students = Students };
+            var persistedStudents = PersistPersonalDetails
+                ? Students.Select(CloneStudent).ToList()
+                : Students.Select(s => s.ToNumberOnlyCopy(keepAvatar: true)).ToList();
+
+            var container = new StudentRosterContainer
+            {
+                UseNamesInPicker = PersistPersonalDetails && UseNamesInPicker,
+                PersistPersonalDetails = PersistPersonalDetails,
+                Students = persistedStudents
+            };
+
             var options = new JsonSerializerOptions
             {
                 WriteIndented = true,
@@ -130,7 +190,11 @@ public class StudentManagerService : IStudentManagerService
             string json = JsonSerializer.Serialize(container, options);
             File.WriteAllText(path, json);
         }
-        catch { }
+        catch (Exception ex)
+        {
+            // Do not log names or other student fields.
+            App.BootLog($"[StudentManager] Failed to save local roster: {ex.GetType().Name}");
+        }
     }
 
     public void UpdateStudentAvatar(int studentNumber, string avatarId)
@@ -141,5 +205,30 @@ public class StudentManagerService : IStudentManagerService
             student.AvatarId = avatarId;
             SaveRoster();
         }
+    }
+
+    private static bool HasPersonalDetails(StudentItem student)
+    {
+        return !string.IsNullOrWhiteSpace(student.Name)
+            || !string.IsNullOrWhiteSpace(student.Gender)
+            || !string.IsNullOrWhiteSpace(student.Role)
+            || !string.IsNullOrWhiteSpace(student.BirthDate)
+            || !string.IsNullOrWhiteSpace(student.Contact)
+            || !string.IsNullOrWhiteSpace(student.Note);
+    }
+
+    private static StudentItem CloneStudent(StudentItem student)
+    {
+        return new StudentItem
+        {
+            Number = student.Number,
+            Name = student.Name,
+            Gender = student.Gender,
+            Role = student.Role,
+            BirthDate = student.BirthDate,
+            Contact = student.Contact,
+            Note = student.Note,
+            AvatarId = student.AvatarId
+        };
     }
 }
