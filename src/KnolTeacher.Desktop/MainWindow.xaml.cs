@@ -75,6 +75,7 @@ public partial class MainWindow : FluentWindow
     private readonly IStartupService _startupService;
     private readonly IDataShareService _dataShareService;
     private readonly TemplateShareWindow _templateShareWindow;
+    private readonly ClassroomHubWindow _classroomHubWindow;
     private int _tutorialStep = 1;
 
     public MainWindow(
@@ -110,7 +111,8 @@ public partial class MainWindow : FluentWindow
         ISiteBookmarkService siteBookmarkService,
         IStartupService startupService,
         IDataShareService dataShareService,
-        TemplateShareWindow templateShareWindow)
+        TemplateShareWindow templateShareWindow,
+        ClassroomHubWindow classroomHubWindow)
     {
         DataContext = viewModel;
         _studentDisplayWindow = studentDisplayWindow;
@@ -146,6 +148,7 @@ public partial class MainWindow : FluentWindow
         _dataShareService = dataShareService;
         _templateShareWindow = templateShareWindow;
         _templateShareWindow.DataChanged += OnExternalDataChanged;
+        _classroomHubWindow = classroomHubWindow;
 
         InitializeComponent();
         UpdateWindowTitle(0);
@@ -952,6 +955,21 @@ public partial class MainWindow : FluentWindow
         _siteBookmarkService.OpenSelectedOfficePortal();
     }
 
+    private void BtnOpenKlefPortal_Click(object sender, RoutedEventArgs e)
+    {
+        _siteBookmarkService.OpenSelectedKlefPortal();
+    }
+
+    private void BtnOpenNeisPortal_Click(object sender, RoutedEventArgs e)
+    {
+        _siteBookmarkService.OpenSelectedNeisPortal();
+    }
+
+    private void BtnOpenEvpnPortal_Click(object sender, RoutedEventArgs e)
+    {
+        _siteBookmarkService.OpenSelectedEvpnPortal();
+    }
+
     private void BtnAddCustomSite_Click(object sender, RoutedEventArgs e)
     {
         var dlg = new AddSiteBookmarkDialog { Owner = this };
@@ -1141,17 +1159,6 @@ public partial class MainWindow : FluentWindow
         }
     }
 
-    private void BtnLaunchChecklist_Click(object sender, RoutedEventArgs e)
-    {
-        if (!_studentDisplayWindow.IsVisible)
-        {
-            _displayManager.MoveToStudentMonitor(_studentDisplayWindow, maximize: true);
-            _studentDisplayWindow.Show();
-        }
-        _studentDisplayWindow.Activate();
-        _studentDisplayWindow.ToggleWidget("checklist");
-    }
-
     private void BtnLaunchWorkdayCalculator_Click(object sender, RoutedEventArgs e)
     {
         if (_workdayCalculatorWindow.IsVisible)
@@ -1188,6 +1195,38 @@ public partial class MainWindow : FluentWindow
         {
             _soundboardWindow.Show();
             _soundboardWindow.Activate();
+        }
+    }
+
+    private void BtnLaunchClassroomHub_Click(object sender, RoutedEventArgs e)
+    {
+        _classroomHubWindow.Owner = this;
+        _classroomHubWindow.SelectTab(0);
+        _classroomHubWindow.RefreshAll();
+        if (_classroomHubWindow.IsVisible)
+        {
+            _classroomHubWindow.Activate();
+        }
+        else
+        {
+            _classroomHubWindow.Show();
+            _classroomHubWindow.Activate();
+        }
+    }
+
+    private void BtnLaunchChecklist_Click(object sender, RoutedEventArgs e)
+    {
+        _classroomHubWindow.Owner = this;
+        _classroomHubWindow.SelectTab(1);
+        _classroomHubWindow.RefreshAll();
+        if (_classroomHubWindow.IsVisible)
+        {
+            _classroomHubWindow.Activate();
+        }
+        else
+        {
+            _classroomHubWindow.Show();
+            _classroomHubWindow.Activate();
         }
     }
 

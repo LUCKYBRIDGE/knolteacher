@@ -1259,12 +1259,12 @@
                                                 </StackPanel>
                                             </Border>
 
-                                            <!-- Tool 10: Task Checklist -->
-                                            <Border Margin="4" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="14,12" Cursor="Hand" MouseLeftButtonUp="BtnLaunchChecklist_Click">
+                                            <!-- Tool 10: Task Checklist & Classroom Hub -->
+                                            <Border Margin="4" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="14,12" Cursor="Hand" MouseLeftButtonUp="BtnLaunchClassroomHub_Click">
                                                 <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
                                                     <TextBlock Text="📋" FontSize="34" HorizontalAlignment="Center" Margin="0,0,0,6"/>
-                                                    <TextBlock Text="과제 체크리스트" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
-                                                    <TextBlock Text="학생 제출물 현황 및 과제 검사 체크" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                                                    <TextBlock Text="학급 관리 허브" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
+                                                    <TextBlock Text="학생 명렬표 • 과제 체크리스트 • 누가기록" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,3,0,0"/>
                                                 </StackPanel>
                                             </Border>
 
@@ -1562,37 +1562,56 @@
                                 <!-- 2. K-에듀파인 / 교육청 업무포털 Bar (지역선택) -->
                                 <Border Grid.Row="1" Margin="0,0,0,14" Background="{DynamicResource BeigeCardInner}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="10" Padding="14,10">
                                     <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
-                                            <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
 
-                                        <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,0">
+                                        <!-- Top Row: Title, Dropdown, Add/Reset -->
+                                        <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,8">
                                             <TextBlock Text="🏫" FontSize="16" Margin="0,0,6,0"/>
-                                            <TextBlock Text="K-에듀파인 / 교육청 업무포털" FontWeight="Bold" FontSize="13" Foreground="{DynamicResource BeigeTextMain}"/>
+                                            <TextBlock Text="시도교육청 업무포털 &amp; 나이스/에듀파인" FontWeight="Bold" FontSize="13" Foreground="{DynamicResource BeigeTextMain}"/>
                                         </StackPanel>
 
-                                        <ComboBox x:Name="CbEducationOffice" Grid.Column="1" Height="32" Margin="0,0,10,0" VerticalContentAlignment="Center" FontSize="12" SelectionChanged="CbEducationOffice_SelectionChanged" DisplayMemberPath="DisplayText" SelectedValuePath="DomainCode"/>
+                                        <ComboBox x:Name="CbEducationOffice" Grid.Row="0" Grid.Column="1" Height="30" Margin="0,0,10,8" VerticalContentAlignment="Center" FontSize="12" SelectionChanged="CbEducationOffice_SelectionChanged" DisplayMemberPath="DisplayText" SelectedValuePath="DomainCode"/>
 
-                                        <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="0,0,8,0">
-                                            <Button Content="🚀 업무포털 바로가기" Click="BtnOpenOfficePortal_Click" Padding="12,0" Height="32" Margin="0,0,4,0" Background="{DynamicResource BeigeAccent}" Foreground="White" FontWeight="Bold" FontSize="11" BorderThickness="0" Cursor="Hand">
+                                        <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,8">
+                                            <Button Content="➕ 사이트 추가" Click="BtnAddCustomSite_Click" Padding="10,0" Height="30" Margin="0,0,4,0" Background="{DynamicResource BeigeCardBg}" Foreground="{DynamicResource BeigeTextMain}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="11" FontWeight="Bold" Cursor="Hand">
                                                 <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
                                             </Button>
-                                            <Button Content="📱 QR" Click="BtnOfficeQr_Click" Padding="8,0" Height="32" Background="{DynamicResource BeigeCardBg}" Foreground="{DynamicResource BeigeTextMain}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontWeight="Bold" FontSize="11" Cursor="Hand" ToolTip="현재 선택된 교육청 업무포털 QR코드 팝업">
-                                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
-                                            </Button>
-                                        </StackPanel>
-
-                                        <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
-                                            <Button Content="➕ 사이트 추가" Click="BtnAddCustomSite_Click" Padding="10,0" Height="32" Margin="0,0,4,0" Background="{DynamicResource BeigeCardBg}" Foreground="{DynamicResource BeigeTextMain}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="11" FontWeight="Bold" Cursor="Hand">
-                                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
-                                            </Button>
-                                            <Button Content="🔄 복원" Click="BtnResetSites_Click" Padding="8,0" Height="32" Background="{DynamicResource BeigeCardBg}" Foreground="{DynamicResource BeigeTextMuted}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="11" Cursor="Hand" ToolTip="기본 교육 사이트 10개로 복원">
+                                            <Button Content="🔄 복원" Click="BtnResetSites_Click" Padding="8,0" Height="30" Background="{DynamicResource BeigeCardBg}" Foreground="{DynamicResource BeigeTextMuted}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="11" Cursor="Hand" ToolTip="검증된 기본 교육 사이트 16개로 복원">
                                                 <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
                                             </Button>
                                         </StackPanel>
+
+                                        <!-- Bottom Row: 4 Portal Launcher Buttons -->
+                                        <Border Grid.Row="1" Grid.ColumnSpan="3" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="8" Padding="10,6">
+                                            <DockPanel LastChildFill="False">
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <TextBlock Text="선택 교육청 바로가기:" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource BeigeTextMuted}" VerticalAlignment="Center" Margin="2,0,10,0"/>
+                                                    <Button Content="🚀 업무포털 (eduptl.kr)" Click="BtnOpenOfficePortal_Click" Padding="11,5" Margin="0,0,6,0" Background="{DynamicResource BeigeAccent}" Foreground="White" FontWeight="Bold" FontSize="11" BorderThickness="0" Cursor="Hand">
+                                                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                                                    </Button>
+                                                    <Button Content="💰 K-에듀파인" Click="BtnOpenKlefPortal_Click" Padding="10,5" Margin="0,0,6,0" Background="#0284C7" Foreground="White" FontWeight="Bold" FontSize="11" BorderThickness="0" Cursor="Hand" ToolTip="지능형 K-에듀파인 재정·품의 시스템">
+                                                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                                                    </Button>
+                                                    <Button Content="📝 4세대 나이스" Click="BtnOpenNeisPortal_Click" Padding="10,5" Margin="0,0,6,0" Background="#4F46E5" Foreground="White" FontWeight="Bold" FontSize="11" BorderThickness="0" Cursor="Hand" ToolTip="4세대 지능형 나이스 교원 교무업무 포털">
+                                                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                                                    </Button>
+                                                    <Button Content="🔒 EVPN (원격업무)" Click="BtnOpenEvpnPortal_Click" Padding="10,5" Margin="0,0,6,0" Background="#334155" Foreground="White" FontWeight="Bold" FontSize="11" BorderThickness="0" Cursor="Hand" ToolTip="자택 및 출장지 원격업무지원시스템(EVPN)">
+                                                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                                                    </Button>
+                                                    <Button Content="📱 QR" Click="BtnOfficeQr_Click" Padding="8,5" Background="{DynamicResource BeigeCardInner}" Foreground="{DynamicResource BeigeTextMain}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontWeight="Bold" FontSize="11" Cursor="Hand" ToolTip="현재 선택된 교육청 업무포털 QR코드 팝업">
+                                                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                                                    </Button>
+                                                </StackPanel>
+                                            </DockPanel>
+                                        </Border>
                                     </Grid>
                                 </Border>
 

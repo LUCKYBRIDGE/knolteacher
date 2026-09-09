@@ -24,6 +24,9 @@ public interface ISiteBookmarkService
     void ResetToDefaults();
     void OpenSite(string url);
     void OpenSelectedOfficePortal();
+    void OpenSelectedKlefPortal();
+    void OpenSelectedNeisPortal();
+    void OpenSelectedEvpnPortal();
 }
 
 public class SiteBookmarkService : ISiteBookmarkService
@@ -38,7 +41,7 @@ public class SiteBookmarkService : ISiteBookmarkService
 
     public List<SiteBookmarkItem> Bookmarks { get; private set; } = new();
     public List<EducationOfficeItem> EducationOffices { get; } = new();
-    public string SelectedRegionCode { get; set; } = "gwe"; // 기본 강원
+    public string SelectedRegionCode { get; set; } = "kwe"; // 기본 강원 (kwe)
 
     public event Action? OnBookmarksChanged;
 
@@ -56,7 +59,7 @@ public class SiteBookmarkService : ISiteBookmarkService
         EducationOffices.Clear();
         EducationOffices.AddRange(new[]
         {
-            new EducationOfficeItem { RegionName = "강원특별자치도", OfficeName = "강원교육청", DomainCode = "gwe" },
+            new EducationOfficeItem { RegionName = "강원특별자치도", OfficeName = "강원교육청", DomainCode = "kwe" },
             new EducationOfficeItem { RegionName = "서울특별시", OfficeName = "서울교육청", DomainCode = "sen" },
             new EducationOfficeItem { RegionName = "경기도", OfficeName = "경기교육청", DomainCode = "goe" },
             new EducationOfficeItem { RegionName = "부산광역시", OfficeName = "부산교육청", DomainCode = "pen" },
@@ -173,22 +176,12 @@ public class SiteBookmarkService : ISiteBookmarkService
         {
             new() {
                 Id = "pinky",
-                Title = "핑키네 교실자료실",
-                Description = "선생님을 위한 무료 학습지, 수업자료, 계절별 활동지 가득",
+                Title = "핑키네 놀퀴즈 & 교실자료실",
+                Description = "선생님을 위한 참여형 인터랙티브 놀퀴즈 및 초등 교실 학습자료",
                 Url = "https://pinky-ne.com/",
                 Icon = "🌸",
                 Color = "#EC4899",
                 Category = "필수자료실",
-                IsCustom = false
-            },
-            new() {
-                Id = "knolquiz",
-                Title = "놀퀴즈 (KnolQuiz)",
-                Description = "학생 참여형 실시간 인터랙티브 퀴즈 and 게임",
-                Url = "https://quiz.knolteacher.com/",
-                Icon = "🎯",
-                Color = "#3B82F6",
-                Category = "수업도구",
                 IsCustom = false
             },
             new() {
@@ -222,6 +215,16 @@ public class SiteBookmarkService : ISiteBookmarkService
                 IsCustom = false
             },
             new() {
+                Id = "vivasam",
+                Title = "비바샘 (Visang)",
+                Description = "비상교육 초등·중고등 맞춤형 디지털 수업자료실",
+                Url = "https://www.vivasam.com/",
+                Icon = "🌱",
+                Color = "#059669",
+                Category = "교수지원",
+                IsCustom = false
+            },
+            new() {
                 Id = "doclass",
                 Title = "두클래스 (douclass)",
                 Description = "동아출판 초등·중학 스마트 맞춤형 교수학습 지원",
@@ -242,7 +245,7 @@ public class SiteBookmarkService : ISiteBookmarkService
                 IsCustom = false
             },
             new() {
-                Id = "thinkerbell",
+                Id = "tkbell",
                 Title = "띵커벨 (ThinkerBell)",
                 Description = "쉽고 빠른 웹기반 퀴즈, 워크시트 및 보드 협업도구",
                 Url = "https://www.tkbell.co.kr/",
@@ -258,6 +261,16 @@ public class SiteBookmarkService : ISiteBookmarkService
                 Url = "https://www.edunet.net/",
                 Icon = "🏛️",
                 Color = "#0284C7",
+                Category = "국가교육",
+                IsCustom = false
+            },
+            new() {
+                Id = "educator",
+                Title = "지식샘터 (에듀테크 연수)",
+                Description = "교육부·KERIS 교원 맞춤형 디지털 교육 및 직무연수",
+                Url = "https://educator.edunet.net/",
+                Icon = "💡",
+                Color = "#4F46E5",
                 Category = "국가교육",
                 IsCustom = false
             },
@@ -279,6 +292,46 @@ public class SiteBookmarkService : ISiteBookmarkService
                 Icon = "✨",
                 Color = "#00C4CC",
                 Category = "디자인도구",
+                IsCustom = false
+            },
+            new() {
+                Id = "padlet",
+                Title = "패들렛 (Padlet)",
+                Description = "실시간 모둠 협업 게시판 및 학생 의견 공유 도구",
+                Url = "https://padlet.com/",
+                Icon = "📌",
+                Color = "#D97706",
+                Category = "수업도구",
+                IsCustom = false
+            },
+            new() {
+                Id = "mentimeter",
+                Title = "멘티미터 (Mentimeter)",
+                Description = "수업 중 실시간 학생 질문·응답, 투표, 워드클라우드",
+                Url = "https://www.mentimeter.com/",
+                Icon = "📊",
+                Color = "#2563EB",
+                Category = "수업도구",
+                IsCustom = false
+            },
+            new() {
+                Id = "schoolinfo",
+                Title = "학교알리미 (SchoolInfo)",
+                Description = "교육부 전국 초·중·고 공식 학교정보 공시 포털",
+                Url = "https://www.schoolinfo.go.kr/",
+                Icon = "🔍",
+                Color = "#0D9488",
+                Category = "교육행정",
+                IsCustom = false
+            },
+            new() {
+                Id = "neis",
+                Title = "나이스 대국민포털 (NEIS)",
+                Description = "교육부 전국 시도교육청 나이스 대국민 종합 안내",
+                Url = "https://www.neis.go.kr/",
+                Icon = "📜",
+                Color = "#1E40AF",
+                Category = "교육행정",
                 IsCustom = false
             }
         };
@@ -310,6 +363,39 @@ public class SiteBookmarkService : ISiteBookmarkService
         if (office != null)
         {
             OpenSite(office.Url);
+        }
+    }
+
+    public void OpenSelectedKlefPortal()
+    {
+        var office = EducationOffices.FirstOrDefault(e => e.DomainCode == SelectedRegionCode)
+                     ?? EducationOffices.FirstOrDefault();
+
+        if (office != null)
+        {
+            OpenSite(office.KlefUrl);
+        }
+    }
+
+    public void OpenSelectedNeisPortal()
+    {
+        var office = EducationOffices.FirstOrDefault(e => e.DomainCode == SelectedRegionCode)
+                     ?? EducationOffices.FirstOrDefault();
+
+        if (office != null)
+        {
+            OpenSite(office.NeisUrl);
+        }
+    }
+
+    public void OpenSelectedEvpnPortal()
+    {
+        var office = EducationOffices.FirstOrDefault(e => e.DomainCode == SelectedRegionCode)
+                     ?? EducationOffices.FirstOrDefault();
+
+        if (office != null)
+        {
+            OpenSite(office.EvpnUrl);
         }
     }
 }

@@ -36,5 +36,8 @@ public class EducationOfficeItem
     public string OfficeName { get; set; } = string.Empty;
     public string DomainCode { get; set; } = string.Empty;
     public string Url => $"https://{DomainCode}.eduptl.kr/";
+    public string KlefUrl => $"https://klef.{DomainCode}.go.kr/";
+    public string NeisUrl => $"https://{DomainCode}.neis.go.kr/";
+    public string EvpnUrl => $"https://evpn.{DomainCode}.go.kr/";
     public string DisplayText => $"{RegionName} ({OfficeName})";
 }

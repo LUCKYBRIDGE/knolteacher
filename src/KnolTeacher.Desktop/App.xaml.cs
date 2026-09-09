@@ -67,6 +67,7 @@ public partial class App : Application
                 services.AddSingleton<IUpdateService, UpdateService>();
                 services.AddSingleton<IStartupService, StartupService>();
                 services.AddSingleton<IDataShareService, DataShareService>();
+                services.AddSingleton<IClassroomRecordService, ClassroomRecordService>();
 
                 // ViewModels
                 services.AddSingleton<MainViewModel>();
@@ -86,6 +87,7 @@ public partial class App : Application
                 services.AddSingleton<ClassroomSoundboardWindow>();
                 services.AddSingleton<DigitalSignatureWindow>();
                 services.AddTransient<TemplateShareWindow>();
+                services.AddSingleton<ClassroomHubWindow>();
             })
             .Build();
     }
