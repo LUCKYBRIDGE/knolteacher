@@ -5,7 +5,7 @@
 ## 1. 현재 구현 기준
 
 - 제품: 놀티쳐 (KnolTeacher)
-- 현재 개발 버전: v3.0.7 (다음 Release 후보)
+- 현재 개발 버전: v3.0.9 (Release 후보)
 - 버전 SSOT: 루트 `Directory.Build.props`의 `KnolTeacherVersion`
 - 주력 구현: C# / .NET 8 / WPF
 - 대상: Windows 10/11 x64
@@ -24,7 +24,7 @@
 3. `docs/DEVELOPMENT_MASTER_PLAN.md`
 4. `docs/PROJECT_CONTEXT.md`
 5. `README.md`
-6. `legacy-python/`의 파일
+6. `legacy-python/`
 
 `legacy-python/`은 현재 아키텍처의 근거로 사용하지 않는다.
 
@@ -32,35 +32,35 @@
 
 - `main`에 직접 수정하지 않는다.
 - 최신 `main`에서 작업 브랜치를 만든 뒤 PR을 사용한다.
-- 작업 시작 전에 `main` HEAD, 작업 브랜치 HEAD, 열린 PR, Actions 상태를 확인한다.
-- 기능 수정과 무관한 대규모 포맷팅은 함께 넣지 않는다.
+- 작업 시작 전에 main HEAD, 작업 브랜치 HEAD, 열린 PR, Actions, 최신 Release를 확인한다.
 - 하나의 PR은 가능한 한 하나의 책임에 집중한다.
-- 빌드 산출물은 커밋하지 않는다.
-- 릴리스용 실행 파일은 GitHub Release asset으로 관리한다.
-- 빌드 성공만으로 완료로 판단하지 않고 변경 영역의 테스트/스모크 테스트를 수행한다.
+- 기능과 무관한 대규모 포맷팅을 섞지 않는다.
+- `bin/`, `obj/`, `dist-net/` 등 빌드 산출물을 커밋하지 않는다.
+- 빌드 성공만으로 완료로 판단하지 않고 관련 테스트와 패키징 검증을 수행한다.
+- Release는 검증된 `main` 커밋만 대상으로 한다.
 
 ## 4. 제품의 불변 원칙
 
 ### 4.1 올인원 Windows 교사용 앱
 
-KnolTeacher는 수업 도구, 놀보드, 학급 운영, 교사업무 보조 기능을 하나의 Windows 데스크톱 앱에서 제공한다. 특별한 이유 없이 기능을 별도 설치 프로그램이나 별도 앱으로 분리하지 않는다.
+KnolTeacher는 수업 도구, 놀보드, 학급 운영, 학생 제시, 교사업무 보조 기능을 하나의 Windows 데스크톱 앱에서 제공한다. 특별한 이유 없이 별도 설치 프로그램이나 별도 앱으로 분리하지 않는다.
 
 ### 4.2 Local-Only 학생 데이터
 
 학생·학급 개인정보는 Local-Only를 기본 원칙으로 한다.
 
 - 학생 개인정보를 KnolTeacher 서버, 클라우드 동기화, 원격 텔레메트리로 자동 전송하지 않는다.
-- 외부 AI 서비스에 학생 이름, 평어, 누가기록, 연락처 등 개인정보를 자동 전송하지 않는다.
+- 외부 AI 서비스에 학생 이름, 평어, 누가기록, 연락처 등을 자동 전송하지 않는다.
 - 외부 전송이 필요한 미래 기능은 별도 설계 검토와 명시적 사용자 동의 없이는 추가하지 않는다.
 - 기능상 저장할 필요가 없는 학생 데이터는 저장하지 않는다.
 - 민감 데이터 보호의 첫 수단은 암호화가 아니라 데이터 최소화다.
 
 ### 4.3 학생 번호 우선
 
-핵심 수업 기능은 학생 이름 없이 학생 번호만으로 완전히 동작해야 한다.
+핵심 수업 기능은 학생 이름 없이 번호만으로 완전히 동작해야 한다.
 
 - 필수 식별자는 학생 번호다.
-- 학생 이름/아바타는 선택 정보다.
+- 이름, 성별, 아바타 등은 선택 정보다.
 - 발표자 추첨, 자리 배치, 모둠, 체크리스트, 점수 등은 번호만으로 사용할 수 있어야 한다.
 - 이름이나 개별 기록이 필요한 교사 기록 기능은 수업 도구 도메인과 가능한 한 분리한다.
 
@@ -69,120 +69,161 @@ KnolTeacher는 수업 도구, 놀보드, 학급 운영, 교사업무 보조 기�
 데이터는 다음 순서로 판단한다.
 
 1. 저장하지 않아도 되는가? → 세션/메모리만 사용한다.
-2. 저장이 필요한가? → 로컬에만 저장한다.
+2. 저장이 필요한가? → 사용자 PC 로컬에만 저장한다.
 3. 손실 시 문제가 큰가? → 원자적 저장, 검증, 로컬 백업/복구를 적용한다.
 4. 민감한가? → 저장 필요성을 다시 검토하고 필요한 경우에만 로컬 보호를 추가한다.
+
+작은 JSON/텍스트 영구 저장은 가능한 한 `SafeLocalJsonStore` / `SafeLocalFileStore`를 사용한다. 저장 실패를 빈 `catch { }`로 완전히 숨기지 않으며 로그에는 데이터 내용이나 사용자별 전체 경로를 남기지 않는다.
 
 ## 5. 아키텍처 경계
 
 ### Services
-설정, 학생 번호/선택 명렬, 시간표, NEIS, QR, 스케줄, 디스플레이, 단축키 등 재사용 가능한 로직을 둔다. 파일 저장, 네트워크 접근, 업데이트와 같은 I/O는 가능한 한 Service 경계 안에서 관리한다.
+설정, 학생 번호/선택 명렬, 시간표, NEIS, QR, 스케줄, 디스플레이, 단축키, 업데이트 등 재사용 가능한 로직과 I/O를 둔다.
 
 ### Views/Windows
-독립 창과 대화상자를 둔다. 멀티 모니터 이동은 가능한 한 `DisplayManager`를 통해 일관되게 처리한다.
+독립 창과 대화상자를 둔다. 멀티 모니터 이동은 가능한 한 `IDisplayManager`를 통해 처리한다.
 
 ### Views/Controls
-놀보드 위젯과 판서 수학교구처럼 재사용 가능한 UI 컴포넌트를 둔다. 장시간 실행되는 위젯은 타이머, 이벤트 구독, 비동기 요청의 생명주기를 명시적으로 관리한다.
+놀보드 위젯과 판서 수학교구 등 재사용 가능한 UI를 둔다. 장시간 실행되는 위젯은 타이머, 이벤트 구독, 비동기 요청의 생명주기를 명시적으로 관리한다.
 
 ### ViewModels
-새로운 UI 로직이나 기존 대형 code-behind 분리는 테스트 가능성과 책임 분리에 실질적인 이점이 있을 때 ViewModel로 이동한다. 전체 UI를 한 번에 재작성하지 않는다.
+새 UI 로직이나 대형 code-behind 분리는 테스트 가능성과 책임 분리에 실질적 이점이 있을 때 단계적으로 수행한다. 전체 UI를 한 번에 재작성하지 않는다.
 
 ### legacy-python
-과거 구현 보존 전용이다. 사용자가 명시적으로 마이그레이션이나 비교를 요청하지 않는 한 신규 기능을 추가하지 않는다.
+과거 구현 보존 전용이다. 사용자가 명시적으로 비교/마이그레이션을 요청하지 않는 한 신규 기능을 추가하지 않는다.
 
-## 6. 놀보드 위젯 생명주기 원칙
+## 6. 놀보드 계약
 
-- 위젯을 화면에서 숨기는 것과 실제 삭제하는 것을 구분한다.
-- 놀보드 `Hide` 시 불필요한 타이머/polling/비동기 작업은 일시 중지한다.
+현재 `WidgetRegistry`가 정의하는 실제 in-canvas 위젯은 13종이다.
+
+- timer
+- picker
+- dice
+- wheel
+- score
+- drawing
+- timetable
+- meal
+- memo
+- checklist
+- qr
+- weather
+- dday
+
+`pinball`(뽑기 레이스)은 놀보드 위젯이 아니라 `StudentPickerWindow` 독립 창 도구다. 위젯 목록이나 위젯 색상으로 오인시키지 않는다.
+
+위젯 생명주기 원칙:
+
+- 놀보드 Hide와 실제 위젯 삭제를 구분한다.
+- Hide 시 불필요한 timer/polling/비동기 작업을 일시 중지한다.
 - 다시 표시할 때 필요한 작업만 재개한다.
-- 실제 위젯 삭제 시 타이머 중지, 이벤트 구독 해제, CancellationToken 취소, 기타 리소스 해제를 보장한다.
-- static 이벤트 또는 장수명 서비스 이벤트 구독은 반드시 해제 가능해야 한다.
-- 전자칠판을 고려하여 이동/리사이즈/닫기 조작의 터치 hit target을 충분히 확보한다.
+- 실제 삭제 시 timer 중지, event 구독 해제, CancellationToken 취소, 기타 리소스 해제를 보장한다.
+- static 이벤트 또는 장수명 service 이벤트 구독은 반드시 해제 가능해야 한다.
+- 공통 `BoardWidgetHost`의 이동, 8방향 resize, lock, close, zoom 계약을 유지한다.
+- 전자칠판을 고려해 이동/리사이즈/닫기 hit target을 충분히 확보한다.
 
-## 7. 교실 UX 원칙
+## 7. 교실 멀티 모니터 UX
 
-- 모니터 1은 교사용 화면, 모니터 2는 학생용 전자칠판/TV를 기본 시나리오로 본다.
-- 학생에게 제시하는 도구는 모니터 2 기본 배치를 유지하되 교사가 즉시 모니터를 전환할 수 있어야 한다.
-- 전체화면·Topmost·전역 단축키 기능은 다른 창의 제어권을 불필요하게 빼앗지 않도록 한다.
-- 단일 모니터 환경에서도 기능이 실패하지 않도록 fallback을 유지한다.
-- 마우스뿐 아니라 터치/전자칠판 사용성을 핵심 요구사항으로 본다.
+기본 교실 시나리오:
 
-## 8. NEIS 관련 안전 원칙
+- 모니터 1: 교사 PC
+- 모니터 2: 학생용 전자칠판/TV
+
+학생 제시 화면인 놀보드 자체는 모니터 2 기본 배치를 유지한다. 다만 **사용자가 버튼으로 명시적으로 여는 독립 Window/Dialog**는 다음 입력 계약을 따른다.
+
+- 왼클릭: 모니터 1에서 연다.
+- 우클릭: `팝업 우클릭 모니터 2` 설정이 켜져 있으면 모니터 2에서 연다.
+- 해당 설정 기본값은 ON이다.
+- 단일 모니터에서는 모니터 1로 안전하게 fallback한다.
+- 놀보드 in-canvas 위젯, 탭, 드로어, 내부 패널 전환에는 이 규칙을 적용하지 않는다.
+- 위젯 런처는 독립 창 런처와 구별되는 은은한 시각 톤을 유지한다.
+
+전체화면, Topmost, 전역 단축키 기능은 다른 창의 제어권을 불필요하게 빼앗지 않도록 한다.
+
+## 8. 일정 UX 원칙
+
+개인 캘린더 데이터 모델의 중심 개념은 `일정`이다.
+
+- 메모는 별도 경쟁 기능이 아니라 일정의 선택 상세정보/준비사항이다.
+- 기존 `TeacherCalendarEvent`와 `calendar_events.json` 호환성을 불필요하게 깨뜨리지 않는다.
+- 일정 등록, 선택일 보기, 월간 학사일정의 역할을 UI에서 명확히 구분한다.
+
+## 9. NEIS 관련 안전 원칙
 
 - 학생 번호/행 매칭이 어긋나지 않도록 입력 대상이 화면에서 확인 가능해야 한다.
 - 자동 입력 기능은 교사의 검토를 대체하지 않는다.
-- 최종 저장을 자동으로 확정하지 않는 현재 안전장치를 임의로 제거하지 않는다.
-- NEIS DOM이나 포커스 동작에 의존하는 기능은 실패 시 중단 가능하고 복구 가능해야 한다.
+- 최종 저장을 자동으로 확정하지 않는 안전장치를 임의로 제거하지 않는다.
+- DOM/포커스 의존 기능은 실패 시 중단 가능하고 복구 가능해야 한다.
 - 실제 학생 개인정보, 평어, 학교 계정 정보는 저장소·로그·테스트 fixture에 넣지 않는다.
 
-## 9. 버전·문서 동기화
+## 10. 버전·문서 동기화
 
-버전은 루트 `Directory.Build.props`의 `KnolTeacherVersion` 한 곳에서 관리한다. `.csproj`의 `Version`, `AssemblyVersion`, `FileVersion`, `InformationalVersion`은 이 값을 소비해야 하며 숫자를 별도로 하드코딩하지 않는다.
+버전은 `Directory.Build.props`의 `KnolTeacherVersion` 한 곳에서 관리한다. `.csproj`의 `Version`, `AssemblyVersion`, `FileVersion`, `InformationalVersion`은 이 값을 소비하고 숫자를 별도 하드코딩하지 않는다.
 
-버전 규칙:
+- 최신 Release보다 데스크톱 코드가 변경되면 개발 버전은 최신 Release보다 커야 한다.
+- 같은 다음 Release 후보 버전에 여러 검증된 PR을 누적할 수 있다.
+- updater fallback에 실제 제품 버전을 하드코딩하지 않는다.
+- 앱 화면의 버전 표시는 실행 중인 Assembly/FileVersion을 사용한다.
 
-- 최신 GitHub Release가 `vX.Y.Z`라면, 다음 데스크톱 앱 변경이 들어가는 개발 브랜치는 `KnolTeacherVersion`이 그보다 큰 버전이어야 한다.
-- 같은 다음 Release 후보 버전에 여러 PR을 누적하는 것은 허용한다. 예: 최신 Release가 v3.0.6이고 개발 버전이 v3.0.7이면 여러 안정화 PR을 v3.0.7에 누적할 수 있다.
-- v3.0.7이 실제 Release된 이후 추가 앱 코드가 바뀌면 v3.0.8 이상으로 올리지 않는 PR은 CI가 실패해야 한다.
-- updater의 fallback 버전에 실제 제품 버전을 하드코딩하지 않는다. 버전 메타데이터를 읽지 못한 경우에는 최신 정식 Release로 복구할 수 있는 보수적 fallback을 사용한다.
+릴리스 버전을 확정할 때 점검한다.
 
-릴리스 버전을 변경할 때 최소한 다음을 함께 점검한다.
+- `Directory.Build.props`
+- 실행 파일 embedded FileVersion
+- `README.md`
+- `docs/PROJECT_CONTEXT.md`
+- `docs/DEVELOPMENT_MASTER_PLAN.md`
+- GitHub tag / Release / asset
+- updater 다운로드·교체·재실행 계약
 
-- `Directory.Build.props`의 `KnolTeacherVersion`
-- 빌드된 `놀티쳐.exe`에 내장된 FileVersion
-- `README.md`의 표시 버전과 변경 기능
-- `docs/PROJECT_CONTEXT.md`의 기준 버전
-- 필요한 경우 `docs/DEVELOPMENT_MASTER_PLAN.md`의 진행 상태
-- GitHub Release tag/title/asset
-- 배포 파일명
-
-문서에 특정 커밋 SHA를 장기 기준으로 고정하지 않는다. SHA는 작업 시작 시 다시 확인한다.
-
-## 10. 검증
+## 11. 검증
 
 최소 검증:
 
 ```powershell
 dotnet restore KnolTeacher.sln
 dotnet build KnolTeacher.sln -c Release --no-restore
+dotnet test KnolTeacher.sln -c Release --no-build --no-restore
 ```
 
-Windows 올인원 패키징 검증:
+Windows 올인원 패키징:
 
 ```bat
 publish.bat
 ```
 
-`publish.bat` 성공 후 `dist-net`에는 사용자용 `놀티쳐.exe` 한 파일만 존재해야 한다.
+성공 후 `dist-net`에는 로컬 사용자용 `놀티쳐.exe` 한 파일만 존재해야 한다.
 
-주요 기능을 건드렸다면 관련 smoke test를 수행한다.
+주요 smoke test:
 
 - 앱 실행/종료
-- 전역 단축키 등록/해제
 - 단일/다중 모니터
-- 놀보드 열기/Hide/다시 열기/위젯 삭제
-- 위젯 반복 생성/삭제 시 타이머와 이벤트 중복 여부
+- 명시적 팝업 좌클릭/우클릭 표시 위치
+- 놀보드 열기/Hide/재열기
+- 13종 위젯 생성/닫기/재생성/이동/8방향 resize/lock
+- 반복 생성·삭제 시 timer/event/async 중복 여부
 - 타이머/추첨/실물화상기
-- NEIS 입력은 비식별 샘플 데이터로 dry-run
 - 설정 저장 후 재실행
-- 업데이트 확인/다운로드/무결성 검증/교체/재실행
+- 업데이트 확인/다운로드/무결성 검증/교체/새 버전 재실행
+- NEIS는 비식별 샘플로 dry-run
 
-## 11. 단일 파일 Release / 자동 업데이트 계약
+## 12. 단일 파일 Release / 자동 업데이트 계약
 
-이 규칙은 사용자 경험과 기존 설치본의 연속성을 위해 깨뜨리지 않는다.
+이 계약은 기존 설치본의 연속성을 위해 깨뜨리지 않는다.
 
-- Windows 공식 배포물은 `win-x64`, self-contained, single-file 실행 파일 하나다.
-- 사용자용 GitHub Release asset 이름은 정확히 `놀티쳐.exe`로 한다.
-- Release에 다른 실행 파일을 대체 패키지로 올려 updater가 임의 선택하게 하지 않는다.
-- GitHub Release tag는 `vX.Y.Z`이며 `Directory.Build.props`의 `KnolTeacherVersion`과 일치해야 한다.
-- Release 전에 빌드된 `놀티쳐.exe`의 embedded FileVersion이 tag 버전과 일치하는지 자동 검증한다.
-- Release tag는 `main`에 포함된 검증된 커밋을 가리켜야 한다.
-- 앱의 `버전 확인`은 `LUCKYBRIDGE/knolteacher`의 최신 GitHub Release를 기준으로 한다.
-- updater는 `놀티쳐.exe`만 선택하고 HTTPS GitHub Release URL만 허용한다.
-- 다운로드한 실행 파일은 GitHub Release asset의 크기와 SHA-256 digest를 검증한 뒤에만 현재 실행 파일을 교체한다.
-- 기존 사용자는 별도 설치 프로그램 없이 바탕화면의 기존 `놀티쳐.exe`에서 버전 확인 → 업데이트 → 자동 재실행 흐름을 유지해야 한다.
-- 개발 커밋마다 Release하지 않는다. 검증된 기능 묶음을 버전으로 확정한 뒤 Release한다.
+- 공식 Windows 배포물은 `win-x64`, self-contained, single-file 실행 파일 하나다.
+- 로컬 사용자 실행 파일명은 `놀티쳐.exe`다.
+- GitHub Release의 기본 transport asset 이름은 ASCII `KnolTeacher.exe`다.
+- updater는 `KnolTeacher.exe`와 과거 호환용 `놀티쳐.exe`만 허용한다. `default.exe`, `setup.exe` 등 임의 이름을 허용하지 않는다.
+- GitHub Release에는 실행 asset을 정확히 하나만 둔다.
+- Release tag는 `vX.Y.Z`이고 `KnolTeacherVersion`과 일치해야 한다.
+- 빌드된 실행 파일의 embedded FileVersion이 Release 버전과 일치해야 한다.
+- updater는 GitHub HTTPS download URL, asset 크기, SHA-256 digest를 검증한다.
+- 다운로드한 실행 파일 자체의 embedded version도 대상 Release와 일치해야 한다.
+- 업데이트 적용 후 설치 위치의 `놀티쳐.exe`가 다운로드 파일과 같은 SHA-256인지 확인한 뒤에만 새 프로세스를 연다.
+- 업데이트 완료 후에는 임시 다운로드 파일이 아니라 설치 위치의 새 `놀티쳐.exe`를 재실행한다.
+- 기존 사용자는 별도 installer 없이 앱의 버전 확인 → 업데이트 → 자동 재실행 흐름을 유지한다.
+- 개발 커밋마다 Release하지 않고 검증된 기능 묶음을 버전으로 확정한 뒤 Release한다.
 
-## 12. 개발 로드맵
+## 13. 개발 로드맵
 
 현재 단계별 계획과 완료 조건은 `docs/DEVELOPMENT_MASTER_PLAN.md`를 따른다. 큰 구조 변경 전에 해당 문서를 갱신하고, 실제 구현 상태가 계획 문서보다 우선한다.
