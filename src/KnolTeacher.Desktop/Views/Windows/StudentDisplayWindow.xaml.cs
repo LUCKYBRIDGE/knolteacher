@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Ink;
@@ -31,6 +32,8 @@ public partial class StudentDisplayWindow : Window
     private readonly List<BoardWidgetHost> _widgets = new();
     private bool _isWidgetsLocked = false;
     private double _currentCardOpacity = 0.95;
+    private bool _isReady = false;
+    private int _layoutSaveSuppressionDepth = 0;
 
     public StudentDisplayWindow(
         ISoundService soundService,
@@ -55,7 +58,6 @@ public partial class StudentDisplayWindow : Window
 
         InitializeComponent();
 
-        // InkCanvas config
         BoardInkCanvas.DefaultDrawingAttributes = new DrawingAttributes
         {
             Color = Colors.White,
@@ -74,7 +76,6 @@ public partial class StudentDisplayWindow : Window
         TxtClock.Text = DateTime.Now.ToString("HH:mm:ss");
 
         BoardInkCanvas.StrokeCollected += (s, e) => _undoStack.Clear();
-
         WidgetCanvas.SizeChanged += OnWidgetCanvasSizeChanged;
 
         _isReady = true;
@@ -88,18 +89,43 @@ public partial class StudentDisplayWindow : Window
         };
     }
 
-    private bool _isReady = false;
-
     #region Widget Management & Presets
 
-    public void ClearWidgets()
+    private bool IsLayoutSaveSuppressed => _layoutSaveSuppressionDepth > 0;
+
+    private void BeginLayoutBatch()
     {
-        foreach (var w in _widgets)
+        _layoutSaveSuppressionDepth++;
+    }
+
+    private void EndLayoutBatch(bool saveFinalState)
+    {
+        if (_layoutSaveSuppressionDepth > 0)
         {
-            WidgetCanvas.Children.Remove(w);
+            _layoutSaveSuppressionDepth--;
         }
+
+        if (saveFinalState && _layoutSaveSuppressionDepth == 0)
+        {
+            SaveWidgetsLayout();
+        }
+    }
+
+    public void ClearWidgets(bool saveLayout = true)
+    {
+        foreach (var widget in _widgets.ToArray())
+        {
+            widget.DisposeContent();
+            WidgetCanvas.Children.Remove(widget);
+        }
+
         _widgets.Clear();
         UpdateDockButtonsState();
+
+        if (saveLayout)
+        {
+            SaveWidgetsLayout();
+        }
     }
 
     public BoardWidgetHost AddWidget(string type, string title, UserControl view, double x, double y, double w, double h)
@@ -118,7 +144,7 @@ public partial class StudentDisplayWindow : Window
         Canvas.SetLeft(host, x);
         Canvas.SetTop(host, y);
 
-        host.Closed += (target) =>
+        host.Closed += target =>
         {
             WidgetCanvas.Children.Remove(target);
             _widgets.Remove(target);
@@ -126,10 +152,7 @@ public partial class StudentDisplayWindow : Window
             SaveWidgetsLayout();
         };
 
-        host.MovedOrResized += (target) =>
-        {
-            SaveWidgetsLayout();
-        };
+        host.MovedOrResized += _ => SaveWidgetsLayout();
 
         _widgets.Add(host);
         WidgetCanvas.Children.Add(host);
@@ -140,47 +163,113 @@ public partial class StudentDisplayWindow : Window
 
     public void SaveWidgetsLayout()
     {
-        if (!_isReady) return;
+        if (!_isReady || IsLayoutSaveSuppressed) return;
+
         try
         {
             var list = new List<NolboardWidgetState>();
-            foreach (var w in _widgets)
+            foreach (var widget in _widgets)
             {
+                double x = Canvas.GetLeft(widget);
+                double y = Canvas.GetTop(widget);
+                if (double.IsNaN(x) || double.IsInfinity(x)) x = 0;
+                if (double.IsNaN(y) || double.IsInfinity(y)) y = 0;
+
+                double width = widget.ActualWidth > 0
+                    ? widget.ActualWidth
+                    : (double.IsNaN(widget.Width) ? 340 : widget.Width);
+                double height = widget.ActualHeight > 0
+                    ? widget.ActualHeight
+                    : (double.IsNaN(widget.Height) ? 260 : widget.Height);
+
                 list.Add(new NolboardWidgetState
                 {
-                    Tag = w.WidgetType,
-                    X = Canvas.GetLeft(w),
-                    Y = Canvas.GetTop(w),
-                    Width = w.ActualWidth > 0 ? w.ActualWidth : (double.IsNaN(w.Width) ? 340 : w.Width),
-                    Height = w.ActualHeight > 0 ? w.ActualHeight : (double.IsNaN(w.Height) ? 260 : w.Height)
+                    Tag = widget.WidgetType,
+                    X = x,
+                    Y = y,
+                    Width = width,
+                    Height = height
                 });
             }
-            _configService.NolboardLayout.Widgets = list;
-            _configService.NolboardLayout.HasCustomLayout = true;
+
+            var layout = _configService.NolboardLayout ?? new NolboardLayoutConfig();
+            layout.SchemaVersion = NolboardLayoutConfig.CurrentSchemaVersion;
+            layout.Widgets = list;
+            layout.HasCustomLayout = true;
+            layout.CanvasWidth = WidgetCanvas.ActualWidth > 0 ? WidgetCanvas.ActualWidth : 0;
+            layout.CanvasHeight = WidgetCanvas.ActualHeight > 0 ? WidgetCanvas.ActualHeight : 0;
+            _configService.NolboardLayout = layout;
             _configService.SaveNolboardLayout();
         }
-        catch { }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[Nolboard] Failed to save layout: {ex.GetType().Name}");
+        }
     }
 
     public bool RestoreWidgetsLayout()
     {
         var layout = _configService.NolboardLayout;
-        if (layout == null || !layout.HasCustomLayout || layout.Widgets == null || layout.Widgets.Count == 0)
+        if (layout == null || !layout.HasCustomLayout)
         {
             return false;
         }
 
-        ClearWidgets();
-        foreach (var state in layout.Widgets)
+        BeginLayoutBatch();
+        try
         {
-            var host = SpawnWidget(state.Tag, state.X, state.Y);
-            if (host != null)
+            ClearWidgets(saveLayout: false);
+
+            // An intentionally empty custom workspace must remain empty on next launch.
+            if (layout.Widgets == null || layout.Widgets.Count == 0)
             {
-                if (state.Width > 100) host.Width = state.Width;
-                if (state.Height > 80) host.Height = state.Height;
+                return true;
             }
+
+            double currentCanvasWidth = WidgetCanvas.ActualWidth;
+            double currentCanvasHeight = WidgetCanvas.ActualHeight;
+            double scaleX = 1.0;
+            double scaleY = 1.0;
+
+            if (layout.CanvasWidth > 200 && layout.CanvasHeight > 200 &&
+                currentCanvasWidth > 200 && currentCanvasHeight > 200)
+            {
+                scaleX = currentCanvasWidth / layout.CanvasWidth;
+                scaleY = currentCanvasHeight / layout.CanvasHeight;
+            }
+
+            foreach (var state in layout.Widgets)
+            {
+                if (string.IsNullOrWhiteSpace(state.Tag)) continue;
+
+                var host = SpawnWidget(state.Tag, state.X * scaleX, state.Y * scaleY);
+                if (host == null) continue;
+
+                if (state.Width > 100)
+                {
+                    host.Width = Math.Max(host.MinWidth, state.Width * scaleX);
+                }
+
+                if (state.Height > 80)
+                {
+                    host.Height = Math.Max(host.MinHeight, state.Height * scaleY);
+                }
+            }
+
+            layout.SchemaVersion = NolboardLayoutConfig.CurrentSchemaVersion;
+            ClampAllWidgetsWithinCanvas();
+            UpdateDockButtonsState();
+            return true;
         }
-        return _widgets.Count > 0;
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[Nolboard] Failed to restore layout: {ex.GetType().Name}");
+            return false;
+        }
+        finally
+        {
+            EndLayoutBatch(saveFinalState: false);
+        }
     }
 
     private void BtnSaveBoardLayout_Click(object sender, RoutedEventArgs e)
@@ -189,7 +278,8 @@ public partial class StudentDisplayWindow : Window
         MessageBox.Show("현재 놀보드 위젯 배치가 안전하게 저장되었습니다.\n다음에 놀보드를 열 때 이 상태로 자동 복원됩니다.", "놀보드 배치 저장 완료", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
-    public BoardWidgetHost? FindWidget(string type) => _widgets.Find(w => w.WidgetType == type);
+    public BoardWidgetHost? FindWidget(string type) =>
+        _widgets.Find(w => string.Equals(w.WidgetType, type, StringComparison.OrdinalIgnoreCase));
 
     public void ToggleWidget(string key)
     {
@@ -199,12 +289,14 @@ public partial class StudentDisplayWindow : Window
             return;
         }
 
-        var existing = _widgets.Find(w => w.WidgetType == key);
+        var existing = FindWidget(key);
         if (existing != null)
         {
+            existing.DisposeContent();
             WidgetCanvas.Children.Remove(existing);
             _widgets.Remove(existing);
             UpdateDockButtonsState();
+            SaveWidgetsLayout();
         }
         else
         {
@@ -226,6 +318,7 @@ public partial class StudentDisplayWindow : Window
         {
             _pinballWindow = new StudentPickerWindow(_studentService, _soundService, _displayManager);
         }
+
         _displayManager?.MoveToStudentMonitor(_pinballWindow, maximize: false);
         _pinballWindow.Show();
         _pinballWindow.Activate();
@@ -337,26 +430,46 @@ public partial class StudentDisplayWindow : Window
             return null;
         }
 
+        var definition = WidgetRegistry.GetOrDefault(tag);
+        if (definition == null)
+        {
+            return null;
+        }
+
+        if (!definition.AllowMultiple)
+        {
+            var existing = FindWidget(tag);
+            if (existing != null)
+            {
+                existing.BringToFront();
+                return existing;
+            }
+        }
+
         double nextX = x ?? (40 + (_widgets.Count * 30) % 360);
         double nextY = y ?? (40 + (_widgets.Count * 30) % 240);
 
-        return tag switch
+        UserControl? view = tag switch
         {
-            "timer" => AddWidget("timer", "⏱️ 수업 타이머", new TimerWidgetView(_soundService), nextX, nextY, 340, 240),
-            "picker" => AddWidget("picker", "🎯 발표자 추첨", new PickerWidgetView(_studentService, _soundService), nextX, nextY, 360, 280),
-            "dice" => AddWidget("dice", "🎲 스마트 주사위 & 통계", new DiceWidgetView(_soundService), nextX, nextY, 480, 290),
-            "wheel" => AddWidget("wheel", "🎡 회전 돌림판", new WheelWidgetView(_soundService), nextX, nextY, 340, 270),
-            "score" => AddWidget("score", "🏆 모둠 점수판", new ScoreWidgetView(), nextX, nextY, 360, 270),
-            "drawing" => AddWidget("drawing", "✏️ 칠판 판서장", new DrawingWidgetView(), nextX, nextY, 400, 310),
-            "timetable" => AddWidget("timetable", "📅 오늘의 시간표", new TimetableWidgetView(_timetableService), nextX, nextY, 320, 440),
-            "meal" => AddWidget("meal", "🍱 오늘의 급식", new MealWidgetView(_neisService), nextX, nextY, 320, 440),
-            "memo" => AddWidget("memo", "📝 학급 알림장", new MemoWidgetView(_configService, _ttsService), nextX, nextY, 360, 340),
-            "checklist" => AddWidget("checklist", "📋 과제 체크리스트", new ChecklistWidgetView(_configService, _studentService), nextX, nextY, 360, 360),
-            "qr" => AddWidget("qr", "📱 실시간 수업 QR코드", new QrWidgetView(_qrCodeService), nextX, nextY, 320, 360),
-            "weather" => AddWidget("weather", "☀️ 오늘의 날씨 & 미세먼지", new WeatherWidgetView(_weatherService), nextX, nextY, 340, 290),
-            "dday" => AddWidget("dday", "🎯 학급 D-Day", new DDayWidgetView(_configService), nextX, nextY, 340, 240),
+            "timer" => new TimerWidgetView(_soundService),
+            "picker" => new PickerWidgetView(_studentService, _soundService),
+            "dice" => new DiceWidgetView(_soundService),
+            "wheel" => new WheelWidgetView(_soundService),
+            "score" => new ScoreWidgetView(),
+            "drawing" => new DrawingWidgetView(),
+            "timetable" => new TimetableWidgetView(_timetableService),
+            "meal" => new MealWidgetView(_neisService),
+            "memo" => new MemoWidgetView(_configService, _ttsService),
+            "checklist" => new ChecklistWidgetView(_configService, _studentService),
+            "qr" => new QrWidgetView(_qrCodeService),
+            "weather" => new WeatherWidgetView(_weatherService),
+            "dday" => new DDayWidgetView(_configService),
             _ => null
         };
+
+        return view == null
+            ? null
+            : AddWidget(definition.Type, definition.Title, view, nextX, nextY, definition.DefaultWidth, definition.DefaultHeight);
     }
 
     public void UpdateDockButtonsState()
@@ -382,7 +495,7 @@ public partial class StudentDisplayWindow : Window
     private void UpdateBtnState(Button? btn, string tag)
     {
         if (btn == null) return;
-        bool active = _widgets.Exists(w => w.WidgetType == tag);
+        bool active = _widgets.Exists(w => string.Equals(w.WidgetType, tag, StringComparison.OrdinalIgnoreCase));
         if (active)
         {
             btn.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#0284C7"));
@@ -401,9 +514,6 @@ public partial class StudentDisplayWindow : Window
         }
     }
 
-    private double _prevCanvasWidth = 0;
-    private double _prevCanvasHeight = 0;
-
     private void OnWidgetCanvasSizeChanged(object sender, SizeChangedEventArgs e)
     {
         double newWidth = e.NewSize.Width;
@@ -411,7 +521,6 @@ public partial class StudentDisplayWindow : Window
         double oldWidth = e.PreviousSize.Width;
         double oldHeight = e.PreviousSize.Height;
 
-        // Proportional widget scaling & repositioning when window is maximized or resized
         if (oldWidth > 200 && oldHeight > 200 && newWidth > 200 && newHeight > 200)
         {
             double scaleX = newWidth / oldWidth;
@@ -419,37 +528,35 @@ public partial class StudentDisplayWindow : Window
 
             if (Math.Abs(scaleX - 1.0) > 0.01 || Math.Abs(scaleY - 1.0) > 0.01)
             {
-                foreach (var w in _widgets)
+                foreach (var widget in _widgets)
                 {
-                    double curLeft = Canvas.GetLeft(w);
-                    double curTop = Canvas.GetTop(w);
+                    double curLeft = Canvas.GetLeft(widget);
+                    double curTop = Canvas.GetTop(widget);
                     if (double.IsNaN(curLeft)) curLeft = 20;
                     if (double.IsNaN(curTop)) curTop = 20;
 
-                    double curW = w.ActualWidth > 0 ? w.ActualWidth : (double.IsNaN(w.Width) ? 400 : w.Width);
-                    double curH = w.ActualHeight > 0 ? w.ActualHeight : (double.IsNaN(w.Height) ? 300 : w.Height);
+                    double curW = widget.ActualWidth > 0 ? widget.ActualWidth : (double.IsNaN(widget.Width) ? 400 : widget.Width);
+                    double curH = widget.ActualHeight > 0 ? widget.ActualHeight : (double.IsNaN(widget.Height) ? 300 : widget.Height);
 
-                    double nextW = Math.Max(200, curW * scaleX);
-                    double nextH = Math.Max(150, curH * scaleY);
+                    double nextW = Math.Max(widget.MinWidth, curW * scaleX);
+                    double nextH = Math.Max(widget.MinHeight, curH * scaleY);
                     double nextLeft = curLeft * scaleX;
                     double nextTop = curTop * scaleY;
 
-                    if (nextW > newWidth - 20) nextW = Math.Max(200, newWidth - 20);
-                    if (nextH > newHeight - 20) nextH = Math.Max(150, newHeight - 20);
+                    if (nextW > newWidth - 20) nextW = Math.Max(widget.MinWidth, newWidth - 20);
+                    if (nextH > newHeight - 20) nextH = Math.Max(widget.MinHeight, newHeight - 20);
 
                     double maxLeft = Math.Max(10, newWidth - nextW - 10);
                     double maxTop = Math.Max(10, newHeight - nextH - 10);
 
-                    w.Width = nextW;
-                    w.Height = nextH;
-                    Canvas.SetLeft(w, Math.Clamp(nextLeft, 10, maxLeft));
-                    Canvas.SetTop(w, Math.Clamp(nextTop, 10, maxTop));
+                    widget.Width = nextW;
+                    widget.Height = nextH;
+                    Canvas.SetLeft(widget, Math.Clamp(nextLeft, 10, maxLeft));
+                    Canvas.SetTop(widget, Math.Clamp(nextTop, 10, maxTop));
                 }
             }
         }
 
-        _prevCanvasWidth = newWidth;
-        _prevCanvasHeight = newHeight;
         ClampAllWidgetsWithinCanvas();
     }
 
@@ -459,22 +566,34 @@ public partial class StudentDisplayWindow : Window
         double canvasHeight = WidgetCanvas.ActualHeight;
         if (canvasWidth <= 100 || canvasHeight <= 100) return;
 
-        foreach (var w in _widgets)
+        foreach (var widget in _widgets)
         {
-            double curLeft = Canvas.GetLeft(w);
-            double curTop = Canvas.GetTop(w);
-
+            double curLeft = Canvas.GetLeft(widget);
+            double curTop = Canvas.GetTop(widget);
             if (double.IsNaN(curLeft)) curLeft = 20;
             if (double.IsNaN(curTop)) curTop = 20;
 
-            if (w.ActualWidth > canvasWidth - 20) w.Width = Math.Max(240, canvasWidth - 20);
-            if (w.ActualHeight > canvasHeight - 20) w.Height = Math.Max(180, canvasHeight - 20);
+            double actualWidth = widget.ActualWidth > 0 ? widget.ActualWidth : widget.Width;
+            double actualHeight = widget.ActualHeight > 0 ? widget.ActualHeight : widget.Height;
+            if (double.IsNaN(actualWidth) || actualWidth <= 0) actualWidth = widget.MinWidth;
+            if (double.IsNaN(actualHeight) || actualHeight <= 0) actualHeight = widget.MinHeight;
 
-            double maxLeft = Math.Max(0, canvasWidth - w.ActualWidth - 10);
-            double maxTop = Math.Max(0, canvasHeight - w.ActualHeight - 10);
+            if (actualWidth > canvasWidth - 20)
+            {
+                widget.Width = Math.Max(widget.MinWidth, canvasWidth - 20);
+                actualWidth = widget.Width;
+            }
 
-            Canvas.SetLeft(w, Math.Clamp(curLeft, 10, maxLeft));
-            Canvas.SetTop(w, Math.Clamp(curTop, 10, maxTop));
+            if (actualHeight > canvasHeight - 20)
+            {
+                widget.Height = Math.Max(widget.MinHeight, canvasHeight - 20);
+                actualHeight = widget.Height;
+            }
+
+            double maxLeft = Math.Max(10, canvasWidth - actualWidth - 10);
+            double maxTop = Math.Max(10, canvasHeight - actualHeight - 10);
+            Canvas.SetLeft(widget, Math.Clamp(curLeft, 10, maxLeft));
+            Canvas.SetTop(widget, Math.Clamp(curTop, 10, maxTop));
         }
     }
 
@@ -493,13 +612,13 @@ public partial class StudentDisplayWindow : Window
         int n = _widgets.Count;
         if (n == 1)
         {
-            var w = _widgets[0];
-            double ww = Math.Min(780, canvasWidth - 40);
-            double wh = Math.Min(520, canvasHeight - 40);
-            Canvas.SetLeft(w, Math.Max(20, (canvasWidth - ww) / 2));
-            Canvas.SetTop(w, Math.Max(20, (canvasHeight - wh) / 2));
-            w.Width = ww;
-            w.Height = wh;
+            var widget = _widgets[0];
+            double ww = Math.Max(widget.MinWidth, Math.Min(780, canvasWidth - 40));
+            double wh = Math.Max(widget.MinHeight, Math.Min(520, canvasHeight - 40));
+            Canvas.SetLeft(widget, Math.Max(20, (canvasWidth - ww) / 2));
+            Canvas.SetTop(widget, Math.Max(20, (canvasHeight - wh) / 2));
+            widget.Width = ww;
+            widget.Height = wh;
         }
         else if (n == 2)
         {
@@ -507,25 +626,24 @@ public partial class StudentDisplayWindow : Window
             double h = Math.Max(300, canvasHeight - 40);
             for (int i = 0; i < 2; i++)
             {
-                var w = _widgets[i];
-                Canvas.SetLeft(w, 12 + i * (halfW + 12));
-                Canvas.SetTop(w, 16);
-                w.Width = halfW;
-                w.Height = h;
+                var widget = _widgets[i];
+                Canvas.SetLeft(widget, 12 + i * (halfW + 12));
+                Canvas.SetTop(widget, 16);
+                widget.Width = Math.Max(widget.MinWidth, halfW);
+                widget.Height = Math.Max(widget.MinHeight, h);
             }
         }
         else if (n == 3)
         {
-            // 3 Columns layout: Perfect for Timetable + Meal + Memo
             double colW = (canvasWidth - 48) / 3;
             double h = Math.Max(300, canvasHeight - 36);
             for (int i = 0; i < 3; i++)
             {
-                var w = _widgets[i];
-                Canvas.SetLeft(w, 12 + i * (colW + 12));
-                Canvas.SetTop(w, 16);
-                w.Width = colW;
-                w.Height = h;
+                var widget = _widgets[i];
+                Canvas.SetLeft(widget, 12 + i * (colW + 12));
+                Canvas.SetTop(widget, 16);
+                widget.Width = Math.Max(widget.MinWidth, colW);
+                widget.Height = Math.Max(widget.MinHeight, h);
             }
         }
         else if (n == 4)
@@ -534,32 +652,35 @@ public partial class StudentDisplayWindow : Window
             double halfH = (canvasHeight - 36) / 2;
             for (int i = 0; i < 4; i++)
             {
-                int r = i / 2;
-                int c = i % 2;
-                var w = _widgets[i];
-                Canvas.SetLeft(w, 12 + c * (halfW + 12));
-                Canvas.SetTop(w, 12 + r * (halfH + 12));
-                w.Width = halfW;
-                w.Height = halfH;
+                int row = i / 2;
+                int col = i % 2;
+                var widget = _widgets[i];
+                Canvas.SetLeft(widget, 12 + col * (halfW + 12));
+                Canvas.SetTop(widget, 12 + row * (halfH + 12));
+                widget.Width = Math.Max(widget.MinWidth, halfW);
+                widget.Height = Math.Max(widget.MinHeight, halfH);
             }
         }
         else
         {
-            int cols = (n <= 6) ? 3 : 4;
+            int cols = n <= 6 ? 3 : 4;
             int rows = (n + cols - 1) / cols;
-            double cw = (canvasWidth - (cols + 1) * 12) / cols;
-            double ch = (canvasHeight - (rows + 1) * 12) / rows;
+            double cellWidth = (canvasWidth - (cols + 1) * 12) / cols;
+            double cellHeight = (canvasHeight - (rows + 1) * 12) / rows;
             for (int i = 0; i < n; i++)
             {
-                int r = i / cols;
-                int c = i % cols;
-                var w = _widgets[i];
-                Canvas.SetLeft(w, 12 + c * (cw + 12));
-                Canvas.SetTop(w, 12 + r * (ch + 12));
-                w.Width = cw;
-                w.Height = ch;
+                int row = i / cols;
+                int col = i % cols;
+                var widget = _widgets[i];
+                Canvas.SetLeft(widget, 12 + col * (cellWidth + 12));
+                Canvas.SetTop(widget, 12 + row * (cellHeight + 12));
+                widget.Width = Math.Max(widget.MinWidth, cellWidth);
+                widget.Height = Math.Max(widget.MinHeight, cellHeight);
             }
         }
+
+        ClampAllWidgetsWithinCanvas();
+        SaveWidgetsLayout();
     }
 
     private void DockToolBtn_Click(object sender, RoutedEventArgs e)
@@ -596,37 +717,51 @@ public partial class StudentDisplayWindow : Window
 
     private void ApplyPresetTools()
     {
-        ClearWidgets();
-        // 1. Timer
-        AddWidget("timer", "⏱️ 수업 타이머", new TimerWidgetView(_soundService), 30, 30, 340, 240);
-        // 2. Picker
-        AddWidget("picker", "🎯 발표자 추첨", new PickerWidgetView(_studentService, _soundService), 400, 30, 360, 280);
-        // 3. Dice
-        AddWidget("dice", "🎲 스마트 주사위 & 통계", new DiceWidgetView(_soundService), 30, 300, 480, 290);
+        BeginLayoutBatch();
+        try
+        {
+            ClearWidgets(saveLayout: false);
+            AddWidget("timer", "⏱️ 수업 타이머", new TimerWidgetView(_soundService), 30, 30, 340, 240);
+            AddWidget("picker", "🎯 발표자 추첨", new PickerWidgetView(_studentService, _soundService), 400, 30, 360, 280);
+            AddWidget("dice", "🎲 스마트 주사위 & 통계", new DiceWidgetView(_soundService), 30, 300, 480, 290);
+        }
+        finally
+        {
+            EndLayoutBatch(saveFinalState: true);
+        }
     }
 
     private void ApplyPresetBoard()
     {
-        ClearWidgets();
-        // 1. Timetable
-        AddWidget("timetable", "📅 오늘의 시간표", new TimetableWidgetView(_timetableService), 30, 30, 330, 480);
-        // 2. Meal
-        AddWidget("meal", "🍱 오늘의 급식", new MealWidgetView(_neisService), 390, 30, 330, 480);
-        // 3. Memo
-        AddWidget("memo", "📝 학급 알림장", new MemoWidgetView(_configService, _ttsService), 750, 30, 380, 480);
+        BeginLayoutBatch();
+        try
+        {
+            ClearWidgets(saveLayout: false);
+            AddWidget("timetable", "📅 오늘의 시간표", new TimetableWidgetView(_timetableService), 30, 30, 330, 480);
+            AddWidget("meal", "🍱 오늘의 급식", new MealWidgetView(_neisService), 390, 30, 330, 480);
+            AddWidget("memo", "📝 학급 알림장", new MemoWidgetView(_configService, _ttsService), 750, 30, 380, 480);
+        }
+        finally
+        {
+            EndLayoutBatch(saveFinalState: true);
+        }
     }
 
     private void ApplyPresetSplit()
     {
-        ClearWidgets();
-        // 1. Timer
-        AddWidget("timer", "⏱️ 수업 타이머", new TimerWidgetView(_soundService), 30, 30, 320, 240);
-        // 2. Picker
-        AddWidget("picker", "🎯 발표자 추첨", new PickerWidgetView(_studentService, _soundService), 30, 290, 320, 260);
-        // 3. Timetable
-        AddWidget("timetable", "📅 오늘의 시간표", new TimetableWidgetView(_timetableService), 380, 30, 300, 520);
-        // 4. Meal
-        AddWidget("meal", "🍱 오늘의 급식", new MealWidgetView(_neisService), 710, 30, 300, 520);
+        BeginLayoutBatch();
+        try
+        {
+            ClearWidgets(saveLayout: false);
+            AddWidget("timer", "⏱️ 수업 타이머", new TimerWidgetView(_soundService), 30, 30, 320, 240);
+            AddWidget("picker", "🎯 발표자 추첨", new PickerWidgetView(_studentService, _soundService), 30, 290, 320, 260);
+            AddWidget("timetable", "📅 오늘의 시간표", new TimetableWidgetView(_timetableService), 380, 30, 300, 520);
+            AddWidget("meal", "🍱 오늘의 급식", new MealWidgetView(_neisService), 710, 30, 300, 520);
+        }
+        finally
+        {
+            EndLayoutBatch(saveFinalState: true);
+        }
     }
 
     private void BtnPresetTools_Click(object sender, RoutedEventArgs e) => ApplyPresetTools();
@@ -639,7 +774,7 @@ public partial class StudentDisplayWindow : Window
         if (CbAddWidget?.SelectedItem is ComboBoxItem item && item.Tag is string tag)
         {
             SpawnWidget(tag);
-            CbAddWidget.SelectedIndex = 0; // reset
+            CbAddWidget.SelectedIndex = 0;
         }
     }
 
@@ -779,9 +914,9 @@ public partial class StudentDisplayWindow : Window
                 : new SolidColorBrush((Color)ColorConverter.ConvertFromString("#334155"));
         }
 
-        foreach (var w in _widgets)
+        foreach (var widget in _widgets)
         {
-            w.IsLocked = _isWidgetsLocked;
+            widget.IsLocked = _isWidgetsLocked;
         }
     }
 
@@ -797,9 +932,10 @@ public partial class StudentDisplayWindow : Window
         {
             TxtOpacityValue.Text = $"{(_currentCardOpacity * 100):0}%";
         }
-        foreach (var w in _widgets)
+
+        foreach (var widget in _widgets)
         {
-            w.CardOpacity = _currentCardOpacity;
+            widget.CardOpacity = _currentCardOpacity;
         }
     }
 
