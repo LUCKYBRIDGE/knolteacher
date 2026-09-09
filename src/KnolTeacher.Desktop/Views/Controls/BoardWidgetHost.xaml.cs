@@ -10,17 +10,29 @@ public partial class BoardWidgetHost : UserControl
 {
     private static int _globalZIndex = 10;
 
+    private string _widgetType = string.Empty;
+    private bool _isDragging;
+    private Point _dragStartPoint;
+    private bool _isLocked;
+    private bool _canResize = true;
+    private bool _canZoom = true;
+    private bool _isContentActive;
+    private bool _isContentDisposed;
+
     public string WidgetId { get; set; } = Guid.NewGuid().ToString();
-    public string WidgetType { get; set; } = string.Empty;
+
+    public string WidgetType
+    {
+        get => _widgetType;
+        set
+        {
+            _widgetType = value ?? string.Empty;
+            ApplyWidgetDefinition();
+        }
+    }
 
     public event Action<BoardWidgetHost>? Closed;
     public event Action<BoardWidgetHost>? MovedOrResized;
-
-    private bool _isDragging = false;
-    private Point _dragStartPoint;
-    private bool _isLocked = false;
-    private bool _isContentActive = false;
-    private bool _isContentDisposed = false;
 
     public bool IsLocked
     {
@@ -28,10 +40,27 @@ public partial class BoardWidgetHost : UserControl
         set
         {
             _isLocked = value;
-            TitleBar.Cursor = _isLocked ? Cursors.Arrow : Cursors.SizeAll;
-            ResizeThumb.Visibility = _isLocked ? Visibility.Collapsed : Visibility.Visible;
-            TxtLockIcon.Visibility = _isLocked ? Visibility.Visible : Visibility.Collapsed;
-            TxtDragGrip.Visibility = _isLocked ? Visibility.Collapsed : Visibility.Visible;
+            UpdateInteractionState();
+        }
+    }
+
+    public bool CanResize
+    {
+        get => _canResize;
+        set
+        {
+            _canResize = value;
+            UpdateInteractionState();
+        }
+    }
+
+    public bool CanZoom
+    {
+        get => _canZoom;
+        set
+        {
+            _canZoom = value;
+            UpdateInteractionState();
         }
     }
 
@@ -69,10 +98,54 @@ public partial class BoardWidgetHost : UserControl
     public BoardWidgetHost()
     {
         InitializeComponent();
+
+        Stylus.SetIsPressAndHoldEnabled(TitleBar, false);
+        Stylus.SetIsFlicksEnabled(TitleBar, false);
+
         Loaded += BoardWidgetHost_Loaded;
         Unloaded += BoardWidgetHost_Unloaded;
         IsVisibleChanged += BoardWidgetHost_IsVisibleChanged;
         MouseDown += (s, e) => BringToFront();
+        TitleBar.LostMouseCapture += (s, e) => _isDragging = false;
+
+        UpdateInteractionState();
+    }
+
+    private void ApplyWidgetDefinition()
+    {
+        var definition = WidgetRegistry.GetOrDefault(_widgetType);
+        if (definition == null) return;
+
+        MinWidth = definition.MinWidth;
+        MinHeight = definition.MinHeight;
+        CanResize = definition.CanResize;
+        CanZoom = definition.CanZoom;
+
+        if (double.IsNaN(Width) || Width <= 0)
+        {
+            Width = definition.DefaultWidth;
+        }
+
+        if (double.IsNaN(Height) || Height <= 0)
+        {
+            Height = definition.DefaultHeight;
+        }
+
+        if (string.IsNullOrWhiteSpace(Title) || Title == "위젯 제목")
+        {
+            Title = definition.Title;
+        }
+    }
+
+    private void UpdateInteractionState()
+    {
+        if (!IsInitialized) return;
+
+        TitleBar.Cursor = _isLocked ? Cursors.Arrow : Cursors.SizeAll;
+        ResizeLayer.Visibility = !_isLocked && _canResize ? Visibility.Visible : Visibility.Collapsed;
+        ZoomControlsContainer.Visibility = _canZoom ? Visibility.Visible : Visibility.Collapsed;
+        TxtLockIcon.Visibility = _isLocked ? Visibility.Visible : Visibility.Collapsed;
+        TxtDragGrip.Visibility = _isLocked ? Visibility.Collapsed : Visibility.Visible;
     }
 
     public void ActivateContent()
@@ -121,6 +194,7 @@ public partial class BoardWidgetHost : UserControl
     private void BoardWidgetHost_Loaded(object sender, RoutedEventArgs e)
     {
         BringToFront();
+        UpdateInteractionState();
         if (IsVisible)
         {
             ActivateContent();
@@ -172,8 +246,8 @@ public partial class BoardWidgetHost : UserControl
             double newLeft = currentPos.X - _dragStartPoint.X;
             double newTop = currentPos.Y - _dragStartPoint.Y;
 
-            double currentW = ActualWidth > 0 ? ActualWidth : Width;
-            double currentH = ActualHeight > 0 ? ActualHeight : Height;
+            double currentW = GetCurrentWidth();
+            double currentH = GetCurrentHeight();
 
             double maxLeft = Math.Max(0, canvas.ActualWidth - currentW);
             double maxTop = Math.Max(0, canvas.ActualHeight - currentH);
@@ -205,33 +279,83 @@ public partial class BoardWidgetHost : UserControl
 
     private void ResizeThumb_DragDelta(object sender, DragDeltaEventArgs e)
     {
-        if (_isLocked) return;
+        if (_isLocked || !_canResize) return;
+        if (sender is not Thumb thumb || thumb.Tag is not string direction) return;
+        if (VisualParent is not Canvas canvas) return;
+
         BringToFront();
 
-        double curLeft = Canvas.GetLeft(this);
-        double curTop = Canvas.GetTop(this);
-        if (double.IsNaN(curLeft)) curLeft = 0;
-        if (double.IsNaN(curTop)) curTop = 0;
+        double left = Canvas.GetLeft(this);
+        double top = Canvas.GetTop(this);
+        if (double.IsNaN(left)) left = 0;
+        if (double.IsNaN(top)) top = 0;
 
-        double canvasWidth = (VisualParent is Canvas canvas) ? canvas.ActualWidth : double.MaxValue;
-        double canvasHeight = (VisualParent is Canvas c) ? c.ActualHeight : double.MaxValue;
+        double width = GetCurrentWidth();
+        double height = GetCurrentHeight();
+        double right = left + width;
+        double bottom = top + height;
 
-        double maxAllowedW = Math.Max(MinWidth, canvasWidth - curLeft - 6);
-        double maxAllowedH = Math.Max(MinHeight, canvasHeight - curTop - 6);
+        double canvasWidth = canvas.ActualWidth > 0 ? canvas.ActualWidth : double.MaxValue;
+        double canvasHeight = canvas.ActualHeight > 0 ? canvas.ActualHeight : double.MaxValue;
 
-        double newWidth = Math.Clamp(ActualWidth + e.HorizontalChange, MinWidth, maxAllowedW);
-        double newHeight = Math.Clamp(ActualHeight + e.VerticalChange, MinHeight, maxAllowedH);
+        if (direction.Contains('W'))
+        {
+            double maxLeft = Math.Max(0, right - MinWidth);
+            double nextLeft = Math.Clamp(left + e.HorizontalChange, 0, maxLeft);
+            width = right - nextLeft;
+            left = nextLeft;
+        }
+        else if (direction.Contains('E'))
+        {
+            double minRight = left + MinWidth;
+            double maxRight = Math.Max(minRight, canvasWidth);
+            double nextRight = Math.Clamp(right + e.HorizontalChange, minRight, maxRight);
+            width = nextRight - left;
+        }
 
-        Width = newWidth;
-        Height = newHeight;
+        if (direction.Contains('N'))
+        {
+            double maxTop = Math.Max(0, bottom - MinHeight);
+            double nextTop = Math.Clamp(top + e.VerticalChange, 0, maxTop);
+            height = bottom - nextTop;
+            top = nextTop;
+        }
+        else if (direction.Contains('S'))
+        {
+            double minBottom = top + MinHeight;
+            double maxBottom = Math.Max(minBottom, canvasHeight);
+            double nextBottom = Math.Clamp(bottom + e.VerticalChange, minBottom, maxBottom);
+            height = nextBottom - top;
+        }
+
+        Width = Math.Max(MinWidth, width);
+        Height = Math.Max(MinHeight, height);
+        Canvas.SetLeft(this, left);
+        Canvas.SetTop(this, top);
 
         e.Handled = true;
+    }
+
+    private double GetCurrentWidth()
+    {
+        if (ActualWidth > 0) return ActualWidth;
+        if (!double.IsNaN(Width) && Width > 0) return Width;
+        return Math.Max(MinWidth, 240);
+    }
+
+    private double GetCurrentHeight()
+    {
+        if (ActualHeight > 0) return ActualHeight;
+        if (!double.IsNaN(Height) && Height > 0) return Height;
+        return Math.Max(MinHeight, 180);
     }
 
     private double _scale = 1.0;
 
     private void BtnZoomIn_Click(object sender, RoutedEventArgs e)
     {
+        if (!_canZoom) return;
+
         if (_scale < 2.0)
         {
             _scale = Math.Round(_scale + 0.1, 1);
@@ -241,6 +365,8 @@ public partial class BoardWidgetHost : UserControl
 
     private void BtnZoomOut_Click(object sender, RoutedEventArgs e)
     {
+        if (!_canZoom) return;
+
         if (_scale > 0.7)
         {
             _scale = Math.Round(_scale - 0.1, 1);
