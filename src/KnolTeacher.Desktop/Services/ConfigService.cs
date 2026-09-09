@@ -89,9 +89,25 @@ public class ConfigService : IConfigService
     public StorageConfig StorageConfig { get; set; } = new();
 
     public ConfigService()
+        : this(Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+            ".knol_teacher_desk"))
     {
-        string homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        ConfigDir = Path.Combine(homeDir, ".knol_teacher_desk");
+    }
+
+    /// <summary>
+    /// Creates a local-only configuration service rooted at the supplied directory.
+    /// The desktop app uses the parameterless constructor; the explicit directory is
+    /// primarily useful for isolated validation and future portable/local scenarios.
+    /// </summary>
+    public ConfigService(string configDir)
+    {
+        if (string.IsNullOrWhiteSpace(configDir))
+        {
+            throw new ArgumentException("A local configuration directory is required.", nameof(configDir));
+        }
+
+        ConfigDir = configDir;
         Directory.CreateDirectory(ConfigDir);
         LoadAll();
     }
@@ -417,12 +433,20 @@ public class ConfigService : IConfigService
 
     private sealed class TimerSettingsData
     {
+        public TimerSettingsData()
+        {
+        }
+
         [JsonPropertyName("target_monitor_index")]
         public int TargetMonitorIndex { get; set; } = 1;
     }
 
     private sealed class TutorialStateData
     {
+        public TutorialStateData()
+        {
+        }
+
         [JsonPropertyName("last_seen_version")]
         public string? LastSeenVersion { get; set; }
     }
