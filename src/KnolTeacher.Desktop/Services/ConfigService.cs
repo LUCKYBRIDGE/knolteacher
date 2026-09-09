@@ -1,6 +1,7 @@
 using System.IO;
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.Unicode;
 using KnolTeacher.Desktop.Models;
 
@@ -13,7 +14,6 @@ public interface IConfigService
     TimetableSettings TimetableSettings { get; set; }
     List<RecurringScheduleItem> RecurringSchedules { get; set; }
     List<HotkeyItem> Hotkeys { get; set; }
-
     PeriodAlarmSystemConfig PeriodAlarmConfig { get; set; }
     ChecklistStore ChecklistStore { get; set; }
     AutoNoticePreset AutoNoticePreset { get; set; }
@@ -48,6 +48,22 @@ public interface IConfigService
 
 public class ConfigService : IConfigService
 {
+    private const string NeisConfigFile = "neis_config.json";
+    private const string TimetableSettingsFile = "timetable_settings.json";
+    private const string RecurringSchedulesFile = "recurring_schedules.json";
+    private const string HotkeysFile = "hotkeys_config.json";
+    private const string PeriodAlarmFile = "period_countdown_settings.json";
+    private const string ChecklistFile = "checklist_store.json";
+    private const string AutoNoticeFile = "auto_notice_preset.json";
+    private const string BoardSetFile = "board_set_store.json";
+    private const string TimerSettingsFile = "timer_settings.json";
+    private const string MainWidgetLayoutFile = "main_widget_layout.json";
+    private const string NolboardLayoutFile = "nolboard_widgets.json";
+    private const string DDayFile = "dday_config.json";
+    private const string TutorialStateFile = "tutorial_state.json";
+    private const string StorageConfigFile = "storage_config.json";
+    private const string CalendarEventsFile = "calendar_events.json";
+
     private readonly JsonSerializerOptions _jsonOptions = new()
     {
         WriteIndented = true,
@@ -76,12 +92,7 @@ public class ConfigService : IConfigService
     {
         string homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         ConfigDir = Path.Combine(homeDir, ".knol_teacher_desk");
-
-        if (!Directory.Exists(ConfigDir))
-        {
-            Directory.CreateDirectory(ConfigDir);
-        }
-
+        Directory.CreateDirectory(ConfigDir);
         LoadAll();
     }
 
@@ -104,80 +115,61 @@ public class ConfigService : IConfigService
         LoadStorageConfig();
     }
 
+    private string ConfigPath(string fileName) => Path.Combine(ConfigDir, fileName);
+
+    private bool TryLoadJson<T>(string fileName, out T? value)
+        where T : class
+        => SafeLocalJsonStore.TryLoad(ConfigPath(fileName), _jsonOptions, out value);
+
+    private void SaveJson<T>(string fileName, T value)
+        => SafeLocalJsonStore.TrySave(ConfigPath(fileName), value, _jsonOptions);
+
     private void LoadNeisConfig()
     {
-        string path = Path.Combine(ConfigDir, "neis_config.json");
-        if (File.Exists(path))
+        if (TryLoadJson<NeisConfig>(NeisConfigFile, out var config))
         {
-            try
-            {
-                string json = File.ReadAllText(path);
-                NeisConfig = JsonSerializer.Deserialize<NeisConfig>(json, _jsonOptions) ?? new();
-                return;
-            }
-            catch { }
+            NeisConfig = config!;
+            return;
         }
+
         NeisConfig = new();
         SaveNeisConfig();
     }
 
-    public void SaveNeisConfig()
-    {
-        try
-        {
-            string path = Path.Combine(ConfigDir, "neis_config.json");
-            string json = JsonSerializer.Serialize(NeisConfig, _jsonOptions);
-            File.WriteAllText(path, json);
-        }
-        catch { }
-    }
+    public void SaveNeisConfig() => SaveJson(NeisConfigFile, NeisConfig);
 
     private void LoadTimetableSettings()
     {
-        string path = Path.Combine(ConfigDir, "timetable_settings.json");
-        if (File.Exists(path))
+        if (TryLoadJson<TimetableSettings>(TimetableSettingsFile, out var settings))
         {
-            try
-            {
-                string json = File.ReadAllText(path);
-                TimetableSettings = JsonSerializer.Deserialize<TimetableSettings>(json, _jsonOptions) ?? new();
-                return;
-            }
-            catch { }
+            TimetableSettings = settings!;
+            return;
         }
+
         TimetableSettings = new();
         SaveTimetableSettings();
     }
 
-    public void SaveTimetableSettings()
-    {
-        try
-        {
-            string path = Path.Combine(ConfigDir, "timetable_settings.json");
-            string json = JsonSerializer.Serialize(TimetableSettings, _jsonOptions);
-            File.WriteAllText(path, json);
-        }
-        catch { }
-    }
+    public void SaveTimetableSettings() => SaveJson(TimetableSettingsFile, TimetableSettings);
 
     private void LoadRecurringSchedules()
     {
-        string path = Path.Combine(ConfigDir, "recurring_schedules.json");
-        if (File.Exists(path))
+        if (TryLoadJson<RecurringScheduleContainer>(RecurringSchedulesFile, out var container) &&
+            container?.Schedules is { Count: > 0 })
         {
-            try
-            {
-                string json = File.ReadAllText(path);
-                var container = JsonSerializer.Deserialize<RecurringScheduleContainer>(json, _jsonOptions);
-                if (container?.Schedules != null && container.Schedules.Count > 0)
-                {
-                    RecurringSchedules = container.Schedules;
-                    return;
-                }
-            }
-            catch { }
+            RecurringSchedules = container.Schedules;
+            return;
         }
-        RecurringSchedules = new()
+
+        RecurringSchedules = CreateDefaultRecurringSchedules();
+        SaveRecurringSchedules();
+    }
+
+    public void SaveRecurringSchedules()
+        => SaveJson(RecurringSchedulesFile, new RecurringScheduleContainer { Schedules = RecurringSchedules });
+
+    private static List<RecurringScheduleItem> CreateDefaultRecurringSchedules()
+        => new()
         {
             new RecurringScheduleItem
             {
@@ -210,337 +202,146 @@ public class ConfigService : IConfigService
                 Memo = "교실 청소 및 학생 하교 지도 알람"
             }
         };
-        SaveRecurringSchedules();
-    }
-
-    public void SaveRecurringSchedules()
-    {
-        try
-        {
-            string path = Path.Combine(ConfigDir, "recurring_schedules.json");
-            var container = new RecurringScheduleContainer { Schedules = RecurringSchedules };
-            string json = JsonSerializer.Serialize(container, _jsonOptions);
-            File.WriteAllText(path, json);
-        }
-        catch { }
-    }
 
     private void LoadHotkeys()
     {
-        string path = Path.Combine(ConfigDir, "hotkeys_config.json");
-        if (File.Exists(path))
+        if (TryLoadJson<List<HotkeyItem>>(HotkeysFile, out var hotkeys) && hotkeys is { Count: > 0 })
         {
-            try
-            {
-                string json = File.ReadAllText(path);
-                var list = JsonSerializer.Deserialize<List<HotkeyItem>>(json, _jsonOptions);
-                if (list != null && list.Count > 0)
-                {
-                    Hotkeys = list;
-                    return;
-                }
-            }
-            catch { }
+            Hotkeys = hotkeys;
+            return;
         }
+
         Hotkeys = DefaultHotkeys.GetDefaults();
         SaveHotkeys();
     }
 
-    public void SaveHotkeys()
-    {
-        try
-        {
-            string path = Path.Combine(ConfigDir, "hotkeys_config.json");
-            string json = JsonSerializer.Serialize(Hotkeys, _jsonOptions);
-            File.WriteAllText(path, json);
-        }
-        catch { }
-    }
+    public void SaveHotkeys() => SaveJson(HotkeysFile, Hotkeys);
 
     private void LoadPeriodAlarmConfig()
     {
-        string path = Path.Combine(ConfigDir, "period_countdown_settings.json");
-        if (File.Exists(path))
+        if (TryLoadJson<PeriodAlarmSystemConfig>(PeriodAlarmFile, out var config))
         {
-            try
-            {
-                string json = File.ReadAllText(path);
-                var cfg = JsonSerializer.Deserialize<PeriodAlarmSystemConfig>(json, _jsonOptions);
-                if (cfg != null)
-                {
-                    PeriodAlarmConfig = cfg;
-                    return;
-                }
-            }
-            catch { }
+            PeriodAlarmConfig = config!;
+            return;
         }
+
         PeriodAlarmConfig = PeriodAlarmSystemConfig.CreateDefault();
         SavePeriodAlarmConfig();
     }
 
-    public void SavePeriodAlarmConfig()
-    {
-        try
-        {
-            string path = Path.Combine(ConfigDir, "period_countdown_settings.json");
-            string json = JsonSerializer.Serialize(PeriodAlarmConfig, _jsonOptions);
-            File.WriteAllText(path, json);
-        }
-        catch { }
-    }
+    public void SavePeriodAlarmConfig() => SaveJson(PeriodAlarmFile, PeriodAlarmConfig);
 
     private void LoadChecklistStore()
     {
-        string path = Path.Combine(ConfigDir, "checklist_store.json");
-        if (File.Exists(path))
+        if (TryLoadJson<ChecklistStore>(ChecklistFile, out var store))
         {
-            try
-            {
-                string json = File.ReadAllText(path);
-                var store = JsonSerializer.Deserialize<ChecklistStore>(json, _jsonOptions);
-                if (store != null)
-                {
-                    ChecklistStore = store;
-                    return;
-                }
-            }
-            catch { }
+            ChecklistStore = store!;
+            return;
         }
-        ChecklistStore = new ChecklistStore();
+
+        ChecklistStore = new();
         SaveChecklistStore();
     }
 
-    public void SaveChecklistStore()
-    {
-        try
-        {
-            string path = Path.Combine(ConfigDir, "checklist_store.json");
-            string json = JsonSerializer.Serialize(ChecklistStore, _jsonOptions);
-            File.WriteAllText(path, json);
-        }
-        catch { }
-    }
+    public void SaveChecklistStore() => SaveJson(ChecklistFile, ChecklistStore);
 
     private void LoadAutoNoticePreset()
     {
-        string path = Path.Combine(ConfigDir, "auto_notice_preset.json");
-        if (File.Exists(path))
+        if (TryLoadJson<AutoNoticePreset>(AutoNoticeFile, out var preset))
         {
-            try
-            {
-                string json = File.ReadAllText(path);
-                var preset = JsonSerializer.Deserialize<AutoNoticePreset>(json, _jsonOptions);
-                if (preset != null)
-                {
-                    AutoNoticePreset = preset;
-                    return;
-                }
-            }
-            catch { }
+            AutoNoticePreset = preset!;
+            return;
         }
-        AutoNoticePreset = new AutoNoticePreset();
+
+        AutoNoticePreset = new();
         SaveAutoNoticePreset();
     }
 
-    public void SaveAutoNoticePreset()
-    {
-        try
-        {
-            string path = Path.Combine(ConfigDir, "auto_notice_preset.json");
-            string json = JsonSerializer.Serialize(AutoNoticePreset, _jsonOptions);
-            File.WriteAllText(path, json);
-        }
-        catch { }
-    }
+    public void SaveAutoNoticePreset() => SaveJson(AutoNoticeFile, AutoNoticePreset);
 
     private void LoadBoardSetStore()
     {
-        string path = Path.Combine(ConfigDir, "board_set_store.json");
-        if (File.Exists(path))
+        if (TryLoadJson<BoardSetStore>(BoardSetFile, out var store))
         {
-            try
-            {
-                string json = File.ReadAllText(path);
-                var store = JsonSerializer.Deserialize<BoardSetStore>(json, _jsonOptions);
-                if (store != null)
-                {
-                    BoardSetStore = store;
-                    return;
-                }
-            }
-            catch { }
+            BoardSetStore = store!;
+            return;
         }
-        BoardSetStore = new BoardSetStore();
+
+        BoardSetStore = new();
         SaveBoardSetStore();
     }
 
-    public void SaveBoardSetStore()
-    {
-        try
-        {
-            string path = Path.Combine(ConfigDir, "board_set_store.json");
-            string json = JsonSerializer.Serialize(BoardSetStore, _jsonOptions);
-            File.WriteAllText(path, json);
-        }
-        catch { }
-    }
+    public void SaveBoardSetStore() => SaveJson(BoardSetFile, BoardSetStore);
 
     private void LoadTimerSettings()
     {
-        string path = Path.Combine(ConfigDir, "timer_settings.json");
-        if (File.Exists(path))
+        if (TryLoadJson<TimerSettingsData>(TimerSettingsFile, out var settings))
         {
-            try
-            {
-                string json = File.ReadAllText(path);
-                using var doc = JsonDocument.Parse(json);
-                if (doc.RootElement.TryGetProperty("target_monitor_index", out var elem))
-                {
-                    TimerTargetMonitorIndex = elem.GetInt32();
-                    return;
-                }
-            }
-            catch { }
+            TimerTargetMonitorIndex = settings!.TargetMonitorIndex;
+            return;
         }
-        TimerTargetMonitorIndex = 1; // Default: 1 (모니터 2 / 학생용 전자칠판 권장)
+
+        TimerTargetMonitorIndex = 1;
     }
 
     public void SaveTimerSettings()
-    {
-        try
-        {
-            string path = Path.Combine(ConfigDir, "timer_settings.json");
-            string json = JsonSerializer.Serialize(new { target_monitor_index = TimerTargetMonitorIndex }, _jsonOptions);
-            File.WriteAllText(path, json);
-        }
-        catch { }
-    }
+        => SaveJson(TimerSettingsFile, new TimerSettingsData { TargetMonitorIndex = TimerTargetMonitorIndex });
 
     private void LoadMainWidgetLayout()
     {
-        string path = Path.Combine(ConfigDir, "main_widget_layout.json");
-        if (File.Exists(path))
+        if (TryLoadJson<MainWidgetLayoutConfig>(MainWidgetLayoutFile, out var layout) &&
+            layout?.Widgets is { Count: > 0 })
         {
-            try
-            {
-                string json = File.ReadAllText(path);
-                var layout = JsonSerializer.Deserialize<MainWidgetLayoutConfig>(json, _jsonOptions);
-                if (layout != null && layout.Widgets != null && layout.Widgets.Count > 0)
-                {
-                    MainWidgetLayout = layout;
-                    return;
-                }
-            }
-            catch { }
+            MainWidgetLayout = layout;
+            return;
         }
+
         MainWidgetLayout = MainWidgetLayoutConfig.CreateDefault();
         SaveMainWidgetLayout();
     }
 
-    public void SaveMainWidgetLayout()
-    {
-        try
-        {
-            string path = Path.Combine(ConfigDir, "main_widget_layout.json");
-            string json = JsonSerializer.Serialize(MainWidgetLayout, _jsonOptions);
-            File.WriteAllText(path, json);
-        }
-        catch { }
-    }
+    public void SaveMainWidgetLayout() => SaveJson(MainWidgetLayoutFile, MainWidgetLayout);
 
     private void LoadNolboardLayout()
     {
-        string path = Path.Combine(ConfigDir, "nolboard_widgets.json");
-        if (File.Exists(path))
+        if (TryLoadJson<NolboardLayoutConfig>(NolboardLayoutFile, out var layout))
         {
-            try
-            {
-                string json = File.ReadAllText(path);
-                var layout = JsonSerializer.Deserialize<NolboardLayoutConfig>(json, _jsonOptions);
-                if (layout != null)
-                {
-                    NolboardLayout = layout;
-                    return;
-                }
-            }
-            catch { }
+            NolboardLayout = layout!;
+            return;
         }
+
         NolboardLayout = new();
     }
 
-    public void SaveNolboardLayout()
-    {
-        try
-        {
-            string path = Path.Combine(ConfigDir, "nolboard_widgets.json");
-            string json = JsonSerializer.Serialize(NolboardLayout, _jsonOptions);
-            File.WriteAllText(path, json);
-        }
-        catch { }
-    }
+    public void SaveNolboardLayout() => SaveJson(NolboardLayoutFile, NolboardLayout);
 
     private void LoadDDayConfig()
     {
-        string path = Path.Combine(ConfigDir, "dday_config.json");
-        if (File.Exists(path))
+        if (TryLoadJson<DDayConfig>(DDayFile, out var config))
         {
-            try
-            {
-                string json = File.ReadAllText(path);
-                var cfg = JsonSerializer.Deserialize<DDayConfig>(json, _jsonOptions);
-                if (cfg != null)
-                {
-                    DDayConfig = cfg;
-                    return;
-                }
-            }
-            catch { }
+            DDayConfig = config!;
+            return;
         }
+
         DDayConfig = new();
         SaveDDayConfig();
     }
 
-    public void SaveDDayConfig()
-    {
-        try
-        {
-            string path = Path.Combine(ConfigDir, "dday_config.json");
-            string json = JsonSerializer.Serialize(DDayConfig, _jsonOptions);
-            File.WriteAllText(path, json);
-        }
-        catch { }
-    }
+    public void SaveDDayConfig() => SaveJson(DDayFile, DDayConfig);
 
     private void LoadTutorialVersion()
     {
-        string path = Path.Combine(ConfigDir, "tutorial_state.json");
-        if (File.Exists(path))
+        if (TryLoadJson<TutorialStateData>(TutorialStateFile, out var state))
         {
-            try
-            {
-                string json = File.ReadAllText(path);
-                using var doc = JsonDocument.Parse(json);
-                if (doc.RootElement.TryGetProperty("last_seen_version", out var prop))
-                {
-                    LastSeenTutorialVersion = prop.GetString();
-                    return;
-                }
-            }
-            catch { }
+            LastSeenTutorialVersion = state!.LastSeenVersion;
+            return;
         }
+
         LastSeenTutorialVersion = null;
     }
 
     public void SaveTutorialVersion()
-    {
-        try
-        {
-            string path = Path.Combine(ConfigDir, "tutorial_state.json");
-            string json = JsonSerializer.Serialize(new { last_seen_version = LastSeenTutorialVersion }, _jsonOptions);
-            File.WriteAllText(path, json);
-        }
-        catch { }
-    }
+        => SaveJson(TutorialStateFile, new TutorialStateData { LastSeenVersion = LastSeenTutorialVersion });
 
     public string GetEffectiveSaveDirectory()
     {
@@ -548,24 +349,25 @@ public class ConfigService : IConfigService
         {
             try
             {
-                if (!Directory.Exists(StorageConfig.DefaultSaveDirectory))
-                {
-                    Directory.CreateDirectory(StorageConfig.DefaultSaveDirectory);
-                }
+                Directory.CreateDirectory(StorageConfig.DefaultSaveDirectory);
                 return StorageConfig.DefaultSaveDirectory;
             }
-            catch { }
+            catch
+            {
+                // Fall through to Downloads. The path itself may be user-specific, so do not log it.
+            }
         }
 
         string downloads = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
         try
         {
-            if (!Directory.Exists(downloads))
-            {
-                Directory.CreateDirectory(downloads);
-            }
+            Directory.CreateDirectory(downloads);
         }
-        catch { }
+        catch
+        {
+            // Preserve the historical fallback behavior even on restricted school PCs.
+        }
+
         return downloads;
     }
 
@@ -576,71 +378,52 @@ public class ConfigService : IConfigService
         {
             try
             {
-                if (!Directory.Exists(path))
-                {
-                    Directory.CreateDirectory(path);
-                }
+                Directory.CreateDirectory(path);
             }
-            catch { }
+            catch
+            {
+                // Save the preference as before; actual use falls back safely when inaccessible.
+            }
         }
+
         SaveStorageConfig();
     }
 
     private void LoadStorageConfig()
     {
-        string path = Path.Combine(ConfigDir, "storage_config.json");
-        if (File.Exists(path))
+        if (TryLoadJson<StorageConfig>(StorageConfigFile, out var config))
         {
-            try
-            {
-                string json = File.ReadAllText(path);
-                var cfg = JsonSerializer.Deserialize<StorageConfig>(json, _jsonOptions);
-                if (cfg != null)
-                {
-                    StorageConfig = cfg;
-                    return;
-                }
-            }
-            catch { }
+            StorageConfig = config!;
+            return;
         }
-        StorageConfig = new StorageConfig();
+
+        StorageConfig = new();
     }
 
-    public void SaveStorageConfig()
-    {
-        try
-        {
-            string path = Path.Combine(ConfigDir, "storage_config.json");
-            string json = JsonSerializer.Serialize(StorageConfig, _jsonOptions);
-            File.WriteAllText(path, json);
-        }
-        catch { }
-    }
+    public void SaveStorageConfig() => SaveJson(StorageConfigFile, StorageConfig);
 
     private void LoadTeacherCalendarEvents()
     {
-        string path = Path.Combine(ConfigDir, "calendar_events.json");
-        if (File.Exists(path))
+        if (TryLoadJson<List<TeacherCalendarEvent>>(CalendarEventsFile, out var events))
         {
-            try
-            {
-                string json = File.ReadAllText(path);
-                TeacherCalendarEvents = JsonSerializer.Deserialize<List<TeacherCalendarEvent>>(json, _jsonOptions) ?? new();
-                return;
-            }
-            catch { }
+            TeacherCalendarEvents = events!;
+            return;
         }
+
         TeacherCalendarEvents = new();
     }
 
-    public void SaveTeacherCalendarEvents()
+    public void SaveTeacherCalendarEvents() => SaveJson(CalendarEventsFile, TeacherCalendarEvents);
+
+    private sealed class TimerSettingsData
     {
-        try
-        {
-            string path = Path.Combine(ConfigDir, "calendar_events.json");
-            string json = JsonSerializer.Serialize(TeacherCalendarEvents, _jsonOptions);
-            File.WriteAllText(path, json);
-        }
-        catch { }
+        [JsonPropertyName("target_monitor_index")]
+        public int TargetMonitorIndex { get; set; } = 1;
+    }
+
+    private sealed class TutorialStateData
+    {
+        [JsonPropertyName("last_seen_version")]
+        public string? LastSeenVersion { get; set; }
     }
 }
