@@ -32,6 +32,16 @@ public class StudentManagerService : IStudentManagerService
 
     private readonly IConfigService _configService;
     private readonly Random _random = new();
+    private readonly JsonSerializerOptions _loadOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        Encoder = JavaScriptEncoder.Create(UnicodeRanges.All)
+    };
+    private readonly JsonSerializerOptions _saveOptions = new()
+    {
+        WriteIndented = true,
+        Encoder = JavaScriptEncoder.Create(UnicodeRanges.All)
+    };
 
     public List<StudentItem> Students { get; private set; } = new();
     public HashSet<int> PickedStudentNumbers { get; } = new();
@@ -47,62 +57,80 @@ public class StudentManagerService : IStudentManagerService
     public void LoadRoster()
     {
         string path = Path.Combine(_configService.ConfigDir, "student_roster.json");
-        if (File.Exists(path))
+
+        if (TryLoadRosterFile(path, out var container, out bool hasPersistFlag, out bool hasUseNamesFlag))
         {
-            try
-            {
-                string json = File.ReadAllText(path);
-                var options = new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true,
-                    Encoder = JavaScriptEncoder.Create(UnicodeRanges.All)
-                };
-
-                bool hasPersistPersonalDetailsFlag = false;
-                bool hasUseNamesFlag = false;
-                using (var doc = JsonDocument.Parse(json))
-                {
-                    if (doc.RootElement.ValueKind == JsonValueKind.Object)
-                    {
-                        hasPersistPersonalDetailsFlag = doc.RootElement.TryGetProperty("persist_personal_details", out _);
-                        hasUseNamesFlag = doc.RootElement.TryGetProperty("use_names_in_picker", out _);
-                    }
-                }
-
-                var container = JsonSerializer.Deserialize<StudentRosterContainer>(json, options);
-                if (container?.Students != null && container.Students.Count > 0)
-                {
-                    Students = container.Students
-                        .Where(s => s.Number > 0)
-                        .OrderBy(s => s.Number)
-                        .ToList();
-
-                    if (Students.Count > 0)
-                    {
-                        // Backward compatibility: old roster files did not have the explicit persistence flag.
-                        // If they already contain personal fields, preserve those values instead of silently erasing them.
-                        PersistPersonalDetails = hasPersistPersonalDetailsFlag
-                            ? container.PersistPersonalDetails
-                            : Students.Any(HasPersonalDetails);
-
-                        UseNamesInPicker = hasUseNamesFlag
-                            ? container.UseNamesInPicker
-                            : false;
-
-                        return;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                App.BootLog($"[StudentManager] Failed to load local roster: {ex.GetType().Name}");
-            }
+            ApplyLoadedRoster(container!, hasPersistFlag, hasUseNamesFlag);
+            return;
         }
 
-        // Privacy-first default: no names or other personal fields are required.
+        string backupPath = SafeLocalFileStore.BackupPath(path);
+        if (TryLoadRosterFile(backupPath, out container, out hasPersistFlag, out hasUseNamesFlag))
+        {
+            ApplyLoadedRoster(container!, hasPersistFlag, hasUseNamesFlag);
+            App.BootLog("[StudentManager] Recovered local roster from .bak file.");
+            return;
+        }
+
         ConfigureNumberOnlyRoster(DefaultStudentCount);
         UseNamesInPicker = false;
         PersistPersonalDetails = false;
+    }
+
+    private bool TryLoadRosterFile(
+        string path,
+        out StudentRosterContainer? container,
+        out bool hasPersistPersonalDetailsFlag,
+        out bool hasUseNamesFlag)
+    {
+        container = null;
+        hasPersistPersonalDetailsFlag = false;
+        hasUseNamesFlag = false;
+
+        if (!File.Exists(path)) return false;
+
+        try
+        {
+            string json = File.ReadAllText(path);
+            using (var doc = JsonDocument.Parse(json))
+            {
+                if (doc.RootElement.ValueKind != JsonValueKind.Object)
+                {
+                    return false;
+                }
+
+                hasPersistPersonalDetailsFlag = doc.RootElement.TryGetProperty("persist_personal_details", out _);
+                hasUseNamesFlag = doc.RootElement.TryGetProperty("use_names_in_picker", out _);
+            }
+
+            container = JsonSerializer.Deserialize<StudentRosterContainer>(json, _loadOptions);
+            return container?.Students != null && container.Students.Any(s => s.Number > 0);
+        }
+        catch (Exception ex)
+        {
+            App.BootLog($"[StudentManager] Invalid local roster candidate ({Path.GetFileName(path)}): {ex.GetType().Name}");
+            container = null;
+            return false;
+        }
+    }
+
+    private void ApplyLoadedRoster(
+        StudentRosterContainer container,
+        bool hasPersistPersonalDetailsFlag,
+        bool hasUseNamesFlag)
+    {
+        Students = container.Students
+            .Where(s => s.Number > 0)
+            .OrderBy(s => s.Number)
+            .ToList();
+
+        PersistPersonalDetails = hasPersistPersonalDetailsFlag
+            ? container.PersistPersonalDetails
+            : Students.Any(HasPersonalDetails);
+
+        UseNamesInPicker = hasUseNamesFlag
+            ? container.UseNamesInPicker
+            : false;
     }
 
     public StudentItem? PickRandom(bool excludePicked = true)
@@ -182,17 +210,11 @@ public class StudentManagerService : IStudentManagerService
                 Students = persistedStudents
             };
 
-            var options = new JsonSerializerOptions
-            {
-                WriteIndented = true,
-                Encoder = JavaScriptEncoder.Create(UnicodeRanges.All)
-            };
-            string json = JsonSerializer.Serialize(container, options);
-            File.WriteAllText(path, json);
+            string json = JsonSerializer.Serialize(container, _saveOptions);
+            SafeLocalFileStore.WriteAllTextAtomic(path, json);
         }
         catch (Exception ex)
         {
-            // Do not log names or other student fields.
             App.BootLog($"[StudentManager] Failed to save local roster: {ex.GetType().Name}");
         }
     }
