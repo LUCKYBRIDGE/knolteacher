@@ -25,20 +25,49 @@ public class TrayService : ITrayService
         if (_notifyIcon != null) return;
         _mainWindow = mainWindow;
 
-        Icon icon;
+        Icon? icon = null;
+
+        // 1. Extract embedded application icon directly from the running executable (.exe)
         try
         {
-            string iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assets", "app_icon.ico");
-            if (File.Exists(iconPath))
+            string? exePath = Environment.ProcessPath;
+            if (!string.IsNullOrEmpty(exePath) && File.Exists(exePath))
             {
-                icon = new Icon(iconPath);
-            }
-            else
-            {
-                icon = SystemIcons.Application;
+                icon = Icon.ExtractAssociatedIcon(exePath);
             }
         }
-        catch
+        catch { }
+
+        // 2. Fallback to WPF pack resource stream
+        if (icon == null)
+        {
+            try
+            {
+                var streamInfo = Application.GetResourceStream(new Uri("pack://application:,,,/assets/app_icon.ico"));
+                if (streamInfo != null)
+                {
+                    using var s = streamInfo.Stream;
+                    icon = new Icon(s);
+                }
+            }
+            catch { }
+        }
+
+        // 3. Fallback to loose assets folder
+        if (icon == null)
+        {
+            try
+            {
+                string iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assets", "app_icon.ico");
+                if (File.Exists(iconPath))
+                {
+                    icon = new Icon(iconPath);
+                }
+            }
+            catch { }
+        }
+
+        if (icon == null)
         {
             icon = SystemIcons.Application;
         }

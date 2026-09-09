@@ -49,6 +49,7 @@ public partial class PeriodAlarmSettingsDialog : Window
         Name = src.Name,
         Enabled = src.Enabled,
         UseGlobal = src.UseGlobal,
+        ClassType = src.ClassType,
         LeadStartMinutes = src.LeadStartMinutes,
         LeadStartSeconds = src.LeadStartSeconds,
         LeadEndMinutes = src.LeadEndMinutes,
@@ -68,8 +69,15 @@ public partial class PeriodAlarmSettingsDialog : Window
         TbStartSec.Text = $"{g.LeadStartSeconds:D2}";
         TbEndMin.Text = g.LeadEndMinutes.ToString();
         TbEndSec.Text = $"{g.LeadEndSeconds:D2}";
-
         TbPreNotice.Text = g.PreNoticeText;
+
+        var tg = _editingConfig.TravelGlobalConfig;
+        TbTravelStartMin.Text = tg.LeadStartMinutes.ToString();
+        TbTravelStartSec.Text = $"{tg.LeadStartSeconds:D2}";
+        TbTravelEndMin.Text = tg.LeadEndMinutes.ToString();
+        TbTravelEndSec.Text = $"{tg.LeadEndSeconds:D2}";
+        TbTravelPreNotice.Text = tg.PreNoticeText;
+
         TbPostNotice.Text = g.PostNoticeText;
         ChkSoundChime.IsChecked = g.PlaySoundChime;
         TbAutoCloseSec.Text = g.AutoCloseSeconds.ToString();
@@ -98,21 +106,37 @@ public partial class PeriodAlarmSettingsDialog : Window
 
     private void UpdateTimeCalculation()
     {
-        if (TxtCalculatedDuration == null) return;
+        if (TxtCalculatedDuration != null && TbStartMin != null && TbStartSec != null && TbEndMin != null && TbEndSec != null)
+        {
+            int sMin = int.TryParse(TbStartMin.Text, out int sm) ? sm : 5;
+            int sSec = int.TryParse(TbStartSec.Text, out int ss) ? ss : 0;
+            int eMin = int.TryParse(TbEndMin.Text, out int em) ? em : 3;
+            int eSec = int.TryParse(TbEndSec.Text, out int es) ? es : 0;
 
-        int sMin = int.TryParse(TbStartMin.Text, out int sm) ? sm : 5;
-        int sSec = int.TryParse(TbStartSec.Text, out int ss) ? ss : 0;
-        int eMin = int.TryParse(TbEndMin.Text, out int em) ? em : 3;
-        int eSec = int.TryParse(TbEndSec.Text, out int es) ? es : 0;
+            int totalStart = sMin * 60 + sSec;
+            int totalEnd = eMin * 60 + eSec;
+            int diff = Math.Max(0, totalStart - totalEnd);
 
-        int totalStart = sMin * 60 + sSec;
-        int totalEnd = eMin * 60 + eSec;
-        int diff = Math.Max(0, totalStart - totalEnd);
+            int dMin = diff / 60;
+            int dSec = diff % 60;
+            TxtCalculatedDuration.Text = $"💡 교실수업: 대형 타이머가 {dMin}분 {dSec:D2}초 동안 카운트다운됩니다.";
+        }
 
-        int dMin = diff / 60;
-        int dSec = diff % 60;
+        if (TxtTravelCalculatedDuration != null && TbTravelStartMin != null && TbTravelStartSec != null && TbTravelEndMin != null && TbTravelEndSec != null)
+        {
+            int tsMin = int.TryParse(TbTravelStartMin.Text, out int tsm) ? tsm : 10;
+            int tsSec = int.TryParse(TbTravelStartSec.Text, out int tss) ? tss : 0;
+            int teMin = int.TryParse(TbTravelEndMin.Text, out int tem) ? tem : 3;
+            int teSec = int.TryParse(TbTravelEndSec.Text, out int tes) ? tes : 0;
 
-        TxtCalculatedDuration.Text = $"💡 화면에 대형 타이머가 총 {dMin}분 {dSec:D2}초 동안 카운트다운됩니다.";
+            int totalStart = tsMin * 60 + tsSec;
+            int totalEnd = teMin * 60 + teSec;
+            int diff = Math.Max(0, totalStart - totalEnd);
+
+            int dMin = diff / 60;
+            int dSec = diff % 60;
+            TxtTravelCalculatedDuration.Text = $"💡 이동수업: 대형 타이머가 {dMin}분 {dSec:D2}초 동안 카운트다운됩니다.";
+        }
     }
 
     private void BtnTestRun_Click(object sender, RoutedEventArgs e)
@@ -146,29 +170,23 @@ public partial class PeriodAlarmSettingsDialog : Window
             item.Enabled = true;
             item.UseGlobal = false;
 
-            switch (mode)
+            if (mode == "travel" || mode == "travel_10")
             {
-                case "travel_10":
-                    item.LeadStartMinutes = 10;
-                    item.LeadStartSeconds = 0;
-                    item.LeadEndMinutes = 3;
-                    item.LeadEndSeconds = 0;
-                    item.PreNoticeText = $"🎒 다음 시간 {item.Name} ({{과목}}) 이동수업입니다! 이동시간을 고려하여 필요한 교재를 챙겨 조용히 이동합시다.";
-                    break;
-                case "special_7":
-                    item.LeadStartMinutes = 7;
-                    item.LeadStartSeconds = 0;
-                    item.LeadEndMinutes = 2;
-                    item.LeadEndSeconds = 0;
-                    item.PreNoticeText = $"🏃 다음 시간 {item.Name} ({{과목}}) 특별실 수업입니다! 필요한 준비물을 챙겨 특별실로 이동해 주세요.";
-                    break;
-                case "specialist_5":
-                    item.LeadStartMinutes = 5;
-                    item.LeadStartSeconds = 0;
-                    item.LeadEndMinutes = 0;
-                    item.LeadEndSeconds = 0;
-                    item.PreNoticeText = $"👨‍🏫 다음 시간 {item.Name} ({{과목}}) 전담 선생님 수업입니다! 바르게 앉아 전담 선생님을 맞이합시다.";
-                    break;
+                item.ClassType = "travel";
+                item.LeadStartMinutes = _editingConfig.TravelGlobalConfig.LeadStartMinutes > 0 ? _editingConfig.TravelGlobalConfig.LeadStartMinutes : 10;
+                item.LeadStartSeconds = _editingConfig.TravelGlobalConfig.LeadStartSeconds;
+                item.LeadEndMinutes = _editingConfig.TravelGlobalConfig.LeadEndMinutes;
+                item.LeadEndSeconds = _editingConfig.TravelGlobalConfig.LeadEndSeconds;
+                item.PreNoticeText = $"🎒 다음 시간 {item.Name} ({{과목}}) 이동수업입니다! 이동시간을 고려하여 필요한 준비물을 챙겨 조용히 이동합시다.";
+            }
+            else
+            {
+                item.ClassType = "classroom";
+                item.LeadStartMinutes = _editingConfig.GlobalConfig.LeadStartMinutes > 0 ? _editingConfig.GlobalConfig.LeadStartMinutes : 5;
+                item.LeadStartSeconds = _editingConfig.GlobalConfig.LeadStartSeconds;
+                item.LeadEndMinutes = _editingConfig.GlobalConfig.LeadEndMinutes;
+                item.LeadEndSeconds = _editingConfig.GlobalConfig.LeadEndSeconds;
+                item.PreNoticeText = $"🔔 다음 시간 {item.Name} ({{과목}}) 준비 시간입니다! 자리에 앉아 교과서를 펴주세요.";
             }
         }
     }
@@ -215,6 +233,19 @@ public partial class PeriodAlarmSettingsDialog : Window
         g.PostNoticeText = TbPostNotice.Text;
         g.PlaySoundChime = ChkSoundChime.IsChecked == true;
         g.AutoCloseSeconds = int.TryParse(TbAutoCloseSec.Text, out int ac) ? Math.Max(2, ac) : 8;
+
+        var tg = _editingConfig.TravelGlobalConfig;
+        tg.Enabled = g.Enabled;
+        tg.ClassType = "travel";
+        tg.LeadStartMinutes = int.TryParse(TbTravelStartMin.Text, out int tsm) ? Math.Max(0, tsm) : 10;
+        tg.LeadStartSeconds = int.TryParse(TbTravelStartSec.Text, out int tss) ? Math.Clamp(tss, 0, 59) : 0;
+        tg.LeadEndMinutes = int.TryParse(TbTravelEndMin.Text, out int tem) ? Math.Max(0, tem) : 3;
+        tg.LeadEndSeconds = int.TryParse(TbTravelEndSec.Text, out int tes) ? Math.Clamp(tes, 0, 59) : 0;
+        tg.TargetMonitorIndex = g.TargetMonitorIndex;
+        tg.PreNoticeText = TbTravelPreNotice.Text;
+        tg.PostNoticeText = g.PostNoticeText;
+        tg.PlaySoundChime = g.PlaySoundChime;
+        tg.AutoCloseSeconds = g.AutoCloseSeconds;
 
         _configService.PeriodAlarmConfig = _editingConfig;
         _configService.SavePeriodAlarmConfig();
