@@ -20,7 +20,7 @@ jobs:
     timeout-minutes: 45
 
     steps:
-      - name: Checkout release commit
+      - name: Checkout release workflow commit
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -63,7 +63,7 @@ jobs:
           git fetch origin main --tags
           git merge-base --is-ancestor HEAD origin/main
           if ($LASTEXITCODE -ne 0) {
-            throw "Release commits must be contained in main."
+            throw "Release workflow commits must be contained in main."
           }
 
           $existingTagCommit = $null
@@ -73,21 +73,42 @@ jobs:
 
           if ($tagLookupExitCode -eq 0) {
             $existingTagCommit = (git rev-list -n 1 $releaseTag).Trim()
-            if ($existingTagCommit -ne $env:GITHUB_SHA) {
-              throw "Tag '$releaseTag' already exists on commit '$existingTagCommit', not current release commit '$env:GITHUB_SHA'."
+            git merge-base --is-ancestor $existingTagCommit origin/main
+            if ($LASTEXITCODE -ne 0) {
+              throw "Existing tag '$releaseTag' does not point to a commit contained in main."
             }
+            $releaseCommit = $existingTagCommit
           }
-          elseif ($tagLookupExitCode -ne 1) {
+          elseif ($tagLookupExitCode -eq 1) {
+            $releaseCommit = $env:GITHUB_SHA
+          }
+          else {
             throw "Unable to determine whether tag '$releaseTag' exists. git exit code: $tagLookupExitCode"
           }
 
           "RELEASE_TAG=$releaseTag" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           "RELEASE_VERSION=$centralVersion" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "RELEASE_COMMIT=$releaseCommit" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           "TAG_ALREADY_EXISTS=$([bool]$existingTagCommit)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
           Write-Host "Release version: $centralVersion"
           Write-Host "Release tag    : $releaseTag"
+          Write-Host "Release commit : $releaseCommit"
           Write-Host "Tag exists     : $([bool]$existingTagCommit)"
+
+      - name: Checkout exact release commit
+        shell: pwsh
+        run: |
+          git checkout --detach "$env:RELEASE_COMMIT"
+          if ($LASTEXITCODE -ne 0) {
+            throw "Unable to checkout release commit '$env:RELEASE_COMMIT'."
+          }
+
+          [xml]$props = Get-Content "Directory.Build.props"
+          $checkedVersion = [string]$props.Project.PropertyGroup.KnolTeacherVersion
+          if ($checkedVersion -ne $env:RELEASE_VERSION) {
+            throw "Release commit version '$checkedVersion' does not match '$env:RELEASE_VERSION'."
+          }
 
       - name: Restore
         run: dotnet restore KnolTeacher.sln
@@ -136,7 +157,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -a "$env:RELEASE_TAG" "$env:GITHUB_SHA" -m "KnolTeacher $env:RELEASE_TAG"
+          git tag -a "$env:RELEASE_TAG" "$env:RELEASE_COMMIT" -m "KnolTeacher $env:RELEASE_TAG"
           git push origin "$env:RELEASE_TAG"
 
       - name: Create or reuse draft GitHub Release
@@ -144,14 +165,17 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh api "repos/$env:GITHUB_REPOSITORY/releases/tags/$env:RELEASE_TAG" *> $null
-          $releaseLookupExitCode = $LASTEXITCODE
-          $global:LASTEXITCODE = 0
-
-          if ($releaseLookupExitCode -eq 0) {
-            Write-Host "Release '$env:RELEASE_TAG' already exists. Reusing release metadata."
+          $allReleases = @(gh api "repos/$env:GITHUB_REPOSITORY/releases?per_page=100" | ConvertFrom-Json)
+          if ($LASTEXITCODE -ne 0) {
+            throw "Unable to list GitHub Releases."
           }
-          elseif ($releaseLookupExitCode -eq 1) {
+
+          $matches = @($allReleases | Where-Object { $_.tag_name -eq $env:RELEASE_TAG })
+          if ($matches.Count -gt 1) {
+            throw "Multiple releases found for '$env:RELEASE_TAG'."
+          }
+
+          if ($matches.Count -eq 0) {
             gh release create "$env:RELEASE_TAG" `
               --verify-tag `
               --title "$env:RELEASE_TAG" `
@@ -161,10 +185,18 @@ jobs:
             if ($LASTEXITCODE -ne 0) {
               throw "Unable to create draft GitHub Release '$env:RELEASE_TAG'."
             }
+
+            $allReleases = @(gh api "repos/$env:GITHUB_REPOSITORY/releases?per_page=100" | ConvertFrom-Json)
+            $matches = @($allReleases | Where-Object { $_.tag_name -eq $env:RELEASE_TAG })
           }
-          else {
-            throw "Unable to determine whether release '$env:RELEASE_TAG' exists."
+
+          if ($matches.Count -ne 1 -or $null -eq $matches[0].id) {
+            throw "Unable to resolve release ID for '$env:RELEASE_TAG'."
           }
+
+          $release = $matches[0]
+          "RELEASE_ID=$($release.id)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "Release ID: $($release.id), draft=$($release.draft)"
 
       - name: Upload exact-name release asset
         shell: pwsh
@@ -172,12 +204,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $releaseAsset = (Resolve-Path -LiteralPath "dist-net/놀티쳐.exe").Path
-          $releaseJson = gh api "repos/$env:GITHUB_REPOSITORY/releases/tags/$env:RELEASE_TAG" | ConvertFrom-Json
+          $releaseJson = gh api "repos/$env:GITHUB_REPOSITORY/releases/$env:RELEASE_ID" | ConvertFrom-Json
           if ($LASTEXITCODE -ne 0 -or $null -eq $releaseJson.id) {
-            throw "Unable to resolve release '$env:RELEASE_TAG' after creation."
+            throw "Unable to resolve release ID '$env:RELEASE_ID'."
           }
 
-          # Release contract: one downloadable executable only.
           foreach ($asset in @($releaseJson.assets)) {
             gh api --method DELETE "repos/$env:GITHUB_REPOSITORY/releases/assets/$($asset.id)" *> $null
             if ($LASTEXITCODE -ne 0) {
@@ -186,7 +217,7 @@ jobs:
           }
 
           $encodedName = [Uri]::EscapeDataString("놀티쳐.exe")
-          $uploadUri = "https://uploads.github.com/repos/$env:GITHUB_REPOSITORY/releases/$($releaseJson.id)/assets?name=$encodedName"
+          $uploadUri = "https://uploads.github.com/repos/$env:GITHUB_REPOSITORY/releases/$env:RELEASE_ID/assets?name=$encodedName"
           $headers = @{
             Authorization = "Bearer $env:GH_TOKEN"
             Accept = "application/vnd.github+json"
@@ -200,7 +231,7 @@ jobs:
             -ContentType "application/octet-stream" `
             -InFile $releaseAsset | Out-Null
 
-          $verifiedRelease = gh api "repos/$env:GITHUB_REPOSITORY/releases/tags/$env:RELEASE_TAG" | ConvertFrom-Json
+          $verifiedRelease = gh api "repos/$env:GITHUB_REPOSITORY/releases/$env:RELEASE_ID" | ConvertFrom-Json
           if ($LASTEXITCODE -ne 0) {
             throw "Unable to verify uploaded release asset."
           }
@@ -233,14 +264,25 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release edit "$env:RELEASE_TAG" --draft=false --prerelease=false
+          $payload = @{ draft = $false; prerelease = $false } | ConvertTo-Json -Compress
+          $payload | gh api --method PATCH "repos/$env:GITHUB_REPOSITORY/releases/$env:RELEASE_ID" --input - | Out-Null
           if ($LASTEXITCODE -ne 0) {
             throw "Unable to publish verified release '$env:RELEASE_TAG'."
           }
 
-          $published = gh api "repos/$env:GITHUB_REPOSITORY/releases/tags/$env:RELEASE_TAG" | ConvertFrom-Json
+          $published = gh api "repos/$env:GITHUB_REPOSITORY/releases/$env:RELEASE_ID" | ConvertFrom-Json
           if ($LASTEXITCODE -ne 0 -or $published.draft -eq $true -or $published.prerelease -eq $true) {
             throw "Release '$env:RELEASE_TAG' was not published as a stable release."
+          }
+
+          $latest = gh api "repos/$env:GITHUB_REPOSITORY/releases/latest" | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0 -or $latest.tag_name -ne $env:RELEASE_TAG) {
+            throw "Latest stable release is not '$env:RELEASE_TAG'."
+          }
+
+          $assets = @($latest.assets)
+          if ($assets.Count -ne 1 -or $assets[0].name -ne "놀티쳐.exe") {
+            throw "Latest stable release must expose exactly one asset named '놀티쳐.exe'."
           }
 
           Write-Host "Published stable release: $env:RELEASE_TAG"
