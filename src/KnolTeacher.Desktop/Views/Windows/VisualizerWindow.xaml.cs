@@ -19,6 +19,7 @@ namespace KnolTeacher.Desktop.Views.Windows;
 public partial class VisualizerWindow : System.Windows.Window
 {
     private readonly IDisplayManager? _displayManager;
+    private readonly ScreenDrawingOverlayWindow? _screenDrawingOverlay;
     private int _currentMonitorIndex = 1;
 
     private VideoCapture? _capture;
@@ -29,14 +30,24 @@ public partial class VisualizerWindow : System.Windows.Window
     private bool _flipV = false;
     private bool _isFrozen = false;
     private bool _isDocEnhance = false;
+    private bool _isTextSharpen = false;
+    private bool _isAutoFocus = true;
+    private double _focusValue = 50;
     private Mat? _frozenFrame;
+    private bool _isInitialized = false;
 
-    public VisualizerWindow(IDisplayManager? displayManager = null)
+    public VisualizerWindow(IDisplayManager? displayManager = null, ScreenDrawingOverlayWindow? screenDrawingOverlay = null)
     {
         _displayManager = displayManager ?? (Application.Current as App)?.Services?.GetService(typeof(IDisplayManager)) as IDisplayManager;
+        _screenDrawingOverlay = screenDrawingOverlay ?? (Application.Current as App)?.Services?.GetService(typeof(ScreenDrawingOverlayWindow)) as ScreenDrawingOverlayWindow;
         InitializeComponent();
+
+        TopHudBar.MouseEnter += (s, e) => TopHudBar.Opacity = 1.0;
+        TopHudBar.MouseLeave += (s, e) => TopHudBar.Opacity = 0.45;
+
         Loaded += (s, e) =>
         {
+            _isInitialized = true;
             RefreshCameras();
             PositionToDefaultMonitor();
         };
@@ -128,7 +139,11 @@ public partial class VisualizerWindow : System.Windows.Window
                     return;
                 }
 
-                Dispatcher.Invoke(() => TxtStatus.Text = "실시간 스트리밍 중");
+                Dispatcher.Invoke(() =>
+                {
+                    TxtStatus.Text = "실시간 스트리밍 중";
+                    ApplyFocusSettings();
+                });
 
                 using var rawFrame = new Mat();
                 int blackFrameCount = 0;
@@ -185,6 +200,14 @@ public partial class VisualizerWindow : System.Windows.Window
                         Cv2.CvtColor(processed, gray, ColorConversionCodes.BGR2GRAY);
                         Cv2.AdaptiveThreshold(gray, gray, 255, AdaptiveThresholdTypes.GaussianC, ThresholdTypes.Binary, 15, 8);
                         Cv2.CvtColor(gray, processed, ColorConversionCodes.GRAY2BGR);
+                    }
+
+                    // 4. Text Contrast & Sharpening (Unsharp Mask)
+                    if (_isTextSharpen)
+                    {
+                        using var blurred = new Mat();
+                        Cv2.GaussianBlur(processed, blurred, new OpenCvSharp.Size(0, 0), 3.0);
+                        Cv2.AddWeighted(processed, 1.6, blurred, -0.6, 0, processed);
                     }
 
                     RenderFrame(processed);
@@ -256,6 +279,133 @@ public partial class VisualizerWindow : System.Windows.Window
     private void BtnDocEnhance_Unchecked(object sender, RoutedEventArgs e)
     {
         _isDocEnhance = false;
+    }
+
+    private void BtnAfToggle_Checked(object sender, RoutedEventArgs e)
+    {
+        _isAutoFocus = true;
+        if (BtnAfToggle != null)
+        {
+            BtnAfToggle.Background = (Brush)new BrushConverter().ConvertFromString("#0284C7")!;
+            BtnAfToggle.Foreground = Brushes.White;
+        }
+        if (SliderFocus != null) SliderFocus.IsEnabled = false;
+        if (BtnFocusStepDown != null) BtnFocusStepDown.IsEnabled = false;
+        if (BtnFocusStepUp != null) BtnFocusStepUp.IsEnabled = false;
+        if (TxtFocusLabel != null)
+        {
+            TxtFocusLabel.Text = "AF 자동";
+            TxtFocusLabel.Foreground = (Brush)new BrushConverter().ConvertFromString("#38BDF8")!;
+        }
+        ApplyFocusSettings();
+    }
+
+    private void BtnAfToggle_Unchecked(object sender, RoutedEventArgs e)
+    {
+        _isAutoFocus = false;
+        if (BtnAfToggle != null)
+        {
+            BtnAfToggle.Background = (Brush)new BrushConverter().ConvertFromString("#334155")!;
+            BtnAfToggle.Foreground = (Brush)new BrushConverter().ConvertFromString("#94A3B8")!;
+        }
+        if (SliderFocus != null) SliderFocus.IsEnabled = true;
+        if (BtnFocusStepDown != null) BtnFocusStepDown.IsEnabled = true;
+        if (BtnFocusStepUp != null) BtnFocusStepUp.IsEnabled = true;
+        if (TxtFocusLabel != null)
+        {
+            TxtFocusLabel.Text = $"MF {_focusValue:0}";
+            TxtFocusLabel.Foreground = (Brush)new BrushConverter().ConvertFromString("#FDE047")!;
+        }
+        ApplyFocusSettings();
+    }
+
+    private void BtnFocusStepDown_Click(object sender, RoutedEventArgs e)
+    {
+        if (_isAutoFocus && BtnAfToggle != null)
+        {
+            BtnAfToggle.IsChecked = false;
+        }
+        _focusValue = Math.Max(0, _focusValue - 5);
+        if (SliderFocus != null) SliderFocus.Value = _focusValue;
+        if (TxtFocusLabel != null) TxtFocusLabel.Text = $"MF {_focusValue:0}";
+        ApplyFocusSettings();
+    }
+
+    private void BtnFocusStepUp_Click(object sender, RoutedEventArgs e)
+    {
+        if (_isAutoFocus && BtnAfToggle != null)
+        {
+            BtnAfToggle.IsChecked = false;
+        }
+        _focusValue = Math.Min(100, _focusValue + 5);
+        if (SliderFocus != null) SliderFocus.Value = _focusValue;
+        if (TxtFocusLabel != null) TxtFocusLabel.Text = $"MF {_focusValue:0}";
+        ApplyFocusSettings();
+    }
+
+    private void SliderFocus_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (!_isInitialized || SliderFocus == null) return;
+        _focusValue = SliderFocus.Value;
+        if (!_isAutoFocus)
+        {
+            if (TxtFocusLabel != null) TxtFocusLabel.Text = $"MF {_focusValue:0}";
+            ApplyFocusSettings();
+        }
+    }
+
+    private void ApplyFocusSettings()
+    {
+        if (_capture == null || !_capture.IsOpened()) return;
+        try
+        {
+            if (_isAutoFocus)
+            {
+                _capture.Set(VideoCaptureProperties.AutoFocus, 1);
+            }
+            else
+            {
+                _capture.Set(VideoCaptureProperties.AutoFocus, 0);
+                _capture.Set(VideoCaptureProperties.Focus, _focusValue);
+            }
+        }
+        catch
+        {
+            // Ignore if hardware does not support mechanical focus
+        }
+    }
+
+    private void BtnSharpenToggle_Checked(object sender, RoutedEventArgs e)
+    {
+        _isTextSharpen = true;
+        if (BtnSharpenToggle != null)
+        {
+            BtnSharpenToggle.Background = (Brush)new BrushConverter().ConvertFromString("#059669")!;
+            BtnSharpenToggle.Foreground = Brushes.White;
+        }
+    }
+
+    private void BtnSharpenToggle_Unchecked(object sender, RoutedEventArgs e)
+    {
+        _isTextSharpen = false;
+        if (BtnSharpenToggle != null)
+        {
+            BtnSharpenToggle.Background = (Brush)new BrushConverter().ConvertFromString("#1E293B")!;
+            BtnSharpenToggle.Foreground = (Brush)new BrushConverter().ConvertFromString("#A7F3D0")!;
+        }
+    }
+
+    private void BtnAnnotate_Click(object sender, RoutedEventArgs e)
+    {
+        if (_screenDrawingOverlay != null)
+        {
+            _screenDrawingOverlay.FreezeAndShow();
+        }
+        else
+        {
+            var overlay = (Application.Current as App)?.Services?.GetService(typeof(ScreenDrawingOverlayWindow)) as ScreenDrawingOverlayWindow;
+            overlay?.FreezeAndShow();
+        }
     }
 
     private void BtnSnapshot_Click(object sender, RoutedEventArgs e)

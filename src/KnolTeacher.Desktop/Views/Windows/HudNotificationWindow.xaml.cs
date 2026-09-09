@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Windows;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
@@ -28,7 +28,7 @@ public partial class HudNotificationWindow : Window
         };
     }
 
-    public void ShowToast(string icon, string message)
+    public void ShowToast(string icon, string message, int durationMs = 1300)
     {
         Dispatcher.Invoke(() =>
         {
@@ -37,9 +37,9 @@ public partial class HudNotificationWindow : Window
 
             UpdateLayout();
             double screenWidth = SystemParameters.PrimaryScreenWidth;
-            double w = ActualWidth > 0 ? ActualWidth : 220;
+            double w = ActualWidth > 0 ? ActualWidth : 260;
             Left = (screenWidth - w) / 2;
-            Top = 20;
+            Top = 24;
 
             if (!IsVisible)
             {
@@ -47,6 +47,7 @@ public partial class HudNotificationWindow : Window
             }
 
             _hideTimer.Stop();
+            _hideTimer.Interval = TimeSpan.FromMilliseconds(durationMs);
 
             var fadeIn = new DoubleAnimation(0, 1.0, TimeSpan.FromMilliseconds(150));
             HudBorder.BeginAnimation(UIElement.OpacityProperty, fadeIn);

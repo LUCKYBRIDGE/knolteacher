@@ -30,7 +30,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Resource Include="assets\*.ico;assets\*.png;assets\avatars\*.png" />
+    <Resource Include="assets\*.ico;assets\*.png;assets\avatars\*.png;assets\race\*.png" />
     <None Update="assets\**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

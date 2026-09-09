@@ -126,17 +126,16 @@ public partial class ClassroomCountdownOverlayWindow : Window
 
     private void Timer_Tick(object? sender, EventArgs e)
     {
+        _remainingSeconds--;
+
         if (!_isCompleted)
         {
-            _remainingSeconds--;
             UpdateDigitsDisplay();
 
             if (_remainingSeconds <= 0)
             {
                 _isCompleted = true;
                 BorderComplete.Visibility = Visibility.Visible;
-                TxtCountdown.Text = "00:00";
-                TxtCountdown.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#10B981"));
                 PbProgress.Value = 0;
 
                 if (_config.PlaySoundChime)
@@ -149,6 +148,7 @@ public partial class ClassroomCountdownOverlayWindow : Window
         }
         else
         {
+            UpdateDigitsDisplay();
             _autoCloseSecondsRemaining--;
             if (_autoCloseSecondsRemaining <= 0)
             {
@@ -163,13 +163,36 @@ public partial class ClassroomCountdownOverlayWindow : Window
 
     private void UpdateDigitsDisplay()
     {
-        int m = Math.Max(0, _remainingSeconds / 60);
-        int s = Math.Max(0, _remainingSeconds % 60);
-        TxtCountdown.Text = $"{m:D2}:{s:D2}";
+        if (_remainingSeconds >= 0)
+        {
+            int m = _remainingSeconds / 60;
+            int s = _remainingSeconds % 60;
+            TxtCountdown.Text = $"{m:D2}:{s:D2}";
+            TxtCountdown.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#38BDF8"));
+            if (TxtOverdueCountdown != null) TxtOverdueCountdown.Visibility = Visibility.Collapsed;
 
-        double pct = _initialSeconds > 0 ? ((double)_remainingSeconds / _initialSeconds) * 100 : 0;
-        PbProgress.Value = Math.Clamp(pct, 0, 100);
-        TxtAutoCloseNotice.Text = $"수업 준비 카운트다운 진행 중 (잔여: {m}분 {s}초)";
+            double pct = _initialSeconds > 0 ? ((double)_remainingSeconds / _initialSeconds) * 100 : 0;
+            PbProgress.Value = Math.Clamp(pct, 0, 100);
+            TxtAutoCloseNotice.Text = $"수업 준비 카운트다운 진행 중 (잔여: {m}분 {s}초)";
+        }
+        else
+        {
+            int overdueSec = Math.Abs(_remainingSeconds);
+            int oMin = overdueSec / 60;
+            int oSec = overdueSec % 60;
+
+            TxtCountdown.Text = "0:00";
+            TxtCountdown.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#EF4444"));
+
+            if (TxtOverdueCountdown != null)
+            {
+                TxtOverdueCountdown.Text = $"(-{oMin}:{oSec:D2})";
+                TxtOverdueCountdown.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#EF4444"));
+                TxtOverdueCountdown.Visibility = Visibility.Visible;
+            }
+
+            PbProgress.Value = 0;
+        }
     }
 
     private void BtnClose_Click(object sender, RoutedEventArgs e)

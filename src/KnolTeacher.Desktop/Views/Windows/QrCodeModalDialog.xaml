@@ -2,13 +2,14 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="📱 QR 코드 스캔 및 공유" 
-        Height="540" Width="440"
+        Height="600" Width="470"
+        MinHeight="560" MinWidth="440"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
         ShowInTaskbar="False"
         Background="{DynamicResource BeigeWindowBg}">
 
-    <Border Padding="24" Background="{DynamicResource BeigeWindowBg}">
+    <Border Padding="20,18,20,18" Background="{DynamicResource BeigeWindowBg}">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>

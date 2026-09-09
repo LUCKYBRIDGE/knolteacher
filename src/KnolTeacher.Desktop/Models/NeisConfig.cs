@@ -19,6 +19,12 @@ public class NeisConfig
     [JsonPropertyName("school_name")]
     public string SchoolName { get; set; } = string.Empty;
 
+    [JsonPropertyName("school_address")]
+    public string SchoolAddress { get; set; } = string.Empty;
+
+    [JsonPropertyName("location_name")]
+    public string LocationName { get; set; } = string.Empty;
+
     [JsonPropertyName("school_type")]
     public string SchoolType { get; set; } = "초등학교";
 

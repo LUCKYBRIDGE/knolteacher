@@ -234,10 +234,10 @@ public class SchoolScaleService : ISchoolScaleService
 
             if (total >= 48)
             {
-                detail.ScaleCategory = "🔴 초거대규모 학교 (과밀 관리 대상)";
+                detail.ScaleCategory = "🔴 과대학교 (과밀·대규모)";
                 detail.ScaleBadgeBg = "#FEE2E2"; // Red
                 detail.ScaleBadgeFg = "#991B1B";
-                detail.ScaleSummaryText = $"총 {total}학급의 초거대규모 학교로, 학년당 평균 {(double)total / 6:0.#}학급 편성 및 학생 밀도가 매우 높습니다.";
+                detail.ScaleSummaryText = $"총 {total}학급의 과대학교로, 학년당 평균 {(double)total / 6:0.#}학급 편성 및 학생 밀도가 매우 높습니다.";
             }
             else if (total >= 36)
             {

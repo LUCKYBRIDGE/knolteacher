@@ -4,10 +4,12 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="🪑 스마트 자리 바꾸기 - 놀티쳐"
+        Title="스마트 자리 바꾸기"
         Height="760" Width="1020"
         MinWidth="850" MinHeight="620"
         WindowStartupLocation="CenterScreen"
+        ShowInTaskbar="True"
+        Icon="/assets/app_icon.ico"
         Background="{DynamicResource BeigeAppBg}">
 
     <Grid Margin="18">

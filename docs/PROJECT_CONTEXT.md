@@ -5,7 +5,7 @@
 ## 1. 기준 상태
 
 - 제품명: 놀티쳐 (KnolTeacher)
-- 기준 버전: v2.9.0
+- 기준 버전: v3.0.0
 - 플랫폼: Windows 10/11 x64
 - 프레임워크: .NET 8 WPF
 - 앱 프로젝트: `src/KnolTeacher.Desktop/KnolTeacher.Desktop.csproj`
@@ -18,39 +18,41 @@
 
 놀티쳐는 네 영역을 하나의 데스크톱 앱으로 통합한다.
 
-### 교사 업무
+### 교사 업무 & 학급 관리
+- 학급 관리 허브: 학생 명렬표, 과제/준비물 체크리스트, 누가기록 & 나이스 서술형 평어 자동 생성
 - NEIS 평어 Excel/클립보드 입력 보조
-- 교육 사이트 및 K-에듀파인 바로가기
-- QR 생성
+- 17개 시도 교육청 4대 포털(업무포털, K-에듀파인, 4세대 나이스, EVPN) 및 검증된 교육 사이트 바로가기
+- QR 생성, 전자서명 & 직인 생성기
 
 ### 수업 진행
-- 타이머
-- 발표자 추첨
-- 판서
-- 실물화상기
-- 스마트 독
+- 교실 타이머 (원형/숫자 모드, 음수 초과 표시)
+- 뽑기 레이스 (i-Scream 스타일 3단 어드벤처 & 32종 동물 아바타)
+- 통합 스마트 판서 스튜디오 (화면/칠판/화이트/모눈 배경 원터치 전환, 수학교구, 자동 저장)
+- 실물화상기 (AF/MF 초점 제어, 교재 텍스트 선명화 필터, 풀 뷰포트 HUD 독)
+- 스마트 상단 플로팅 독 (Alt+9)
 - 전역 단축키
 
 ### 학생 제시
-- 놀보드
-- 다중 위젯
-- 학생 명렬/동물 아바타
-- 모니터 2 기본 출력
+- 놀보드 (올인원 칠판 캔버스)
+- 다중 위젯 (타이머, 시간표, 급식, 알림장, 체크리스트, QR 등)
+- 모니터 2 기본 출력 & 원터치 모니터 전환
 
 ### 교실 운영
-- 시간표
-- 교시/예비령 카운트다운
+- 메인화면 커스텀 위젯 시스템 (드래그 이동, 리사이즈, 추가/삭제, 위치 고정)
+- 시간표 및 학교 기반 실시간 동네 날씨
+- 교시/수업 예비령 대형 카운트다운 (5분 전 예비 알림)
 - 스케줄/예약
-- 설정 저장
+- 소음 신호등, 스마트 자리 바꾸기, 교실 효과음 사운드보드
 
 ## 3. 주요 소스 영역
 
 ### App / MainWindow
 - `App.xaml`, `App.xaml.cs`: 앱 수명주기와 전역 초기화
-- `MainWindow.xaml`, `MainWindow.xaml.cs`: 메인 대시보드와 기능 진입점
+- `MainWindow.xaml`, `MainWindow.xaml.cs`: 메인 대시보드와 기능 진입점, 커스텀 위젯 캔버스
 
 ### Services
-- `ConfigService.cs`: 설정
+- `ClassroomRecordService.cs`: 명렬표, 과제 체크리스트, 누가기록 로컬 영구 관리 및 나이스 서술형 평어 합성, UTF-8 BOM CSV 생성
+- `ConfigService.cs`: 설정 및 위젯 레이아웃 저장
 - `DesktopCleanerService.cs`: 바탕화면 정리
 - `DisplayManager.cs`: 모니터 탐색·배치
 - `GlobalHotkeyService.cs`: 전역 단축키
@@ -58,16 +60,17 @@
 - `NeisService.cs`: NEIS 관련 보조 로직
 - `QrCodeService.cs`: QR 생성
 - `SchedulerService.cs`: 예약/스케줄
-- `SiteBookmarkService.cs`: 교육 사이트
-- `StudentManagerService.cs`: 학생 명렬
+- `SiteBookmarkService.cs`: 17개 시도 교육청 4대 포털 및 교육 사이트 바로가기
+- `StudentManagerService.cs`: 학생 명렬 및 아바타
 - `ThemeService.cs`: 테마
 - `TimetableService.cs`: 시간표
+- `WeatherService.cs`: 학교 위치 기반 동네 날씨 및 미세먼지
 
 ### 놀보드 위젯
-`Views/Controls/Widgets/` 아래에 타이머, 시간표, 급식, 메모, QR, 점수판, 주사위, 추첨, 룰렛, 판서 위젯이 분리되어 있다.
+`Views/Controls/Widgets/` 아래에 타이머, 시간표, 급식, 메모, QR, 점수판, 주사위, 추첨, 룰렛, 판서, 체크리스트 위젯이 분리되어 있다. 놀보드 내부 위젯은 칠판 내장 컴포넌트로 작업표시줄에 별도 창을 만들지 않는다.
 
 ### 독립 도구 창
-`Views/Windows/` 아래에 놀보드, 타이머, 핀볼 추첨, 실물화상기, 화면 판서, NEIS 입력 도우미, 단축키 설정, 학생 명렬 관리 등의 창이 있다.
+`Views/Windows/` 아래에 놀보드, 타이머, 뽑기 레이스, 실물화상기, 통합 판서 스튜디오, 학급 관리 허브, 소음 신호등, 자리 바꾸기, 사운드보드, 전자서명, 출근일수 계산기 등이 독립 창으로 존재하며 작업표시줄에 개별 슬롯을 유지한다.
 
 ### 판서 수학교구
 `Views/Controls/`의 `RulerToolControl`, `TriangleRulerToolControl`, `ProtractorToolControl`을 사용한다.

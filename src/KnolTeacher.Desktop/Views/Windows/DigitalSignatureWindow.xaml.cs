@@ -3,9 +3,11 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Ink;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Microsoft.Win32;
+using KnolTeacher.Desktop.Services;
 
 namespace KnolTeacher.Desktop.Views.Windows;
 
@@ -16,6 +18,7 @@ public partial class DigitalSignatureWindow : Window
     private bool _isEraserMode = false;
     private Color _inkColor = (Color)ColorConverter.ConvertFromString("#0F172A");
     private double _penThickness = 2.5;
+    private SignatureStyle _signatureStyle = SignatureStyle.FountainPen;
 
     public DigitalSignatureWindow()
     {
@@ -261,6 +264,45 @@ public partial class DigitalSignatureWindow : Window
         SignatureCanvas.DefaultDrawingAttributes = da;
     }
 
+    private void SignatureStyleChanged(object sender, RoutedEventArgs e)
+    {
+        if (!IsLoaded) return;
+
+        if (RbStyleFountain?.IsChecked == true) _signatureStyle = SignatureStyle.FountainPen;
+        else if (RbStyleBrush?.IsChecked == true) _signatureStyle = SignatureStyle.BrushPen;
+        else if (RbStyleStandard?.IsChecked == true) _signatureStyle = SignatureStyle.Standard;
+
+        if (SignatureCanvas != null && SignatureCanvas.Strokes.Count > 0)
+        {
+            SignatureStrokeBeautifier.BeautifyAll(SignatureCanvas.Strokes, _signatureStyle);
+        }
+    }
+
+    private void SignatureCanvas_StrokeCollected(object sender, InkCanvasStrokeCollectedEventArgs e)
+    {
+        if (e.Stroke != null && _signatureStyle != SignatureStyle.Standard)
+        {
+            SignatureStrokeBeautifier.BeautifyStroke(e.Stroke, _signatureStyle);
+        }
+    }
+
+    private void BtnUndoSignature_Click(object sender, RoutedEventArgs e)
+    {
+        if (SignatureCanvas != null && SignatureCanvas.Strokes.Count > 0)
+        {
+            SignatureCanvas.Strokes.RemoveAt(SignatureCanvas.Strokes.Count - 1);
+        }
+    }
+
+    private void Window_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (!_isStampMode && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control && e.Key == Key.Z)
+        {
+            BtnUndoSignature_Click(sender, e);
+            e.Handled = true;
+        }
+    }
+
     private void BtnToggleEraser_Click(object sender, RoutedEventArgs e)
     {
         _isEraserMode = !_isEraserMode;
@@ -289,7 +331,7 @@ public partial class DigitalSignatureWindow : Window
         }
     }
 
-    private RenderTargetBitmap RenderTargetToBitmap()
+    private BitmapSource RenderTargetToBitmap()
     {
         if (_isStampMode)
         {
@@ -309,6 +351,28 @@ public partial class DigitalSignatureWindow : Window
             int h = Math.Max(120, (int)SignatureCanvas.ActualHeight);
             var rtb = new RenderTargetBitmap(w, h, 96, 96, PixelFormats.Pbgra32);
             rtb.Render(SignatureCanvas);
+
+            // Auto-crop tightly to stroke bounds with 16px padding
+            if (SignatureCanvas.Strokes.Count > 0)
+            {
+                var bounds = SignatureCanvas.Strokes.GetBounds();
+                if (bounds.Width > 4 && bounds.Height > 4)
+                {
+                    double pad = 16.0;
+                    double cropX = Math.Max(0, bounds.Left - pad);
+                    double cropY = Math.Max(0, bounds.Top - pad);
+                    double cropR = Math.Min(w, bounds.Right + pad);
+                    double cropB = Math.Min(h, bounds.Bottom + pad);
+                    int cropW = Math.Max(10, (int)(cropR - cropX));
+                    int cropH = Math.Max(10, (int)(cropB - cropY));
+
+                    if (cropX + cropW <= w && cropY + cropH <= h)
+                    {
+                        return new CroppedBitmap(rtb, new Int32Rect((int)cropX, (int)cropY, cropW, cropH));
+                    }
+                }
+            }
+
             return rtb;
         }
     }

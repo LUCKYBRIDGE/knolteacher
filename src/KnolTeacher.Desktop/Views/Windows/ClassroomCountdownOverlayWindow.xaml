@@ -38,7 +38,10 @@
                 <!-- Center: Giant Countdown Digits (Viewbox) -->
                 <Grid Grid.Row="1" Margin="20,10">
                     <Viewbox Stretch="Uniform" VerticalAlignment="Center" HorizontalAlignment="Center">
-                        <TextBlock x:Name="TxtCountdown" Text="02:00" FontFamily="Consolas, Malgun Gothic" FontWeight="Bold" Foreground="#38BDF8" Effect="{StaticResource GlowEffect}"/>
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <TextBlock x:Name="TxtCountdown" Text="02:00" FontFamily="Consolas, Malgun Gothic" FontWeight="Bold" Foreground="#38BDF8" Effect="{StaticResource GlowEffect}" HorizontalAlignment="Center"/>
+                            <TextBlock x:Name="TxtOverdueCountdown" Text="(-0:00)" FontFamily="Consolas, Malgun Gothic" FontSize="36" FontWeight="Bold" Foreground="#EF4444" HorizontalAlignment="Center" Visibility="Collapsed" Margin="0,4,0,0"/>
+                        </StackPanel>
                     </Viewbox>
                 </Grid>
 

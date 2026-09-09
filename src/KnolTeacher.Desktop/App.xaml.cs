@@ -65,6 +65,9 @@ public partial class App : Application
                 services.AddSingleton<ITtsService, TtsService>();
                 services.AddSingleton<IEarlyLeaveCalculatorService, EarlyLeaveCalculatorService>();
                 services.AddSingleton<IUpdateService, UpdateService>();
+                services.AddSingleton<IStartupService, StartupService>();
+                services.AddSingleton<IDataShareService, DataShareService>();
+                services.AddSingleton<IClassroomRecordService, ClassroomRecordService>();
 
                 // ViewModels
                 services.AddSingleton<MainViewModel>();
@@ -83,6 +86,8 @@ public partial class App : Application
                 services.AddSingleton<SmartSeatShuffleWindow>();
                 services.AddSingleton<ClassroomSoundboardWindow>();
                 services.AddSingleton<DigitalSignatureWindow>();
+                services.AddTransient<TemplateShareWindow>();
+                services.AddSingleton<ClassroomHubWindow>();
             })
             .Build();
     }
@@ -201,7 +206,7 @@ public partial class App : Application
                                 }
                                 else
                                 {
-                                    displayManager.MoveToStudentMonitor(timerWindow, maximize: false);
+                                    timerWindow.PositionToDefaultMonitor();
                                     timerWindow.Show();
                                     timerWindow.Activate();
                                     HudNotificationWindow.Instance.ShowToast("⏱️", "교실 집중 타이머 (Alt+3)");
@@ -229,13 +234,13 @@ public partial class App : Application
                                 if (dockWindow.IsVisible)
                                 {
                                     dockWindow.Hide();
-                                    HudNotificationWindow.Instance.ShowToast("🏝️", "스마트 독 숨김");
+                                    HudNotificationWindow.Instance.ShowToast("🏝️", "화면 상단 도구바 숨김");
                                 }
                                 else
                                 {
                                     dockWindow.Show();
                                     dockWindow.Activate();
-                                    HudNotificationWindow.Instance.ShowToast("🏝️", "스마트 독 열림 (Alt+9)");
+                                    HudNotificationWindow.Instance.ShowToast("🏝️", "화면 상단 도구바 열림 (Alt+9)");
                                 }
                                 break;
 

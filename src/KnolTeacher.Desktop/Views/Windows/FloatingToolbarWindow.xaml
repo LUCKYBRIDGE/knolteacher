@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="스마트 플로팅 독 (Alt+9)"
+        Title="화면 상단 도구바 (Alt+9)"
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
@@ -16,17 +16,19 @@
         MouseLeftButtonDown="Window_MouseLeftButtonDown">
 
     <Window.Resources>
+        <!-- Standard Dock Button -->
         <Style x:Key="DockButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="#1E293B" />
-            <Setter Property="Foreground" Value="#F8FAFC" />
-            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Background" Value="#FFFFFF" />
+            <Setter Property="Foreground" Value="#334155" />
+            <Setter Property="FontSize" Value="11.5" />
             <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Height" Value="32" />
-            <Setter Property="Padding" Value="10,0" />
-            <Setter Property="Margin" Value="0,0,6,0" />
+            <Setter Property="Height" Value="30" />
+            <Setter Property="Padding" Value="8,0" />
+            <Setter Property="Margin" Value="0,0,4,0" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="BorderBrush" Value="#334155" />
+            <Setter Property="BorderBrush" Value="#E2E8F0" />
             <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="SnapsToDevicePixels" Value="True" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -39,12 +41,13 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#334155" />
-                                <Setter TargetName="border" Property="BorderBrush" Value="#64748B" />
+                                <Setter TargetName="border" Property="Background" Value="#F1F5F9" />
+                                <Setter TargetName="border" Property="BorderBrush" Value="#CBD5E1" />
+                                <Setter Property="Foreground" Value="#0F172A" />
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#0284C7" />
-                                <Setter TargetName="border" Property="BorderBrush" Value="#38BDF8" />
+                                <Setter TargetName="border" Property="Background" Value="#E2E8F0" />
+                                <Setter TargetName="border" Property="BorderBrush" Value="#94A3B8" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -52,9 +55,10 @@
             </Setter>
         </Style>
 
+        <!-- Primary Accent Button (NolBoard) -->
         <Style x:Key="DockAccentButtonStyle" TargetType="Button" BasedOn="{StaticResource DockButtonStyle}">
-            <Setter Property="Background" Value="#0284C7" />
-            <Setter Property="BorderBrush" Value="#38BDF8" />
+            <Setter Property="Background" Value="#2563EB" />
+            <Setter Property="BorderBrush" Value="#1D4ED8" />
             <Setter Property="Foreground" Value="White" />
             <Setter Property="Template">
                 <Setter.Value>
@@ -68,120 +72,237 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#0369A1" />
-                                <Setter TargetName="border" Property="BorderBrush" Value="#7DD3FC" />
+                                <Setter TargetName="border" Property="Background" Value="#1D4ED8" />
+                                <Setter TargetName="border" Property="BorderBrush" Value="#1E40AF" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#1E40AF" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <!-- Notice Amber Button -->
+        <Style x:Key="DockNoticeButtonStyle" TargetType="Button" BasedOn="{StaticResource DockButtonStyle}">
+            <Setter Property="Background" Value="#FEF3C7" />
+            <Setter Property="BorderBrush" Value="#FCD34D" />
+            <Setter Property="Foreground" Value="#92400E" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#FDE68A" />
+                                <Setter TargetName="border" Property="BorderBrush" Value="#F59E0B" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#FBBF24" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Monitor Green Button -->
+        <Style x:Key="DockMonitorButtonStyle" TargetType="Button" BasedOn="{StaticResource DockButtonStyle}">
+            <Setter Property="Background" Value="#F0FDF4" />
+            <Setter Property="BorderBrush" Value="#BBF7D0" />
+            <Setter Property="Foreground" Value="#166534" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#DCFCE7" />
+                                <Setter TargetName="border" Property="BorderBrush" Value="#86EFAC" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#BBF7D0" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Expand / Collapse Button -->
+        <Style x:Key="DockExpandButtonStyle" TargetType="Button" BasedOn="{StaticResource DockButtonStyle}">
+            <Setter Property="Width" Value="28" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Background" Value="#F8FAFC" />
+            <Setter Property="BorderBrush" Value="#E2E8F0" />
+            <Setter Property="Foreground" Value="#64748B" />
+        </Style>
     </Window.Resources>
 
     <Grid Margin="12">
-        <!-- Floating Capsule Container with Shadow -->
-        <Border Background="#F20F172A"
-                CornerRadius="22"
-                BorderBrush="#475569"
-                BorderThickness="1"
-                Padding="10,6">
+        <!-- Floating Acrylic White Action Pill Container -->
+        <Border Background="#F4FFFFFF"
+                CornerRadius="20"
+                BorderBrush="#CBD5E1"
+                BorderThickness="1.2"
+                Padding="8,5"
+                SnapsToDevicePixels="True">
             <Border.Effect>
-                <DropShadowEffect BlurRadius="16" Opacity="0.45" ShadowDepth="4" Color="#000000"/>
+                <DropShadowEffect BlurRadius="18" Opacity="0.15" ShadowDepth="3" Color="#0F172A" Direction="270"/>
             </Border.Effect>
 
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                 <!-- Drag Grip -->
-                <TextBlock Text="⋮⋮" FontSize="14" FontWeight="Bold" Foreground="#64748B"
-                           VerticalAlignment="Center" Margin="2,0,8,0" Cursor="SizeAll"
-                           ToolTip="클릭하고 드래그하여 독 이동"/>
+                <TextBlock Text="⋮⋮" FontSize="14" FontWeight="Bold" Foreground="#94A3B8"
+                           VerticalAlignment="Center" Margin="2,0,7,0" Cursor="SizeAll"
+                           ToolTip="클릭하고 드래그하여 도구바 이동"/>
 
                 <!-- Brand Logo -->
-                <Image Source="/assets/app_icon.png" Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <Image Source="/assets/app_icon_mono.png" Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,8,0" RenderOptions.BitmapScalingMode="HighQuality"/>
 
-                <!-- Quick Tool Buttons -->
-                <!-- Quick Tool Buttons -->
-                <Button x:Name="BtnBoard" Style="{StaticResource DockAccentButtonStyle}" Click="BtnBoard_Click" ToolTip="놀보드 열기 (F2)">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="📺 " FontSize="12"/>
+                <!-- ══════ PRIMARY / COMPACT TOOLS (ALWAYS VISIBLE) ══════ -->
+
+                <!-- 1. NolBoard (F2) -->
+                <Button x:Name="BtnBoard" Style="{StaticResource DockAccentButtonStyle}" Click="BtnBoard_Click" ToolTip="놀보드 열기 / 닫기 (F2)">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="📺 " FontSize="11"/>
                         <TextBlock Text="놀보드"/>
+                        <Ellipse x:Name="DotBoard" Width="6" Height="6" Fill="#4ADE80" Margin="4,0,0,0" VerticalAlignment="Center" Visibility="Collapsed"/>
                     </StackPanel>
                 </Button>
 
+                <!-- 2. Drawing (Alt+2) -->
                 <Button x:Name="BtnDraw" Style="{StaticResource DockButtonStyle}" Click="BtnDraw_Click" ToolTip="화면 전체 판서 (Alt+2)">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="✏️ " FontSize="12"/>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="✏️ " FontSize="11"/>
                         <TextBlock Text="판서"/>
+                        <Ellipse x:Name="DotDraw" Width="6" Height="6" Fill="#22C55E" Margin="4,0,0,0" VerticalAlignment="Center" Visibility="Collapsed"/>
                     </StackPanel>
                 </Button>
 
+                <!-- 3. Timer (Alt+3) -->
                 <Button x:Name="BtnTimer" Style="{StaticResource DockButtonStyle}" Click="BtnTimer_Click" ToolTip="교실 집중 타이머 (Alt+3)">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="⏱️ " FontSize="12"/>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="⏱️ " FontSize="11"/>
                         <TextBlock Text="타이머"/>
+                        <Ellipse x:Name="DotTimer" Width="6" Height="6" Fill="#F59E0B" Margin="4,0,0,0" VerticalAlignment="Center" Visibility="Collapsed"/>
                     </StackPanel>
                 </Button>
 
-                <Button x:Name="BtnPicker" Style="{StaticResource DockButtonStyle}" Click="BtnPicker_Click" ToolTip="동물 핀볼 발표자 추첨기 (Alt+8)">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="🎰 " FontSize="12"/>
-                        <TextBlock Text="핀볼"/>
+                <!-- 4. Student Picker (Alt+8) -->
+                <Button x:Name="BtnPicker" Style="{StaticResource DockButtonStyle}" Click="BtnPicker_Click" ToolTip="동물 뽑기 레이스 (Alt+8)">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="🎰 " FontSize="11"/>
+                        <TextBlock Text="레이스"/>
+                        <Ellipse x:Name="DotPicker" Width="6" Height="6" Fill="#8B5CF6" Margin="4,0,0,0" VerticalAlignment="Center" Visibility="Collapsed"/>
                     </StackPanel>
                 </Button>
 
-                <Button x:Name="BtnVisualizer" Style="{StaticResource DockButtonStyle}" Click="BtnVisualizer_Click" ToolTip="스마트 실물화상기">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="📷 " FontSize="12"/>
-                        <TextBlock Text="화상기"/>
+                <!-- 5. Quick Notice Sync Button -->
+                <Button x:Name="BtnNotice" Style="{StaticResource DockNoticeButtonStyle}" Click="BtnNotice_Click" ToolTip="학급 알림장 열기 / 학생 화면 표시">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="📢 " FontSize="11"/>
+                        <TextBlock Text="알림장"/>
                     </StackPanel>
                 </Button>
 
-                <Button x:Name="BtnNoise" Style="{StaticResource DockButtonStyle}" Click="BtnNoise_Click" ToolTip="교실 소음 신호등 (Alt+N)">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="🚦 " FontSize="12"/>
-                        <TextBlock Text="소음"/>
+                <!-- 6. Monitor Switcher Button -->
+                <Button x:Name="BtnSwitchMonitor" Style="{StaticResource DockMonitorButtonStyle}" Click="BtnSwitchMonitor_Click" ToolTip="놀보드 / 도구 모니터 1 ↔ 2 즉시 전환">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="📺 " FontSize="11"/>
+                        <TextBlock x:Name="TxtSwitchMonitor" Text="1↔2"/>
                     </StackPanel>
                 </Button>
 
-                <Button x:Name="BtnSoundboard" Style="{StaticResource DockButtonStyle}" Click="BtnSoundboard_Click" ToolTip="원터치 교실 효과음 사운드보드 (Alt+B)">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="🔔 " FontSize="12"/>
-                        <TextBlock Text="효과음"/>
-                    </StackPanel>
+                <!-- 7. Fold / Unfold Toggle Button -->
+                <Button x:Name="BtnToggleExpand" Style="{StaticResource DockExpandButtonStyle}" Click="BtnToggleExpand_Click" ToolTip="보조 교실 도구 더보기 / 접기">
+                    <TextBlock x:Name="TxtExpandIcon" Text="▾" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Button>
 
-                <Button x:Name="BtnSignature" Style="{StaticResource DockButtonStyle}" Click="BtnSignature_Click" ToolTip="전자서명 &amp; 도장 생성기 (Alt+S)">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="🔏 " FontSize="12"/>
-                        <TextBlock Text="서명"/>
-                    </StackPanel>
-                </Button>
+                <!-- ══════ SECONDARY / EXPANDED TOOLS (DRAWER) ══════ -->
+                <StackPanel x:Name="SecondaryToolsPanel" Orientation="Horizontal" VerticalAlignment="Center" Visibility="Collapsed">
+                    <Separator Margin="4,4,6,4" Background="#CBD5E1"/>
 
-                <Button x:Name="BtnSeat" Style="{StaticResource DockButtonStyle}" Click="BtnSeat_Click" ToolTip="스마트 자리 바꾸기 &amp; 동물 아바타">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="🪑 " FontSize="12"/>
-                        <TextBlock Text="자리"/>
-                    </StackPanel>
-                </Button>
+                    <!-- Visualizer -->
+                    <Button x:Name="BtnVisualizer" Style="{StaticResource DockButtonStyle}" Click="BtnVisualizer_Click" ToolTip="스마트 실물화상기">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="📷 " FontSize="11"/>
+                            <TextBlock Text="화상기"/>
+                            <Ellipse x:Name="DotVisualizer" Width="6" Height="6" Fill="#0EA5E9" Margin="4,0,0,0" VerticalAlignment="Center" Visibility="Collapsed"/>
+                        </StackPanel>
+                    </Button>
 
-                <Button x:Name="BtnQr" Style="{StaticResource DockButtonStyle}" Click="BtnQr_Click" ToolTip="QR코드 생성기 (Alt+Q)">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="📱 " FontSize="12"/>
-                        <TextBlock Text="QR"/>
-                    </StackPanel>
-                </Button>
+                    <!-- Noise Meter -->
+                    <Button x:Name="BtnNoise" Style="{StaticResource DockButtonStyle}" Click="BtnNoise_Click" ToolTip="교실 소음 신호등 (Alt+N)">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="🚦 " FontSize="11"/>
+                            <TextBlock Text="소음"/>
+                            <Ellipse x:Name="DotNoise" Width="6" Height="6" Fill="#EF4444" Margin="4,0,0,0" VerticalAlignment="Center" Visibility="Collapsed"/>
+                        </StackPanel>
+                    </Button>
 
-                <Button x:Name="BtnZen" Style="{StaticResource DockButtonStyle}" Click="BtnZen_Click" ToolTip="바탕화면 아이콘 숨김 / 수업 집중 모드">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="🙈 " FontSize="12"/>
-                        <TextBlock Text="바탕숨김" Foreground="#FDE047"/>
-                    </StackPanel>
-                </Button>
+                    <!-- Soundboard -->
+                    <Button x:Name="BtnSoundboard" Style="{StaticResource DockButtonStyle}" Click="BtnSoundboard_Click" ToolTip="교실 효과음 사운드보드 (Alt+B)">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="🔔 " FontSize="11"/>
+                            <TextBlock Text="효과음"/>
+                            <Ellipse x:Name="DotSoundboard" Width="6" Height="6" Fill="#EC4899" Margin="4,0,0,0" VerticalAlignment="Center" Visibility="Collapsed"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Seat Shuffle -->
+                    <Button x:Name="BtnSeat" Style="{StaticResource DockButtonStyle}" Click="BtnSeat_Click" ToolTip="스마트 자리 바꾸기 &amp; 동물 아바타">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="🪑 " FontSize="11"/>
+                            <TextBlock Text="자리"/>
+                            <Ellipse x:Name="DotSeat" Width="6" Height="6" Fill="#14B8A6" Margin="4,0,0,0" VerticalAlignment="Center" Visibility="Collapsed"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Digital Signature -->
+                    <Button x:Name="BtnSignature" Style="{StaticResource DockButtonStyle}" Click="BtnSignature_Click" ToolTip="전자서명 &amp; 도장 생성기 (Alt+S)">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="🔏 " FontSize="11"/>
+                            <TextBlock Text="서명"/>
+                            <Ellipse x:Name="DotSignature" Width="6" Height="6" Fill="#6366F1" Margin="4,0,0,0" VerticalAlignment="Center" Visibility="Collapsed"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- QR Generator -->
+                    <Button x:Name="BtnQr" Style="{StaticResource DockButtonStyle}" Click="BtnQr_Click" ToolTip="QR코드 생성기 (Alt+Q)">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="📱 " FontSize="11"/>
+                            <TextBlock Text="QR"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Desktop Zen Cleaner -->
+                    <Button x:Name="BtnZen" Style="{StaticResource DockButtonStyle}" Click="BtnZen_Click" ToolTip="바탕화면 아이콘 숨김 / 수업 집중 모드">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="🙈 " FontSize="11"/>
+                            <TextBlock Text="바탕숨김"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
 
                 <!-- Separator -->
-                <Separator Margin="2,4,8,4" Background="#334155"/>
+                <Separator Margin="4,4,6,4" Background="#CBD5E1"/>
 
                 <!-- Close Button -->
-                <Button Click="BtnClose_Click" Width="26" Height="26" Background="Transparent" BorderThickness="0" Cursor="Hand" ToolTip="독 닫기 (Alt+9)">
+                <Button Click="BtnClose_Click" Width="26" Height="26" Background="Transparent" BorderThickness="0" Cursor="Hand" ToolTip="도구바 숨기기 (Alt+9로 다시 열기)">
                     <Button.Template>
                         <ControlTemplate TargetType="Button">
                             <Border x:Name="bClose" CornerRadius="13" Background="Transparent">
@@ -189,8 +310,8 @@
                             </Border>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="bClose" Property="Background" Value="#DC2626"/>
-                                    <Setter Property="Foreground" Value="White"/>
+                                    <Setter TargetName="bClose" Property="Background" Value="#FEE2E2"/>
+                                    <Setter Property="Foreground" Value="#EF4444"/>
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>

@@ -30,10 +30,16 @@ public partial class PickerWidgetView : UserControl
 
     private void BtnOpenPinball_Click(object sender, RoutedEventArgs e)
     {
-        if (_studentService != null && _soundService != null)
+        var app = Application.Current as App;
+        var win = app?.Services?.GetService(typeof(StudentPickerWindow)) as StudentPickerWindow;
+        if (win == null && _studentService != null && _soundService != null)
         {
-            var displayManager = (Application.Current as App)?.Services?.GetService(typeof(IDisplayManager)) as IDisplayManager;
-            var win = new StudentPickerWindow(_studentService, _soundService, displayManager);
+            var displayManager = app?.Services?.GetService(typeof(IDisplayManager)) as IDisplayManager;
+            win = new StudentPickerWindow(_studentService, _soundService, displayManager);
+        }
+        if (win != null)
+        {
+            var displayManager = app?.Services?.GetService(typeof(IDisplayManager)) as IDisplayManager;
             displayManager?.MoveToStudentMonitor(win, maximize: false);
             win.Show();
             win.Activate();

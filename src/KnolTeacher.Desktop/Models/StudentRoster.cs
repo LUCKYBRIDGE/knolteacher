@@ -151,6 +151,18 @@ public class StudentItem
     [JsonPropertyName("gender")]
     public string Gender { get; set; } = string.Empty;
 
+    [JsonPropertyName("role")]
+    public string Role { get; set; } = string.Empty;
+
+    [JsonPropertyName("birth_date")]
+    public string BirthDate { get; set; } = string.Empty;
+
+    [JsonPropertyName("contact")]
+    public string Contact { get; set; } = string.Empty;
+
+    [JsonPropertyName("note")]
+    public string Note { get; set; } = string.Empty;
+
     [JsonPropertyName("avatar_id")]
     public string AvatarId { get; set; } = string.Empty;
 

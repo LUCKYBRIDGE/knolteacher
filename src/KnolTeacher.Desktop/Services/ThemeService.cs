@@ -14,13 +14,13 @@ public class ThemeService : IThemeService
 {
     private readonly IConfigService _configService;
 
-    public string CurrentTheme { get; private set; } = "Beige";
+    public string CurrentTheme { get; private set; } = "Studio";
 
     public ThemeService(IConfigService configService)
     {
         _configService = configService;
         CurrentTheme = _configService.TimetableSettings.ThemeMode;
-        if (string.IsNullOrEmpty(CurrentTheme)) CurrentTheme = "Beige";
+        if (string.IsNullOrEmpty(CurrentTheme)) CurrentTheme = "Studio";
     }
 
     public void ApplyTheme(string themeName)
@@ -50,28 +50,9 @@ public class ThemeService : IThemeService
             SetBrush(res, "BeigeLunchBorder", "#293548");
             SetBrush(res, "BeigeLunchText", "#38BDF8");
         }
-        else if (themeName == "Light")
+        else if (themeName == "Beige" || themeName == "Warm")
         {
-            // 🌊 Modern Fluent Sky (Clean Light)
-            SetBrush(res, "BeigeAppBg", "#F1F5F9");
-            SetBrush(res, "BeigeSidebarBg", "#E2E8F0");
-            SetBrush(res, "BeigeSidebarHover", "#CBD5E1");
-            SetBrush(res, "BeigeAccent", "#0284C7");
-            SetBrush(res, "BeigeAccentHover", "#0369A1");
-            SetBrush(res, "BeigeAccentSoft", "#E0F2FE");
-            SetBrush(res, "BeigeCardBg", "#FFFFFF");
-            SetBrush(res, "BeigeCardInner", "#F8FAFC");
-            SetBrush(res, "BeigeCardBorder", "#E2E8F0");
-            SetBrush(res, "BeigeTextMain", "#0F172A");
-            SetBrush(res, "BeigeTextSub", "#334155");
-            SetBrush(res, "BeigeTextMuted", "#64748B");
-            SetBrush(res, "BeigeLunchBg", "#F0F9FF");
-            SetBrush(res, "BeigeLunchBorder", "#BAE6FD");
-            SetBrush(res, "BeigeLunchText", "#0284C7");
-        }
-        else
-        {
-            // 🌾 Classic Warm Beige (Default)
+            // 🌾 Classic Warm Beige
             SetBrush(res, "BeigeAppBg", "#F8F5EE");
             SetBrush(res, "BeigeSidebarBg", "#ECE3D4");
             SetBrush(res, "BeigeSidebarHover", "#DFD2BE");
@@ -87,6 +68,25 @@ public class ThemeService : IThemeService
             SetBrush(res, "BeigeLunchBg", "#FBF7F0");
             SetBrush(res, "BeigeLunchBorder", "#E7DAC7");
             SetBrush(res, "BeigeLunchText", "#92400E");
+        }
+        else
+        {
+            // 💎 Studio Clean & Indigo Pro (Default)
+            SetBrush(res, "BeigeAppBg", "#EEF2F6");
+            SetBrush(res, "BeigeSidebarBg", "#FFFFFF");
+            SetBrush(res, "BeigeSidebarHover", "#F1F5F9");
+            SetBrush(res, "BeigeAccent", "#2563EB");
+            SetBrush(res, "BeigeAccentHover", "#1D4ED8");
+            SetBrush(res, "BeigeAccentSoft", "#EFF6FF");
+            SetBrush(res, "BeigeCardBg", "#FFFFFF");
+            SetBrush(res, "BeigeCardInner", "#F8FAFC");
+            SetBrush(res, "BeigeCardBorder", "#E2E8F0");
+            SetBrush(res, "BeigeTextMain", "#0F172A");
+            SetBrush(res, "BeigeTextSub", "#334155");
+            SetBrush(res, "BeigeTextMuted", "#64748B");
+            SetBrush(res, "BeigeLunchBg", "#EFF6FF");
+            SetBrush(res, "BeigeLunchBorder", "#DBEAFE");
+            SetBrush(res, "BeigeLunchText", "#2563EB");
         }
     }
 

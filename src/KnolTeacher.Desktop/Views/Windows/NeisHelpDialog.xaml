@@ -4,7 +4,7 @@
         Title="📖 나이스(NEIS) 평어 일괄입력 상세 사용 가이드"
         Height="640" Width="760"
         WindowStartupLocation="CenterOwner"
-        Background="#F8F5EE">
+        Background="{DynamicResource BeigeAppBg}">
     <Grid Margin="20">
         <Grid.RowDefinitions>
             <!-- Header -->
@@ -72,12 +72,12 @@
                         <Border Background="#EFF6FF" BorderBrush="#93C5FD" BorderThickness="1.5" CornerRadius="8" Padding="12" Margin="0,0,0,10">
                             <StackPanel>
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="🚀 [방식 1] 나이스 1초 일괄 완성 (개발자도구 콘솔 방식 · 강력 추천!)" FontWeight="Bold" FontSize="13" Foreground="#1D4ED8"/>
+                                    <TextBlock Text="🚀 [방식 1] 나이스 일괄 복사 붙여넣기 (개발자도구 콘솔 방식 · 강력 추천!)" FontWeight="Bold" FontSize="13" Foreground="#1D4ED8"/>
                                     <Border Background="#DBEAFE" CornerRadius="4" Padding="4,1" Margin="6,0,0,0">
-                                        <TextBlock Text="오탈자 0% · 밀림 0% · 1초 완성" FontSize="10" Foreground="#1E40AF" FontWeight="Bold"/>
+                                        <TextBlock Text="오탈자 0% · 밀림 0% · 일괄 완성" FontSize="10" Foreground="#1E40AF" FontWeight="Bold"/>
                                     </Border>
                                 </StackPanel>
-                                <TextBlock Text="1. 놀티쳐에서 [🚀 나이스 1초 일괄입력 코드 복사] 버튼을 누릅니다." FontSize="11" Foreground="#1E3A8A" Margin="0,6,0,2"/>
+                                <TextBlock Text="1. 놀티쳐에서 [🚀 나이스 일괄 복사 붙여넣기] 버튼을 누릅니다." FontSize="11" Foreground="#1E3A8A" Margin="0,6,0,2"/>
                                 <TextBlock Text="2. 인터넷 브라우저(Chrome/Edge)의 나이스 화면에서 키보드 [F12] 키를 누릅니다." FontSize="11" Foreground="#1E3A8A" Margin="0,0,0,2"/>
                                 <TextBlock Text="3. 열린 개발자도구 창 상단의 [Console] (콘솔) 탭을 클릭합니다." FontSize="11" Foreground="#1E3A8A" Margin="0,0,0,2"/>
                                 <TextBlock Text="4. 콘솔 입력창에 Ctrl+V 붙여넣기 후 [Enter]를 누르면 전교생 평어가 1초 만에 번호별로 자동 쏙 입력됩니다!" FontSize="11" Foreground="#1D4ED8" FontWeight="Bold"/>

@@ -10,6 +10,8 @@ namespace KnolTeacher.Desktop.Services;
 public interface IDisplayManager
 {
     int ScreenCount { get; }
+    bool IsDualMonitor { get; }
+    string MonitorStatusDescription { get; }
     int RecommendedStudentMonitorIndex { get; }
     List<ScreenInfo> GetScreens();
     void MoveWindowToScreen(Window window, int screenIndex, bool maximize = false);
@@ -29,6 +31,10 @@ public class ScreenInfo
 public class DisplayManager : IDisplayManager
 {
     public int ScreenCount => GetScreens().Count;
+    public bool IsDualMonitor => ScreenCount >= 2;
+    public string MonitorStatusDescription => IsDualMonitor 
+        ? "📺 듀얼 모니터 (모니터 2: 학생용 전자칠판 감지됨)" 
+        : "💻 단일 모니터 (교실 화면 공유 모드)";
     public int RecommendedStudentMonitorIndex => ScreenCount >= 2 ? 1 : 0;
 
     public List<ScreenInfo> GetScreens()
@@ -105,8 +111,24 @@ public class DisplayManager : IDisplayManager
             double w = !double.IsNaN(window.Width) && window.Width > 0 ? window.Width : (window.ActualWidth > 0 ? window.ActualWidth : 520);
             double h = !double.IsNaN(window.Height) && window.Height > 0 ? window.Height : (window.ActualHeight > 0 ? window.ActualHeight : 420);
 
-            window.Left = area.Left + (area.Width - w) / 2;
-            window.Top = area.Top + (area.Height - h) / 2;
+            // Responsive bounds clamp: Ensure window never overflows monitor working area
+            // and menu/control buttons at the bottom or sides are never pushed off-screen.
+            double maxAllowedW = Math.Max(100.0, area.Width - 24.0);
+            double maxAllowedH = Math.Max(100.0, area.Height - 24.0);
+
+            if (w > maxAllowedW)
+            {
+                w = maxAllowedW;
+                window.Width = w;
+            }
+            if (h > maxAllowedH)
+            {
+                h = maxAllowedH;
+                window.Height = h;
+            }
+
+            window.Left = Math.Max(area.Left + 12.0, area.Left + (area.Width - w) / 2.0);
+            window.Top = Math.Max(area.Top + 12.0, area.Top + (area.Height - h) / 2.0);
         }
     }
 

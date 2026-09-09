@@ -72,10 +72,39 @@ public partial class ScheduleEditDialog : Window
             ChkFri.IsChecked = days.Contains(4);
             ChkSat.IsChecked = days.Contains(5);
             ChkSun.IsChecked = days.Contains(6);
+
+            ChkAdvanceWarning.IsChecked = _originalItem.EnableAdvanceWarning;
+            ChkShowStudentPopup.IsChecked = _originalItem.ShowStudentPopup;
+            TbPopupMessage.Text = string.IsNullOrEmpty(_originalItem.PopupMessage)
+                ? "🧹 교실 청소 및 하교 지도 시간입니다! 주변을 정리합시다."
+                : _originalItem.PopupMessage;
+            ChkShowTimer.IsChecked = _originalItem.ShowTimer;
+            PanelStudentPopupDetails.Visibility = _originalItem.ShowStudentPopup ? Visibility.Visible : Visibility.Collapsed;
+
+            foreach (ComboBoxItem ci in CbTimerDuration.Items)
+            {
+                if (ci.Tag is string tag && int.TryParse(tag, out int dur) && dur == _originalItem.TimerDurationMinutes)
+                {
+                    ci.IsSelected = true;
+                    break;
+                }
+            }
         }
         else
         {
             TbTitle.Text = "새로운 예약";
+            ChkAdvanceWarning.IsChecked = true;
+            ChkShowStudentPopup.IsChecked = false;
+            TbPopupMessage.Text = "🧹 교실 청소 및 하교 지도 시간입니다! 주변을 정리합시다.";
+            ChkShowTimer.IsChecked = true;
+        }
+    }
+
+    private void ChkShowStudentPopup_Changed(object sender, RoutedEventArgs e)
+    {
+        if (PanelStudentPopupDetails != null && ChkShowStudentPopup != null)
+        {
+            PanelStudentPopupDetails.Visibility = ChkShowStudentPopup.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
         }
     }
 
@@ -132,6 +161,12 @@ public partial class ScheduleEditDialog : Window
             }
         }
 
+        int timerMin = 10;
+        if (CbTimerDuration.SelectedItem is ComboBoxItem cbi && cbi.Tag is string sDur && int.TryParse(sDur, out int parsedDur))
+        {
+            timerMin = parsedDur;
+        }
+
         ResultItem = _originalItem ?? new RecurringScheduleItem();
         ResultItem.Title = title;
         ResultItem.ActionType = actionType;
@@ -147,6 +182,14 @@ public partial class ScheduleEditDialog : Window
         ResultItem.Memo = TbMemo.Text.Trim();
         ResultItem.Enabled = true;
         ResultItem.IsCompleted = false;
+
+        // Advance Warning & Student Popup settings
+        ResultItem.EnableAdvanceWarning = ChkAdvanceWarning.IsChecked == true;
+        ResultItem.AdvanceWarningMinutes = 5;
+        ResultItem.ShowStudentPopup = ChkShowStudentPopup.IsChecked == true;
+        ResultItem.PopupMessage = TbPopupMessage.Text.Trim();
+        ResultItem.ShowTimer = ChkShowTimer.IsChecked == true;
+        ResultItem.TimerDurationMinutes = timerMin;
 
         DialogResult = true;
         Close();

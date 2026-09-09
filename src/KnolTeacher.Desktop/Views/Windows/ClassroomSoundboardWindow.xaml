@@ -4,14 +4,16 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="🔔 원터치 교실 효과음 사운드보드 - 놀티쳐"
-        Height="460" Width="600"
-        MinWidth="520" MinHeight="400"
+        Title="교실 효과음 사운드보드"
+        Height="510" Width="630"
+        MinWidth="560" MinHeight="460"
         WindowStartupLocation="CenterScreen"
+        ShowInTaskbar="True"
         Topmost="True"
+        Icon="/assets/app_icon.ico"
         Background="{DynamicResource BeigeAppBg}">
 
-    <Grid Margin="18">
+    <Grid Margin="18,14,18,16">
         <Grid.RowDefinitions>
             <!-- Header -->
             <RowDefinition Height="Auto"/>

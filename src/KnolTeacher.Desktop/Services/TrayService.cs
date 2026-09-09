@@ -54,7 +54,7 @@ public class TrayService : ITrayService
         menu.Items.Add(new ToolStripSeparator());
 
         // 2. Direct tool shortcuts
-        menu.Items.Add(new ToolStripMenuItem("🎰 스마트 핀볼 추첨기 (Alt+8)", null, (s, e) =>
+        menu.Items.Add(new ToolStripMenuItem("🌱 동물 뽑기 레이스 (Alt+8)", null, (s, e) =>
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
@@ -136,11 +136,11 @@ public class TrayService : ITrayService
                     "놀티쳐 창을 띄워놓지 않아도 언제 어디서든 즉시 동작합니다:\n\n" +
                     "• [Alt + 1] 또는 [F2] : 📺 학생용 놀보드 (전자칠판 전송)\n" +
                     "• [Alt + 2] : ✏️ 화면 판서 그리기 오버레이\n" +
-                    "• [Alt + 3] : ⏱️ 교실 집중 타이머 (파이/숫자)\n" +
+                    "• [Alt + 3] : ⏱️ 교실 집중 타이머 (원형/숫자)\n" +
                     "• [Alt + 4] 또는 [Alt + 8] : 🎲 발표자 추첨기\n" +
                     "• [Alt + 5] : 🚦 교실 소음 신호등\n" +
                     "• [Alt + 6] : 🔔 교실 원터치 효과음 보드\n" +
-                    "• [Alt + 9] : 🏝️ 화면 플로팅 스마트 독\n" +
+                    "• [Alt + 9] : 🏝️ 화면 상단 도구바\n" +
                     "• [Alt + S] : 🔏 전자서명 및 도장 생성기\n\n" +
                     "창을 닫아도 시스템 트레이에 상주하므로 수업 중 언제든 편리하게 활용하세요!",
                     "놀티쳐 전역 단축키 가이드",

@@ -4,15 +4,82 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="놀보드 (학생용 올인원 인터랙티브 보드)" Height="850" Width="1350"
+        Title="놀보드" Height="850" Width="1350"
         Icon="/assets/board_icon.ico"
+        ShowInTaskbar="True"
         WindowStartupLocation="Manual"
         Background="#0B0F19">
+
+    <Window.Resources>
+        <!-- Board Top/Dock Action Button Style -->
+        <Style x:Key="BoardNavButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#1E293B" />
+            <Setter Property="Foreground" Value="#CBD5E1" />
+            <Setter Property="FontSize" Value="11.5" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Padding" Value="10,0" />
+            <Setter Property="Margin" Value="0,0,5,0" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="#334155" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="#334155" />
+                                <Setter TargetName="bd" Property="BorderBrush" Value="#64748B" />
+                                <Setter Property="Foreground" Value="White" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="#0284C7" />
+                                <Setter TargetName="bd" Property="BorderBrush" Value="#38BDF8" />
+                                <Setter Property="Foreground" Value="White" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Accent Pill Style -->
+        <Style x:Key="BoardAccentButtonStyle" TargetType="Button" BasedOn="{StaticResource BoardNavButtonStyle}">
+            <Setter Property="Background" Value="#0284C7" />
+            <Setter Property="BorderBrush" Value="#38BDF8" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="#0369A1" />
+                                <Setter TargetName="bd" Property="BorderBrush" Value="#7DD3FC" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
     
     <Grid>
         <Grid.RowDefinitions>
             <!-- Top Control Toolbar -->
-            <RowDefinition Height="52" />
+            <RowDefinition Height="56" />
             <!-- Main Board Surface (Canvas & Ink) -->
             <RowDefinition Height="*" />
             <!-- Bottom Dock Toolbar -->
@@ -20,7 +87,7 @@
         </Grid.RowDefinitions>
 
         <!-- 1. Top Control Toolbar -->
-        <Border Grid.Row="0" Background="#1E293B" BorderBrush="#334155" BorderThickness="0,0,0,1" Padding="12,0">
+        <Border Grid.Row="0" Background="#0F172A" BorderBrush="#1E293B" BorderThickness="0,0,0,1" Padding="14,0">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
@@ -30,9 +97,9 @@
 
                 <!-- Left: Title & Clock -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="📋 놀보드" FontWeight="Bold" FontSize="15" Foreground="White" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                    <Border Background="#0F172A" CornerRadius="6" BorderBrush="#334155" BorderThickness="1" Padding="8,4" Margin="0,0,14,0">
-                        <TextBlock x:Name="TxtClock" Text="09:00:00" FontFamily="Consolas, Malgun Gothic" FontSize="13" FontWeight="Bold" Foreground="#38BDF8"/>
+                    <TextBlock Text="📋 놀보드" FontWeight="Bold" FontSize="16" Foreground="White" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <Border Background="#1E293B" CornerRadius="8" BorderBrush="#334155" BorderThickness="1" Padding="10,4" Margin="0,0,14,0">
+                        <TextBlock x:Name="TxtClock" Text="09:00:00" FontFamily="Consolas, Malgun Gothic" FontSize="13.5" FontWeight="Bold" Foreground="#38BDF8"/>
                     </Border>
                 </StackPanel>
 
@@ -40,26 +107,20 @@
                 <ScrollViewer Grid.Column="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" VerticalAlignment="Center">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <!-- Preset Modes -->
-                        <TextBlock Text="모드:" Foreground="#94A3B8" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                        <Button Content="🎯 수업도구" Click="BtnPresetTools_Click" Padding="8,4" Margin="0,0,4,0" Background="#0284C7" Foreground="White" FontWeight="Bold" FontSize="11" BorderThickness="0" Cursor="Hand">
-                            <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
-                        </Button>
-                        <Button Content="📋 학급게시판" Click="BtnPresetBoard_Click" Padding="8,4" Margin="0,0,4,0" Background="#334155" Foreground="White" FontWeight="Bold" FontSize="11" BorderThickness="0" Cursor="Hand">
-                            <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
-                        </Button>
-                        <Button Content="⚖️ 올인원" Click="BtnPresetSplit_Click" Padding="8,4" Margin="0,0,10,0" Background="#334155" Foreground="White" FontWeight="Bold" FontSize="11" BorderThickness="0" Cursor="Hand">
-                            <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
-                        </Button>
+                        <TextBlock Text="모드:" Foreground="#94A3B8" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                        <Button Content="🎯 수업도구" Click="BtnPresetTools_Click" Style="{StaticResource BoardAccentButtonStyle}"/>
+                        <Button Content="📋 학급게시판" Click="BtnPresetBoard_Click" Style="{StaticResource BoardNavButtonStyle}"/>
+                        <Button Content="⚖️ 올인원" Click="BtnPresetSplit_Click" Style="{StaticResource BoardNavButtonStyle}" Margin="0,0,12,0"/>
 
                         <!-- Add Widget Dropdown -->
-                        <TextBlock Text="+ 위젯:" Foreground="#94A3B8" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                        <ComboBox x:Name="CbAddWidget" Width="136" Height="32" MinHeight="32" FontSize="11" Padding="6,2" VerticalContentAlignment="Center" Margin="0,0,12,0" SelectionChanged="CbAddWidget_SelectionChanged">
-                            <ComboBoxItem Content="위젯 선택..." IsSelected="True"/>
+                        <TextBlock Text="+ 위젯:" Foreground="#94A3B8" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                        <ComboBox x:Name="CbAddWidget" Width="144" Height="32" MinHeight="32" FontSize="11" Padding="6,2" VerticalContentAlignment="Center" Margin="0,0,12,0" SelectionChanged="CbAddWidget_SelectionChanged">
+                            <ComboBoxItem Content="위젯 추가..." IsSelected="True"/>
                             <ComboBoxItem Content="⏱️ 수업 타이머" Tag="timer"/>
-                            <ComboBoxItem Content="🎰 핀볼 뽑기" Tag="pinball"/>
+                            <ComboBoxItem Content="🌱 뽑기 레이스" Tag="pinball"/>
                             <ComboBoxItem Content="🎯 발표자 추첨" Tag="picker"/>
                             <ComboBoxItem Content="🎲 스마트 주사위" Tag="dice"/>
-                            <ComboBoxItem Content="🎡 돌려돌려 돌림판" Tag="wheel"/>
+                            <ComboBoxItem Content="🎡 회전 돌림판" Tag="wheel"/>
                             <ComboBoxItem Content="🏆 모둠 점수판" Tag="score"/>
                             <ComboBoxItem Content="✏️ 칠판 판서장" Tag="drawing"/>
                             <ComboBoxItem Content="📅 오늘의 시간표" Tag="timetable"/>
@@ -70,81 +131,93 @@
                         </ComboBox>
 
                         <!-- Lock & Opacity Tools -->
-                        <ToggleButton x:Name="ToggleLockWidgets" Content="🔓 위치 고정" Checked="ToggleLockWidgets_Checked" Unchecked="ToggleLockWidgets_Unchecked" Padding="8,4" Margin="0,0,4,0" Background="#334155" Foreground="White" FontSize="11" FontWeight="Bold" Cursor="Hand" ToolTip="보드 위 모든 위젯의 위치와 크기 조절 잠금">
-                            <ToggleButton.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></ToggleButton.Resources>
+                        <ToggleButton x:Name="ToggleLockWidgets" Content="🔓 위치 고정" Checked="ToggleLockWidgets_Checked" Unchecked="ToggleLockWidgets_Unchecked" Height="32" Padding="8,4" Margin="0,0,4,0" Background="#1E293B" Foreground="#CBD5E1" FontSize="11" FontWeight="Bold" Cursor="Hand" ToolTip="보드 위 모든 위젯의 위치와 크기 조절 잠금">
+                            <ToggleButton.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></ToggleButton.Resources>
                         </ToggleButton>
 
                         <!-- Card Opacity Popup -->
-                        <Button x:Name="BtnOpacityPopup" Content="💧 투명도" Click="BtnOpacityPopup_Click" Padding="8,4" Margin="0,0,10,0" Background="#334155" Foreground="#38BDF8" FontSize="11" FontWeight="Bold" BorderThickness="0" Cursor="Hand" ToolTip="위젯 카드 배경 투명도 조절">
-                            <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                        <Button x:Name="BtnOpacityPopup" Content="💧 투명도" Click="BtnOpacityPopup_Click" Height="32" Padding="8,4" Margin="0,0,10,0" Background="#1E293B" Foreground="#38BDF8" BorderBrush="#334155" BorderThickness="1" FontSize="11" FontWeight="Bold" Cursor="Hand" ToolTip="위젯 카드 배경 투명도 조절">
+                            <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></Button.Resources>
                         </Button>
                         <Popup x:Name="PopupOpacity" PlacementTarget="{Binding ElementName=BtnOpacityPopup}" Placement="Bottom" StaysOpen="False" AllowsTransparency="True">
-                            <Border Background="#1E293B" BorderBrush="#38BDF8" BorderThickness="1.5" CornerRadius="8" Padding="12,10" Width="180">
+                            <Border Background="#1E293B" BorderBrush="#38BDF8" BorderThickness="1.5" CornerRadius="10" Padding="14,12" Width="200">
+                                <Border.Effect>
+                                    <DropShadowEffect BlurRadius="16" Opacity="0.5" ShadowDepth="4" Color="#000000"/>
+                                </Border.Effect>
                                 <StackPanel>
-                                    <TextBlock Text="카드 배경 투명도" Foreground="White" FontSize="11" FontWeight="Bold" Margin="0,0,0,6"/>
+                                    <TextBlock Text="위젯 카드 배경 투명도" Foreground="White" FontSize="11.5" FontWeight="Bold" Margin="0,0,0,8"/>
                                     <Slider x:Name="SliderCardOpacity" Minimum="0.2" Maximum="1.0" Value="0.95" ValueChanged="SliderCardOpacity_ValueChanged" SmallChange="0.05" LargeChange="0.1"/>
-                                    <TextBlock x:Name="TxtOpacityValue" Text="95%" Foreground="#38BDF8" FontSize="11" HorizontalAlignment="Right" Margin="0,4,0,0"/>
+                                    <TextBlock x:Name="TxtOpacityValue" Text="95%" Foreground="#38BDF8" FontSize="11.5" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,6,0,0"/>
                                 </StackPanel>
                             </Border>
                         </Popup>
 
-                        <Separator Margin="0,8,12,8" Background="#475569"/>
+                        <Separator Margin="0,8,12,8" Width="1" Background="#334155"/>
 
                         <!-- Board Themes -->
-                        <Button Content="🏫 칠판" Click="BtnGreenBoard_Click" Padding="6,4" Margin="0,0,4,0" Background="#1B4332" Foreground="White" FontSize="11" BorderThickness="0" Cursor="Hand">
-                            <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
+                        <TextBlock Text="테마:" Foreground="#94A3B8" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                        <Button Content="🏫 칠판" Click="BtnGreenBoard_Click" Height="30" Padding="8,2" Margin="0,0,4,0" Background="#143628" Foreground="#86EFAC" BorderBrush="#22C55E" BorderThickness="1" FontSize="11" FontWeight="Bold" Cursor="Hand">
+                            <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
                         </Button>
-                        <Button Content="📋 화이트" Click="BtnWhiteBoard_Click" Padding="6,4" Margin="0,0,4,0" Background="#F8F9FA" Foreground="#0F172A" FontSize="11" BorderThickness="0" Cursor="Hand">
-                            <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
+                        <Button Content="📋 화이트" Click="BtnWhiteBoard_Click" Height="30" Padding="8,2" Margin="0,0,4,0" Background="#F8FAFC" Foreground="#0F172A" BorderBrush="#E2E8F0" BorderThickness="1" FontSize="11" FontWeight="Bold" Cursor="Hand">
+                            <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
                         </Button>
-                        <Button Content="🌙 다크" Click="BtnDarkBoard_Click" Padding="6,4" Margin="0,0,12,0" Background="#0F172A" Foreground="White" FontSize="11" BorderThickness="0" Cursor="Hand">
-                            <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
+                        <Button Content="🌙 다크" Click="BtnDarkBoard_Click" Height="30" Padding="8,2" Margin="0,0,12,0" Background="#0B0F19" Foreground="#CBD5E1" BorderBrush="#334155" BorderThickness="1" FontSize="11" FontWeight="Bold" Cursor="Hand">
+                            <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
                         </Button>
 
-                        <Separator Margin="0,8,12,8" Background="#475569"/>
+                        <Separator Margin="0,8,12,8" Width="1" Background="#334155"/>
 
                         <!-- Drawing Overlay Mode -->
-                        <ToggleButton x:Name="ToggleInkMode" Content="✏️ 전체 화면 판서" Checked="ToggleInkMode_Checked" Unchecked="ToggleInkMode_Unchecked" Padding="8,4" Margin="0,0,8,0" Background="#334155" Foreground="White" FontSize="11" FontWeight="Bold" Cursor="Hand">
-                            <ToggleButton.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></ToggleButton.Resources>
+                        <ToggleButton x:Name="ToggleInkMode" Content="✏️ 전체 화면 판서" Checked="ToggleInkMode_Checked" Unchecked="ToggleInkMode_Unchecked" Height="32" Padding="10,4" Margin="0,0,8,0" Background="#1E293B" Foreground="White" FontSize="11" FontWeight="Bold" Cursor="Hand">
+                            <ToggleButton.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></ToggleButton.Resources>
                         </ToggleButton>
 
                         <StackPanel x:Name="PanelInkTools" Orientation="Horizontal" Visibility="Collapsed">
                             <RadioButton x:Name="RbPen" Content="펜" IsChecked="True" Checked="RbPen_Checked" Foreground="White" FontSize="11" Margin="0,0,6,0" VerticalAlignment="Center"/>
                             <RadioButton x:Name="RbEraser" Content="지우개" Checked="RbEraser_Checked" Foreground="White" FontSize="11" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                            <Button Width="18" Height="18" Background="White" Click="BtnColor_Click" Tag="#FFFFFF" Margin="0,0,3,0" Cursor="Hand"/>
-                            <Button Width="18" Height="18" Background="#FDE047" Click="BtnColor_Click" Tag="#FDE047" Margin="0,0,3,0" Cursor="Hand"/>
-                            <Button Width="18" Height="18" Background="#F472B6" Click="BtnColor_Click" Tag="#F472B6" Margin="0,0,3,0" Cursor="Hand"/>
-                            <Button Width="18" Height="18" Background="#38BDF8" Click="BtnColor_Click" Tag="#38BDF8" Margin="0,0,8,0" Cursor="Hand"/>
-                            <Button Content="↩" Click="BtnUndo_Click" Padding="6,2" Margin="0,0,3,0" Background="#475569" Foreground="White" FontSize="11" Cursor="Hand"/>
-                            <Button Content="🗑" Click="BtnClear_Click" Padding="6,2" Margin="0,0,8,0" Background="#EF4444" Foreground="White" FontSize="11" Cursor="Hand"/>
+                            <Button Width="20" Height="20" Background="White" Click="BtnColor_Click" Tag="#FFFFFF" Margin="0,0,3,0" Cursor="Hand" BorderThickness="0">
+                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
+                            </Button>
+                            <Button Width="20" Height="20" Background="#FDE047" Click="BtnColor_Click" Tag="#FDE047" Margin="0,0,3,0" Cursor="Hand" BorderThickness="0">
+                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
+                            </Button>
+                            <Button Width="20" Height="20" Background="#F472B6" Click="BtnColor_Click" Tag="#F472B6" Margin="0,0,3,0" Cursor="Hand" BorderThickness="0">
+                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
+                            </Button>
+                            <Button Width="20" Height="20" Background="#38BDF8" Click="BtnColor_Click" Tag="#38BDF8" Margin="0,0,8,0" Cursor="Hand" BorderThickness="0">
+                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
+                            </Button>
+                            <Button Content="↩" Click="BtnUndo_Click" Height="26" Padding="6,0" Margin="0,0,3,0" Background="#334155" Foreground="White" FontSize="11" Cursor="Hand" ToolTip="실행 취소"/>
+                            <Button Content="🗑" Click="BtnClear_Click" Height="26" Padding="6,0" Margin="0,0,8,0" Background="#EF4444" Foreground="White" FontSize="11" Cursor="Hand" ToolTip="판서 지우기"/>
 
-                            <Separator Margin="0,2,8,2" Width="1" Background="#475569"/>
+                            <Separator Margin="0,4,8,4" Width="1" Background="#475569"/>
 
                             <!-- Math 교구 Tools -->
-                            <Button Content="📏 자" Click="BtnToggleRuler_Click" Padding="6,2" Margin="0,0,3,0" Background="#334155" Foreground="#38BDF8" FontWeight="Bold" FontSize="11" Cursor="Hand" ToolTip="0~20cm 직선자"/>
-                            <Button Content="📐 삼각자" Click="BtnToggleTriangle_Click" Padding="6,2" Margin="0,0,3,0" Background="#334155" Foreground="#38BDF8" FontWeight="Bold" FontSize="11" Cursor="Hand" ToolTip="45°-45°-90° 삼각자"/>
-                            <Button Content="🧭 각도기" Click="BtnToggleProtractor_Click" Padding="6,2" Margin="0,0,4,0" Background="#334155" Foreground="#FDE047" FontWeight="Bold" FontSize="11" Cursor="Hand" ToolTip="180° 반원 각도기"/>
+                            <Button Content="📏 자" Click="BtnToggleRuler_Click" Height="26" Padding="6,0" Margin="0,0,3,0" Background="#1E293B" Foreground="#38BDF8" FontWeight="Bold" FontSize="11" Cursor="Hand" ToolTip="0~20cm 직선자"/>
+                            <Button Content="📐 삼각자" Click="BtnToggleTriangle_Click" Height="26" Padding="6,0" Margin="0,0,3,0" Background="#1E293B" Foreground="#38BDF8" FontWeight="Bold" FontSize="11" Cursor="Hand" ToolTip="45°-45°-90° 삼각자"/>
+                            <Button Content="🧭 각도기" Click="BtnToggleProtractor_Click" Height="26" Padding="6,0" Margin="0,0,4,0" Background="#1E293B" Foreground="#FDE047" FontWeight="Bold" FontSize="11" Cursor="Hand" ToolTip="180° 반원 각도기"/>
                         </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
 
                 <!-- Right: Window Actions -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Button x:Name="BtnSwitchBoardMonitor" Content="📺 모니터 2" Click="BtnSwitchBoardMonitor_Click" Margin="0,0,6,0" Padding="8,4" Background="#1E293B" Foreground="#38BDF8" BorderBrush="#0284C7" BorderThickness="1" FontSize="11" FontWeight="Bold" Cursor="Hand" ToolTip="놀보드를 모니터 1 ↔ 모니터 2로 즉시 이동">
-                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                    <Button x:Name="BtnSwitchBoardMonitor" Content="📺 모니터 2 (학생용)" Click="BtnSwitchBoardMonitor_Click" Margin="0,0,6,0" Padding="10,5" Background="#1E293B" Foreground="#38BDF8" BorderBrush="#0284C7" BorderThickness="1.5" FontSize="11" FontWeight="Bold" Cursor="Hand" ToolTip="놀보드를 모니터 1 ↔ 모니터 2로 즉시 이동">
+                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></Button.Resources>
                     </Button>
-                    <Button Content="🔲 전체화면" Click="BtnFullscreen_Click" Margin="0,0,6,0" Padding="8,4" Background="#334155" Foreground="White" FontSize="11" BorderThickness="0" Cursor="Hand">
-                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                    <Button Content="🔲 전체화면" Click="BtnFullscreen_Click" Margin="0,0,6,0" Padding="10,5" Background="#1E293B" Foreground="#CBD5E1" BorderBrush="#334155" BorderThickness="1" FontSize="11" FontWeight="SemiBold" Cursor="Hand">
+                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></Button.Resources>
                     </Button>
-                    <Button Content="✕ 닫기 (F2)" Click="BtnClose_Click" Padding="8,4" Background="#DC2626" Foreground="White" FontSize="11" FontWeight="Bold" BorderThickness="0" Cursor="Hand">
-                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                    <Button Content="✕ 닫기 (F2)" Click="BtnClose_Click" Padding="12,5" Background="#DC2626" Foreground="White" FontSize="11" FontWeight="Bold" BorderThickness="0" Cursor="Hand">
+                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></Button.Resources>
                     </Button>
                 </StackPanel>
             </Grid>
         </Border>
 
         <!-- 2. Main Board Surface Area -->
-        <Grid Grid.Row="1" x:Name="BoardContainer" Background="#1B4332">
+        <Grid Grid.Row="1" x:Name="BoardContainer" Background="#143628">
             <!-- Widgets Canvas (Movable & Resizable Widgets Layer) -->
             <Canvas x:Name="WidgetCanvas" ClipToBounds="True" Background="Transparent"/>
 
@@ -160,8 +233,8 @@
                     IsHitTestVisible="True"/>
         </Grid>
 
-        <!-- 3. Bottom Dock Toolbar (파이썬 놀티쳐 완벽 계승 9대 도구 스위치 & 자동 정렬) -->
-        <Border Grid.Row="2" Background="#0F172A" BorderBrush="#334155" BorderThickness="0,1,0,0">
+        <!-- 3. Bottom Dock Toolbar (프리미엄 Floating Action Pill Dock) -->
+        <Border Grid.Row="2" Background="#0A0E1A" BorderBrush="#1E293B" BorderThickness="0,1,0,0">
             <Grid>
                 <Grid.RowDefinitions>
                     <!-- Handle Bar (Fold/Unfold) -->
@@ -171,44 +244,48 @@
                 </Grid.RowDefinitions>
 
                 <!-- Handle Bar -->
-                <Border Grid.Row="0" Background="#111827" BorderBrush="#1E293B" BorderThickness="0,0,0,1" Padding="12,0">
+                <Border Grid.Row="0" Background="#0F172A" BorderBrush="#1E293B" BorderThickness="0,0,0,1" Padding="14,0">
                     <Grid>
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="💡" FontSize="11" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="아래 버튼을 눌러 원하는 도구 위젯을 보드 위에 띄우거나 끕니다 (자유 이동 및 크기 조절)" Foreground="#94A3B8" FontSize="10" VerticalAlignment="Center"/>
+                            <TextBlock Text="버튼을 눌러 원하는 도구 위젯을 보드 위에 띄우거나 끕니다 (자유 이동 및 크기 조절, 활성 도구 하이라이트)" Foreground="#94A3B8" FontSize="10.5" VerticalAlignment="Center"/>
                         </StackPanel>
-                        <Button x:Name="BtnToggleDock" Content="▼ 도구 바 접기" Click="BtnToggleDock_Click" HorizontalAlignment="Right" Background="Transparent" Foreground="#64748B" FontSize="10" FontWeight="Bold" BorderThickness="0" Cursor="Hand" Padding="6,2"/>
+                        <Button x:Name="BtnToggleDock" Content="▼ 도구 바 접기" Click="BtnToggleDock_Click" HorizontalAlignment="Right" Background="Transparent" Foreground="#64748B" FontSize="10.5" FontWeight="Bold" BorderThickness="0" Cursor="Hand" Padding="6,2"/>
                     </Grid>
                 </Border>
 
                 <!-- Dock Body -->
-                <Border Grid.Row="1" x:Name="DockBody" Padding="10,6" Background="#0B0F19">
+                <Border Grid.Row="1" x:Name="DockBody" Padding="12,8" Background="#0A0E1A">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
 
-                        <!-- Left: 9 Widget Toggle Buttons + Pinball Button -->
+                        <!-- Left: 12 Widget Toggle Buttons -->
                         <WrapPanel Grid.Column="0" VerticalAlignment="Center">
-                            <Button x:Name="BtnToolTimer" Content="⏱️ 타이머" Click="DockToolBtn_Click" Tag="timer" Height="32" Padding="10,0" Margin="0,2,6,2" Background="#1E293B" Foreground="#94A3B8" BorderBrush="#334155" BorderThickness="1" FontSize="11" Cursor="Hand"/>
-                            <Button x:Name="BtnToolPinball" Content="🎰 핀볼 뽑기" Click="DockToolBtn_Click" Tag="pinball" Height="32" Padding="10,0" Margin="0,2,6,2" Background="#1E293B" Foreground="#38BDF8" BorderBrush="#0284C7" BorderThickness="1.5" FontSize="11" FontWeight="Bold" Cursor="Hand" ToolTip="32종 동물 아바타 아케이드 물리 핀볼 추첨기"/>
-                            <Button x:Name="BtnToolPicker" Content="🎯 발표자 추첨" Click="DockToolBtn_Click" Tag="picker" Height="32" Padding="10,0" Margin="0,2,6,2" Background="#1E293B" Foreground="#94A3B8" BorderBrush="#334155" BorderThickness="1" FontSize="11" Cursor="Hand"/>
-                            <Button x:Name="BtnToolDice" Content="🎲 주사위·통계" Click="DockToolBtn_Click" Tag="dice" Height="32" Padding="10,0" Margin="0,2,6,2" Background="#1E293B" Foreground="#94A3B8" BorderBrush="#334155" BorderThickness="1" FontSize="11" Cursor="Hand"/>
-                            <Button x:Name="BtnToolWheel" Content="🎡 돌림판" Click="DockToolBtn_Click" Tag="wheel" Height="32" Padding="10,0" Margin="0,2,6,2" Background="#1E293B" Foreground="#94A3B8" BorderBrush="#334155" BorderThickness="1" FontSize="11" Cursor="Hand"/>
-                            <Button x:Name="BtnToolScore" Content="🏆 모둠 점수판" Click="DockToolBtn_Click" Tag="score" Height="32" Padding="10,0" Margin="0,2,6,2" Background="#1E293B" Foreground="#94A3B8" BorderBrush="#334155" BorderThickness="1" FontSize="11" Cursor="Hand"/>
-                            <Button x:Name="BtnToolDrawing" Content="✏️ 칠판·판서" Click="DockToolBtn_Click" Tag="drawing" Height="32" Padding="10,0" Margin="0,2,6,2" Background="#1E293B" Foreground="#94A3B8" BorderBrush="#334155" BorderThickness="1" FontSize="11" Cursor="Hand"/>
-                            <Button x:Name="BtnToolTimetable" Content="📅 시간표" Click="DockToolBtn_Click" Tag="timetable" Height="32" Padding="10,0" Margin="0,2,6,2" Background="#1E293B" Foreground="#94A3B8" BorderBrush="#334155" BorderThickness="1" FontSize="11" Cursor="Hand"/>
-                            <Button x:Name="BtnToolMeal" Content="🍱 급식" Click="DockToolBtn_Click" Tag="meal" Height="32" Padding="10,0" Margin="0,2,6,2" Background="#1E293B" Foreground="#94A3B8" BorderBrush="#334155" BorderThickness="1" FontSize="11" Cursor="Hand"/>
-                            <Button x:Name="BtnToolMemo" Content="📝 알림장" Click="DockToolBtn_Click" Tag="memo" Height="32" Padding="10,0" Margin="0,2,6,2" Background="#1E293B" Foreground="#94A3B8" BorderBrush="#334155" BorderThickness="1" FontSize="11" Cursor="Hand"/>
-                            <Button x:Name="BtnToolChecklist" Content="📋 체크리스트" Click="DockToolBtn_Click" Tag="checklist" Height="32" Padding="10,0" Margin="0,2,6,2" Background="#1E293B" Foreground="#94A3B8" BorderBrush="#334155" BorderThickness="1" FontSize="11" Cursor="Hand" ToolTip="학생 제출물·과제 번호별 완료 체크"/>
-                            <Button x:Name="BtnToolQr" Content="📱 QR코드" Click="DockToolBtn_Click" Tag="qr" Height="32" Padding="10,0" Margin="0,2,6,2" Background="#1E293B" Foreground="#94A3B8" BorderBrush="#334155" BorderThickness="1" FontSize="11" Cursor="Hand" ToolTip="수업 링크 및 자료 실시간 QR코드 생성 &amp; 학생 공유"/>
+                            <Button x:Name="BtnToolTimer" Content="⏱️ 수업 타이머" Click="DockToolBtn_Click" Tag="timer" Height="34" Padding="10,0" Margin="0,2,6,2" Style="{StaticResource BoardNavButtonStyle}"/>
+                            <Button x:Name="BtnToolPinball" Content="🌱 뽑기 레이스" Click="DockToolBtn_Click" Tag="pinball" Height="34" Padding="10,0" Margin="0,2,6,2" Style="{StaticResource BoardNavButtonStyle}" ToolTip="32종 동물 아바타 뽑기 레이스"/>
+                            <Button x:Name="BtnToolPicker" Content="🎯 발표자 추첨" Click="DockToolBtn_Click" Tag="picker" Height="34" Padding="10,0" Margin="0,2,6,2" Style="{StaticResource BoardNavButtonStyle}"/>
+                            <Button x:Name="BtnToolDice" Content="🎲 주사위·통계" Click="DockToolBtn_Click" Tag="dice" Height="34" Padding="10,0" Margin="0,2,6,2" Style="{StaticResource BoardNavButtonStyle}"/>
+                            <Button x:Name="BtnToolWheel" Content="🎡 돌림판" Click="DockToolBtn_Click" Tag="wheel" Height="34" Padding="10,0" Margin="0,2,6,2" Style="{StaticResource BoardNavButtonStyle}"/>
+                            <Button x:Name="BtnToolScore" Content="🏆 모둠 점수판" Click="DockToolBtn_Click" Tag="score" Height="34" Padding="10,0" Margin="0,2,6,2" Style="{StaticResource BoardNavButtonStyle}"/>
+                            <Button x:Name="BtnToolDrawing" Content="✏️ 칠판·판서" Click="DockToolBtn_Click" Tag="drawing" Height="34" Padding="10,0" Margin="0,2,6,2" Style="{StaticResource BoardNavButtonStyle}"/>
+                            <Button x:Name="BtnToolTimetable" Content="📅 오늘의 시간표" Click="DockToolBtn_Click" Tag="timetable" Height="34" Padding="10,0" Margin="0,2,6,2" Style="{StaticResource BoardNavButtonStyle}"/>
+                            <Button x:Name="BtnToolMeal" Content="🍱 오늘의 급식" Click="DockToolBtn_Click" Tag="meal" Height="34" Padding="10,0" Margin="0,2,6,2" Style="{StaticResource BoardNavButtonStyle}"/>
+                            <Button x:Name="BtnToolMemo" Content="📝 학급 알림장" Click="DockToolBtn_Click" Tag="memo" Height="34" Padding="10,0" Margin="0,2,6,2" Style="{StaticResource BoardNavButtonStyle}"/>
+                            <Button x:Name="BtnToolChecklist" Content="📋 과제 체크리스트" Click="DockToolBtn_Click" Tag="checklist" Height="34" Padding="10,0" Margin="0,2,6,2" Style="{StaticResource BoardNavButtonStyle}" ToolTip="학생 제출물·과제 번호별 완료 체크"/>
+                            <Button x:Name="BtnToolQr" Content="📱 수업 QR코드" Click="DockToolBtn_Click" Tag="qr" Height="34" Padding="10,0" Margin="0,2,6,2" Style="{StaticResource BoardNavButtonStyle}" ToolTip="수업 링크 및 자료 실시간 QR코드 생성"/>
                         </WrapPanel>
 
                         <!-- Right: Layout & Close Actions -->
                         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                            <Button x:Name="BtnTileWidgets" Content="📐 자동 정렬" Click="BtnTileWidgets_Click" Height="32" Padding="12,0" Margin="4,2,4,2" Background="#334155" Foreground="White" FontWeight="Bold" FontSize="11" BorderThickness="0" Cursor="Hand" ToolTip="열려 있는 위젯들을 화면에 바둑판 형태로 자동 정렬"/>
-                            <Button x:Name="BtnCloseAllWidgets" Content="🧹 전체 닫기" Click="BtnCloseAllWidgets_Click" Height="32" Padding="12,0" Margin="4,2,0,2" Background="#1E293B" Foreground="#EF4444" BorderBrush="#7F1D1D" BorderThickness="1" FontSize="11" Cursor="Hand" ToolTip="보드 위의 모든 위젯 닫기"/>
+                            <Button x:Name="BtnTileWidgets" Content="📐 바둑판 자동 정렬" Click="BtnTileWidgets_Click" Height="34" Padding="12,0" Margin="4,2,4,2" Background="#0284C7" Foreground="White" FontWeight="Bold" FontSize="11.5" BorderThickness="0" Cursor="Hand" ToolTip="열려 있는 위젯들을 화면에 바둑판 형태로 균등 자동 정렬">
+                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></Button.Resources>
+                            </Button>
+                            <Button x:Name="BtnCloseAllWidgets" Content="🧹 전체 닫기" Click="BtnCloseAllWidgets_Click" Height="34" Padding="12,0" Margin="4,2,0,2" Background="#1E293B" Foreground="#F87171" BorderBrush="#7F1D1D" BorderThickness="1" FontSize="11.5" FontWeight="SemiBold" Cursor="Hand" ToolTip="보드 위의 모든 위젯 닫기">
+                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></Button.Resources>
+                            </Button>
                         </StackPanel>
                     </Grid>
                 </Border>

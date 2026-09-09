@@ -25,7 +25,7 @@
             </Grid.RowDefinitions>
 
             <!-- Line 0: Pinball Launcher -->
-            <Button Grid.Row="0" Content="🎰 32종 동물 아바타 아케이드 핀볼 레이스 ↗" Click="BtnOpenPinball_Click" Height="26" Margin="0,0,0,4" Background="#7C3AED" Foreground="White" FontWeight="Bold" FontSize="11" BorderThickness="0" Cursor="Hand">
+            <Button Grid.Row="0" Content="🌱 32종 동물 뽑기 레이스 ↗" Click="BtnOpenPinball_Click" Height="26" Margin="0,0,0,4" Background="#2F6B45" Foreground="White" FontWeight="Bold" FontSize="11" BorderThickness="0" Cursor="Hand">
                 <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
             </Button>
 

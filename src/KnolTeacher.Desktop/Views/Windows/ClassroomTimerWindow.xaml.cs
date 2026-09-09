@@ -17,12 +17,14 @@ public partial class ClassroomTimerWindow : Window
     private int _initialSeconds = 300;
     private bool _isRunning = false;
     private bool _isPieMode = false;
+    private readonly IConfigService? _configService;
     private int _currentMonitorIndex = 1;
 
-    public ClassroomTimerWindow(ISoundService soundService, IDisplayManager? displayManager = null)
+    public ClassroomTimerWindow(ISoundService soundService, IDisplayManager? displayManager = null, IConfigService? configService = null)
     {
         _soundService = soundService;
         _displayManager = displayManager ?? (Application.Current as App)?.Services?.GetService(typeof(IDisplayManager)) as IDisplayManager;
+        _configService = configService ?? (Application.Current as App)?.Services?.GetService(typeof(IConfigService)) as IConfigService;
         InitializeComponent();
 
         _timer = new DispatcherTimer
@@ -40,8 +42,17 @@ public partial class ClassroomTimerWindow : Window
     {
         if (_displayManager != null)
         {
-            _currentMonitorIndex = _displayManager.RecommendedStudentMonitorIndex;
-            _displayManager.MoveToStudentMonitor(this, maximize: false);
+            int preferred = _configService?.TimerTargetMonitorIndex ?? 1;
+            if (preferred == 1 && _displayManager.ScreenCount >= 2)
+            {
+                _currentMonitorIndex = 1;
+                _displayManager.MoveToStudentMonitor(this, maximize: false);
+            }
+            else
+            {
+                _currentMonitorIndex = 0;
+                _displayManager.MoveWindowToScreen(this, 0, maximize: false);
+            }
             UpdateMonitorButtonText();
         }
     }
@@ -60,36 +71,79 @@ public partial class ClassroomTimerWindow : Window
         _currentMonitorIndex = _currentMonitorIndex == 1 ? 0 : 1;
         _displayManager.MoveWindowToScreen(this, _currentMonitorIndex, maximize: false);
         UpdateMonitorButtonText();
+
+        if (_configService != null)
+        {
+            _configService.TimerTargetMonitorIndex = _currentMonitorIndex;
+            _configService.SaveTimerSettings();
+        }
     }
+
+    private bool _hasPlayedEndChime = false;
 
     private void Timer_Tick(object? sender, EventArgs e)
     {
-        if (_remainingSeconds > 0)
-        {
-            _remainingSeconds--;
-            UpdateDisplay();
+        _remainingSeconds--;
+        UpdateDisplay();
 
-            if (_remainingSeconds == 0)
+        if (_remainingSeconds == 0 && !_hasPlayedEndChime)
+        {
+            _hasPlayedEndChime = true;
+            try
             {
-                _timer.Stop();
-                _isRunning = false;
-                BtnStartPause.Content = "▶ 시작";
                 _soundService.PlayChime();
-                MessageBox.Show("시간이 모두 종료되었습니다!", "타이머 종료", MessageBoxButton.OK, MessageBoxImage.Information);
             }
+            catch { }
         }
     }
 
     private void UpdateDisplay()
     {
-        int min = _remainingSeconds / 60;
-        int sec = _remainingSeconds % 60;
-        TxtTime.Text = $"{min:D2}:{sec:D2}";
-
-        if (!_isRunning && TbMinutes != null && TbSeconds != null)
+        if (_remainingSeconds >= 0)
         {
-            TbMinutes.Text = $"{min:D2}";
-            TbSeconds.Text = $"{sec:D2}";
+            int min = _remainingSeconds / 60;
+            int sec = _remainingSeconds % 60;
+            TxtTime.Text = $"{min:D2}:{sec:D2}";
+            TxtTime.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#38BDF8"));
+            if (TxtOverdueTime != null)
+            {
+                TxtOverdueTime.Visibility = Visibility.Collapsed;
+            }
+
+            if (TxtPieTime != null)
+            {
+                TxtPieTime.Text = $"{min:D2}:{sec:D2}";
+                TxtPieTime.Foreground = Brushes.White;
+            }
+
+            if (!_isRunning && TbMinutes != null && TbSeconds != null)
+            {
+                TbMinutes.Text = $"{min:D2}";
+                TbSeconds.Text = $"{sec:D2}";
+            }
+        }
+        else
+        {
+            // Negative Overdue Time (e.g. 0:00 and (-0:55) in bold red)
+            int overdueSec = Math.Abs(_remainingSeconds);
+            int oMin = overdueSec / 60;
+            int oSec = overdueSec % 60;
+
+            TxtTime.Text = "0:00";
+            TxtTime.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#EF4444"));
+
+            if (TxtOverdueTime != null)
+            {
+                TxtOverdueTime.Text = $"(-{oMin}:{oSec:D2})";
+                TxtOverdueTime.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#EF4444"));
+                TxtOverdueTime.Visibility = Visibility.Visible;
+            }
+
+            if (TxtPieTime != null)
+            {
+                TxtPieTime.Text = $"0:00\n(-{oMin}:{oSec:D2})";
+                TxtPieTime.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#EF4444"));
+            }
         }
 
         UpdatePieGeometry();
@@ -104,6 +158,7 @@ public partial class ClassroomTimerWindow : Window
             int total = Math.Max(1, m * 60 + s);
             _timer.Stop();
             _isRunning = false;
+            _hasPlayedEndChime = false;
             BtnStartPause.Content = "▶ 시작";
             _initialSeconds = total;
             _remainingSeconds = total;
@@ -123,8 +178,9 @@ public partial class ClassroomTimerWindow : Window
     {
         if (sender is Button btn && btn.Tag is string deltaStr && int.TryParse(deltaStr, out int delta))
         {
-            _remainingSeconds = Math.Max(0, _remainingSeconds + delta);
+            _remainingSeconds += delta;
             _initialSeconds = Math.Max(_initialSeconds, _remainingSeconds);
+            if (_remainingSeconds > 0) _hasPlayedEndChime = false;
             UpdateDisplay();
         }
     }
@@ -139,7 +195,7 @@ public partial class ClassroomTimerWindow : Window
         }
         else
         {
-            if (_remainingSeconds <= 0)
+            if (_remainingSeconds == 0 && !_hasPlayedEndChime)
             {
                 _remainingSeconds = _initialSeconds;
             }
@@ -153,6 +209,7 @@ public partial class ClassroomTimerWindow : Window
     {
         _timer.Stop();
         _isRunning = false;
+        _hasPlayedEndChime = false;
         _remainingSeconds = _initialSeconds;
         BtnStartPause.Content = "▶ 시작";
         UpdateDisplay();
@@ -164,6 +221,7 @@ public partial class ClassroomTimerWindow : Window
         {
             _timer.Stop();
             _isRunning = false;
+            _hasPlayedEndChime = false;
             BtnStartPause.Content = "▶ 시작";
             _initialSeconds = mins * 60;
             _remainingSeconds = _initialSeconds;
@@ -178,7 +236,7 @@ public partial class ClassroomTimerWindow : Window
         if (PanelPieView != null) PanelPieView.Visibility = _isPieMode ? Visibility.Visible : Visibility.Collapsed;
         if (BtnTogglePieMode != null)
         {
-            BtnTogglePieMode.Content = _isPieMode ? "⏱️ 숫자 시계 모드" : "🥧 파이 시계 모드";
+            BtnTogglePieMode.Content = _isPieMode ? "⏱️ 숫자 타이머" : "🥧 원형 타이머";
         }
         UpdatePieGeometry();
     }
