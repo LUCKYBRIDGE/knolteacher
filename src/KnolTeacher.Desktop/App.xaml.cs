@@ -185,15 +185,29 @@ public partial class App : Application
 
                             case "drawing":
                                 var screenDrawing = _host.Services.GetRequiredService<ScreenDrawingOverlayWindow>();
-                                if (screenDrawing.IsVisible)
+                                if (screenDrawing.IsVisible && !screenDrawing.IsBoardMode)
                                 {
                                     screenDrawing.CloseOverlay();
-                                    HudNotificationWindow.Instance.ShowToast("✏️", "화면 판서 종료 (ESC)");
+                                    HudNotificationWindow.Instance.ShowToast("🖼️", "화면 주석 판서 종료 (ESC)");
                                 }
                                 else
                                 {
                                     screenDrawing.FreezeAndShow();
-                                    HudNotificationWindow.Instance.ShowToast("✏️", "화면 전체 판서 시작 (Alt+2)");
+                                    HudNotificationWindow.Instance.ShowToast("🖼️", "화면 주석 판서 시작 (Alt+2)");
+                                }
+                                break;
+
+                            case "board_drawing":
+                                var boardDrawing = _host.Services.GetRequiredService<ScreenDrawingOverlayWindow>();
+                                if (boardDrawing.IsVisible && boardDrawing.IsBoardMode)
+                                {
+                                    boardDrawing.CloseOverlay();
+                                    HudNotificationWindow.Instance.ShowToast("🟩", "수업 칠판 보드판 닫기 (ESC)");
+                                }
+                                else
+                                {
+                                    boardDrawing.ShowBoardMode("chalkboard");
+                                    HudNotificationWindow.Instance.ShowToast("🟩", "수업 칠판 보드판 시작 (Alt+4)");
                                 }
                                 break;
 

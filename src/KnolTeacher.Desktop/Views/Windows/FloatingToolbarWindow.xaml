@@ -184,12 +184,21 @@
                     </StackPanel>
                 </Button>
 
-                <!-- 2. Drawing (Alt+2) -->
-                <Button x:Name="BtnDraw" Style="{StaticResource DockButtonStyle}" Click="BtnDraw_Click" ToolTip="화면 전체 판서 (Alt+2)">
+                <!-- 2. Screen Drawing (Alt+2) -->
+                <Button x:Name="BtnDrawScreen" Style="{StaticResource DockButtonStyle}" Click="BtnDrawScreen_Click" ToolTip="화면 위 주석 판서 (Alt+2)">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock Text="✏️ " FontSize="11"/>
-                        <TextBlock Text="판서"/>
-                        <Ellipse x:Name="DotDraw" Width="6" Height="6" Fill="#22C55E" Margin="4,0,0,0" VerticalAlignment="Center" Visibility="Collapsed"/>
+                        <TextBlock Text="🖼️ " FontSize="11"/>
+                        <TextBlock Text="화면판서"/>
+                        <Ellipse x:Name="DotDrawScreen" Width="6" Height="6" Fill="#22C55E" Margin="4,0,0,0" VerticalAlignment="Center" Visibility="Collapsed"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- 3. Board Drawing (Alt+4) -->
+                <Button x:Name="BtnDrawBoard" Style="{StaticResource DockButtonStyle}" Click="BtnDrawBoard_Click" ToolTip="수업 칠판 보드판 (Alt+4)">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="🟩 " FontSize="11"/>
+                        <TextBlock Text="칠판보드"/>
+                        <Ellipse x:Name="DotDrawBoard" Width="6" Height="6" Fill="#10B981" Margin="4,0,0,0" VerticalAlignment="Center" Visibility="Collapsed"/>
                     </StackPanel>
                 </Button>
 

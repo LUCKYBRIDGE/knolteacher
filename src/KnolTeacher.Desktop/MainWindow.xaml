@@ -286,13 +286,26 @@
 
                             <Border Width="1" Height="14" Background="{DynamicResource BeigeCardBorder}" Margin="4,0" VerticalAlignment="Center"/>
 
-                            <!-- 판서 Alt+2 -->
-                            <Button Click="BtnLaunchDrawing_Click" Background="Transparent" Foreground="{DynamicResource BeigeTextMain}" BorderThickness="0" Padding="10,5" Cursor="Hand" ToolTip="화면 일시정지 및 판서 모드 (Alt+2)">
+                            <!-- 화면판서 Alt+2 -->
+                            <Button Click="BtnLaunchDrawing_Click" Background="Transparent" Foreground="{DynamicResource BeigeTextMain}" BorderThickness="0" Padding="10,5" Cursor="Hand" ToolTip="현재 화면 일시정지 및 화면 위 주석 판서 (Alt+2)">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="✏️" FontSize="12" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="판서" FontWeight="Bold" FontSize="12" VerticalAlignment="Center"/>
+                                    <TextBlock Text="🖼️" FontSize="12" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="화면판서" FontWeight="Bold" FontSize="12" VerticalAlignment="Center"/>
                                     <Border Background="#F1F5F9" CornerRadius="4" Padding="5,1" Margin="6,0,0,0" VerticalAlignment="Center">
                                         <TextBlock Text="Alt+2" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource BeigeTextSub}"/>
+                                    </Border>
+                                </StackPanel>
+                            </Button>
+
+                            <Border Width="1" Height="14" Background="{DynamicResource BeigeCardBorder}" Margin="4,0" VerticalAlignment="Center"/>
+
+                            <!-- 칠판보드 Alt+4 -->
+                            <Button Click="BtnLaunchBoardDrawing_Click" Background="Transparent" Foreground="{DynamicResource BeigeTextMain}" BorderThickness="0" Padding="10,5" Cursor="Hand" ToolTip="깨끗한 수업 전자칠판 보드판 열기 (Alt+4)">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="🟩" FontSize="12" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="칠판보드" FontWeight="Bold" FontSize="12" VerticalAlignment="Center"/>
+                                    <Border Background="#F1F5F9" CornerRadius="4" Padding="5,1" Margin="6,0,0,0" VerticalAlignment="Center">
+                                        <TextBlock Text="Alt+4" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource BeigeTextSub}"/>
                                     </Border>
                                 </StackPanel>
                             </Button>
@@ -1142,14 +1155,42 @@
                                                         <TextBlock Text="Alt+2" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource BeigeAccent}"/>
                                                     </Border>
                                                     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,4,0,0">
-                                                        <TextBlock Text="✏️" FontSize="34" HorizontalAlignment="Center" Margin="0,0,0,6"/>
-                                                        <TextBlock Text="스마트 화면 &amp; 칠판 판서" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
-                                                        <TextBlock Text="화면 캡처 주석 • 칠판 • 화이트보드 • 교구" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                                                        <TextBlock Text="🖼️" FontSize="34" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                                                        <TextBlock Text="스마트 화면 주석 판서" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
+                                                        <TextBlock Text="현재 화면 캡처 위 자유 펜 주석 및 교구" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,3,0,0"/>
                                                     </StackPanel>
                                                 </Grid>
                                             </Border>
 
-                                            <!-- Tool 2: Class Timer [Alt+3] -->
+                                            <!-- Tool 2: Board Drawing [Alt+4] -->
+                                            <Border Margin="4" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="14,12" Cursor="Hand" MouseLeftButtonUp="BtnLaunchBoardDrawing_Click">
+                                                <Grid>
+                                                    <Border HorizontalAlignment="Right" VerticalAlignment="Top" Background="{DynamicResource BeigeAccentSoft}" CornerRadius="4" Padding="6,2">
+                                                        <TextBlock Text="Alt+4" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource BeigeAccent}"/>
+                                                    </Border>
+                                                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,4,0,0">
+                                                        <TextBlock Text="🟩" FontSize="34" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                                                        <TextBlock Text="수업 전자칠판 보드판" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
+                                                        <TextBlock Text="초록칠판 • 화이트보드 • 모눈 수업 보드" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
+
+                                            <!-- Tool 3: Board [F2] -->
+                                            <Border Margin="4" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="14,12" Cursor="Hand" MouseLeftButtonUp="BtnLaunchBoard_Click">
+                                                <Grid>
+                                                    <Border HorizontalAlignment="Right" VerticalAlignment="Top" Background="{DynamicResource BeigeAccentSoft}" CornerRadius="4" Padding="6,2">
+                                                        <TextBlock Text="F2" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource BeigeAccent}"/>
+                                                    </Border>
+                                                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,4,0,0">
+                                                        <TextBlock Text="📋" FontSize="34" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                                                        <TextBlock Text="놀보드 (학생 화면)" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
+                                                        <TextBlock Text="모니터 2 전용 수업 대시보드 &amp; 알림판" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
+
+                                            <!-- Tool 4: Class Timer [Alt+3] -->
                                             <Border Margin="4" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="14,12" Cursor="Hand" MouseLeftButtonUp="BtnLaunchTimer_Click">
                                                 <Grid>
                                                     <Border HorizontalAlignment="Right" VerticalAlignment="Top" Background="{DynamicResource BeigeAccentSoft}" CornerRadius="4" Padding="6,2">
@@ -1163,7 +1204,7 @@
                                                 </Grid>
                                             </Border>
 
-                                            <!-- Tool 3: Picker Race [Alt+8] -->
+                                            <!-- Tool 5: Picker Race [Alt+8] -->
                                             <Border Margin="4" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="14,12" Cursor="Hand" MouseLeftButtonUp="BtnLaunchPicker_Click">
                                                 <Grid>
                                                     <Border HorizontalAlignment="Right" VerticalAlignment="Top" Background="{DynamicResource BeigeAccentSoft}" CornerRadius="4" Padding="6,2">
@@ -1177,41 +1218,13 @@
                                                 </Grid>
                                             </Border>
 
-                                            <!-- Tool 4: Visualizer -->
+                                            <!-- Tool 6: Visualizer -->
                                             <Border Margin="4" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="14,12" Cursor="Hand" MouseLeftButtonUp="BtnLaunchVisualizer_Click">
                                                 <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
                                                     <TextBlock Text="📷" FontSize="34" HorizontalAlignment="Center" Margin="0,0,0,6"/>
                                                     <TextBlock Text="스마트 실물화상기" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
-                                                    <TextBlock Text="화면 꺼짐 방지 &amp; 웹캠 자동 연결" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                                                    <TextBlock Text="화면 꺼짐 방지 &amp; 초점 조절 &amp; 웹캠 연결" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,3,0,0"/>
                                                 </StackPanel>
-                                            </Border>
-
-                                            <!-- Tool 5: Floating Dock [Alt+9] -->
-                                            <Border Margin="4" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="14,12" Cursor="Hand" MouseLeftButtonUp="BtnLaunchDock_Click">
-                                                <Grid>
-                                                    <Border HorizontalAlignment="Right" VerticalAlignment="Top" Background="{DynamicResource BeigeAccentSoft}" CornerRadius="4" Padding="6,2">
-                                                        <TextBlock Text="Alt+9" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource BeigeAccent}"/>
-                                                    </Border>
-                                                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,4,0,0">
-                                                        <TextBlock Text="🏝️" FontSize="34" HorizontalAlignment="Center" Margin="0,0,0,6"/>
-                                                        <TextBlock Text="화면 상단 도구바" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
-                                                        <TextBlock Text="화면 상단 미니 플로팅 툴바" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,3,0,0"/>
-                                                    </StackPanel>
-                                                </Grid>
-                                            </Border>
-
-                                            <!-- Tool 6: Board [F2] -->
-                                            <Border Margin="4" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="14,12" Cursor="Hand" MouseLeftButtonUp="BtnLaunchBoard_Click">
-                                                <Grid>
-                                                    <Border HorizontalAlignment="Right" VerticalAlignment="Top" Background="{DynamicResource BeigeAccentSoft}" CornerRadius="4" Padding="6,2">
-                                                        <TextBlock Text="F2" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource BeigeAccent}"/>
-                                                    </Border>
-                                                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,4,0,0">
-                                                        <TextBlock Text="📋" FontSize="34" HorizontalAlignment="Center" Margin="0,0,0,6"/>
-                                                        <TextBlock Text="놀보드 (학생 화면)" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
-                                                        <TextBlock Text="모니터 2 전용 수업 대시보드 &amp; 알림판" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,3,0,0"/>
-                                                    </StackPanel>
-                                                </Grid>
                                             </Border>
                                         </UniformGrid>
                                     </StackPanel>
@@ -1277,13 +1290,18 @@
                                                 </StackPanel>
                                             </Border>
 
-                                            <!-- Tool 12: Period Alarm Settings -->
-                                            <Border Margin="4" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="14,12" Cursor="Hand" MouseLeftButtonUp="BtnOpenPeriodAlarmSettings_Click">
-                                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                                    <TextBlock Text="⏰" FontSize="34" HorizontalAlignment="Center" Margin="0,0,0,6"/>
-                                                    <TextBlock Text="수업 예비령 설정" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
-                                                    <TextBlock Text="교시 시작 전 대형 카운트다운 &amp; 알람" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,3,0,0"/>
-                                                </StackPanel>
+                                            <!-- Tool 12: Floating Dock [Alt+9] -->
+                                            <Border Margin="4" Background="{DynamicResource BeigeCardBg}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" CornerRadius="12" Padding="14,12" Cursor="Hand" MouseLeftButtonUp="BtnLaunchDock_Click">
+                                                <Grid>
+                                                    <Border HorizontalAlignment="Right" VerticalAlignment="Top" Background="{DynamicResource BeigeAccentSoft}" CornerRadius="4" Padding="6,2">
+                                                        <TextBlock Text="Alt+9" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource BeigeAccent}"/>
+                                                    </Border>
+                                                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,4,0,0">
+                                                        <TextBlock Text="🏝️" FontSize="34" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                                                        <TextBlock Text="화면 상단 도구바" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource BeigeTextMain}" HorizontalAlignment="Center"/>
+                                                        <TextBlock Text="화면 상단 미니 플로팅 툴바" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                                                    </StackPanel>
+                                                </Grid>
                                             </Border>
                                         </UniformGrid>
                                     </StackPanel>
