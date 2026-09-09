@@ -14,7 +14,7 @@ public interface IAcademicCalendarService
     Task<List<AcademicScheduleItem>> GetFullYearScheduleAsync(int? academicYear = null, bool forceRefresh = false);
     Task<List<AcademicScheduleItem>> GetScheduleForMonthAsync(int year, int month, bool forceRefresh = false);
     Task<List<AcademicScheduleItem>> GetUpcomingDDayEventsAsync(int limit = 4);
-    List<CalendarDayCell> GenerateMonthGrid(int year, int month, List<AcademicScheduleItem> events, DateTime? selectedDate = null);
+    List<CalendarDayCell> GenerateMonthGrid(int year, int month, List<AcademicScheduleItem> events, DateTime? selectedDate = null, List<TeacherCalendarEvent>? teacherEvents = null);
 }
 
 public class AcademicCalendarService : IAcademicCalendarService
@@ -176,7 +176,7 @@ public class AcademicCalendarService : IAcademicCalendarService
         return upcoming;
     }
 
-    public List<CalendarDayCell> GenerateMonthGrid(int year, int month, List<AcademicScheduleItem> events, DateTime? selectedDate = null)
+    public List<CalendarDayCell> GenerateMonthGrid(int year, int month, List<AcademicScheduleItem> events, DateTime? selectedDate = null, List<TeacherCalendarEvent>? teacherEvents = null)
     {
         var cells = new List<CalendarDayCell>();
         var firstDayOfMonth = new DateTime(year, month, 1);
@@ -192,11 +192,14 @@ public class AcademicCalendarService : IAcademicCalendarService
         for (int i = startDayOfWeek - 1; i >= 0; i--)
         {
             var date = new DateTime(prevMonth.Year, prevMonth.Month, daysInPrevMonth - i);
+            string isoDate = date.ToString("yyyy-MM-dd");
+            var tEvents = teacherEvents?.Where(t => t.Date == isoDate).ToList() ?? new();
             cells.Add(new CalendarDayCell
             {
                 Date = date,
                 IsCurrentMonth = false,
-                IsSelected = selectedDate.HasValue && selectedDate.Value.Date == date.Date
+                IsSelected = selectedDate.HasValue && selectedDate.Value.Date == date.Date,
+                TeacherEvents = tEvents
             });
         }
 
@@ -205,14 +208,17 @@ public class AcademicCalendarService : IAcademicCalendarService
         {
             var date = new DateTime(year, month, d);
             string dateKey = date.ToString("yyyyMMdd");
+            string isoDate = date.ToString("yyyy-MM-dd");
             var dayEvents = events.Where(e => e.RawDate == dateKey).ToList();
+            var tEvents = teacherEvents?.Where(t => t.Date == isoDate).ToList() ?? new();
 
             cells.Add(new CalendarDayCell
             {
                 Date = date,
                 IsCurrentMonth = true,
                 IsSelected = selectedDate.HasValue && selectedDate.Value.Date == date.Date,
-                Events = dayEvents
+                Events = dayEvents,
+                TeacherEvents = tEvents
             });
         }
 
@@ -224,11 +230,14 @@ public class AcademicCalendarService : IAcademicCalendarService
         for (int d = 1; d <= remaining; d++)
         {
             var date = new DateTime(nextMonth.Year, nextMonth.Month, d);
+            string isoDate = date.ToString("yyyy-MM-dd");
+            var tEvents = teacherEvents?.Where(t => t.Date == isoDate).ToList() ?? new();
             cells.Add(new CalendarDayCell
             {
                 Date = date,
                 IsCurrentMonth = false,
-                IsSelected = selectedDate.HasValue && selectedDate.Value.Date == date.Date
+                IsSelected = selectedDate.HasValue && selectedDate.Value.Date == date.Date,
+                TeacherEvents = tEvents
             });
         }
 

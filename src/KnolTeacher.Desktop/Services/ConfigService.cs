@@ -22,6 +22,7 @@ public interface IConfigService
     MainWidgetLayoutConfig MainWidgetLayout { get; set; }
     NolboardLayoutConfig NolboardLayout { get; set; }
     DDayConfig DDayConfig { get; set; }
+    List<TeacherCalendarEvent> TeacherCalendarEvents { get; set; }
     string? LastSeenTutorialVersion { get; set; }
     StorageConfig StorageConfig { get; set; }
     string GetEffectiveSaveDirectory();
@@ -41,6 +42,7 @@ public interface IConfigService
     void SaveMainWidgetLayout();
     void SaveNolboardLayout();
     void SaveDDayConfig();
+    void SaveTeacherCalendarEvents();
     void SaveTutorialVersion();
 }
 
@@ -66,6 +68,7 @@ public class ConfigService : IConfigService
     public MainWidgetLayoutConfig MainWidgetLayout { get; set; } = MainWidgetLayoutConfig.CreateDefault();
     public NolboardLayoutConfig NolboardLayout { get; set; } = new();
     public DDayConfig DDayConfig { get; set; } = new();
+    public List<TeacherCalendarEvent> TeacherCalendarEvents { get; set; } = new();
     public string? LastSeenTutorialVersion { get; set; }
     public StorageConfig StorageConfig { get; set; } = new();
 
@@ -96,6 +99,7 @@ public class ConfigService : IConfigService
         LoadMainWidgetLayout();
         LoadNolboardLayout();
         LoadDDayConfig();
+        LoadTeacherCalendarEvents();
         LoadTutorialVersion();
         LoadStorageConfig();
     }
@@ -608,6 +612,33 @@ public class ConfigService : IConfigService
         {
             string path = Path.Combine(ConfigDir, "storage_config.json");
             string json = JsonSerializer.Serialize(StorageConfig, _jsonOptions);
+            File.WriteAllText(path, json);
+        }
+        catch { }
+    }
+
+    private void LoadTeacherCalendarEvents()
+    {
+        string path = Path.Combine(ConfigDir, "calendar_events.json");
+        if (File.Exists(path))
+        {
+            try
+            {
+                string json = File.ReadAllText(path);
+                TeacherCalendarEvents = JsonSerializer.Deserialize<List<TeacherCalendarEvent>>(json, _jsonOptions) ?? new();
+                return;
+            }
+            catch { }
+        }
+        TeacherCalendarEvents = new();
+    }
+
+    public void SaveTeacherCalendarEvents()
+    {
+        try
+        {
+            string path = Path.Combine(ConfigDir, "calendar_events.json");
+            string json = JsonSerializer.Serialize(TeacherCalendarEvents, _jsonOptions);
             File.WriteAllText(path, json);
         }
         catch { }
