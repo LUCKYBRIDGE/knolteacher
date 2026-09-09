@@ -8,7 +8,7 @@
         xmlns:controls="clr-namespace:KnolTeacher.Desktop.Views.Controls"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance vm:MainViewModel}"
-        Title="놀티쳐 (KnolTeacher v3.0.0 - 스마트 교사용 올인원 도구)"
+        Title="메인화면"
         Icon="/assets/app_icon.ico"
         Height="960" Width="1680"
         MinHeight="800" MinWidth="1280"
@@ -176,7 +176,7 @@
         </Grid.RowDefinitions>
 
         <!-- Top Title Bar -->
-        <ui:TitleBar Grid.Row="0" Title="놀티쳐 (KnolTeacher v3.0.0)">
+        <ui:TitleBar x:Name="AppTitleBar" Grid.Row="0" Title="메인화면">
             <ui:TitleBar.Header>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,0,0">
                     <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="8,3" Margin="0,0,8,0" Cursor="Hand" MouseLeftButtonUp="BtnLaunchSchoolScale_Click" ToolTip="클릭하여 내 기본 학교 변경 및 전국 학교 규모 통계 조회">
@@ -371,7 +371,7 @@
 
             <!-- 2. Workspace: TabControl with Tab 0 Bento Grid and Tabs 1-5 -->
             <Grid Grid.Row="1">
-                <TabControl x:Name="MainTabs" BorderThickness="0" Background="Transparent">
+                <TabControl x:Name="MainTabs" BorderThickness="0" Background="Transparent" SelectionChanged="MainTabs_SelectionChanged">
                     <TabControl.ItemContainerStyle>
                         <Style TargetType="TabItem"><Setter Property="Visibility" Value="Collapsed" /></Style>
                     </TabControl.ItemContainerStyle>

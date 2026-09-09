@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="🌱 뽑기 레이스 (Alt+8)" Height="740" Width="1220"
+        Title="뽑기 레이스" Height="740" Width="1220"
         MinHeight="620" MinWidth="960"
         Topmost="True"
         Icon="/assets/app_icon.ico"

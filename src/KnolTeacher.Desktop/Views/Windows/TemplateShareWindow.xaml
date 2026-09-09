@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="📋 놀티쳐 데이터 양식 다운로드 &amp; 공유 센터"
+        Title="서식 양식 다운로드 &amp; 공유"
         Height="680" Width="880"
         MinWidth="780" MinHeight="580"
         WindowStartupLocation="CenterOwner"

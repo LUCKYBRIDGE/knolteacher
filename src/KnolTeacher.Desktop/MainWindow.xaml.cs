@@ -148,6 +148,7 @@ public partial class MainWindow : FluentWindow
         _templateShareWindow.DataChanged += OnExternalDataChanged;
 
         InitializeComponent();
+        UpdateWindowTitle(0);
 
         _statusTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(10) };
         _statusTimer.Tick += (s, e) => UpdatePeriodStatus();
@@ -884,6 +885,34 @@ public partial class MainWindow : FluentWindow
                 else if (index == 4) { NavBtnSites.Background = (Brush)FindResource("BeigeAccentSoft"); NavBtnSites.Foreground = accentBrush; TxtViewTitle.Text = "🌐 유용한 교육 사이트"; }
                 else if (index == 5) { NavBtnNeis.Background = (Brush)FindResource("BeigeAccentSoft"); NavBtnNeis.Foreground = accentBrush; TxtViewTitle.Text = "📝 나이스 평어 일괄입력"; }
             }
+        }
+    }
+
+    private void MainTabs_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (e.Source == MainTabs)
+        {
+            UpdateWindowTitle(MainTabs.SelectedIndex);
+        }
+    }
+
+    private void UpdateWindowTitle(int tabIndex)
+    {
+        string screenTitle = tabIndex switch
+        {
+            0 => "메인화면",
+            1 => "수업 & 교실 도구",
+            2 => "예약 실행 & 알림",
+            3 => "바탕화면 & PC 정리",
+            4 => "교육 사이트 모음",
+            5 => "나이스 평어 일괄입력",
+            _ => "메인화면"
+        };
+
+        this.Title = screenTitle;
+        if (AppTitleBar != null)
+        {
+            AppTitleBar.Title = screenTitle;
         }
     }
 

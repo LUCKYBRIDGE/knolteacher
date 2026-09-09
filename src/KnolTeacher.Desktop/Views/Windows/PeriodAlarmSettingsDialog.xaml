@@ -1,7 +1,7 @@
 <Window x:Class="KnolTeacher.Desktop.Views.Windows.PeriodAlarmSettingsDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="🔔 수업 시작 전 예비령 &amp; 대형 카운트다운 타이머 설정"
+        Title="예비령 &amp; 타이머 설정"
         Height="700" Width="820"
         MinHeight="580" MinWidth="720"
         WindowStartupLocation="CenterOwner"

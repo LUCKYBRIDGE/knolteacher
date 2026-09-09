@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="놀보드 (학생용 올인원 전자칠판)" Height="850" Width="1350"
+        Title="놀보드" Height="850" Width="1350"
         Icon="/assets/board_icon.ico"
         WindowStartupLocation="Manual"
         Background="#0B0F19">

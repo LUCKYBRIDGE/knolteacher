@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="🔔 원터치 교실 효과음 사운드보드 - 놀티쳐"
+        Title="교실 효과음 사운드보드"
         Height="510" Width="630"
         MinWidth="560" MinHeight="460"
         WindowStartupLocation="CenterScreen"

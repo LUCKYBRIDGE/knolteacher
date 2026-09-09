@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="🚦 교실 소음 신호등 - 놀티쳐"
+        Title="교실 소음 신호등"
         Height="720" Width="560"
         MinWidth="460" MinHeight="600"
         WindowStartupLocation="CenterScreen"

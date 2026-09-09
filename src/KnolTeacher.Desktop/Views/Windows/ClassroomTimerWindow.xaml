@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="⏱️ 교실 집중 타이머 (Alt+3)" Height="490" Width="540"
+        Title="교실 타이머" Height="490" Width="540"
         MinHeight="460" MinWidth="520"
         WindowStartupLocation="Manual"
         Topmost="True"

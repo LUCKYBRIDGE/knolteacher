@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="🔏 전자서명 &amp; 도장·직인 생성기 - 놀티쳐"
+        Title="전자서명 &amp; 직인 생성기"
         Height="620" Width="800"
         MinWidth="720" MinHeight="540"
         WindowStartupLocation="CenterScreen"

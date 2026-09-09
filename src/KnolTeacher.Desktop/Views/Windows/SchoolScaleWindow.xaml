@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
         mc:Ignorable="d"
-        Title="🏫 전국 학교 규모·통계 조회기 - 놀티쳐"
+        Title="전국 학교 규모·통계"
         Height="700" Width="920"
         MinWidth="800" MinHeight="580"
         WindowStartupLocation="CenterScreen"

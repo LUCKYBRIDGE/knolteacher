@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
-        Title="📷 스마트 실물화상기 (Knol Visualizer)" Height="700" Width="1000"
+        Title="실물화상기" Height="700" Width="1000"
         WindowStartupLocation="Manual"
         Icon="/assets/app_icon.ico"
         Background="#0F172A">
