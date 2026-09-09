@@ -62,19 +62,7 @@ public static class SafeLocalFileStore
 
         try
         {
-            using (var stream = new FileStream(
-                       tempPath,
-                       FileMode.CreateNew,
-                       FileAccess.Write,
-                       FileShare.None,
-                       4096,
-                       FileOptions.WriteThrough))
-            using (var writer = new StreamWriter(stream, encoding, 4096, leaveOpen: true))
-            {
-                writer.Write(content);
-                writer.Flush();
-                stream.Flush(flushToDisk: true);
-            }
+            WriteTempFile(tempPath, content, encoding);
 
             if (File.Exists(path))
             {
@@ -92,10 +80,72 @@ public static class SafeLocalFileStore
         }
     }
 
+    /// <summary>
+    /// Restores the primary file from its known-good .bak copy without overwriting that backup.
+    /// The displaced invalid primary is deleted after a successful atomic replacement.
+    /// </summary>
+    public static bool TryRestorePrimaryFromBackup(string path)
+    {
+        string backupPath = BackupPath(path);
+        if (!File.Exists(backupPath)) return false;
+
+        string tempPath = path + $".restore.{Guid.NewGuid():N}";
+        string displacedPath = path + $".invalid.{Guid.NewGuid():N}";
+
+        try
+        {
+            byte[] backupBytes = File.ReadAllBytes(backupPath);
+            using (var stream = new FileStream(
+                       tempPath,
+                       FileMode.CreateNew,
+                       FileAccess.Write,
+                       FileShare.None,
+                       4096,
+                       FileOptions.WriteThrough))
+            {
+                stream.Write(backupBytes, 0, backupBytes.Length);
+                stream.Flush(flushToDisk: true);
+            }
+
+            if (File.Exists(path))
+            {
+                File.Replace(tempPath, path, displacedPath, ignoreMetadataErrors: true);
+                TryDelete(displacedPath);
+            }
+            else
+            {
+                File.Move(tempPath, path);
+            }
+
+            return true;
+        }
+        catch
+        {
+            TryDelete(tempPath);
+            TryDelete(displacedPath);
+            return false;
+        }
+    }
+
     public static void DeletePrimaryAndBackup(string path)
     {
         TryDelete(path);
         TryDelete(BackupPath(path));
+    }
+
+    private static void WriteTempFile(string tempPath, string content, Encoding encoding)
+    {
+        using var stream = new FileStream(
+            tempPath,
+            FileMode.CreateNew,
+            FileAccess.Write,
+            FileShare.None,
+            4096,
+            FileOptions.WriteThrough);
+        using var writer = new StreamWriter(stream, encoding, 4096, leaveOpen: true);
+        writer.Write(content);
+        writer.Flush();
+        stream.Flush(flushToDisk: true);
     }
 
     private static void TryDelete(string path)
