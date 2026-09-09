@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Threading;
 using KnolTeacher.Desktop.Services;
+using KnolTeacher.Desktop.Views.Controls;
 
 namespace KnolTeacher.Desktop.Views.Controls.Widgets;
 
