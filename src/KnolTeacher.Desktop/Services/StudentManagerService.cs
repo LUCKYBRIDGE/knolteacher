@@ -223,7 +223,8 @@ public class StudentManagerService : IStudentManagerService
             SafeLocalFileStore.WriteAllTextAtomic(
                 path,
                 json,
-                preserveExistingBackup: _preserveBackupOnNextSave);
+                preserveExistingBackup: _preserveBackupOnNextSave,
+                scrubPreviousContent: !PersistPersonalDetails);
             _preserveBackupOnNextSave = false;
         }
         catch (Exception ex)
