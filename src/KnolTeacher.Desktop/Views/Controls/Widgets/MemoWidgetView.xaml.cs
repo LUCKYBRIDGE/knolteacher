@@ -4,11 +4,12 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
 using KnolTeacher.Desktop.Services;
+using KnolTeacher.Desktop.Views.Controls;
 using KnolTeacher.Desktop.Views.Windows;
 
 namespace KnolTeacher.Desktop.Views.Controls.Widgets;
 
-public partial class MemoWidgetView : UserControl
+public partial class MemoWidgetView : UserControl, IWidgetLifecycle
 {
     public static event Action<string, object?>? OnNoticeChanged;
 
@@ -17,58 +18,124 @@ public partial class MemoWidgetView : UserControl
         OnNoticeChanged?.Invoke(newText, sender);
     }
 
+    private const string DefaultMemo = "• [알림] 오늘 5교시는 음악실에서 수업합니다.\n• [준비물] 수학익힘책 42쪽 풀어오기\n• [과제] 주말 독서록 작성하기";
+
     private readonly IConfigService? _configService;
     private readonly ITtsService? _ttsService;
-    private readonly ITimetableService? _timetableService;
     private readonly string _memoFile;
     private readonly DispatcherTimer _autoNoticeTimer;
     private string _lastAutoNoticeSlot = string.Empty;
+    private bool _isActive = false;
+    private bool _disposed = false;
+    private bool _suppressNoticeBroadcast = false;
 
     public MemoWidgetView(IConfigService? configService = null, ITtsService? ttsService = null, ITimetableService? timetableService = null)
     {
         InitializeComponent();
         _configService = configService;
         _ttsService = ttsService ?? (Application.Current as App)?.Services?.GetService(typeof(ITtsService)) as ITtsService;
-        _timetableService = timetableService ?? (Application.Current as App)?.Services?.GetService(typeof(ITimetableService)) as ITimetableService;
 
         string dir = _configService?.ConfigDir ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".knol_teacher_desk");
         _memoFile = Path.Combine(dir, "board_memo.txt");
 
-        Loaded += (s, e) =>
+        TbMemo.TextChanged += TbMemo_TextChanged;
+
+        _autoNoticeTimer = new DispatcherTimer { Interval = TimeSpan.FromMinutes(1) };
+        _autoNoticeTimer.Tick += AutoNoticeTimer_Tick;
+    }
+
+    public void Activate()
+    {
+        if (_disposed || _isActive) return;
+
+        _isActive = true;
+        OnNoticeChanged += HandleNoticeChanged;
+        LoadMemoFromDisk();
+        _autoNoticeTimer.Start();
+    }
+
+    public void Deactivate()
+    {
+        if (_disposed || !_isActive) return;
+
+        _autoNoticeTimer.Stop();
+        OnNoticeChanged -= HandleNoticeChanged;
+        _isActive = false;
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+
+        Deactivate();
+        _autoNoticeTimer.Stop();
+        _autoNoticeTimer.Tick -= AutoNoticeTimer_Tick;
+        TbMemo.TextChanged -= TbMemo_TextChanged;
+        OnNoticeChanged -= HandleNoticeChanged;
+        _disposed = true;
+    }
+
+    private void LoadMemoFromDisk()
+    {
+        _suppressNoticeBroadcast = true;
+        try
         {
             if (File.Exists(_memoFile))
             {
-                try { TbMemo.Text = File.ReadAllText(_memoFile); } catch { }
-            }
-            else
-            {
-                TbMemo.Text = "• [알림] 오늘 5교시는 음악실에서 수업합니다.\n• [준비물] 수학익힘책 42쪽 풀어오기\n• [과제] 주말 독서록 작성하기";
-            }
-        };
-
-        TbMemo.TextChanged += (s, e) =>
-        {
-            try { File.WriteAllText(_memoFile, TbMemo.Text); } catch { }
-            NotifyNoticeChanged(TbMemo.Text, this);
-        };
-
-        OnNoticeChanged += (newText, sender) =>
-        {
-            if (sender != this)
-            {
-                Dispatcher.Invoke(() =>
+                try
                 {
-                    if (TbMemo.Text != newText)
+                    string saved = File.ReadAllText(_memoFile);
+                    if (TbMemo.Text != saved)
                     {
-                        TbMemo.Text = newText;
+                        TbMemo.Text = saved;
                     }
-                });
+                }
+                catch { }
             }
-        };
+            else if (string.IsNullOrWhiteSpace(TbMemo.Text))
+            {
+                TbMemo.Text = DefaultMemo;
+            }
+        }
+        finally
+        {
+            _suppressNoticeBroadcast = false;
+        }
+    }
 
-        _autoNoticeTimer = new DispatcherTimer { Interval = TimeSpan.FromMinutes(1) };
-        _autoNoticeTimer.Tick += (s, e) => CheckAutoNoticeTime();
-        _autoNoticeTimer.Start();
+    private void TbMemo_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (_suppressNoticeBroadcast) return;
+
+        try { File.WriteAllText(_memoFile, TbMemo.Text); } catch { }
+        NotifyNoticeChanged(TbMemo.Text, this);
+    }
+
+    private void HandleNoticeChanged(string newText, object? sender)
+    {
+        if (_disposed || !_isActive || ReferenceEquals(sender, this)) return;
+
+        _ = Dispatcher.BeginInvoke(() =>
+        {
+            if (_disposed || !_isActive) return;
+            if (TbMemo.Text != newText)
+            {
+                _suppressNoticeBroadcast = true;
+                try
+                {
+                    TbMemo.Text = newText;
+                }
+                finally
+                {
+                    _suppressNoticeBroadcast = false;
+                }
+            }
+        });
+    }
+
+    private void AutoNoticeTimer_Tick(object? sender, EventArgs e)
+    {
+        CheckAutoNoticeTime();
     }
 
     private void CheckAutoNoticeTime()
@@ -102,7 +169,6 @@ public partial class MemoWidgetView : UserControl
         if (!string.IsNullOrEmpty(currentSlot) && currentSlot != _lastAutoNoticeSlot && !string.IsNullOrWhiteSpace(noticeText))
         {
             _lastAutoNoticeSlot = currentSlot;
-            // Prepend or show auto notice banner if not already present
             if (!TbMemo.Text.Contains(noticeText))
             {
                 TbMemo.Text = $"[자동 공지] {noticeText}\n" + TbMemo.Text;
