@@ -19,6 +19,8 @@ public partial class BoardWidgetHost : UserControl
     private bool _isDragging = false;
     private Point _dragStartPoint;
     private bool _isLocked = false;
+    private bool _isContentActive = false;
+    private bool _isContentDisposed = false;
 
     public bool IsLocked
     {
@@ -48,14 +50,99 @@ public partial class BoardWidgetHost : UserControl
     public object WidgetContent
     {
         get => HostContentPresenter.Content;
-        set => HostContentPresenter.Content = value;
+        set
+        {
+            if (ReferenceEquals(HostContentPresenter.Content, value)) return;
+
+            DisposeContent();
+            HostContentPresenter.Content = value;
+            _isContentDisposed = false;
+            _isContentActive = false;
+
+            if (IsLoaded && IsVisible)
+            {
+                ActivateContent();
+            }
+        }
     }
 
     public BoardWidgetHost()
     {
         InitializeComponent();
-        Loaded += (s, e) => BringToFront();
+        Loaded += BoardWidgetHost_Loaded;
+        Unloaded += BoardWidgetHost_Unloaded;
+        IsVisibleChanged += BoardWidgetHost_IsVisibleChanged;
         MouseDown += (s, e) => BringToFront();
+    }
+
+    public void ActivateContent()
+    {
+        if (_isContentDisposed || _isContentActive) return;
+
+        if (HostContentPresenter.Content is IWidgetLifecycle lifecycle)
+        {
+            lifecycle.Activate();
+        }
+
+        _isContentActive = true;
+    }
+
+    public void DeactivateContent()
+    {
+        if (_isContentDisposed || !_isContentActive) return;
+
+        if (HostContentPresenter.Content is IWidgetLifecycle lifecycle)
+        {
+            lifecycle.Deactivate();
+        }
+
+        _isContentActive = false;
+    }
+
+    public void DisposeContent()
+    {
+        if (_isContentDisposed) return;
+
+        DeactivateContent();
+
+        if (HostContentPresenter.Content is IWidgetLifecycle lifecycle)
+        {
+            lifecycle.Dispose();
+        }
+        else if (HostContentPresenter.Content is IDisposable disposable)
+        {
+            disposable.Dispose();
+        }
+
+        _isContentDisposed = true;
+        _isContentActive = false;
+    }
+
+    private void BoardWidgetHost_Loaded(object sender, RoutedEventArgs e)
+    {
+        BringToFront();
+        if (IsVisible)
+        {
+            ActivateContent();
+        }
+    }
+
+    private void BoardWidgetHost_Unloaded(object sender, RoutedEventArgs e)
+    {
+        // A widget removed from the Canvas is not reused. Dispose all external resources.
+        DisposeContent();
+    }
+
+    private void BoardWidgetHost_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        if (e.NewValue is true)
+        {
+            ActivateContent();
+        }
+        else
+        {
+            DeactivateContent();
+        }
     }
 
     public void BringToFront()
@@ -170,6 +257,7 @@ public partial class BoardWidgetHost : UserControl
 
     private void BtnClose_Click(object sender, RoutedEventArgs e)
     {
+        DisposeContent();
         Closed?.Invoke(this);
     }
 }
