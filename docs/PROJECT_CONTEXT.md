@@ -5,7 +5,7 @@
 ## 1. 기준 상태
 
 - 제품명: 놀티쳐 (KnolTeacher)
-- 기준 버전: v3.0.1
+- 기준 버전: v3.0.2
 - 플랫폼: Windows 10/11 x64
 - 프레임워크: .NET 8 WPF
 - 앱 프로젝트: `src/KnolTeacher.Desktop/KnolTeacher.Desktop.csproj`

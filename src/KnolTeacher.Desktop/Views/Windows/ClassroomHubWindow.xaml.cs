@@ -42,16 +42,18 @@ public partial class ClassroomHubWindow : Window
 {
     private readonly IStudentManagerService _studentService;
     private readonly IClassroomRecordService _recordService;
+    private readonly IConfigService? _configService;
 
     private ObservableCollection<StudentItem> _rosterStudents = new();
     private ChecklistGroup? _selectedChecklist;
     private string _checklistCategoryFilter = "전체";
 
-    public ClassroomHubWindow(IStudentManagerService studentService, IClassroomRecordService recordService)
+    public ClassroomHubWindow(IStudentManagerService studentService, IClassroomRecordService recordService, IConfigService? configService = null)
     {
         InitializeComponent();
         _studentService = studentService;
         _recordService = recordService;
+        _configService = configService;
 
         Closing += (s, e) =>
         {
@@ -208,7 +210,8 @@ public partial class ClassroomHubWindow : Window
         {
             Filter = "CSV 파일 (*.csv)|*.csv",
             FileName = "학생명렬표_표준양식.csv",
-            Title = "학생 명렬표 표준 양식 다운로드"
+            Title = "학생 명렬표 표준 양식 다운로드",
+            InitialDirectory = _configService?.GetEffectiveSaveDirectory() ?? string.Empty
         };
         if (sfd.ShowDialog() == true)
         {
@@ -231,7 +234,8 @@ public partial class ClassroomHubWindow : Window
         {
             Filter = "CSV 파일 (*.csv)|*.csv",
             FileName = $"학생명렬표_{DateTime.Now:yyyyMMdd}.csv",
-            Title = "학생 명렬표 CSV 내보내기"
+            Title = "학생 명렬표 CSV 내보내기",
+            InitialDirectory = _configService?.GetEffectiveSaveDirectory() ?? string.Empty
         };
         if (sfd.ShowDialog() == true)
         {
@@ -477,7 +481,8 @@ public partial class ClassroomHubWindow : Window
         {
             Filter = "CSV 파일 (*.csv)|*.csv",
             FileName = "체크리스트_표준양식.csv",
-            Title = "체크리스트 표준 양식 다운로드"
+            Title = "체크리스트 표준 양식 다운로드",
+            InitialDirectory = _configService?.GetEffectiveSaveDirectory() ?? string.Empty
         };
         if (sfd.ShowDialog() == true)
         {
@@ -501,7 +506,8 @@ public partial class ClassroomHubWindow : Window
         {
             Filter = "CSV 파일 (*.csv)|*.csv",
             FileName = $"체크리스트_{_selectedChecklist.Title}_{DateTime.Now:yyyyMMdd}.csv",
-            Title = "체크리스트 CSV 내보내기"
+            Title = "체크리스트 CSV 내보내기",
+            InitialDirectory = _configService?.GetEffectiveSaveDirectory() ?? string.Empty
         };
         if (sfd.ShowDialog() == true)
         {
@@ -665,7 +671,8 @@ public partial class ClassroomHubWindow : Window
         {
             Filter = "CSV 파일 (*.csv)|*.csv",
             FileName = "누가기록_관찰일지_표준양식.csv",
-            Title = "누가기록 표준 양식 다운로드"
+            Title = "누가기록 표준 양식 다운로드",
+            InitialDirectory = _configService?.GetEffectiveSaveDirectory() ?? string.Empty
         };
         if (sfd.ShowDialog() == true)
         {
@@ -688,7 +695,8 @@ public partial class ClassroomHubWindow : Window
         {
             Filter = "CSV 파일 (*.csv)|*.csv",
             FileName = $"누가기록_관찰일지_{DateTime.Now:yyyyMMdd}.csv",
-            Title = "누가기록 CSV 내보내기"
+            Title = "누가기록 CSV 내보내기",
+            InitialDirectory = _configService?.GetEffectiveSaveDirectory() ?? string.Empty
         };
         if (sfd.ShowDialog() == true)
         {

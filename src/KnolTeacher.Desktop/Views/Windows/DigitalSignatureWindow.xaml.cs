@@ -19,9 +19,11 @@ public partial class DigitalSignatureWindow : Window
     private Color _inkColor = (Color)ColorConverter.ConvertFromString("#0F172A");
     private double _penThickness = 2.5;
     private SignatureStyle _signatureStyle = SignatureStyle.FountainPen;
+    private readonly IConfigService? _configService;
 
-    public DigitalSignatureWindow()
+    public DigitalSignatureWindow(IConfigService? configService = null)
     {
+        _configService = configService;
         InitializeComponent();
 
         Loaded += (s, e) =>
@@ -418,7 +420,8 @@ public partial class DigitalSignatureWindow : Window
             {
                 Filter = "PNG 투명 이미지 (*.png)|*.png",
                 FileName = _isStampMode ? $"도장_{TbStampText?.Text.Trim()}.png" : "전자서명.png",
-                DefaultExt = ".png"
+                DefaultExt = ".png",
+                InitialDirectory = _configService?.GetEffectiveSaveDirectory() ?? string.Empty
             };
 
             if (dlg.ShowDialog() == true)

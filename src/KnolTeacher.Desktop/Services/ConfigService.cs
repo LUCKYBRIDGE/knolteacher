@@ -21,6 +21,10 @@ public interface IConfigService
     int TimerTargetMonitorIndex { get; set; }
     MainWidgetLayoutConfig MainWidgetLayout { get; set; }
     string? LastSeenTutorialVersion { get; set; }
+    StorageConfig StorageConfig { get; set; }
+    string GetEffectiveSaveDirectory();
+    void SetDefaultSaveDirectory(string path);
+    void SaveStorageConfig();
 
     void LoadAll();
     void SaveNeisConfig();
@@ -57,6 +61,7 @@ public class ConfigService : IConfigService
     public int TimerTargetMonitorIndex { get; set; } = 1;
     public MainWidgetLayoutConfig MainWidgetLayout { get; set; } = MainWidgetLayoutConfig.CreateDefault();
     public string? LastSeenTutorialVersion { get; set; }
+    public StorageConfig StorageConfig { get; set; } = new();
 
     public ConfigService()
     {
@@ -84,6 +89,7 @@ public class ConfigService : IConfigService
         LoadTimerSettings();
         LoadMainWidgetLayout();
         LoadTutorialVersion();
+        LoadStorageConfig();
     }
 
     private void LoadNeisConfig()
@@ -456,6 +462,81 @@ public class ConfigService : IConfigService
         {
             string path = Path.Combine(ConfigDir, "tutorial_state.json");
             string json = JsonSerializer.Serialize(new { last_seen_version = LastSeenTutorialVersion }, _jsonOptions);
+            File.WriteAllText(path, json);
+        }
+        catch { }
+    }
+
+    public string GetEffectiveSaveDirectory()
+    {
+        if (!string.IsNullOrWhiteSpace(StorageConfig.DefaultSaveDirectory))
+        {
+            try
+            {
+                if (!Directory.Exists(StorageConfig.DefaultSaveDirectory))
+                {
+                    Directory.CreateDirectory(StorageConfig.DefaultSaveDirectory);
+                }
+                return StorageConfig.DefaultSaveDirectory;
+            }
+            catch { }
+        }
+
+        string downloads = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+        try
+        {
+            if (!Directory.Exists(downloads))
+            {
+                Directory.CreateDirectory(downloads);
+            }
+        }
+        catch { }
+        return downloads;
+    }
+
+    public void SetDefaultSaveDirectory(string path)
+    {
+        StorageConfig.DefaultSaveDirectory = path ?? string.Empty;
+        if (!string.IsNullOrWhiteSpace(path))
+        {
+            try
+            {
+                if (!Directory.Exists(path))
+                {
+                    Directory.CreateDirectory(path);
+                }
+            }
+            catch { }
+        }
+        SaveStorageConfig();
+    }
+
+    private void LoadStorageConfig()
+    {
+        string path = Path.Combine(ConfigDir, "storage_config.json");
+        if (File.Exists(path))
+        {
+            try
+            {
+                string json = File.ReadAllText(path);
+                var cfg = JsonSerializer.Deserialize<StorageConfig>(json, _jsonOptions);
+                if (cfg != null)
+                {
+                    StorageConfig = cfg;
+                    return;
+                }
+            }
+            catch { }
+        }
+        StorageConfig = new StorageConfig();
+    }
+
+    public void SaveStorageConfig()
+    {
+        try
+        {
+            string path = Path.Combine(ConfigDir, "storage_config.json");
+            string json = JsonSerializer.Serialize(StorageConfig, _jsonOptions);
             File.WriteAllText(path, json);
         }
         catch { }

@@ -189,8 +189,14 @@
                     </Border>
                     <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="8,3" Margin="0,0,8,0" Cursor="Hand" MouseLeftButtonUp="BtnUpdate_Click" ToolTip="최신 버전 확인 및 사이트 이동 없는 원클릭 자동 업데이트">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="🚀 v3.0.1" FontWeight="Bold" FontSize="11" Foreground="#334155" VerticalAlignment="Center"/>
+                            <TextBlock Text="🚀 v3.0.2" FontWeight="Bold" FontSize="11" Foreground="#334155" VerticalAlignment="Center"/>
                             <TextBlock Text=" (버전확인)" FontSize="10" Foreground="#64748B" VerticalAlignment="Center" Margin="3,0,0,0"/>
+                        </StackPanel>
+                    </Border>
+                    <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="8,3" Margin="0,0,8,0" Cursor="Hand" MouseLeftButtonUp="BtnOpenStorageSettings_Click" ToolTip="판서 및 내보내기 파일 기본 저장 폴더 설정">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="📁 " FontSize="11" VerticalAlignment="Center"/>
+                            <TextBlock Text="저장폴더" FontWeight="SemiBold" FontSize="11" Foreground="#475569" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Border>
                 </StackPanel>
@@ -491,6 +497,7 @@
                                                         <ContextMenu>
                                                             <MenuItem Header="✏️ 시간표 과목 직접 수정..." Click="BtnEditAllTimetable_Click"/>
                                                             <MenuItem Header="🔔 수업 시작 예비령/알람 설정" Click="BtnOpenPeriodAlarmSettings_Click"/>
+                                                            <MenuItem Header="📁 파일 기본 저장 폴더 설정" Click="BtnOpenStorageSettings_Click"/>
                                                             <MenuItem Header="🔄 시간표 일괄 당기기/미루기" Click="BtnShiftTimetable_Click"/>
                                                             <Separator/>
                                                             <MenuItem Header="⏱️ 40분 수업 타이머 즉시 실행" Click="BtnLaunchClassTimer_Click"/>

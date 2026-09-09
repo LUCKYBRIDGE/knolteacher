@@ -20,6 +20,7 @@ public partial class VisualizerWindow : System.Windows.Window
 {
     private readonly IDisplayManager? _displayManager;
     private readonly ScreenDrawingOverlayWindow? _screenDrawingOverlay;
+    private readonly IConfigService? _configService;
     private int _currentMonitorIndex = 1;
 
     private VideoCapture? _capture;
@@ -36,10 +37,11 @@ public partial class VisualizerWindow : System.Windows.Window
     private Mat? _frozenFrame;
     private bool _isInitialized = false;
 
-    public VisualizerWindow(IDisplayManager? displayManager = null, ScreenDrawingOverlayWindow? screenDrawingOverlay = null)
+    public VisualizerWindow(IDisplayManager? displayManager = null, ScreenDrawingOverlayWindow? screenDrawingOverlay = null, IConfigService? configService = null)
     {
         _displayManager = displayManager ?? (Application.Current as App)?.Services?.GetService(typeof(IDisplayManager)) as IDisplayManager;
         _screenDrawingOverlay = screenDrawingOverlay ?? (Application.Current as App)?.Services?.GetService(typeof(ScreenDrawingOverlayWindow)) as ScreenDrawingOverlayWindow;
+        _configService = configService ?? (Application.Current as App)?.Services?.GetService(typeof(IConfigService)) as IConfigService;
         InitializeComponent();
 
         TopHudBar.MouseEnter += (s, e) => TopHudBar.Opacity = 1.0;
@@ -414,8 +416,9 @@ public partial class VisualizerWindow : System.Windows.Window
         {
             try
             {
-                var picturesDir = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
-                var saveDir = System.IO.Path.Combine(picturesDir, "KnolTeacher_Visualizer");
+                var baseDir = _configService?.GetEffectiveSaveDirectory()
+                    ?? Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
+                var saveDir = System.IO.Path.Combine(baseDir, "놀티쳐_실물화상기");
                 Directory.CreateDirectory(saveDir);
 
                 var fileName = $"스냅샷_{DateTime.Now:yyyyMMdd_HHmmss}.png";
