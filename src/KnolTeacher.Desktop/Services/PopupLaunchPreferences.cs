@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace KnolTeacher.Desktop.Services;
@@ -9,6 +10,7 @@ namespace KnolTeacher.Desktop.Services;
 public sealed class PopupLaunchPreferences
 {
     private const string FileName = "popup_display_settings.json";
+    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
     private readonly string _path;
 
     public bool RightClickOpensOnSecondMonitor { get; set; } = true;
@@ -24,12 +26,12 @@ public sealed class PopupLaunchPreferences
         SafeLocalJsonStore.TrySave(_path, new PopupDisplaySettingsData
         {
             RightClickOpensOnSecondMonitor = RightClickOpensOnSecondMonitor
-        });
+        }, JsonOptions);
     }
 
     private void Load()
     {
-        if (SafeLocalJsonStore.TryLoad<PopupDisplaySettingsData>(_path, out var data) && data != null)
+        if (SafeLocalJsonStore.TryLoad<PopupDisplaySettingsData>(_path, JsonOptions, out var data) && data != null)
         {
             RightClickOpensOnSecondMonitor = data.RightClickOpensOnSecondMonitor;
         }
