@@ -42,10 +42,15 @@ public partial class ScreenDrawingOverlayWindow : Window
         };
     }
 
+    public bool IsBoardMode { get; private set; }
+
     public void FreezeAndShow()
     {
         try
         {
+            IsBoardMode = false;
+            if (TxtStudioTitle != null) TxtStudioTitle.Text = "🖼️ 화면 주석 판서 (Alt+2)";
+
             // 1. Get current monitor under mouse cursor
             var rect = NativeMethods.GetCurrentMonitorRect();
             int left = rect.Left;
@@ -53,27 +58,7 @@ public partial class ScreenDrawingOverlayWindow : Window
             int width = rect.Right - rect.Left;
             int height = rect.Bottom - rect.Top;
 
-            using (var bmp = new Bitmap(width, height))
-            {
-                using (var g = Graphics.FromImage(bmp))
-                {
-                    g.CopyFromScreen(left, top, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
-                }
-
-                // Convert to WPF BitmapImage
-                using (var ms = new MemoryStream())
-                {
-                    bmp.Save(ms, ImageFormat.Png);
-                    ms.Position = 0;
-                    var bitmapImage = new BitmapImage();
-                    bitmapImage.BeginInit();
-                    bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
-                    bitmapImage.StreamSource = ms;
-                    bitmapImage.EndInit();
-                    bitmapImage.Freeze();
-                    FreezeImage.Source = bitmapImage;
-                }
-            }
+            CaptureScreenToFreezeImage(left, top, width, height);
 
             OverlayInkCanvas.Strokes.Clear();
             if (RbBgScreen != null) RbBgScreen.IsChecked = true;
@@ -91,6 +76,110 @@ public partial class ScreenDrawingOverlayWindow : Window
         catch (Exception ex)
         {
             MessageBox.Show($"화면 캡처 실패: {ex.Message}", "판서 오류", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    public void ShowBoardMode(string theme = "chalkboard")
+    {
+        try
+        {
+            IsBoardMode = true;
+
+            var rect = NativeMethods.GetCurrentMonitorRect();
+            int left = rect.Left;
+            int top = rect.Top;
+            int width = rect.Right - rect.Left;
+            int height = rect.Bottom - rect.Top;
+
+            if (FreezeImage != null)
+            {
+                FreezeImage.Source = null;
+                FreezeImage.Visibility = Visibility.Collapsed;
+            }
+
+            if (BoardBackground != null)
+            {
+                BoardBackground.Visibility = Visibility.Visible;
+                switch (theme)
+                {
+                    case "whiteboard":
+                        if (RbBgWhiteboard != null) RbBgWhiteboard.IsChecked = true;
+                        if (TxtStudioTitle != null) TxtStudioTitle.Text = "⬜ 수업 화이트보드 (Alt+4)";
+                        BoardBackground.Background = System.Windows.Media.Brushes.White;
+                        OverlayInkCanvas.DefaultDrawingAttributes.Color = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#1E293B");
+                        break;
+                    case "grid":
+                        if (RbBgGrid != null) RbBgGrid.IsChecked = true;
+                        if (TxtStudioTitle != null) TxtStudioTitle.Text = "📐 수학 모눈 보드판 (Alt+4)";
+                        BoardBackground.Background = CreateGridDrawingBrush();
+                        OverlayInkCanvas.DefaultDrawingAttributes.Color = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#1E293B");
+                        break;
+                    case "chalkboard":
+                    default:
+                        if (RbBgChalkboard != null) RbBgChalkboard.IsChecked = true;
+                        if (TxtStudioTitle != null) TxtStudioTitle.Text = "🟩 수업 칠판 보드판 (Alt+4)";
+                        BoardBackground.Background = new System.Windows.Media.SolidColorBrush(
+                            (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#132B1E"));
+                        OverlayInkCanvas.DefaultDrawingAttributes.Color = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#FDE047");
+                        break;
+                }
+            }
+
+            OverlayInkCanvas.Strokes.Clear();
+
+            Show();
+            var helper = new System.Windows.Interop.WindowInteropHelper(this);
+            NativeMethods.SetWindowPos(helper.Handle, IntPtr.Zero, left, top, width, height, NativeMethods.SWP_SHOWWINDOW | NativeMethods.SWP_NOZORDER);
+
+            Activate();
+            Focus();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"칠판 보드판 실행 실패: {ex.Message}", "판서 오류", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void CaptureScreenToFreezeImage(int left, int top, int width, int height)
+    {
+        using var bmp = new Bitmap(width, height);
+        using (var g = Graphics.FromImage(bmp))
+        {
+            g.CopyFromScreen(left, top, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
+        }
+
+        using var ms = new MemoryStream();
+        bmp.Save(ms, ImageFormat.Png);
+        ms.Position = 0;
+        var bitmapImage = new BitmapImage();
+        bitmapImage.BeginInit();
+        bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+        bitmapImage.StreamSource = ms;
+        bitmapImage.EndInit();
+        bitmapImage.Freeze();
+        FreezeImage.Source = bitmapImage;
+    }
+
+    private void CaptureScreenOnDemand()
+    {
+        bool wasVisible = IsVisible;
+        if (wasVisible)
+        {
+            Visibility = Visibility.Hidden;
+            System.Threading.Thread.Sleep(50);
+        }
+
+        var rect = NativeMethods.GetCurrentMonitorRect();
+        int left = rect.Left;
+        int top = rect.Top;
+        int width = rect.Right - rect.Left;
+        int height = rect.Bottom - rect.Top;
+
+        CaptureScreenToFreezeImage(left, top, width, height);
+
+        if (wasVisible)
+        {
+            Visibility = Visibility.Visible;
         }
     }
 
@@ -250,7 +339,16 @@ public partial class ScreenDrawingOverlayWindow : Window
             {
                 case "screen":
                     if (BoardBackground != null) BoardBackground.Visibility = Visibility.Collapsed;
-                    if (FreezeImage != null) FreezeImage.Visibility = Visibility.Visible;
+                    if (FreezeImage != null)
+                    {
+                        if (FreezeImage.Source == null)
+                        {
+                            CaptureScreenOnDemand();
+                        }
+                        FreezeImage.Visibility = Visibility.Visible;
+                    }
+                    IsBoardMode = false;
+                    if (TxtStudioTitle != null) TxtStudioTitle.Text = "🖼️ 화면 주석 판서 (Alt+2)";
                     break;
                 case "chalkboard":
                     if (FreezeImage != null) FreezeImage.Visibility = Visibility.Collapsed;
@@ -260,6 +358,8 @@ public partial class ScreenDrawingOverlayWindow : Window
                         BoardBackground.Background = new System.Windows.Media.SolidColorBrush(
                             (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#132B1E"));
                     }
+                    IsBoardMode = true;
+                    if (TxtStudioTitle != null) TxtStudioTitle.Text = "🟩 수업 칠판 보드판 (Alt+4)";
                     if (OverlayInkCanvas != null && (OverlayInkCanvas.DefaultDrawingAttributes.Color == System.Windows.Media.Colors.Black || OverlayInkCanvas.DefaultDrawingAttributes.Color == (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#1E293B")))
                     {
                         OverlayInkCanvas.DefaultDrawingAttributes.Color = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#FDE047");
@@ -272,6 +372,8 @@ public partial class ScreenDrawingOverlayWindow : Window
                         BoardBackground.Visibility = Visibility.Visible;
                         BoardBackground.Background = System.Windows.Media.Brushes.White;
                     }
+                    IsBoardMode = true;
+                    if (TxtStudioTitle != null) TxtStudioTitle.Text = "⬜ 수업 화이트보드 (Alt+4)";
                     if (OverlayInkCanvas != null && OverlayInkCanvas.DefaultDrawingAttributes.Color == System.Windows.Media.Colors.White)
                     {
                         OverlayInkCanvas.DefaultDrawingAttributes.Color = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#1E293B");
@@ -284,6 +386,8 @@ public partial class ScreenDrawingOverlayWindow : Window
                         BoardBackground.Visibility = Visibility.Visible;
                         BoardBackground.Background = CreateGridDrawingBrush();
                     }
+                    IsBoardMode = true;
+                    if (TxtStudioTitle != null) TxtStudioTitle.Text = "📐 수학 모눈 보드판 (Alt+4)";
                     if (OverlayInkCanvas != null && OverlayInkCanvas.DefaultDrawingAttributes.Color == System.Windows.Media.Colors.White)
                     {
                         OverlayInkCanvas.DefaultDrawingAttributes.Color = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#1E293B");

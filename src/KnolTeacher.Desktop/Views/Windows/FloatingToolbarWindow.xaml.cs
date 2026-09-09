@@ -112,7 +112,8 @@ public partial class FloatingToolbarWindow : Window
         if (!IsVisible) return;
 
         DotBoard.Visibility = _studentBoard.IsVisible ? Visibility.Visible : Visibility.Collapsed;
-        DotDraw.Visibility = _screenDrawing.IsVisible ? Visibility.Visible : Visibility.Collapsed;
+        DotDrawScreen.Visibility = (_screenDrawing.IsVisible && !_screenDrawing.IsBoardMode) ? Visibility.Visible : Visibility.Collapsed;
+        DotDrawBoard.Visibility = (_screenDrawing.IsVisible && _screenDrawing.IsBoardMode) ? Visibility.Visible : Visibility.Collapsed;
         DotTimer.Visibility = _timerWindow.IsVisible ? Visibility.Visible : Visibility.Collapsed;
         DotPicker.Visibility = _pickerWindow.IsVisible ? Visibility.Visible : Visibility.Collapsed;
 
@@ -147,10 +148,29 @@ public partial class FloatingToolbarWindow : Window
         UpdateActiveToolIndicators();
     }
 
-    private void BtnDraw_Click(object sender, RoutedEventArgs e)
+    private void BtnDrawScreen_Click(object sender, RoutedEventArgs e)
     {
-        if (_screenDrawing.IsVisible) _screenDrawing.CloseOverlay();
-        else _screenDrawing.FreezeAndShow();
+        if (_screenDrawing.IsVisible && !_screenDrawing.IsBoardMode)
+        {
+            _screenDrawing.CloseOverlay();
+        }
+        else
+        {
+            _screenDrawing.FreezeAndShow();
+        }
+        UpdateActiveToolIndicators();
+    }
+
+    private void BtnDrawBoard_Click(object sender, RoutedEventArgs e)
+    {
+        if (_screenDrawing.IsVisible && _screenDrawing.IsBoardMode)
+        {
+            _screenDrawing.CloseOverlay();
+        }
+        else
+        {
+            _screenDrawing.ShowBoardMode("chalkboard");
+        }
         UpdateActiveToolIndicators();
     }
 

@@ -1084,13 +1084,25 @@ public partial class MainWindow : FluentWindow
 
     private void BtnLaunchDrawing_Click(object sender, RoutedEventArgs e)
     {
-        if (_screenDrawingOverlayWindow.IsVisible)
+        if (_screenDrawingOverlayWindow.IsVisible && !_screenDrawingOverlayWindow.IsBoardMode)
         {
             _screenDrawingOverlayWindow.CloseOverlay();
         }
         else
         {
             _screenDrawingOverlayWindow.FreezeAndShow();
+        }
+    }
+
+    private void BtnLaunchBoardDrawing_Click(object sender, RoutedEventArgs e)
+    {
+        if (_screenDrawingOverlayWindow.IsVisible && _screenDrawingOverlayWindow.IsBoardMode)
+        {
+            _screenDrawingOverlayWindow.CloseOverlay();
+        }
+        else
+        {
+            _screenDrawingOverlayWindow.ShowBoardMode("chalkboard");
         }
     }
 
