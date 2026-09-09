@@ -5,6 +5,6 @@
       Keep this value ahead of the latest published GitHub Release while app changes are being accumulated.
       Release tags must match this value exactly (vX.Y.Z).
     -->
-    <KnolTeacherVersion>3.0.7</KnolTeacherVersion>
+    <KnolTeacherVersion>3.0.8</KnolTeacherVersion>
   </PropertyGroup>
 </Project>
