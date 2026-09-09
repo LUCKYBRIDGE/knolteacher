@@ -39,7 +39,10 @@
             <Grid>
                 <!-- Digital Viewbox Mode -->
                 <Viewbox x:Name="PanelDigitalView" Stretch="Uniform">
-                    <TextBlock x:Name="TxtTime" Text="05:00" FontFamily="Consolas, Malgun Gothic" FontSize="64" FontWeight="Bold" Foreground="#38BDF8" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <TextBlock x:Name="TxtTime" Text="05:00" FontFamily="Consolas, Malgun Gothic" FontSize="64" FontWeight="Bold" Foreground="#38BDF8" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="TxtOverdueTime" Text="(-0:00)" FontFamily="Consolas, Malgun Gothic" FontSize="36" FontWeight="Bold" Foreground="#EF4444" HorizontalAlignment="Center" Visibility="Collapsed" Margin="0,4,0,0"/>
+                    </StackPanel>
                 </Viewbox>
 
                 <!-- Visual Pie Timer Mode -->

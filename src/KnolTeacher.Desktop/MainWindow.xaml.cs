@@ -684,12 +684,36 @@ public partial class MainWindow : FluentWindow
 
     private void BtnItemTimer_Click(object sender, RoutedEventArgs e)
     {
-        if (_timerWindow.IsVisible) _timerWindow.Hide();
+        if (sender is FrameworkElement fe && fe.Tag is PeriodItem item)
+        {
+            var dlg = new PeriodTimerEditDialog(item, _configService, _soundService, _displayManager, _timerWindow, _timetableService)
+            {
+                Owner = this
+            };
+            dlg.ShowDialog();
+        }
         else
         {
-            _timerWindow.PositionToDefaultMonitor();
-            _timerWindow.Show();
-            _timerWindow.Activate();
+            if (_timerWindow.IsVisible) _timerWindow.Hide();
+            else
+            {
+                _timerWindow.PositionToDefaultMonitor();
+                _timerWindow.Show();
+                _timerWindow.Activate();
+            }
+        }
+    }
+
+    private void MenuItemPeriodTimerSettings_Click(object sender, RoutedEventArgs e)
+    {
+        var item = GetPeriodItemFromMenuItem(sender);
+        if (item != null)
+        {
+            var dlg = new PeriodTimerEditDialog(item, _configService, _soundService, _displayManager, _timerWindow, _timetableService)
+            {
+                Owner = this
+            };
+            dlg.ShowDialog();
         }
     }
 

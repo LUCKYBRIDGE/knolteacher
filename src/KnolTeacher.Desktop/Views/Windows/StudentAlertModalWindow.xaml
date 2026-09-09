@@ -61,10 +61,16 @@
                 <!-- Timer Panel (Optional, Visible when ShowTimer is true) -->
                 <StackPanel x:Name="PanelTimer" Grid.Row="3" Margin="0,0,0,24" Visibility="Visible">
                     <!-- Countdown Digits -->
-                    <TextBlock x:Name="TxtTimerDigits" Text="10:00"
-                               FontFamily="Consolas, Segoe UI, Malgun Gothic"
-                               FontSize="64" FontWeight="Bold" Foreground="#38BDF8"
-                               HorizontalAlignment="Center" Margin="0,0,0,12"/>
+                    <StackPanel HorizontalAlignment="Center" Margin="0,0,0,12">
+                        <TextBlock x:Name="TxtTimerDigits" Text="10:00"
+                                   FontFamily="Consolas, Segoe UI, Malgun Gothic"
+                                   FontSize="64" FontWeight="Bold" Foreground="#38BDF8"
+                                   HorizontalAlignment="Center"/>
+                        <TextBlock x:Name="TxtOverdueDigits" Text="(-0:00)"
+                                   FontFamily="Consolas, Segoe UI, Malgun Gothic"
+                                   FontSize="36" FontWeight="Bold" Foreground="#EF4444"
+                                   HorizontalAlignment="Center" Margin="0,2,0,0" Visibility="Collapsed"/>
+                    </StackPanel>
 
                     <!-- Progress Bar -->
                     <ProgressBar x:Name="PbTimerProgress" Height="10" Value="100" Maximum="100"

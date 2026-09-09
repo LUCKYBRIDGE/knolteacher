@@ -411,17 +411,22 @@
 
                                         <!-- Header -->
                                         <DockPanel Grid.Row="0" Margin="0,0,0,10" LastChildFill="True">
-                                            <Button DockPanel.Dock="Right" Content="···" Click="BtnTimetableMore_Click" Width="26" Height="22" Background="Transparent" Foreground="{DynamicResource BeigeTextMuted}" BorderThickness="0" FontSize="15" FontWeight="Bold" Cursor="Hand" ToolTip="시간표 설정 및 과목 편집">
-                                                <Button.ContextMenu>
-                                                    <ContextMenu>
-                                                        <MenuItem Header="✏️ 시간표 과목 직접 수정..." Click="BtnEditAllTimetable_Click"/>
-                                                        <MenuItem Header="🔔 수업 시작 예비령/알람 설정" Click="BtnOpenPeriodAlarmSettings_Click"/>
-                                                        <MenuItem Header="🔄 시간표 일괄 당기기/미루기" Click="BtnShiftTimetable_Click"/>
-                                                        <Separator/>
-                                                        <MenuItem Header="⏱️ 40분 수업 타이머 즉시 실행" Click="BtnLaunchClassTimer_Click"/>
-                                                    </ContextMenu>
-                                                </Button.ContextMenu>
-                                            </Button>
+                                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                                <Button Content="🔔 예비 타이머 설정" Click="BtnOpenPeriodAlarmSettings_Click" Height="26" Padding="8,0" Margin="0,0,6,0" Background="{DynamicResource BeigeAccentSoft}" Foreground="{DynamicResource BeigeAccent}" FontWeight="Bold" FontSize="11" BorderThickness="0" Cursor="Hand" ToolTip="수업 시작 전 예비령 &amp; 대형 카운트다운 타이머 전체 설정">
+                                                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                                                </Button>
+                                                <Button Content="···" Click="BtnTimetableMore_Click" Width="26" Height="22" Background="Transparent" Foreground="{DynamicResource BeigeTextMuted}" BorderThickness="0" FontSize="15" FontWeight="Bold" Cursor="Hand" ToolTip="시간표 설정 및 과목 편집">
+                                                    <Button.ContextMenu>
+                                                        <ContextMenu>
+                                                            <MenuItem Header="✏️ 시간표 과목 직접 수정..." Click="BtnEditAllTimetable_Click"/>
+                                                            <MenuItem Header="🔔 수업 시작 예비령/알람 설정" Click="BtnOpenPeriodAlarmSettings_Click"/>
+                                                            <MenuItem Header="🔄 시간표 일괄 당기기/미루기" Click="BtnShiftTimetable_Click"/>
+                                                            <Separator/>
+                                                            <MenuItem Header="⏱️ 40분 수업 타이머 즉시 실행" Click="BtnLaunchClassTimer_Click"/>
+                                                        </ContextMenu>
+                                                    </Button.ContextMenu>
+                                                </Button>
+                                            </StackPanel>
                                             <TextBlock Text="오늘의 시간표" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource BeigeTextMain}" VerticalAlignment="Center"/>
                                         </DockPanel>
 
@@ -493,6 +498,7 @@
                                                                     <MenuItem Header="태그 없음" Click="MenuQuickTag_Click" Tag=""/>
                                                                 </MenuItem>
                                                                 <Separator/>
+                                                                <MenuItem Header="⏱️ 이 교시 시작 전 예비 타이머 설정..." Click="MenuItemPeriodTimerSettings_Click"/>
                                                                 <MenuItem Header="⏱️ 이 교시 40분 타이머 바로 실행" Click="MenuItemTimer_Click"/>
                                                                 <MenuItem Header="🔔 이 교시 예비 알람 토글" Click="MenuItemToggleAlarm_Click"/>
                                                                 <Separator/>
@@ -550,8 +556,8 @@
 
                                                             <!-- Quick action icon (timer / edit) -->
                                                             <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                                                <Button Content="⏱️" Click="BtnItemTimer_Click" Tag="{Binding}" Width="20" Height="20" Background="Transparent" BorderThickness="0" Cursor="Hand" ToolTip="타이머 실행"/>
-                                                                <Button Content="✏️" Click="BtnEditSubject_Click" Tag="{Binding}" Width="20" Height="20" Background="Transparent" BorderThickness="0" Cursor="Hand" ToolTip="과목 수정"/>
+                                                                <Button Content="⏱️" Click="BtnItemTimer_Click" Tag="{Binding}" Width="22" Height="22" Background="Transparent" BorderThickness="0" Cursor="Hand" ToolTip="이 교시 시작 전 타이머 &amp; 예비 알람 설정"/>
+                                                                <Button Content="✏️" Click="BtnEditSubject_Click" Tag="{Binding}" Width="22" Height="22" Background="Transparent" BorderThickness="0" Cursor="Hand" ToolTip="과목 수정"/>
                                                             </StackPanel>
                                                         </Grid>
                                                     </Border>

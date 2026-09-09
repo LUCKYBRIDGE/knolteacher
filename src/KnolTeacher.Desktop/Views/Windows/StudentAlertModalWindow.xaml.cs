@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Threading;
@@ -61,39 +61,59 @@ public partial class StudentAlertModalWindow : Window
         };
     }
 
+    private bool _hasPlayedEndChime = false;
+
     private void Timer_Tick(object? sender, EventArgs e)
     {
         if (_isPaused) return;
 
-        if (_remainingSeconds > 0)
-        {
-            _remainingSeconds--;
-            UpdateTimerDisplay();
+        _remainingSeconds--;
+        UpdateTimerDisplay();
 
-            if (_remainingSeconds == 0)
+        if (_remainingSeconds == 0 && !_hasPlayedEndChime)
+        {
+            _hasPlayedEndChime = true;
+            try
             {
-                _timer.Stop();
-                try
-                {
-                    _soundService?.PlayChime();
-                }
-                catch { }
-                TxtTimerDigits.Text = "종료!";
-                TxtTimerDigits.Foreground = System.Windows.Media.Brushes.OrangeRed;
+                _soundService?.PlayChime();
             }
+            catch { }
         }
     }
 
     private void UpdateTimerDisplay()
     {
-        int min = _remainingSeconds / 60;
-        int sec = _remainingSeconds % 60;
-        TxtTimerDigits.Text = $"{min:00}:{sec:00}";
-
-        if (_totalSeconds > 0)
+        if (_remainingSeconds >= 0)
         {
-            double pct = (double)_remainingSeconds / _totalSeconds * 100.0;
-            PbTimerProgress.Value = Math.Clamp(pct, 0, 100);
+            int min = _remainingSeconds / 60;
+            int sec = _remainingSeconds % 60;
+            TxtTimerDigits.Text = $"{min:00}:{sec:00}";
+            TxtTimerDigits.Foreground = new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#38BDF8"));
+            if (TxtOverdueDigits != null) TxtOverdueDigits.Visibility = Visibility.Collapsed;
+
+            if (_totalSeconds > 0)
+            {
+                double pct = (double)_remainingSeconds / _totalSeconds * 100.0;
+                PbTimerProgress.Value = Math.Clamp(pct, 0, 100);
+            }
+        }
+        else
+        {
+            int overdueSec = Math.Abs(_remainingSeconds);
+            int oMin = overdueSec / 60;
+            int oSec = overdueSec % 60;
+
+            TxtTimerDigits.Text = "0:00";
+            TxtTimerDigits.Foreground = new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#EF4444"));
+
+            if (TxtOverdueDigits != null)
+            {
+                TxtOverdueDigits.Text = $"(-{oMin}:{oSec:D2})";
+                TxtOverdueDigits.Foreground = new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#EF4444"));
+                TxtOverdueDigits.Visibility = Visibility.Visible;
+            }
+
+            PbTimerProgress.Value = 0;
         }
     }
 
@@ -107,11 +127,13 @@ public partial class StudentAlertModalWindow : Window
     {
         _remainingSeconds += 60;
         _totalSeconds += 60;
+        if (_remainingSeconds > 0) _hasPlayedEndChime = false;
         UpdateTimerDisplay();
     }
 
     private void BtnResetTimer_Click(object sender, RoutedEventArgs e)
     {
+        _hasPlayedEndChime = false;
         _remainingSeconds = _totalSeconds;
         UpdateTimerDisplay();
     }

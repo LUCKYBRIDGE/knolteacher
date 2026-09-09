@@ -25,36 +25,55 @@ public partial class TimerWidgetView : UserControl
         UpdateDisplay();
     }
 
+    private bool _hasPlayedEndChime = false;
+
     private void Timer_Tick(object? sender, EventArgs e)
     {
-        if (_remainingSeconds > 0)
-        {
-            _remainingSeconds--;
-            UpdateDisplay();
+        _remainingSeconds--;
+        UpdateDisplay();
 
-            if (_remainingSeconds == 0)
+        if (_remainingSeconds == 0 && !_hasPlayedEndChime)
+        {
+            _hasPlayedEndChime = true;
+            try
             {
-                _timer.Stop();
-                _isRunning = false;
-                BtnStartPause.Content = "▶ 시작";
-                TxtDisplay.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#EF4444"));
-                TxtDisplay.Text = "종료!";
                 _soundService?.PlayChime();
             }
+            catch { }
         }
     }
 
     private void UpdateDisplay()
     {
-        int m = _remainingSeconds / 60;
-        int s = _remainingSeconds % 60;
-        TxtDisplay.Text = $"{m:D2}:{s:D2}";
-        TxtDisplay.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#38BDF8"));
-
-        if (!_isRunning && TbMinutes != null && TbSeconds != null)
+        if (_remainingSeconds >= 0)
         {
-            TbMinutes.Text = $"{m:D2}";
-            TbSeconds.Text = $"{s:D2}";
+            int m = _remainingSeconds / 60;
+            int s = _remainingSeconds % 60;
+            TxtDisplay.Text = $"{m:D2}:{s:D2}";
+            TxtDisplay.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#38BDF8"));
+            if (TxtOverdueDisplay != null) TxtOverdueDisplay.Visibility = Visibility.Collapsed;
+
+            if (!_isRunning && TbMinutes != null && TbSeconds != null)
+            {
+                TbMinutes.Text = $"{m:D2}";
+                TbSeconds.Text = $"{s:D2}";
+            }
+        }
+        else
+        {
+            int overdueSec = Math.Abs(_remainingSeconds);
+            int oMin = overdueSec / 60;
+            int oSec = overdueSec % 60;
+
+            TxtDisplay.Text = "0:00";
+            TxtDisplay.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#EF4444"));
+
+            if (TxtOverdueDisplay != null)
+            {
+                TxtOverdueDisplay.Text = $"(-{oMin}:{oSec:D2})";
+                TxtOverdueDisplay.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#EF4444"));
+                TxtOverdueDisplay.Visibility = Visibility.Visible;
+            }
         }
     }
 
@@ -67,6 +86,7 @@ public partial class TimerWidgetView : UserControl
             int total = Math.Max(1, m * 60 + s);
             _timer.Stop();
             _isRunning = false;
+            _hasPlayedEndChime = false;
             BtnStartPause.Content = "▶ 시작";
             BtnStartPause.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#0284C7"));
             _initialSeconds = total;
@@ -87,8 +107,9 @@ public partial class TimerWidgetView : UserControl
     {
         if (sender is Button btn && btn.Tag is string deltaStr && int.TryParse(deltaStr, out int delta))
         {
-            _remainingSeconds = Math.Max(0, _remainingSeconds + delta);
+            _remainingSeconds += delta;
             _initialSeconds = Math.Max(_initialSeconds, _remainingSeconds);
+            if (_remainingSeconds > 0) _hasPlayedEndChime = false;
             UpdateDisplay();
         }
     }
@@ -104,7 +125,7 @@ public partial class TimerWidgetView : UserControl
         }
         else
         {
-            if (_remainingSeconds <= 0)
+            if (_remainingSeconds == 0 && !_hasPlayedEndChime)
             {
                 _remainingSeconds = _initialSeconds;
             }
@@ -119,6 +140,7 @@ public partial class TimerWidgetView : UserControl
     {
         _timer.Stop();
         _isRunning = false;
+        _hasPlayedEndChime = false;
         _remainingSeconds = _initialSeconds;
         BtnStartPause.Content = "▶ 시작";
         BtnStartPause.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#0284C7"));
@@ -127,14 +149,15 @@ public partial class TimerWidgetView : UserControl
 
     private void BtnPreset_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is Button btn && btn.Tag is string secStr && int.TryParse(secStr, out int sec))
+        if (sender is Button btn && btn.Tag is string secStr && int.TryParse(secStr, out int secs))
         {
             _timer.Stop();
             _isRunning = false;
+            _hasPlayedEndChime = false;
             BtnStartPause.Content = "▶ 시작";
             BtnStartPause.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#0284C7"));
-            _initialSeconds = sec;
-            _remainingSeconds = sec;
+            _initialSeconds = secs;
+            _remainingSeconds = _initialSeconds;
             UpdateDisplay();
         }
     }

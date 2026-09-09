@@ -19,7 +19,10 @@
         <!-- Big Neon Timer Display in Responsive Viewbox -->
         <Border Grid.Row="0" Background="#0F172A" CornerRadius="10" BorderBrush="#334155" BorderThickness="1" Margin="0,0,0,6" Padding="12">
             <Viewbox Stretch="Uniform">
-                <TextBlock x:Name="TxtDisplay" Text="05:00" FontFamily="Consolas, Malgun Gothic" FontSize="48" FontWeight="Bold" Foreground="#38BDF8" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock x:Name="TxtDisplay" Text="05:00" FontFamily="Consolas, Malgun Gothic" FontSize="48" FontWeight="Bold" Foreground="#38BDF8" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="TxtOverdueDisplay" Text="(-0:00)" FontFamily="Consolas, Malgun Gothic" FontSize="28" FontWeight="Bold" Foreground="#EF4444" HorizontalAlignment="Center" Visibility="Collapsed" Margin="0,2,0,0"/>
+                </StackPanel>
             </Viewbox>
         </Border>
 
