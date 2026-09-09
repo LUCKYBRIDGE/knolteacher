@@ -214,6 +214,8 @@ public partial class SchoolScaleWindow : Window
         cfg.SchoolCode = _currentSchool.SchoolCode;
         cfg.SchoolName = _currentSchool.SchoolName;
         cfg.SchoolType = _currentSchool.SchoolType;
+        cfg.SchoolAddress = _currentSchool.RoadAddress;
+        cfg.LocationName = _currentSchool.LocationName;
         if (_currentDetail != null)
         {
             cfg.AcademicYear = _currentDetail.AcademicYear.ToString();

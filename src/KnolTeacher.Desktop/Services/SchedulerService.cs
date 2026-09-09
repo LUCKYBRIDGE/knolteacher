@@ -19,19 +19,23 @@ public class SchedulerService : ISchedulerService
     private readonly IConfigService _configService;
     private readonly ISoundService _soundService;
     private readonly ITimetableService _timetableService;
+    private readonly IDisplayManager? _displayManager;
     private readonly DispatcherTimer _timer;
     private string _lastTriggeredScheduleMinute = string.Empty;
     private string _lastTriggeredPeriodMinute = string.Empty;
     private readonly HashSet<string> _triggeredCountdowns = new();
+    private readonly HashSet<string> _triggeredAdvanceWarnings = new();
 
     public SchedulerService(
         IConfigService configService,
         ISoundService soundService,
-        ITimetableService timetableService)
+        ITimetableService timetableService,
+        IDisplayManager? displayManager = null)
     {
         _configService = configService;
         _soundService = soundService;
         _timetableService = timetableService;
+        _displayManager = displayManager;
 
         _timer = new DispatcherTimer
         {
@@ -56,8 +60,74 @@ public class SchedulerService : ISchedulerService
         string currentHm = now.ToString("HH:mm");
         string todayDate = now.ToString("yyyy-MM-dd");
 
+        CheckAdvanceWarnings(now, currentHm, todayDate);
         CheckSchedules(now, currentHm, todayDate);
         CheckTimetableAlarms(now, currentHm);
+    }
+
+    private void CheckAdvanceWarnings(DateTime now, string currentHm, string todayDate)
+    {
+        int dayIndex = (int)now.DayOfWeek;
+        int scheduleDay = dayIndex == 0 ? 6 : dayIndex - 1; // 0=Mon, 6=Sun
+
+        var schedules = _configService.RecurringSchedules;
+        if (schedules == null) return;
+
+        if (_triggeredAdvanceWarnings.Count > 100)
+        {
+            _triggeredAdvanceWarnings.RemoveWhere(k => !k.StartsWith(todayDate));
+        }
+
+        foreach (var item in schedules)
+        {
+            if (!item.Enabled) continue;
+            if (!item.EnableAdvanceWarning) continue;
+
+            int advanceMinutes = item.AdvanceWarningMinutes > 0 ? item.AdvanceWarningMinutes : 5;
+
+            // Day matching check
+            if (item.IsSingle)
+            {
+                if (item.IsCompleted) continue;
+                if (!string.IsNullOrEmpty(item.TargetDate) && item.TargetDate != todayDate) continue;
+            }
+            else
+            {
+                if (item.RepeatDays != null && item.RepeatDays.Count > 0 && !item.RepeatDays.Contains(scheduleDay))
+                {
+                    continue;
+                }
+            }
+
+            if (!TimeSpan.TryParse(item.TimeString, out var targetTime)) continue;
+
+            var targetDt = DateTime.Today.Add(targetTime);
+            var advanceTriggerDt = targetDt.AddMinutes(-advanceMinutes);
+
+            string advKey = $"{todayDate}_{item.Id}_advance";
+            if (_triggeredAdvanceWarnings.Contains(advKey)) continue;
+
+            if (advanceTriggerDt.ToString("HH:mm") == currentHm)
+            {
+                _triggeredAdvanceWarnings.Add(advKey);
+
+                try
+                {
+                    _soundService.PlayAttentionChime();
+                }
+                catch
+                {
+                    _soundService.PlayChime();
+                }
+
+                // Show advance notice on Teacher Monitor 1
+                HudNotificationWindow.Instance.ShowToast(
+                    "⏰",
+                    $"[사전 알림] {advanceMinutes}분 후 '{item.Title}' 예약이 실행됩니다. (수업 마무리 준비)",
+                    durationMs: 4500
+                );
+            }
+        }
     }
 
     private void CheckSchedules(DateTime now, string currentHm, string todayDate)
@@ -185,6 +255,33 @@ public class SchedulerService : ISchedulerService
     {
         string prefix = isTest ? "[예약 테스트] " : "[예약 실행] ";
 
+        // 1. If student popup or timer is enabled for this schedule, trigger student display window on Monitor 2
+        if (item.ShowStudentPopup || item.ShowTimer || string.Equals(item.ActionType, "popup", StringComparison.OrdinalIgnoreCase))
+        {
+            try
+            {
+                var modal = new StudentAlertModalWindow(
+                    title: item.Title,
+                    message: string.IsNullOrWhiteSpace(item.PopupMessage) ? "선생님의 지도와 안내에 따라 질서 있게 행동합시다." : item.PopupMessage,
+                    showTimer: item.ShowTimer,
+                    timerMinutes: item.TimerDurationMinutes > 0 ? item.TimerDurationMinutes : 10,
+                    soundService: _soundService,
+                    emoji: GetScheduleEmoji(item.Title, item.ActionType),
+                    category: isTest ? "교실 알림 (테스트)" : "예약 교실 알림"
+                );
+
+                if (_displayManager != null)
+                {
+                    _displayManager.MoveToStudentMonitor(modal, maximize: true);
+                }
+                modal.Show();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[SchedulerService] Failed to show student modal: {ex.Message}");
+            }
+        }
+
         switch (item.ActionType?.ToLowerInvariant())
         {
             case "alarm":
@@ -225,5 +322,20 @@ public class SchedulerService : ISchedulerService
                 }
                 break;
         }
+    }
+
+    private static string GetScheduleEmoji(string title, string? actionType)
+    {
+        if (title.Contains("청소")) return "🧹";
+        if (title.Contains("하교") || title.Contains("퇴근") || title.Contains("종례")) return "🎒";
+        if (title.Contains("급식") || title.Contains("점심")) return "🍱";
+        if (title.Contains("독서") || title.Contains("책")) return "📚";
+        if (title.Contains("운동") || title.Contains("체육")) return "🏃";
+        if (title.Contains("휴식") || title.Contains("쉬는")) return "☕";
+        if (title.Contains("시험") || title.Contains("평가")) return "📝";
+        if (actionType == "shutdown") return "🛑";
+        if (actionType == "sleep") return "🌙";
+        if (actionType == "restart") return "🔄";
+        return "📢";
     }
 }

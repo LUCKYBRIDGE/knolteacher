@@ -51,6 +51,26 @@ public class RecurringScheduleItem
     [JsonPropertyName("is_completed")]
     public bool IsCompleted { get; set; } = false;
 
+    // 📢 Student Display (Monitor 2) Alert & Timer Popup
+    [JsonPropertyName("show_student_popup")]
+    public bool ShowStudentPopup { get; set; } = false;
+
+    [JsonPropertyName("popup_message")]
+    public string PopupMessage { get; set; } = string.Empty;
+
+    [JsonPropertyName("show_timer")]
+    public bool ShowTimer { get; set; } = false;
+
+    [JsonPropertyName("timer_duration_min")]
+    public int TimerDurationMinutes { get; set; } = 10;
+
+    // ⏰ 5-minute Advance Warning on Monitor 1 (Teacher screen)
+    [JsonPropertyName("enable_advance_warning")]
+    public bool EnableAdvanceWarning { get; set; } = true;
+
+    [JsonPropertyName("advance_warning_min")]
+    public int AdvanceWarningMinutes { get; set; } = 5;
+
     [JsonIgnore]
     public string ActionIcon => ActionType?.ToLowerInvariant() switch
     {
@@ -58,7 +78,9 @@ public class RecurringScheduleItem
         "sleep" => "🌙",
         "restart" => "🔄",
         "board" => "📋",
-        _ => "🔔"
+        "student_alert" => "📢",
+        "timer" => "⏱️",
+        _ => ShowStudentPopup ? "📢" : "🔔"
     };
 
     [JsonIgnore]
@@ -88,6 +110,19 @@ public class RecurringScheduleItem
         {
             if (IsSingle && IsCompleted) return "✅ 실행완료";
             return Enabled ? "🟢 활성" : "⚪ 비활성";
+        }
+    }
+
+    [JsonIgnore]
+    public string FeatureSummary
+    {
+        get
+        {
+            var parts = new List<string>();
+            if (EnableAdvanceWarning) parts.Add($"⏰ {AdvanceWarningMinutes}분 전 알림");
+            if (ShowStudentPopup) parts.Add("📺 학생화면 팝업");
+            if (ShowTimer) parts.Add($"⏱️ {TimerDurationMinutes}분 타이머");
+            return parts.Count > 0 ? string.Join(" · ", parts) : string.Empty;
         }
     }
 }

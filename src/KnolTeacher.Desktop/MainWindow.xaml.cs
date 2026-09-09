@@ -279,7 +279,17 @@ public partial class MainWindow : FluentWindow
         ListTimetable.ItemsSource = _timetableService.GetTodaySchedule();
 
         bool alarmOn = _timetableService.Settings.EnablePeriodAlarm;
-        BtnTogglePeriodAlarm.Content = alarmOn ? "🔔 알람 ON" : "🔕 알람 OFF";
+        if (TxtPeriodAlarmIcon != null && TxtPeriodAlarmLabel != null)
+        {
+            TxtPeriodAlarmIcon.Text = alarmOn ? "🔔" : "🔕";
+            TxtPeriodAlarmLabel.Text = alarmOn ? "알람 ON" : "알람 OFF";
+            TxtPeriodAlarmLabel.Foreground = alarmOn 
+                ? (Brush)FindResource("BeigeTextMain") 
+                : (Brush)FindResource("BeigeTextMuted");
+        }
+        BtnTogglePeriodAlarm.ToolTip = alarmOn 
+            ? "수업 시작 예비령 및 교시 알람: 켜짐 (클릭하여 끄기)" 
+            : "수업 시작 예비령 및 교시 알람: 꺼짐 (클릭하여 켜기)";
 
         UpdatePeriodStatus();
     }
@@ -574,9 +584,18 @@ public partial class MainWindow : FluentWindow
         {
             if (ComboWeatherRegion.Items.Count == 0)
             {
+                // 1. Resolve school-specific local region (e.g. 강릉 for 강릉교동초등학교)
+                var schoolRegion = _weatherService.ResolveSchoolRegion();
+                string schoolTag = $"🏫 {schoolRegion.Name} (우리학교)";
+                ComboWeatherRegion.Items.Add(schoolTag);
+
+                // 2. Add other regions
                 foreach (var r in _weatherService.SupportedRegions)
                 {
-                    ComboWeatherRegion.Items.Add(r.Name);
+                    if (r.Name != schoolRegion.Name)
+                    {
+                        ComboWeatherRegion.Items.Add(r.Name);
+                    }
                 }
                 ComboWeatherRegion.SelectedIndex = 0;
             }
@@ -594,7 +613,7 @@ public partial class MainWindow : FluentWindow
             {
                 TxtWeatherIcon.Text = w.WeatherIcon;
                 TxtWeatherTemp.Text = $"{w.Temperature:0.0}°C";
-                TxtWeatherDesc.Text = w.WeatherDescription;
+                TxtWeatherDesc.Text = $"{w.RegionName} · {w.WeatherDescription}";
                 TxtWeatherApparent.Text = $"체감 {w.ApparentTemperature:0.0}° · 습도 {w.Humidity}%";
 
                 TxtPm10Val.Text = $"{w.Pm10Grade} {w.Pm10:0}";

@@ -71,7 +71,7 @@ public partial class StudentDisplayWindow : Window
 
         BoardInkCanvas.StrokeCollected += (s, e) => _undoStack.Clear();
 
-        SizeChanged += (s, e) => ClampAllWidgetsWithinCanvas();
+        WidgetCanvas.SizeChanged += OnWidgetCanvasSizeChanged;
 
         _isReady = true;
         Loaded += (s, e) =>
@@ -330,6 +330,58 @@ public partial class StudentDisplayWindow : Window
             btn.BorderThickness = new Thickness(1);
             btn.FontWeight = FontWeights.SemiBold;
         }
+    }
+
+    private double _prevCanvasWidth = 0;
+    private double _prevCanvasHeight = 0;
+
+    private void OnWidgetCanvasSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        double newWidth = e.NewSize.Width;
+        double newHeight = e.NewSize.Height;
+        double oldWidth = e.PreviousSize.Width;
+        double oldHeight = e.PreviousSize.Height;
+
+        // Proportional widget scaling & repositioning when window is maximized or resized
+        if (oldWidth > 200 && oldHeight > 200 && newWidth > 200 && newHeight > 200)
+        {
+            double scaleX = newWidth / oldWidth;
+            double scaleY = newHeight / oldHeight;
+
+            if (Math.Abs(scaleX - 1.0) > 0.01 || Math.Abs(scaleY - 1.0) > 0.01)
+            {
+                foreach (var w in _widgets)
+                {
+                    double curLeft = Canvas.GetLeft(w);
+                    double curTop = Canvas.GetTop(w);
+                    if (double.IsNaN(curLeft)) curLeft = 20;
+                    if (double.IsNaN(curTop)) curTop = 20;
+
+                    double curW = w.ActualWidth > 0 ? w.ActualWidth : (double.IsNaN(w.Width) ? 400 : w.Width);
+                    double curH = w.ActualHeight > 0 ? w.ActualHeight : (double.IsNaN(w.Height) ? 300 : w.Height);
+
+                    double nextW = Math.Max(200, curW * scaleX);
+                    double nextH = Math.Max(150, curH * scaleY);
+                    double nextLeft = curLeft * scaleX;
+                    double nextTop = curTop * scaleY;
+
+                    if (nextW > newWidth - 20) nextW = Math.Max(200, newWidth - 20);
+                    if (nextH > newHeight - 20) nextH = Math.Max(150, newHeight - 20);
+
+                    double maxLeft = Math.Max(10, newWidth - nextW - 10);
+                    double maxTop = Math.Max(10, newHeight - nextH - 10);
+
+                    w.Width = nextW;
+                    w.Height = nextH;
+                    Canvas.SetLeft(w, Math.Clamp(nextLeft, 10, maxLeft));
+                    Canvas.SetTop(w, Math.Clamp(nextTop, 10, maxTop));
+                }
+            }
+        }
+
+        _prevCanvasWidth = newWidth;
+        _prevCanvasHeight = newHeight;
+        ClampAllWidgetsWithinCanvas();
     }
 
     public void ClampAllWidgetsWithinCanvas()

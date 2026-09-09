@@ -77,6 +77,40 @@
                     <CheckBox x:Name="ChkSkipHolidays" Content="공휴일 및 휴일에는 건너뛰기" IsChecked="True" Margin="0,0,0,14" FontWeight="SemiBold"/>
                 </StackPanel>
 
+                <!-- ⏰ 5-minute Advance Warning on Monitor 1 (Default: Checked) -->
+                <Border Background="#FEF3C7" CornerRadius="8" BorderBrush="#FCD34D" BorderThickness="1" Padding="12,8" Margin="0,0,0,14">
+                    <StackPanel>
+                        <CheckBox x:Name="ChkAdvanceWarning" Content="⏰ 실제 작동 5분 전 모니터 1(선생님 화면)에 사전 대비 알림 띄우기" IsChecked="True" FontWeight="Bold" Foreground="#92400E"/>
+                        <TextBlock Text="※ 수업 마무리 및 교실 정돈을 미리 준비할 수 있도록 5분 전 화면에 알림이 표시됩니다." FontSize="10.5" Foreground="#B45309" Margin="22,3,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- 📢 Monitor 2 (Student Display) Alert & Timer Popup Settings -->
+                <Border Background="#F0FDF4" CornerRadius="8" BorderBrush="#BBF7D0" BorderThickness="1" Padding="12,10" Margin="0,0,0,14">
+                    <StackPanel>
+                        <CheckBox x:Name="ChkShowStudentPopup" Content="📢 모니터 2 (학생 전자칠판/TV)에 안내 메시지 팝업 띄우기" IsChecked="False" Checked="ChkShowStudentPopup_Changed" Unchecked="ChkShowStudentPopup_Changed" FontWeight="Bold" Foreground="#166534"/>
+                        <TextBlock Text="※ 청소 시간, 하교 지도, 방과후 등 학생들에게 보여줄 메시지를 화면 중앙에 띄웁니다." FontSize="10.5" Foreground="#15803D" Margin="22,3,0,6"/>
+
+                        <StackPanel x:Name="PanelStudentPopupDetails" Visibility="Collapsed" Margin="22,4,0,0">
+                            <TextBlock Text="학생 화면 안내 메시지" FontWeight="SemiBold" FontSize="11.5" Foreground="#166534" Margin="0,0,0,4"/>
+                            <TextBox x:Name="TbPopupMessage" Height="40" TextWrapping="Wrap" AcceptsReturn="True" Text="🧹 교실 청소 및 하교 지도 시간입니다! 주변을 정리합시다." Padding="6,4" Background="White" BorderBrush="#86EFAC" Margin="0,0,0,8"/>
+
+                            <CheckBox x:Name="ChkShowTimer" Content="⏱️ 집중 카운트다운 타이머 함께 실행 (예: 청소 타이머)" IsChecked="True" FontWeight="SemiBold" Foreground="#166534" Margin="0,0,0,6"/>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="타이머 시간:" FontSize="11" Foreground="#166534" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <ComboBox x:Name="CbTimerDuration" Width="90" Height="28" FontSize="11.5" VerticalAlignment="Center">
+                                    <ComboBoxItem Content="3분" Tag="3"/>
+                                    <ComboBoxItem Content="5분" Tag="5"/>
+                                    <ComboBoxItem Content="10분" Tag="10" IsSelected="True"/>
+                                    <ComboBoxItem Content="15분" Tag="15"/>
+                                    <ComboBoxItem Content="20분" Tag="20"/>
+                                    <ComboBoxItem Content="30분" Tag="30"/>
+                                </ComboBox>
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
                 <!-- Memo -->
                 <TextBlock Text="메모 (선택)" FontWeight="Bold" FontSize="12" Foreground="#44403C" Margin="0,0,0,4"/>
                 <TextBox x:Name="TbMemo" Height="50" TextWrapping="Wrap" AcceptsReturn="True" Padding="8,4" Background="White" BorderBrush="{DynamicResource BeigeCardBorder}" Margin="0,0,0,10"/>
