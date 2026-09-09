@@ -139,7 +139,7 @@ jobs:
           git tag -a "$env:RELEASE_TAG" "$env:GITHUB_SHA" -m "KnolTeacher $env:RELEASE_TAG"
           git push origin "$env:RELEASE_TAG"
 
-      - name: Create GitHub Release metadata
+      - name: Create or reuse draft GitHub Release
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
@@ -156,9 +156,10 @@ jobs:
               --verify-tag `
               --title "$env:RELEASE_TAG" `
               --generate-notes `
-              --notes "SHA-256: $env:RELEASE_SHA256"
+              --notes "SHA-256: $env:RELEASE_SHA256" `
+              --draft
             if ($LASTEXITCODE -ne 0) {
-              throw "Unable to create GitHub Release '$env:RELEASE_TAG'."
+              throw "Unable to create draft GitHub Release '$env:RELEASE_TAG'."
             }
           }
           else {
@@ -226,3 +227,20 @@ jobs:
 
           Write-Host "Verified release asset: $($uploaded.name)"
           Write-Host "Verified release SHA-256: $env:RELEASE_SHA256"
+
+      - name: Publish verified GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release edit "$env:RELEASE_TAG" --draft=false --prerelease=false
+          if ($LASTEXITCODE -ne 0) {
+            throw "Unable to publish verified release '$env:RELEASE_TAG'."
+          }
+
+          $published = gh api "repos/$env:GITHUB_REPOSITORY/releases/tags/$env:RELEASE_TAG" | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0 -or $published.draft -eq $true -or $published.prerelease -eq $true) {
+            throw "Release '$env:RELEASE_TAG' was not published as a stable release."
+          }
+
+          Write-Host "Published stable release: $env:RELEASE_TAG"
