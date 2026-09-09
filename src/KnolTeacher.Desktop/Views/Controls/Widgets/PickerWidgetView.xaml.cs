@@ -5,8 +5,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using KnolTeacher.Desktop.Models;
 using KnolTeacher.Desktop.Services;
 using KnolTeacher.Desktop.Views.Controls;
@@ -20,10 +20,11 @@ public partial class PickerWidgetView : UserControl, IWidgetLifecycle
     private readonly ISoundService? _soundService;
     private readonly List<string> _pickedHistory = new();
     private CancellationTokenSource? _pickCts;
-    private bool _isPicking = false;
-    private bool _isReady = false;
-    private bool _isActive = false;
-    private bool _disposed = false;
+    private PopupLaunchPreferences? _popupLaunchPreferences;
+    private bool _isPicking;
+    private bool _isReady;
+    private bool _isActive;
+    private bool _disposed;
 
     public PickerWidgetView(IStudentManagerService? studentService = null, ISoundService? soundService = null)
     {
@@ -66,20 +67,45 @@ public partial class PickerWidgetView : UserControl, IWidgetLifecycle
 
     private void BtnOpenPinball_Click(object sender, RoutedEventArgs e)
     {
+        OpenPinballOnMonitor(0);
+        e.Handled = true;
+    }
+
+    private void BtnOpenPinball_MouseRightButtonUp(object sender, MouseButtonEventArgs e)
+    {
         var app = Application.Current as App;
-        var win = app?.Services?.GetService(typeof(StudentPickerWindow)) as StudentPickerWindow;
-        if (win == null && _studentService != null && _soundService != null)
+        var configService = app?.Services?.GetService(typeof(IConfigService)) as IConfigService;
+        if (configService != null)
         {
-            var displayManager = app?.Services?.GetService(typeof(IDisplayManager)) as IDisplayManager;
-            win = new StudentPickerWindow(_studentService, _soundService, displayManager);
+            _popupLaunchPreferences ??= new PopupLaunchPreferences(configService.ConfigDir);
+            if (!_popupLaunchPreferences.RightClickOpensOnSecondMonitor)
+            {
+                return;
+            }
         }
-        if (win != null)
+
+        var displayManager = app?.Services?.GetService(typeof(IDisplayManager)) as IDisplayManager;
+        int targetMonitor = displayManager?.IsDualMonitor == true ? 1 : 0;
+        OpenPinballOnMonitor(targetMonitor);
+        e.Handled = true;
+    }
+
+    private void OpenPinballOnMonitor(int monitorIndex)
+    {
+        var app = Application.Current as App;
+        var window = app?.Services?.GetService(typeof(StudentPickerWindow)) as StudentPickerWindow;
+        var displayManager = app?.Services?.GetService(typeof(IDisplayManager)) as IDisplayManager;
+
+        if (window == null && _studentService != null && _soundService != null)
         {
-            var displayManager = app?.Services?.GetService(typeof(IDisplayManager)) as IDisplayManager;
-            displayManager?.MoveToStudentMonitor(win, maximize: false);
-            win.Show();
-            win.Activate();
+            window = new StudentPickerWindow(_studentService, _soundService, displayManager);
         }
+
+        if (window == null) return;
+
+        displayManager?.MoveWindowToScreen(window, monitorIndex, maximize: false);
+        window.Show();
+        window.Activate();
     }
 
     private void ResetDisplay()
@@ -115,7 +141,6 @@ public partial class PickerWidgetView : UserControl, IWidgetLifecycle
     {
         if (_isPicking || !_isActive || _disposed) return;
 
-        // Name/gender presentation is opt-in. Number-only mode remains fully functional.
         bool personalDetailsEnabled = _studentService?.PersistPersonalDetails == true;
         bool isName = personalDetailsEnabled
             && _studentService?.UseNamesInPicker == true
@@ -140,24 +165,29 @@ public partial class PickerWidgetView : UserControl, IWidgetLifecycle
 
         if (isName && students.Count > 0)
         {
-            foreach (var s in students)
+            foreach (var student in students)
             {
-                string tag = s.Gender == "남" ? " 👦" : (s.Gender == "여" ? " 👧" : "");
-                candidates.Add(($"{s.DisplayText}{tag}", s.EffectiveAvatarId));
+                string tag = student.Gender == "남" ? " 👦" : (student.Gender == "여" ? " 👧" : string.Empty);
+                candidates.Add(($"{student.DisplayText}{tag}", student.EffectiveAvatarId));
             }
         }
         else
         {
-            int start = (TbStartNum != null && int.TryParse(TbStartNum.Text, out int sNum)) ? Math.Max(1, sNum) : 1;
-            int end = (TbEndNum != null && int.TryParse(TbEndNum.Text, out int eNum)) ? Math.Max(start, eNum) : 25;
-            for (int i = start; i <= end; i++)
+            int start = TbStartNum != null && int.TryParse(TbStartNum.Text, out int startNumber)
+                ? Math.Max(1, startNumber)
+                : 1;
+            int end = TbEndNum != null && int.TryParse(TbEndNum.Text, out int endNumber)
+                ? Math.Max(start, endNumber)
+                : 25;
+
+            for (int number = start; number <= end; number++)
             {
-                var matchedStudent = allStudents.FirstOrDefault(s => s.Number == i);
-                candidates.Add(($"{i}번", matchedStudent?.EffectiveAvatarId ?? $"avatar_{(i - 1) % 32 + 1:D2}"));
+                var matchedStudent = allStudents.FirstOrDefault(s => s.Number == number);
+                candidates.Add(($"{number}번", matchedStudent?.EffectiveAvatarId ?? $"avatar_{(number - 1) % 32 + 1:D2}"));
             }
         }
 
-        var available = candidates.Where(c => !_pickedHistory.Contains(c.Display)).ToList();
+        var available = candidates.Where(candidate => !_pickedHistory.Contains(candidate.Display)).ToList();
         if (available.Count == 0)
         {
             TxtWinner.Text = "전원 완료!";
@@ -183,10 +213,10 @@ public partial class PickerWidgetView : UserControl, IWidgetLifecycle
                 var temp = candidates[rng.Next(candidates.Count)];
                 TxtWinner.Text = temp.Display;
                 TxtWinner.Foreground = Brushes.White;
-                var tempBmp = AnimalAvatarCatalog.GetAvatarBitmap(temp.AvatarId);
-                if (tempBmp != null && BorderWinnerAvatar != null && ImgWinnerAvatar != null)
+                var tempBitmap = AnimalAvatarCatalog.GetAvatarBitmap(temp.AvatarId);
+                if (tempBitmap != null && BorderWinnerAvatar != null && ImgWinnerAvatar != null)
                 {
-                    ImgWinnerAvatar.ImageSource = tempBmp;
+                    ImgWinnerAvatar.ImageSource = tempBitmap;
                     BorderWinnerAvatar.Visibility = Visibility.Visible;
                 }
                 else if (BorderWinnerAvatar != null)
@@ -204,10 +234,10 @@ public partial class PickerWidgetView : UserControl, IWidgetLifecycle
 
             TxtWinner.Text = winner.Display;
             TxtWinner.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#10B981"));
-            var winnerBmp = AnimalAvatarCatalog.GetAvatarBitmap(winner.AvatarId);
-            if (winnerBmp != null && BorderWinnerAvatar != null && ImgWinnerAvatar != null)
+            var winnerBitmap = AnimalAvatarCatalog.GetAvatarBitmap(winner.AvatarId);
+            if (winnerBitmap != null && BorderWinnerAvatar != null && ImgWinnerAvatar != null)
             {
-                ImgWinnerAvatar.ImageSource = winnerBmp;
+                ImgWinnerAvatar.ImageSource = winnerBitmap;
                 BorderWinnerAvatar.Visibility = Visibility.Visible;
             }
             else if (BorderWinnerAvatar != null)
