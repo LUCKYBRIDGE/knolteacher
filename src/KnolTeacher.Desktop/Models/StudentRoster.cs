@@ -80,7 +80,6 @@ public static class AnimalAvatarCatalog
                 return cached;
             }
 
-            // 1. Try WPF Pack URI
             try
             {
                 var packUri = new Uri($"pack://application:,,,/assets/avatars/{avatarId}.png", UriKind.Absolute);
@@ -95,10 +94,9 @@ public static class AnimalAvatarCatalog
             }
             catch
             {
-                // Pack URI failed, try next
+                // Pack URI failed, try next.
             }
 
-            // 2. Try Local File System
             try
             {
                 string localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assets", "avatars", $"{avatarId}.png");
@@ -116,10 +114,9 @@ public static class AnimalAvatarCatalog
             }
             catch
             {
-                // Local file failed
+                // Local file failed.
             }
 
-            // 3. Try Component Pack URI
             try
             {
                 var packUri = new Uri($"pack://application:,,,/KnolTeacher.Desktop;component/assets/avatars/{avatarId}.png", UriKind.Absolute);
@@ -167,6 +164,9 @@ public class StudentItem
     public string AvatarId { get; set; } = string.Empty;
 
     [JsonIgnore]
+    public bool HasName => !string.IsNullOrWhiteSpace(Name);
+
+    [JsonIgnore]
     public string EffectiveAvatarId
     {
         get
@@ -187,13 +187,32 @@ public class StudentItem
     public string AvatarName => AnimalAvatarCatalog.GetAnimalName(EffectiveAvatarId);
 
     [JsonIgnore]
-    public string DisplayText => $"{Number}번 {Name}";
+    public string DisplayText => HasName ? $"{Number}번 {Name.Trim()}" : $"{Number}번";
+
+    public StudentItem ToNumberOnlyCopy(bool keepAvatar = true)
+    {
+        return new StudentItem
+        {
+            Number = Number,
+            AvatarId = keepAvatar ? AvatarId : string.Empty
+        };
+    }
 }
 
 public class StudentRosterContainer
 {
+    /// <summary>
+    /// Names are opt-in for classroom picker presentation. Number-only is the privacy-first default.
+    /// </summary>
     [JsonPropertyName("use_names_in_picker")]
-    public bool UseNamesInPicker { get; set; } = true;
+    public bool UseNamesInPicker { get; set; } = false;
+
+    /// <summary>
+    /// When false, SaveRoster persists only student number and non-sensitive avatar choice.
+    /// Existing legacy roster files are detected by StudentManagerService and preserved.
+    /// </summary>
+    [JsonPropertyName("persist_personal_details")]
+    public bool PersistPersonalDetails { get; set; } = false;
 
     [JsonPropertyName("students")]
     public List<StudentItem> Students { get; set; } = new();
