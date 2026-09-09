@@ -188,8 +188,19 @@ jobs:
           if ($matches.Count -eq 0) {
             gh release create "$env:RELEASE_TAG" --verify-tag --title "$env:RELEASE_TAG" --generate-notes --notes "SHA-256: $env:RELEASE_SHA256" --draft
             if ($LASTEXITCODE -ne 0) { throw "Unable to create draft GitHub Release '$env:RELEASE_TAG'." }
-            $allReleases = @(gh api "repos/$env:GITHUB_REPOSITORY/releases?per_page=100" | ConvertFrom-Json)
-            $matches = @($allReleases | Where-Object { $_.tag_name -eq $env:RELEASE_TAG })
+
+            # GitHub can briefly return a stale release collection immediately after
+            # creating a draft. Retry until the newly created release becomes visible.
+            for ($attempt = 1; $attempt -le 15; $attempt++) {
+              $allReleases = @(gh api "repos/$env:GITHUB_REPOSITORY/releases?per_page=100" | ConvertFrom-Json)
+              if ($LASTEXITCODE -ne 0) { throw "Unable to list GitHub Releases after draft creation." }
+              $matches = @($allReleases | Where-Object { $_.tag_name -eq $env:RELEASE_TAG })
+              if ($matches.Count -gt 1) { throw "Multiple releases found for '$env:RELEASE_TAG'." }
+              if ($matches.Count -eq 1 -and $null -ne $matches[0].id) { break }
+
+              Write-Host "Draft release '$env:RELEASE_TAG' is not visible yet (attempt $attempt/15). Retrying..."
+              Start-Sleep -Seconds 2
+            }
           }
 
           if ($matches.Count -ne 1 -or $null -eq $matches[0].id) { throw "Unable to resolve release ID for '$env:RELEASE_TAG'." }
