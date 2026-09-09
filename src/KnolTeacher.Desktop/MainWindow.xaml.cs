@@ -513,6 +513,45 @@ public partial class MainWindow : FluentWindow
             {
                 RbViewSelectedDay.IsChecked = true;
             }
+
+            // Automatically expand drawer on cell click if currently collapsed
+            if (PanelScheduleDrawer != null && PanelScheduleDrawer.Visibility != Visibility.Visible)
+            {
+                PanelScheduleDrawer.Visibility = Visibility.Visible;
+                if (TxtToggleDrawerText != null) TxtToggleDrawerText.Text = "접기";
+                if (TxtToggleDrawerIcon != null) TxtToggleDrawerIcon.Text = "✕";
+            }
+        }
+    }
+
+    private void BtnToggleScheduleDrawer_Click(object sender, RoutedEventArgs e)
+    {
+        if (PanelScheduleDrawer == null) return;
+        bool isOpening = PanelScheduleDrawer.Visibility != Visibility.Visible;
+        PanelScheduleDrawer.Visibility = isOpening ? Visibility.Visible : Visibility.Collapsed;
+        if (TxtToggleDrawerText != null)
+        {
+            TxtToggleDrawerText.Text = isOpening ? "접기" : "일정·메모";
+        }
+        if (TxtToggleDrawerIcon != null)
+        {
+            TxtToggleDrawerIcon.Text = isOpening ? "✕" : "📋";
+        }
+    }
+
+    private void BtnCloseScheduleDrawer_Click(object sender, RoutedEventArgs e)
+    {
+        if (PanelScheduleDrawer != null)
+        {
+            PanelScheduleDrawer.Visibility = Visibility.Collapsed;
+        }
+        if (TxtToggleDrawerText != null)
+        {
+            TxtToggleDrawerText.Text = "일정·메모";
+        }
+        if (TxtToggleDrawerIcon != null)
+        {
+            TxtToggleDrawerIcon.Text = "📋";
         }
     }
 
@@ -764,8 +803,8 @@ public partial class MainWindow : FluentWindow
             {
                 TxtWeatherIcon.Text = w.WeatherIcon;
                 TxtWeatherTemp.Text = $"{w.Temperature:0.0}°C";
-                TxtWeatherDesc.Text = $"{w.RegionName} · {w.WeatherDescription}";
-                TxtWeatherApparent.Text = $"체감 {w.ApparentTemperature:0.0}° · 습도 {w.Humidity}%";
+                TxtWeatherDesc.Text = w.WeatherDescription;
+                TxtWeatherApparent.Text = $"{w.RegionName} · 체감 {w.ApparentTemperature:0.0}°C · 습도 {w.Humidity}%";
 
                 TxtPm10Val.Text = $"{w.Pm10Grade} {w.Pm10:0}";
                 BadgePm10.Background = (Brush)new BrushConverter().ConvertFromString(w.Pm10BadgeBg)!;
