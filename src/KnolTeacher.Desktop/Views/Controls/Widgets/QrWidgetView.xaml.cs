@@ -1,3 +1,4 @@
+using System;
 using System.Windows;
 using System.Windows.Controls;
 using KnolTeacher.Desktop.Services;
@@ -13,19 +14,31 @@ public partial class QrWidgetView : UserControl
     {
         _qrCodeService = qrCodeService ?? new QrCodeService();
         InitializeComponent();
+        Loaded += (_, _) => RenderQr();
+    }
 
-        Loaded += (s, e) => RenderQr();
+    private string CurrentText
+    {
+        get
+        {
+            string text = TbWidgetUrl.Text.Trim();
+            return string.IsNullOrWhiteSpace(text) ? "https://pinky-ne.com/" : text;
+        }
     }
 
     private void RenderQr()
     {
         try
         {
-            string text = TbWidgetUrl.Text.Trim();
-            if (string.IsNullOrEmpty(text)) text = "https://pinky-ne.com/";
-            ImgWidgetQr.Source = _qrCodeService.GenerateQrBitmap(text, 8);
+            ImgWidgetQr.Source = _qrCodeService.GenerateQrBitmap(CurrentText, 8);
+            ImgWidgetQr.ToolTip = null;
         }
-        catch { }
+        catch (Exception ex)
+        {
+            ImgWidgetQr.Source = null;
+            ImgWidgetQr.ToolTip = $"QR 코드를 만들 수 없습니다. ({ex.GetType().Name})";
+            System.Diagnostics.Debug.WriteLine($"[Nolboard.QR] Render failed: {ex.GetType().Name}");
+        }
     }
 
     private void TbWidgetUrl_TextChanged(object sender, TextChangedEventArgs e) => RenderQr();
@@ -34,20 +47,30 @@ public partial class QrWidgetView : UserControl
     {
         try
         {
-            string text = TbWidgetUrl.Text.Trim();
-            _qrCodeService.CopyQrToClipboard(text);
+            _qrCodeService.CopyQrToClipboard(CurrentText);
             HudNotificationWindow.Instance.ShowToast("📱", "QR 코드 이미지가 복사되었습니다.");
         }
-        catch { }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Nolboard.QR] Copy failed: {ex.GetType().Name}");
+            HudNotificationWindow.Instance.ShowToast("⚠️", "QR 코드를 복사하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+        }
     }
 
     private void BtnZoom_Click(object sender, RoutedEventArgs e)
     {
-        string text = TbWidgetUrl.Text.Trim();
-        var dlg = new QrCodeModalDialog(_qrCodeService, "📱 실시간 수업 QR 코드", text)
+        try
         {
-            Owner = Window.GetWindow(this)
-        };
-        dlg.ShowDialog();
+            var dialog = new QrCodeModalDialog(_qrCodeService, "📱 실시간 수업 QR 코드", CurrentText)
+            {
+                Owner = Window.GetWindow(this)
+            };
+            dialog.ShowDialog();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Nolboard.QR] Zoom failed: {ex.GetType().Name}");
+            HudNotificationWindow.Instance.ShowToast("⚠️", "QR 코드를 크게 표시하지 못했습니다.");
+        }
     }
 }

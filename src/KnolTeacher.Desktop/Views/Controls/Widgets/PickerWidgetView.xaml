@@ -6,17 +6,12 @@
              mc:Ignorable="d">
     <Grid Margin="6">
         <Grid.RowDefinitions>
-            <!-- Top Filter Bar -->
             <RowDefinition Height="Auto" />
-            <!-- Billboard Result -->
             <RowDefinition Height="*" />
-            <!-- Pick Action Button -->
             <RowDefinition Height="Auto" />
-            <!-- History Text -->
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!-- Mode & Filter & Manual Range Bar -->
         <Grid Grid.Row="0" Margin="0,0,0,6">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -24,12 +19,25 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <!-- Line 0: Pinball Launcher -->
-            <Button Grid.Row="0" Content="🌱 32종 동물 뽑기 레이스 ↗" Click="BtnOpenPinball_Click" Height="26" Margin="0,0,0,4" Background="#2F6B45" Foreground="White" FontWeight="Bold" FontSize="11" BorderThickness="0" Cursor="Hand">
+            <!-- This is intentionally a separate-window launcher, not another NolBoard widget. -->
+            <Button x:Name="BtnOpenPinball"
+                    Grid.Row="0"
+                    Content="🌱 32종 동물 뽑기 레이스 ↗"
+                    Click="BtnOpenPinball_Click"
+                    MouseRightButtonUp="BtnOpenPinball_MouseRightButtonUp"
+                    Height="26"
+                    Margin="0,0,0,4"
+                    Background="#334155"
+                    Foreground="White"
+                    BorderBrush="#64748B"
+                    BorderThickness="1"
+                    FontWeight="Bold"
+                    FontSize="11"
+                    Cursor="Hand"
+                    ToolTip="별도 창 도구 · 왼클릭은 모니터 1, 우클릭은 모니터 2에서 엽니다.">
                 <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
             </Button>
 
-            <!-- Line 1: Mode & Gender -->
             <Grid Grid.Row="1" Margin="0,0,0,4">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -46,7 +54,6 @@
                 </ComboBox>
             </Grid>
 
-            <!-- Line 2: Manual Number Range Input -->
             <StackPanel Grid.Row="2" Orientation="Horizontal" VerticalAlignment="Center">
                 <TextBlock Text="번호 직접입력:" Foreground="#94A3B8" FontSize="10" VerticalAlignment="Center" Margin="0,0,4,0"/>
                 <TextBox x:Name="TbStartNum" Text="1" Width="28" Height="24" FontSize="11" FontWeight="Bold" TextAlignment="Center" Background="#1E293B" Foreground="White" BorderBrush="#334155" VerticalContentAlignment="Center" TextChanged="Range_TextChanged"/>
@@ -56,7 +63,6 @@
             </StackPanel>
         </Grid>
 
-        <!-- Big Display Card (Responsive Viewbox) -->
         <Border Grid.Row="1" Background="#0F172A" CornerRadius="10" BorderBrush="#334155" BorderThickness="1" Margin="0,0,0,6" Padding="8">
             <Viewbox Stretch="Uniform">
                 <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -70,12 +76,10 @@
             </Viewbox>
         </Border>
 
-        <!-- Action Button -->
         <Button x:Name="BtnPick" Grid.Row="2" Content="🎲 추첨하기!" Click="BtnPick_Click" Height="36" Margin="0,0,0,6" Background="#0284C7" Foreground="White" FontWeight="Bold" FontSize="14" BorderThickness="0" Cursor="Hand">
             <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
         </Button>
 
-        <!-- History -->
         <ScrollViewer Grid.Row="3" MaxHeight="50" VerticalScrollBarVisibility="Auto">
             <TextBlock x:Name="TxtHistory" Text="기록: 없음" FontSize="10" Foreground="#94A3B8" TextWrapping="Wrap"/>
         </ScrollViewer>
