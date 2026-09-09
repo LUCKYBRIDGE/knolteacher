@@ -16,7 +16,12 @@ public class UpdateService : IUpdateService
     // If version metadata is unexpectedly unavailable, prefer a conservative low version
     // so the updater can still recover by offering the latest valid GitHub Release.
     public const string FallbackVersion = "v0.0.0";
-    public const string ReleaseAssetName = "놀티쳐.exe";
+
+    // GitHub may normalize non-ASCII Release asset names. Keep the user-facing/local
+    // executable name Korean, while accepting the stable ASCII transport name.
+    public const string LocalExecutableName = "놀티쳐.exe";
+    public const string PrimaryReleaseAssetName = "KnolTeacher.exe";
+    public const string LegacyReleaseAssetName = "놀티쳐.exe";
 
     private const string LatestReleaseApi = "https://api.github.com/repos/LUCKYBRIDGE/knolteacher/releases/latest";
 
@@ -95,33 +100,43 @@ public class UpdateService : IUpdateService
 
             if (root.TryGetProperty("assets", out var assetsProp) && assetsProp.ValueKind == JsonValueKind.Array)
             {
-                foreach (var asset in assetsProp.EnumerateArray())
+                // Prefer the stable ASCII GitHub transport name, but remain compatible
+                // with any older Release that successfully retained the Korean name.
+                foreach (string acceptedName in new[] { PrimaryReleaseAssetName, LegacyReleaseAssetName })
                 {
-                    string assetName = asset.TryGetProperty("name", out var assetNameProp)
-                        ? assetNameProp.GetString() ?? string.Empty
-                        : string.Empty;
-
-                    if (!string.Equals(assetName, ReleaseAssetName, StringComparison.OrdinalIgnoreCase))
+                    foreach (var asset in assetsProp.EnumerateArray())
                     {
-                        continue;
+                        string assetName = asset.TryGetProperty("name", out var assetNameProp)
+                            ? assetNameProp.GetString() ?? string.Empty
+                            : string.Empty;
+
+                        if (!string.Equals(assetName, acceptedName, StringComparison.OrdinalIgnoreCase))
+                        {
+                            continue;
+                        }
+
+                        result.AssetName = assetName;
+                        result.DownloadUrl = asset.TryGetProperty("browser_download_url", out var downloadProp)
+                            ? downloadProp.GetString() ?? string.Empty
+                            : string.Empty;
+                        result.AssetSize = asset.TryGetProperty("size", out var sizeProp) ? sizeProp.GetInt64() : 0;
+                        result.AssetDigest = asset.TryGetProperty("digest", out var digestProp) && digestProp.ValueKind == JsonValueKind.String
+                            ? digestProp.GetString() ?? string.Empty
+                            : string.Empty;
+                        break;
                     }
 
-                    result.AssetName = assetName;
-                    result.DownloadUrl = asset.TryGetProperty("browser_download_url", out var downloadProp)
-                        ? downloadProp.GetString() ?? string.Empty
-                        : string.Empty;
-                    result.AssetSize = asset.TryGetProperty("size", out var sizeProp) ? sizeProp.GetInt64() : 0;
-                    result.AssetDigest = asset.TryGetProperty("digest", out var digestProp) && digestProp.ValueKind == JsonValueKind.String
-                        ? digestProp.GetString() ?? string.Empty
-                        : string.Empty;
-                    break;
+                    if (!string.IsNullOrWhiteSpace(result.DownloadUrl))
+                    {
+                        break;
+                    }
                 }
             }
 
             // 업데이트가 있어도 정식 단일 실행 파일이 없는 Release는 사용자에게 제안하지 않는다.
             if (result.HasUpdate && string.IsNullOrWhiteSpace(result.DownloadUrl))
             {
-                Debug.WriteLine($"Latest release {latestTag} has no required asset: {ReleaseAssetName}");
+                Debug.WriteLine($"Latest release {latestTag} has no supported KnolTeacher executable asset.");
                 result.HasUpdate = false;
             }
         }
@@ -138,9 +153,9 @@ public class UpdateService : IUpdateService
         IProgress<(long bytesDownloaded, long totalBytes, double percentage)>? progress,
         CancellationToken cancellationToken = default)
     {
-        if (!string.Equals(updateInfo.AssetName, ReleaseAssetName, StringComparison.OrdinalIgnoreCase))
+        if (!IsAcceptedReleaseAssetName(updateInfo.AssetName))
         {
-            throw new InvalidDataException($"정식 업데이트 파일명이 아닙니다. 필요한 파일: {ReleaseAssetName}");
+            throw new InvalidDataException($"정식 놀티쳐 업데이트 파일명이 아닙니다: {updateInfo.AssetName}");
         }
 
         if (string.IsNullOrWhiteSpace(updateInfo.DownloadUrl))
@@ -162,7 +177,9 @@ public class UpdateService : IUpdateService
 
         string tempDir = Path.Combine(Path.GetTempPath(), "KnolTeacherUpdates");
         Directory.CreateDirectory(tempDir);
-        string destPath = Path.Combine(tempDir, ReleaseAssetName);
+        // Whatever the GitHub transport name is, normalize the downloaded file to the
+        // actual local product executable name before replacement.
+        string destPath = Path.Combine(tempDir, LocalExecutableName);
 
         try
         {
@@ -223,9 +240,9 @@ public class UpdateService : IUpdateService
             throw new FileNotFoundException("다운로드된 업데이트 파일을 찾을 수 없습니다.", downloadedFilePath);
         }
 
-        if (!string.Equals(Path.GetFileName(downloadedFilePath), ReleaseAssetName, StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(Path.GetFileName(downloadedFilePath), LocalExecutableName, StringComparison.OrdinalIgnoreCase))
         {
-            throw new InvalidDataException($"정식 업데이트 실행 파일이 아닙니다: {Path.GetFileName(downloadedFilePath)}");
+            throw new InvalidDataException($"로컬 적용용 놀티쳐 실행 파일이 아닙니다: {Path.GetFileName(downloadedFilePath)}");
         }
 
         string? currentExe = Environment.ProcessPath;
@@ -286,6 +303,13 @@ del ""%~f0""
         }
 
         return string.Compare(cleanLatest, cleanCurrent, StringComparison.OrdinalIgnoreCase) > 0;
+    }
+
+    public static bool IsAcceptedReleaseAssetName(string? assetName)
+    {
+        if (string.IsNullOrWhiteSpace(assetName)) return false;
+        return string.Equals(assetName, PrimaryReleaseAssetName, StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(assetName, LegacyReleaseAssetName, StringComparison.OrdinalIgnoreCase);
     }
 
     private static async Task<bool> VerifySha256Async(string filePath, string digest, CancellationToken cancellationToken)
