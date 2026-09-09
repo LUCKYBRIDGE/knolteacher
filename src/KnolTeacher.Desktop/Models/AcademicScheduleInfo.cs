@@ -144,6 +144,11 @@ public class CalendarDayCell
 
     public string DotColor => HasHoliday ? "#EF4444" : "#2563EB";
     public System.Windows.Visibility DotVisibility => HasEvent ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
+
+    public List<TeacherCalendarEvent> TeacherEvents { get; set; } = new();
+    public bool HasTeacherEvent => TeacherEvents.Count > 0;
+    public System.Windows.Visibility TeacherDotVisibility => HasTeacherEvent ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
+    public string TeacherDotColor => TeacherEvents.Count > 0 && !string.IsNullOrEmpty(TeacherEvents[0].Color) ? TeacherEvents[0].Color : "#10B981";
 }
 
 

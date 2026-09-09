@@ -807,135 +807,243 @@
 
                                     <!-- 위젯 카드 3: 학사일정 & 월간 달력 -->
                                     <controls:MainWidgetCard x:Name="CardCalendar" WidgetId="calendar" Title="학사일정 &amp; 월간 달력" Icon="🗓️" MinWidth="380" MinHeight="420">
-                                        <Grid Margin="14,10">
-                                    <Grid.RowDefinitions>
-                                        <!-- 0: Month Navigation Header -->
-                                        <RowDefinition Height="Auto"/>
-                                        <!-- 1: Weekday Headers -->
-                                        <RowDefinition Height="Auto"/>
-                                        <!-- 2: 7x6 Calendar Grid -->
-                                        <RowDefinition Height="Auto"/>
-                                        <!-- 3: Divider -->
-                                        <RowDefinition Height="Auto"/>
-                                        <!-- 4: Schedule List -->
-                                        <RowDefinition Height="*"/>
-                                    </Grid.RowDefinitions>
+                                        <Grid Margin="12,10">
+                                            <Grid.RowDefinitions>
+                                                <!-- 0: Month Navigation Header -->
+                                                <RowDefinition Height="Auto"/>
+                                                <!-- 1: Weekday Headers -->
+                                                <RowDefinition Height="Auto"/>
+                                                <!-- 2: 7x6 Calendar Grid -->
+                                                <RowDefinition Height="Auto"/>
+                                                <!-- 3: Tab Selector / Section Divider -->
+                                                <RowDefinition Height="Auto"/>
+                                                <!-- 4: Schedule &amp; Memo Content List -->
+                                                <RowDefinition Height="*"/>
+                                            </Grid.RowDefinitions>
 
-                                    <!-- 0: Header -->
-                                    <DockPanel Grid.Row="0" Margin="0,0,0,10" LastChildFill="True">
-                                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                                            <Button x:Name="BtnCalPrev" Click="BtnCalPrev_Click" Content="‹" Width="24" Height="24" Padding="0" Background="#F8FAFC" Foreground="{DynamicResource BeigeTextSub}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="14" FontWeight="Bold" Cursor="Hand">
-                                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="5"/></Style></Button.Resources>
-                                            </Button>
-                                            <TextBlock x:Name="TxtCalMonthYear" Text="2026년 9월" FontWeight="Bold" FontSize="13" Foreground="{DynamicResource BeigeAccent}" VerticalAlignment="Center" Margin="8,0"/>
-                                            <Button x:Name="BtnCalNext" Click="BtnCalNext_Click" Content="›" Width="24" Height="24" Padding="0" Background="#F8FAFC" Foreground="{DynamicResource BeigeTextSub}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="14" FontWeight="Bold" Cursor="Hand">
-                                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="5"/></Style></Button.Resources>
-                                            </Button>
-                                            <Button x:Name="BtnCalToday" Click="BtnCalToday_Click" Content="오늘" Padding="6,2" Margin="6,0,0,0" Background="#F8FAFC" Foreground="{DynamicResource BeigeTextMain}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="10.5" Cursor="Hand">
-                                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="5"/></Style></Button.Resources>
-                                            </Button>
-                                        </StackPanel>
-                                        <TextBlock Text="월간 일정" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource BeigeTextMain}" VerticalAlignment="Center"/>
-                                    </DockPanel>
+                                            <!-- 0: Header -->
+                                            <DockPanel Grid.Row="0" Margin="0,0,0,8" LastChildFill="True">
+                                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <Button x:Name="BtnCalPrev" Click="BtnCalPrev_Click" Content="‹" Width="24" Height="24" Padding="0" Background="#F8FAFC" Foreground="{DynamicResource BeigeTextSub}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="14" FontWeight="Bold" Cursor="Hand">
+                                                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="5"/></Style></Button.Resources>
+                                                    </Button>
+                                                    <TextBlock x:Name="TxtCalMonthYear" Text="2026년 9월" FontWeight="Bold" FontSize="13" Foreground="{DynamicResource BeigeAccent}" VerticalAlignment="Center" Margin="8,0"/>
+                                                    <Button x:Name="BtnCalNext" Click="BtnCalNext_Click" Content="›" Width="24" Height="24" Padding="0" Background="#F8FAFC" Foreground="{DynamicResource BeigeTextSub}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="14" FontWeight="Bold" Cursor="Hand">
+                                                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="5"/></Style></Button.Resources>
+                                                    </Button>
+                                                    <Button x:Name="BtnCalToday" Click="BtnCalToday_Click" Content="오늘" Padding="6,2" Margin="6,0,0,0" Background="#F8FAFC" Foreground="{DynamicResource BeigeTextMain}" BorderBrush="{DynamicResource BeigeCardBorder}" BorderThickness="1" FontSize="10.5" Cursor="Hand">
+                                                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="5"/></Style></Button.Resources>
+                                                    </Button>
+                                                    <Button x:Name="BtnAddCalendarEvent" Click="BtnAddCalendarEvent_Click" Content="➕ 일정 등록" Padding="8,2" Margin="8,0,0,0" Background="#EFF6FF" Foreground="#2563EB" BorderBrush="#BFDBFE" BorderThickness="1" FontSize="11" FontWeight="Bold" Cursor="Hand" ToolTip="새 일정 또는 메모를 등록합니다.">
+                                                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="5"/></Style></Button.Resources>
+                                                    </Button>
+                                                </StackPanel>
+                                                <TextBlock Text="월간 일정 &amp; 메모" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource BeigeTextMain}" VerticalAlignment="Center"/>
+                                            </DockPanel>
 
-                                    <!-- 1: Weekday Names -->
-                                    <UniformGrid Grid.Row="1" Columns="7" Margin="0,0,0,8">
-                                        <TextBlock Text="일" Foreground="#EF4444" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
-                                        <TextBlock Text="월" Foreground="{DynamicResource BeigeTextMuted}" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
-                                        <TextBlock Text="화" Foreground="{DynamicResource BeigeTextMuted}" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
-                                        <TextBlock Text="수" Foreground="{DynamicResource BeigeTextMuted}" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
-                                        <TextBlock Text="목" Foreground="{DynamicResource BeigeTextMuted}" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
-                                        <TextBlock Text="금" Foreground="{DynamicResource BeigeTextMuted}" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
-                                        <TextBlock Text="토" Foreground="#3B82F6" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
-                                    </UniformGrid>
+                                            <!-- 1: Weekday Names -->
+                                            <UniformGrid Grid.Row="1" Columns="7" Margin="0,0,0,6">
+                                                <TextBlock Text="일" Foreground="#EF4444" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="월" Foreground="{DynamicResource BeigeTextMuted}" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="화" Foreground="{DynamicResource BeigeTextMuted}" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="수" Foreground="{DynamicResource BeigeTextMuted}" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="목" Foreground="{DynamicResource BeigeTextMuted}" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="금" Foreground="{DynamicResource BeigeTextMuted}" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="토" Foreground="#3B82F6" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
+                                            </UniformGrid>
 
-                                    <!-- 2: Calendar Day Cells (Today is Blue Circle) -->
-                                    <ItemsControl x:Name="ListCalendarCells" Grid.Row="2" Margin="0,0,0,10">
-                                        <ItemsControl.ItemsPanel>
-                                            <ItemsPanelTemplate>
-                                                <UniformGrid Columns="7" />
-                                            </ItemsPanelTemplate>
-                                        </ItemsControl.ItemsPanel>
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <Border Margin="1" CornerRadius="8" Padding="1,2" Cursor="Hand" MouseLeftButtonUp="CalDay_MouseLeftButtonUp" Tag="{Binding}" MinHeight="32">
-                                                    <Border.Style>
-                                                        <Style TargetType="Border">
-                                                            <Setter Property="Background" Value="Transparent"/>
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                                                    <Setter Property="Background" Value="#EFF6FF"/>
-                                                                    <Setter Property="BorderBrush" Value="#93C5FD"/>
-                                                                    <Setter Property="BorderThickness" Value="1"/>
-                                                                </DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </Border.Style>
-                                                    <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
-                                                        <!-- Circular badge for today (Blue circle like mockup day 3) -->
-                                                        <Border Width="26" Height="26" CornerRadius="13" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <!-- 2: Calendar Day Cells (Today is Blue Circle, dots for events) -->
+                                            <ItemsControl x:Name="ListCalendarCells" Grid.Row="2" Margin="0,0,0,8">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <UniformGrid Columns="7" />
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Border Margin="1" CornerRadius="8" Padding="1,2" Cursor="Hand" MouseLeftButtonUp="CalDay_MouseLeftButtonUp" Tag="{Binding}" MinHeight="32">
                                                             <Border.Style>
                                                                 <Style TargetType="Border">
                                                                     <Setter Property="Background" Value="Transparent"/>
                                                                     <Style.Triggers>
-                                                                        <DataTrigger Binding="{Binding IsToday}" Value="True">
-                                                                            <Setter Property="Background" Value="{DynamicResource BeigeAccent}"/>
+                                                                        <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                                            <Setter Property="Background" Value="#EFF6FF"/>
+                                                                            <Setter Property="BorderBrush" Value="#93C5FD"/>
+                                                                            <Setter Property="BorderThickness" Value="1"/>
                                                                         </DataTrigger>
                                                                     </Style.Triggers>
                                                                 </Style>
                                                             </Border.Style>
-                                                            <Grid>
-                                                                <TextBlock Text="{Binding DayNumber}" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                                                    <TextBlock.Style>
-                                                                        <Style TargetType="TextBlock">
-                                                                            <Setter Property="Foreground" Value="{Binding DayForeground}"/>
+                                                            <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                                <!-- Circular badge for today -->
+                                                                <Border Width="24" Height="24" CornerRadius="12" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                                    <Border.Style>
+                                                                        <Style TargetType="Border">
+                                                                            <Setter Property="Background" Value="Transparent"/>
                                                                             <Style.Triggers>
                                                                                 <DataTrigger Binding="{Binding IsToday}" Value="True">
-                                                                                    <Setter Property="Foreground" Value="White"/>
-                                                                                    <Setter Property="FontWeight" Value="Bold"/>
+                                                                                    <Setter Property="Background" Value="{DynamicResource BeigeAccent}"/>
                                                                                 </DataTrigger>
                                                                             </Style.Triggers>
                                                                         </Style>
-                                                                    </TextBlock.Style>
-                                                                </TextBlock>
+                                                                    </Border.Style>
+                                                                    <Grid>
+                                                                        <TextBlock Text="{Binding DayNumber}" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                                            <TextBlock.Style>
+                                                                                <Style TargetType="TextBlock">
+                                                                                    <Setter Property="Foreground" Value="{Binding DayForeground}"/>
+                                                                                    <Style.Triggers>
+                                                                                        <DataTrigger Binding="{Binding IsToday}" Value="True">
+                                                                                            <Setter Property="Foreground" Value="White"/>
+                                                                                            <Setter Property="FontWeight" Value="Bold"/>
+                                                                                        </DataTrigger>
+                                                                                    </Style.Triggers>
+                                                                                </Style>
+                                                                            </TextBlock.Style>
+                                                                        </TextBlock>
+                                                                    </Grid>
+                                                                </Border>
+                                                                <!-- Dual Dots: School event dot + Teacher custom event dot -->
+                                                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,21,0,0">
+                                                                    <Ellipse Width="4" Height="4" Margin="1,0" Fill="{Binding DotColor}" Visibility="{Binding DotVisibility}"/>
+                                                                    <Ellipse Width="4" Height="4" Margin="1,0" Fill="{Binding TeacherDotColor}" Visibility="{Binding TeacherDotVisibility}"/>
+                                                                </StackPanel>
                                                             </Grid>
                                                         </Border>
-                                                        <Ellipse Width="4" Height="4" Margin="0,22,0,0" Fill="{Binding DotColor}" Visibility="{Binding DotVisibility}" HorizontalAlignment="Center"/>
-                                                    </Grid>
-                                                </Border>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
 
-                                    <!-- 3: Divider -->
-                                    <Border Grid.Row="3" Height="1" Background="#F1F5F9" Margin="0,4,0,10"/>
+                                            <!-- 3: Tab Selector / Section Divider -->
+                                            <Border Grid.Row="3" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="0,1,0,1" Padding="4,6" Margin="0,2,0,8">
+                                                <DockPanel LastChildFill="True">
+                                                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                                        <Button x:Name="BtnAddEventForSelectedDay" Click="BtnAddCalendarEvent_Click" Content="➕ 일정 추가" Padding="6,2" Background="#EFF6FF" Foreground="#2563EB" BorderBrush="#BFDBFE" BorderThickness="1" FontSize="11" FontWeight="Bold" Cursor="Hand">
+                                                            <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
+                                                        </Button>
+                                                    </StackPanel>
+                                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                        <RadioButton x:Name="RbViewSelectedDay" Content="📅 선택일 일정·메모" IsChecked="True" Checked="RbViewMode_Checked" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource BeigeTextMain}" Margin="0,0,10,0" Cursor="Hand"/>
+                                                        <RadioButton x:Name="RbViewMonthSchedule" Content="🏫 이번달 학사일정" Checked="RbViewMode_Checked" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource BeigeTextMuted}" Cursor="Hand"/>
+                                                    </StackPanel>
+                                                </DockPanel>
+                                            </Border>
 
-                                    <!-- 4: Monthly Academic Schedule List (1일 │ 교통안전... format) -->
-                                    <ScrollViewer Grid.Row="4" VerticalScrollBarVisibility="Auto">
-                                        <ItemsControl x:Name="ListMonthAcademicEvents">
-                                            <ItemsControl.ItemTemplate>
-                                                <DataTemplate>
-                                                    <Grid Margin="4,0,4,8" Cursor="Hand">
-                                                        <Grid.ColumnDefinitions>
-                                                            <ColumnDefinition Width="38"/>
-                                                            <ColumnDefinition Width="Auto"/>
-                                                            <ColumnDefinition Width="*"/>
-                                                        </Grid.ColumnDefinitions>
-                                                        <TextBlock Text="{Binding Date, StringFormat='{}{0:d일}'}" FontWeight="Bold" FontSize="12" Foreground="{DynamicResource BeigeTextSub}" VerticalAlignment="Center"/>
-                                                        <Border Grid.Column="1" Width="2" Height="14" Background="{DynamicResource BeigeAccent}" CornerRadius="1" Margin="6,0,10,0" VerticalAlignment="Center"/>
-                                                        <TextBlock Grid.Column="2" Text="{Binding EventName}" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource BeigeTextMain}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                                    </Grid>
-                                                </DataTemplate>
-                                            </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
-                                    </ScrollViewer>
+                                            <!-- 4: Schedule &amp; Memo Content List -->
+                                            <Grid Grid.Row="4">
+                                                <!-- 4-A: Selected Day Events &amp; Memos Panel -->
+                                                <Grid x:Name="PanelSelectedDayView" Visibility="Visible">
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="Auto"/>
+                                                        <RowDefinition Height="*"/>
+                                                    </Grid.RowDefinitions>
 
-                                    <!-- Hidden backward compatibility fields -->
-                                    <TextBlock x:Name="TxtCalSelectedDate" Visibility="Collapsed"/>
-                                    <TextBlock x:Name="TxtCalSelectedEvent" Visibility="Collapsed"/>
-                                    <ItemsControl x:Name="ListUpcomingDDays" Visibility="Collapsed"/>
-                                    <TextBox x:Name="TxtClassNoticeMemo" Visibility="Collapsed"/>
-                                </Grid>
+                                                    <!-- Selected Date Header -->
+                                                    <TextBlock x:Name="TxtSelectedDayTitle" Grid.Row="0" Text="9월 9일 (수)" FontSize="12.5" FontWeight="Bold" Foreground="{DynamicResource BeigeAccent}" Margin="2,0,0,6"/>
+
+                                                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                                                        <StackPanel>
+                                                            <!-- School Academic Events for Selected Day -->
+                                                            <ItemsControl x:Name="ListSelectedDayAcademicEvents" Margin="0,0,0,6">
+                                                                <ItemsControl.ItemTemplate>
+                                                                    <DataTemplate>
+                                                                        <Border Background="#FEF3C7" BorderBrush="#FDE68A" BorderThickness="1" CornerRadius="6" Padding="8,5" Margin="0,0,0,5">
+                                                                            <DockPanel LastChildFill="True">
+                                                                                <Border DockPanel.Dock="Left" Background="#F59E0B" CornerRadius="3" Padding="4,1" Margin="0,0,8,0" VerticalAlignment="Center">
+                                                                                    <TextBlock Text="🏫 학사" FontSize="10" FontWeight="Bold" Foreground="White"/>
+                                                                                </Border>
+                                                                                <TextBlock Text="{Binding EventName}" FontSize="12" FontWeight="Bold" Foreground="#92400E" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                                                            </DockPanel>
+                                                                        </Border>
+                                                                    </DataTemplate>
+                                                                </ItemsControl.ItemTemplate>
+                                                            </ItemsControl>
+
+                                                            <!-- Teacher Custom Events for Selected Day -->
+                                                            <ItemsControl x:Name="ListSelectedDayTeacherEvents">
+                                                                <ItemsControl.ItemTemplate>
+                                                                    <DataTemplate>
+                                                                        <Border Background="{Binding LightBackgroundBrush}" BorderBrush="{Binding BorderBrush}" BorderThickness="1" CornerRadius="6" Padding="8,6" Margin="0,0,0,6">
+                                                                            <Grid>
+                                                                                <Grid.RowDefinitions>
+                                                                                    <RowDefinition Height="Auto"/>
+                                                                                    <RowDefinition Height="Auto"/>
+                                                                                </Grid.RowDefinitions>
+                                                                                <Grid.ColumnDefinitions>
+                                                                                    <ColumnDefinition Width="Auto"/>
+                                                                                    <ColumnDefinition Width="*"/>
+                                                                                    <ColumnDefinition Width="Auto"/>
+                                                                                </Grid.ColumnDefinitions>
+
+                                                                                <!-- Left Color Indicator Bar -->
+                                                                                <Border Grid.RowSpan="2" Grid.Column="0" Width="4" Background="{Binding ColorBrush}" CornerRadius="2" Margin="0,0,8,0"/>
+
+                                                                                <!-- Title and Badges -->
+                                                                                <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                                                                    <Border Background="White" BorderBrush="{Binding BorderBrush}" BorderThickness="1" CornerRadius="3" Padding="4,1" Margin="0,0,6,0">
+                                                                                        <TextBlock Text="{Binding DisplayTimeText}" FontSize="10" FontWeight="Bold" Foreground="{Binding ColorBrush}"/>
+                                                                                    </Border>
+                                                                                    <TextBlock Text="{Binding Title}" FontSize="12.5" FontWeight="Bold" Foreground="#1E293B" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                                                                    <TextBlock Text="{Binding AlarmText}" FontSize="10" FontWeight="SemiBold" Foreground="#EA580C" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                                                                                </StackPanel>
+
+                                                                                <!-- Action Buttons: Edit &amp; Delete -->
+                                                                                <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                                                                    <Button Content="✏️" Click="BtnEditCalendarEvent_Click" Tag="{Binding}" Width="22" Height="22" Background="Transparent" BorderThickness="0" FontSize="11" Cursor="Hand" ToolTip="수정"/>
+                                                                                    <Button Content="🗑️" Click="BtnDeleteCalendarEvent_Click" Tag="{Binding}" Width="22" Height="22" Background="Transparent" BorderThickness="0" FontSize="11" Cursor="Hand" ToolTip="삭제"/>
+                                                                                </StackPanel>
+
+                                                                                <!-- Memo content if present -->
+                                                                                <TextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding Memo}" FontSize="11" Foreground="#64748B" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                                                                            </Grid>
+                                                                        </Border>
+                                                                    </DataTemplate>
+                                                                </ItemsControl.ItemTemplate>
+                                                            </ItemsControl>
+
+                                                            <!-- Empty State Panel -->
+                                                            <Border x:Name="PanelNoEventsForDay" Background="#F8FAFC" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="8" Padding="14,16" Margin="0,4,0,0" HorizontalAlignment="Stretch">
+                                                                <StackPanel HorizontalAlignment="Center">
+                                                                    <TextBlock Text="📝" FontSize="22" HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                                                                    <TextBlock Text="선택한 날짜에 등록된 일정이나 메모가 없습니다." FontSize="11.5" Foreground="#64748B" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                                                    <Button Click="BtnAddCalendarEvent_Click" Content="➕ 이 날짜에 일정·메모 추가" Padding="10,4" Background="#EFF6FF" Foreground="#2563EB" BorderBrush="#BFDBFE" BorderThickness="1" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center" Cursor="Hand">
+                                                                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="5"/></Style></Button.Resources>
+                                                                    </Button>
+                                                                </StackPanel>
+                                                            </Border>
+                                                        </StackPanel>
+                                                    </ScrollViewer>
+                                                </Grid>
+
+                                                <!-- 4-B: Month Academic Events Panel -->
+                                                <Grid x:Name="PanelMonthScheduleView" Visibility="Collapsed">
+                                                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                                        <ItemsControl x:Name="ListMonthAcademicEvents">
+                                                            <ItemsControl.ItemTemplate>
+                                                                <DataTemplate>
+                                                                    <Grid Margin="4,0,4,8" Cursor="Hand">
+                                                                        <Grid.ColumnDefinitions>
+                                                                            <ColumnDefinition Width="38"/>
+                                                                            <ColumnDefinition Width="Auto"/>
+                                                                            <ColumnDefinition Width="*"/>
+                                                                        </Grid.ColumnDefinitions>
+                                                                        <TextBlock Text="{Binding Date, StringFormat='{}{0:d일}'}" FontWeight="Bold" FontSize="12" Foreground="{DynamicResource BeigeTextSub}" VerticalAlignment="Center"/>
+                                                                        <Border Grid.Column="1" Width="2" Height="14" Background="{DynamicResource BeigeAccent}" CornerRadius="1" Margin="6,0,10,0" VerticalAlignment="Center"/>
+                                                                        <TextBlock Grid.Column="2" Text="{Binding EventName}" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource BeigeTextMain}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                                                    </Grid>
+                                                                </DataTemplate>
+                                                            </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
+                                                    </ScrollViewer>
+                                                </Grid>
+                                            </Grid>
+
+                                            <!-- Hidden backward compatibility fields -->
+                                            <TextBlock x:Name="TxtCalSelectedDate" Visibility="Collapsed"/>
+                                            <TextBlock x:Name="TxtCalSelectedEvent" Visibility="Collapsed"/>
+                                            <ItemsControl x:Name="ListUpcomingDDays" Visibility="Collapsed"/>
+                                            <TextBox x:Name="TxtClassNoticeMemo" Visibility="Collapsed"/>
+                                        </Grid>
                                     </controls:MainWidgetCard>
 
                                     <!-- 위젯 카드 4: 학교 점심 & 날씨 -->

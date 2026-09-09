@@ -362,10 +362,16 @@ public partial class MainWindow : FluentWindow
     {
         try
         {
-            TxtCalMonthYear.Text = $"{_calYear}년 {_calMonth}월";
+            if (TxtCalMonthYear != null)
+            {
+                TxtCalMonthYear.Text = $"{_calYear}년 {_calMonth}월";
+            }
             _monthScheduleEvents = await _academicCalendarService.GetScheduleForMonthAsync(_calYear, _calMonth, force);
-            var cells = _academicCalendarService.GenerateMonthGrid(_calYear, _calMonth, _monthScheduleEvents, _selectedCalDate);
-            ListCalendarCells.ItemsSource = cells;
+            var cells = _academicCalendarService.GenerateMonthGrid(_calYear, _calMonth, _monthScheduleEvents, _selectedCalDate, _configService.TeacherCalendarEvents);
+            if (ListCalendarCells != null)
+            {
+                ListCalendarCells.ItemsSource = cells;
+            }
             if (ListMonthAcademicEvents != null && _monthScheduleEvents != null)
             {
                 ListMonthAcademicEvents.ItemsSource = _monthScheduleEvents
@@ -396,20 +402,62 @@ public partial class MainWindow : FluentWindow
 
     private void UpdateSelectedDayDetail(DateTime date, List<AcademicScheduleItem>? dayEvents = null)
     {
-        TxtCalSelectedDate.Text = date.ToString("M월 d일 (ddd)");
-        var evs = dayEvents ?? _monthScheduleEvents.Where(e => e.Date?.Date == date.Date).ToList();
-        if (evs.Count > 0)
+        string dateTitle = date.ToString("M월 d일 (ddd)");
+        if (TxtSelectedDayTitle != null)
         {
-            string summary = string.Join(" · ", evs.Select(e => e.EventName));
-            TxtCalSelectedEvent.Text = summary;
-            TxtCalSelectedEvent.Foreground = evs.Any(e => e.IsHoliday)
-                ? new SolidColorBrush((Color)ColorConverter.ConvertFromString("#EF4444"))
-                : (SolidColorBrush)FindResource("BeigeTextMain");
+            TxtSelectedDayTitle.Text = $"📅 {dateTitle} 일정 및 메모";
         }
-        else
+        if (TxtCalSelectedDate != null)
         {
-            TxtCalSelectedEvent.Text = "등록된 학사일정이 없습니다.";
-            TxtCalSelectedEvent.Foreground = (SolidColorBrush)FindResource("BeigeTextMuted");
+            TxtCalSelectedDate.Text = dateTitle;
+        }
+
+        var academicEvs = dayEvents ?? (_monthScheduleEvents != null 
+            ? _monthScheduleEvents.Where(e => e.Date?.Date == date.Date).ToList() 
+            : new List<AcademicScheduleItem>());
+
+        if (ListSelectedDayAcademicEvents != null)
+        {
+            ListSelectedDayAcademicEvents.ItemsSource = academicEvs;
+        }
+
+        string dateKey = date.ToString("yyyy-MM-dd");
+        var teacherEvs = _configService.TeacherCalendarEvents
+            .Where(e => e.Date == dateKey)
+            .OrderBy(e => e.IsAllDay ? 0 : 1)
+            .ThenBy(e => e.Time)
+            .ToList();
+
+        if (ListSelectedDayTeacherEvents != null)
+        {
+            ListSelectedDayTeacherEvents.ItemsSource = teacherEvs;
+        }
+
+        if (PanelNoEventsForDay != null)
+        {
+            bool hasAny = (academicEvs.Count > 0) || (teacherEvs.Count > 0);
+            PanelNoEventsForDay.Visibility = hasAny ? Visibility.Collapsed : Visibility.Visible;
+        }
+
+        if (TxtCalSelectedEvent != null)
+        {
+            if (academicEvs.Count > 0)
+            {
+                TxtCalSelectedEvent.Text = string.Join(" · ", academicEvs.Select(e => e.EventName));
+                TxtCalSelectedEvent.Foreground = academicEvs.Any(e => e.IsHoliday)
+                    ? new SolidColorBrush((Color)ColorConverter.ConvertFromString("#EF4444"))
+                    : (SolidColorBrush)FindResource("BeigeTextMain");
+            }
+            else if (teacherEvs.Count > 0)
+            {
+                TxtCalSelectedEvent.Text = string.Join(" · ", teacherEvs.Select(e => e.Title));
+                TxtCalSelectedEvent.Foreground = (SolidColorBrush)FindResource("BeigeTextMain");
+            }
+            else
+            {
+                TxtCalSelectedEvent.Text = "등록된 학사일정 및 메모가 없습니다.";
+                TxtCalSelectedEvent.Foreground = (SolidColorBrush)FindResource("BeigeTextMuted");
+            }
         }
     }
 
@@ -447,8 +495,11 @@ public partial class MainWindow : FluentWindow
         if (sender is FrameworkElement elem && elem.Tag is CalendarDayCell cell)
         {
             _selectedCalDate = cell.Date;
-            var cells = _academicCalendarService.GenerateMonthGrid(_calYear, _calMonth, _monthScheduleEvents, _selectedCalDate);
-            ListCalendarCells.ItemsSource = cells;
+            var cells = _academicCalendarService.GenerateMonthGrid(_calYear, _calMonth, _monthScheduleEvents, _selectedCalDate, _configService.TeacherCalendarEvents);
+            if (ListCalendarCells != null)
+            {
+                ListCalendarCells.ItemsSource = cells;
+            }
             if (ListMonthAcademicEvents != null && _monthScheduleEvents != null)
             {
                 ListMonthAcademicEvents.ItemsSource = _monthScheduleEvents
@@ -457,6 +508,89 @@ public partial class MainWindow : FluentWindow
                     .ToList();
             }
             UpdateSelectedDayDetail(cell.Date, cell.Events);
+
+            if (RbViewSelectedDay != null && RbViewSelectedDay.IsChecked != true)
+            {
+                RbViewSelectedDay.IsChecked = true;
+            }
+        }
+    }
+
+    private void RbViewMode_Checked(object sender, RoutedEventArgs e)
+    {
+        if (PanelSelectedDayView == null || PanelMonthScheduleView == null) return;
+
+        if (RbViewSelectedDay?.IsChecked == true)
+        {
+            PanelSelectedDayView.Visibility = Visibility.Visible;
+            PanelMonthScheduleView.Visibility = Visibility.Collapsed;
+        }
+        else
+        {
+            PanelSelectedDayView.Visibility = Visibility.Collapsed;
+            PanelMonthScheduleView.Visibility = Visibility.Visible;
+        }
+    }
+
+    private void BtnAddCalendarEvent_Click(object sender, RoutedEventArgs e)
+    {
+        var dlg = new Views.Windows.CalendarEventDialog(defaultDate: _selectedCalDate)
+        {
+            Owner = this
+        };
+        if (dlg.ShowDialog() == true && dlg.ResultEvent != null)
+        {
+            _configService.TeacherCalendarEvents.Add(dlg.ResultEvent);
+            _configService.SaveTeacherCalendarEvents();
+            _ = LoadCalendarAsync();
+            HudNotificationWindow.Instance.ShowToast("📝", $"'{dlg.ResultEvent.Title}' 일정이 등록되었습니다.");
+        }
+    }
+
+    private void BtnEditCalendarEvent_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement elem && elem.Tag is TeacherCalendarEvent ev)
+        {
+            var dlg = new Views.Windows.CalendarEventDialog(existingEvent: ev)
+            {
+                Owner = this
+            };
+            if (dlg.ShowDialog() == true)
+            {
+                if (dlg.IsDeleted)
+                {
+                    _configService.TeacherCalendarEvents.RemoveAll(x => x.Id == ev.Id);
+                    _configService.SaveTeacherCalendarEvents();
+                    _ = LoadCalendarAsync();
+                    HudNotificationWindow.Instance.ShowToast("🗑️", "일정이 삭제되었습니다.");
+                }
+                else if (dlg.ResultEvent != null)
+                {
+                    int idx = _configService.TeacherCalendarEvents.FindIndex(x => x.Id == ev.Id);
+                    if (idx >= 0)
+                    {
+                        _configService.TeacherCalendarEvents[idx] = dlg.ResultEvent;
+                    }
+                    _configService.SaveTeacherCalendarEvents();
+                    _ = LoadCalendarAsync();
+                    HudNotificationWindow.Instance.ShowToast("💾", "일정이 수정되었습니다.");
+                }
+            }
+        }
+    }
+
+    private void BtnDeleteCalendarEvent_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement elem && elem.Tag is TeacherCalendarEvent ev)
+        {
+            var res = MessageBox.Show($"'{ev.Title}' 일정을 삭제하시겠습니까?", "일정 삭제 확인", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            if (res == MessageBoxResult.Yes)
+            {
+                _configService.TeacherCalendarEvents.RemoveAll(x => x.Id == ev.Id);
+                _configService.SaveTeacherCalendarEvents();
+                _ = LoadCalendarAsync();
+                HudNotificationWindow.Instance.ShowToast("🗑️", "일정이 삭제되었습니다.");
+            }
         }
     }
 

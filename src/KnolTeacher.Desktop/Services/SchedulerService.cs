@@ -25,6 +25,7 @@ public class SchedulerService : ISchedulerService
     private string _lastTriggeredPeriodMinute = string.Empty;
     private readonly HashSet<string> _triggeredCountdowns = new();
     private readonly HashSet<string> _triggeredAdvanceWarnings = new();
+    private readonly HashSet<string> _triggeredCalendarAlarms = new();
 
     public SchedulerService(
         IConfigService configService,
@@ -63,6 +64,7 @@ public class SchedulerService : ISchedulerService
         CheckAdvanceWarnings(now, currentHm, todayDate);
         CheckSchedules(now, currentHm, todayDate);
         CheckTimetableAlarms(now, currentHm);
+        CheckCalendarEventAlarms(now, currentHm, todayDate);
     }
 
     private void CheckAdvanceWarnings(DateTime now, string currentHm, string todayDate)
@@ -337,5 +339,75 @@ public class SchedulerService : ISchedulerService
         if (actionType == "sleep") return "🌙";
         if (actionType == "restart") return "🔄";
         return "📢";
+    }
+
+    private void CheckCalendarEventAlarms(DateTime now, string currentHm, string todayDate)
+    {
+        var events = _configService.TeacherCalendarEvents;
+        if (events == null || events.Count == 0) return;
+
+        if (_triggeredCalendarAlarms.Count > 100)
+        {
+            _triggeredCalendarAlarms.RemoveWhere(k => !k.StartsWith(todayDate));
+        }
+
+        bool hasUpdated = false;
+
+        foreach (var ev in events)
+        {
+            if (!ev.HasAlarm || ev.IsAlarmTriggered) continue;
+            if (ev.Date != todayDate) continue;
+
+            string alarmKey = $"{todayDate}_{ev.Id}";
+            if (_triggeredCalendarAlarms.Contains(alarmKey)) continue;
+
+            DateTime targetAlarmTime;
+            if (ev.IsAllDay)
+            {
+                // 종일 일정: 당일 아침 08:30 알람
+                targetAlarmTime = DateTime.Today.AddHours(8).AddMinutes(30);
+            }
+            else if (TimeSpan.TryParse(ev.Time, out var eventTime))
+            {
+                var eventDt = DateTime.Today.Add(eventTime);
+                targetAlarmTime = eventDt.AddMinutes(-ev.AlarmMinutesBefore);
+            }
+            else
+            {
+                continue;
+            }
+
+            if (targetAlarmTime.ToString("HH:mm") == currentHm)
+            {
+                _triggeredCalendarAlarms.Add(alarmKey);
+                ev.IsAlarmTriggered = true;
+                hasUpdated = true;
+
+                try
+                {
+                    _soundService.PlayAttentionChime();
+                }
+                catch
+                {
+                    _soundService.PlayChime();
+                }
+
+                string offsetDesc = ev.IsAllDay
+                    ? "오늘의 일정"
+                    : (ev.AlarmMinutesBefore == 0 ? "지금 시작" : $"{ev.AlarmMinutesBefore}분 전");
+
+                string memoText = string.IsNullOrWhiteSpace(ev.Memo) ? "" : $"\n• {ev.Memo}";
+                HudNotificationWindow.Instance.ShowToast(
+                    "🗓️",
+                    $"[캘린더 알림] {ev.Title} ({offsetDesc}){memoText}",
+                    durationMs: 5500
+                );
+            }
+        }
+
+        if (hasUpdated)
+        {
+            _configService.SaveTeacherCalendarEvents();
+        }
     }
 }
