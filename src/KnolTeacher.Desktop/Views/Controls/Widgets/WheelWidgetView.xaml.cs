@@ -1,20 +1,25 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using KnolTeacher.Desktop.Services;
+using KnolTeacher.Desktop.Views.Controls;
 
 namespace KnolTeacher.Desktop.Views.Controls.Widgets;
 
-public partial class WheelWidgetView : UserControl
+public partial class WheelWidgetView : UserControl, IWidgetLifecycle
 {
     private readonly ISoundService? _soundService;
     private List<string> _activeItems = new();
+    private CancellationTokenSource? _spinCts;
     private bool _isSpinning = false;
     private bool _isReady = false;
+    private bool _isActive = false;
+    private bool _disposed = false;
 
     public WheelWidgetView(ISoundService? soundService = null)
     {
@@ -22,6 +27,37 @@ public partial class WheelWidgetView : UserControl
         InitializeComponent();
         _isReady = true;
         LoadPreset(0);
+    }
+
+    public void Activate()
+    {
+        if (_disposed) return;
+        _isActive = true;
+    }
+
+    public void Deactivate()
+    {
+        if (_disposed || !_isActive) return;
+        _isActive = false;
+        CancelSpin();
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _isActive = false;
+        CancelSpin();
+        _disposed = true;
+    }
+
+    private void CancelSpin()
+    {
+        var cts = _spinCts;
+        _spinCts = null;
+        if (cts == null) return;
+
+        try { cts.Cancel(); } catch { }
+        cts.Dispose();
     }
 
     private void LoadPreset(int index)
@@ -89,25 +125,46 @@ public partial class WheelWidgetView : UserControl
 
     private async void BtnSpin_Click(object sender, RoutedEventArgs e)
     {
-        if (_isSpinning || _activeItems.Count == 0) return;
+        if (_isSpinning || _activeItems.Count == 0 || !_isActive || _disposed) return;
+
+        CancelSpin();
+        _spinCts = new CancellationTokenSource();
+        var token = _spinCts.Token;
+
         _isSpinning = true;
         BtnSpin.IsEnabled = false;
 
-        var rng = new Random();
-        for (int i = 0; i < 15; i++)
+        try
         {
-            string temp = _activeItems[rng.Next(_activeItems.Count)];
-            TxtResult.Text = $"▶ {temp}";
-            TxtResult.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#38BDF8"));
-            await Task.Delay(35 + i * 12);
+            var rng = new Random();
+            for (int i = 0; i < 15; i++)
+            {
+                token.ThrowIfCancellationRequested();
+                string temp = _activeItems[rng.Next(_activeItems.Count)];
+                TxtResult.Text = $"▶ {temp}";
+                TxtResult.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#38BDF8"));
+                await Task.Delay(35 + i * 12, token);
+            }
+
+            token.ThrowIfCancellationRequested();
+            if (_disposed || !_isActive) return;
+
+            string winner = _activeItems[rng.Next(_activeItems.Count)];
+            TxtResult.Text = $"🎉 {winner}!";
+            TxtResult.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#10B981"));
+            _soundService?.PlayChime();
         }
-
-        string winner = _activeItems[rng.Next(_activeItems.Count)];
-        TxtResult.Text = $"🎉 {winner}!";
-        TxtResult.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#10B981"));
-
-        _soundService?.PlayChime();
-        _isSpinning = false;
-        BtnSpin.IsEnabled = true;
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        {
+            // Normal lifecycle cancellation.
+        }
+        finally
+        {
+            _isSpinning = false;
+            if (!_disposed && BtnSpin != null)
+            {
+                BtnSpin.IsEnabled = true;
+            }
+        }
     }
 }
