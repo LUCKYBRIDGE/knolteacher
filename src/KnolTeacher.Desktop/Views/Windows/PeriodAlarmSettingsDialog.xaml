@@ -209,6 +209,72 @@
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
+
+            <!-- TAB 3: 파일 기본 저장 위치 설정 -->
+            <TabItem Header="📁 저장 위치 및 파일 관리">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16">
+                    <StackPanel>
+                        <!-- Header & Description -->
+                        <TextBlock Text="📁 놀티쳐 파일 기본 저장 위치 사전 설정" FontWeight="Bold" FontSize="14" Foreground="#1C1917" Margin="0,0,0,6"/>
+                        <TextBlock Text="판서 캡처, 학생 명렬표, 체크리스트, 누가기록, 나이스 엑셀 양식 등 놀티쳐에서 저장하거나 내보내는 모든 파일의 기본 저장 폴더를 지정합니다."
+                                   FontSize="11.5" Foreground="#78716C" Margin="0,0,0,16" LineHeight="17"/>
+
+                        <!-- Current Folder Path Box -->
+                        <Border Background="#FAF7F2" CornerRadius="8" BorderBrush="#E7DAC7" BorderThickness="1" Padding="14" Margin="0,0,0,14">
+                            <StackPanel>
+                                <TextBlock Text="📂 현재 지정된 기본 저장 폴더" FontWeight="Bold" FontSize="12" Foreground="#44403C" Margin="0,0,0,8"/>
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox x:Name="TxtCurrentSaveDirectory" IsReadOnly="True" Height="34" FontSize="12" Padding="8,6" Background="White" BorderBrush="#CBD5E1" VerticalContentAlignment="Center"/>
+                                    <Button Grid.Column="1" Content="📁 폴더 찾아보기..." Click="BtnBrowseSaveFolder_Click" Height="34" Padding="12,0" Margin="6,0,0,0" Background="#0284C7" Foreground="White" FontWeight="Bold" FontSize="11.5" BorderThickness="0" Cursor="Hand">
+                                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                                    </Button>
+                                    <Button Grid.Column="2" Content="📂 현재 폴더 열기" Click="BtnOpenCurrentSaveFolder_Click" Height="34" Padding="12,0" Margin="6,0,0,0" Background="#1E293B" Foreground="#38BDF8" BorderBrush="#334155" BorderThickness="1" FontWeight="SemiBold" FontSize="11.5" Cursor="Hand">
+                                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                                    </Button>
+                                </Grid>
+
+                                <!-- Subfolder Checkbox -->
+                                <CheckBox x:Name="ChkCreateSubfolderForDrawings" Content="판서 이미지 저장 시 '놀티쳐_판서' 하위 폴더에 자동 분류 저장" IsChecked="True" FontSize="11.5" Foreground="#44403C" Margin="2,2,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Quick Presets -->
+                        <Border Background="#F8FAFC" CornerRadius="8" BorderBrush="#E2E8F0" BorderThickness="1" Padding="14" Margin="0,0,0,14">
+                            <StackPanel>
+                                <TextBlock Text="⚡ 빠른 추천 저장 위치 (원클릭 설정)" FontWeight="Bold" FontSize="12" Foreground="#334155" Margin="0,0,0,8"/>
+                                <WrapPanel>
+                                    <Button Content="📥 다운로드 (기본)" Click="BtnPresetSaveDir_Click" Tag="downloads" Height="32" Padding="12,0" Margin="0,0,6,6" Background="#E2E8F0" Foreground="#1E293B" FontWeight="SemiBold" FontSize="11" BorderThickness="0" Cursor="Hand">
+                                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                                    </Button>
+                                    <Button Content="🖥️ 바탕화면" Click="BtnPresetSaveDir_Click" Tag="desktop" Height="32" Padding="12,0" Margin="0,0,6,6" Background="#E2E8F0" Foreground="#1E293B" FontWeight="SemiBold" FontSize="11" BorderThickness="0" Cursor="Hand">
+                                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                                    </Button>
+                                    <Button Content="📑 내 문서" Click="BtnPresetSaveDir_Click" Tag="documents" Height="32" Padding="12,0" Margin="0,0,6,6" Background="#E2E8F0" Foreground="#1E293B" FontWeight="SemiBold" FontSize="11" BorderThickness="0" Cursor="Hand">
+                                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                                    </Button>
+                                    <Button Content="🖼️ 사진 (Pictures)" Click="BtnPresetSaveDir_Click" Tag="pictures" Height="32" Padding="12,0" Margin="0,0,6,6" Background="#E2E8F0" Foreground="#1E293B" FontWeight="SemiBold" FontSize="11" BorderThickness="0" Cursor="Hand">
+                                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
+                                    </Button>
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Guide Callout -->
+                        <Border Background="#EFF6FF" CornerRadius="8" BorderBrush="#93C5FD" BorderThickness="1" Padding="12,10">
+                            <StackPanel>
+                                <TextBlock Text="💡 저장 위치 활용 안내" FontWeight="Bold" FontSize="11.5" Foreground="#1E40AF" Margin="0,0,0,3"/>
+                                <TextBlock Text="• '폴더 찾아보기...'로 D드라이브나 개인 수업 자료 폴더를 지정해 두면, 수업 중 캡처한 판서 및 학급 명렬표 등이 다운로드 폴더에 흩어지지 않고 지정한 폴더에 정갈하게 보관됩니다.&#x0a;• 칠판 판서 화면의 [⚙️ 저장위치] 버튼으로도 언제든 즉시 변경할 수 있습니다."
+                                           FontSize="11" Foreground="#1E3A8A" LineHeight="16"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
         </TabControl>
 
         <!-- Bottom Action Buttons -->

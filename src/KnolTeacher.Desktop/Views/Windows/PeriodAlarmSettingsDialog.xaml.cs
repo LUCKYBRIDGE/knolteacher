@@ -85,6 +85,10 @@ public partial class PeriodAlarmSettingsDialog : Window
         // Overrides (1~7교시)
         _overridesList = _editingConfig.PeriodOverrides.Values.OrderBy(p => p.PeriodNumber).ToList();
         ListPeriodOverrides.ItemsSource = _overridesList;
+
+        // Storage Settings (Tab 3)
+        TxtCurrentSaveDirectory.Text = _configService.GetEffectiveSaveDirectory();
+        ChkCreateSubfolderForDrawings.IsChecked = _configService.StorageConfig.CreateSubfolderForDrawings;
     }
 
     private void TimeCalc_TextChanged(object sender, TextChangedEventArgs e)
@@ -234,8 +238,78 @@ public partial class PeriodAlarmSettingsDialog : Window
             _timetableService.SavePeriods(periods);
         }
 
-        HudNotificationWindow.Instance.ShowToast("🔔", "수업 시작 전 카운트다운 알람 설정이 성공적으로 저장되었습니다.");
+        // Storage settings (Tab 3)
+        string chosenSaveDir = TxtCurrentSaveDirectory.Text.Trim();
+        if (!string.IsNullOrWhiteSpace(chosenSaveDir))
+        {
+            _configService.SetDefaultSaveDirectory(chosenSaveDir);
+        }
+        _configService.StorageConfig.CreateSubfolderForDrawings = ChkCreateSubfolderForDrawings.IsChecked == true;
+        _configService.SaveStorageConfig();
+
+        HudNotificationWindow.Instance.ShowToast("💾", "설정이 성공적으로 저장되었습니다.");
         DialogResult = true;
         Close();
+    }
+
+    public void SelectTab(int index)
+    {
+        if (AlarmTabs != null && index >= 0 && index < AlarmTabs.Items.Count)
+        {
+            AlarmTabs.SelectedIndex = index;
+        }
+    }
+
+    private void BtnBrowseSaveFolder_Click(object sender, RoutedEventArgs e)
+    {
+        var dlg = new Microsoft.Win32.OpenFolderDialog
+        {
+            Title = "놀티쳐 파일 기본 저장 폴더 선택",
+            InitialDirectory = TxtCurrentSaveDirectory.Text
+        };
+        if (dlg.ShowDialog() == true)
+        {
+            if (!string.IsNullOrWhiteSpace(dlg.FolderName))
+            {
+                TxtCurrentSaveDirectory.Text = dlg.FolderName;
+            }
+        }
+    }
+
+    private void BtnOpenCurrentSaveFolder_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            string dir = TxtCurrentSaveDirectory.Text.Trim();
+            if (string.IsNullOrWhiteSpace(dir) || !System.IO.Directory.Exists(dir))
+            {
+                dir = _configService.GetEffectiveSaveDirectory();
+            }
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = dir,
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"폴더 열기 실패: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void BtnPresetSaveDir_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.Tag is string tag)
+        {
+            string targetPath = tag switch
+            {
+                "downloads" => System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads"),
+                "desktop" => Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
+                "documents" => Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                "pictures" => Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
+                _ => System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads")
+            };
+            TxtCurrentSaveDirectory.Text = targetPath;
+        }
     }
 }

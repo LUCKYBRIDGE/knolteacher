@@ -14,8 +14,11 @@ namespace KnolTeacher.Desktop.Views.Windows;
 
 public partial class ScreenDrawingOverlayWindow : Window
 {
-    public ScreenDrawingOverlayWindow()
+    private readonly IConfigService? _configService;
+
+    public ScreenDrawingOverlayWindow(IConfigService? configService = null)
     {
+        _configService = configService;
         InitializeComponent();
 
         OverlayInkCanvas.DefaultDrawingAttributes = new DrawingAttributes
@@ -196,6 +199,21 @@ public partial class ScreenDrawingOverlayWindow : Window
         _protractor = null;
         FreezeImage.Source = null;
         if (BoardBackground != null) BoardBackground.Visibility = Visibility.Collapsed;
+
+        // Restore toolbar states
+        if (ToolbarBorder != null) ToolbarBorder.Visibility = Visibility.Visible;
+        if (MiniToolbarBorder != null) MiniToolbarBorder.Visibility = Visibility.Collapsed;
+        if (ToolbarTransform != null)
+        {
+            ToolbarTransform.X = 0;
+            ToolbarTransform.Y = 0;
+        }
+        if (MiniToolbarTransform != null)
+        {
+            MiniToolbarTransform.X = 0;
+            MiniToolbarTransform.Y = 0;
+        }
+
         Hide();
     }
 
@@ -268,13 +286,125 @@ public partial class ScreenDrawingOverlayWindow : Window
         }
     }
 
+    #region Toolbar Dragging, Folding & Layout
+
+    private bool _isDraggingToolbar;
+    private System.Windows.Point _toolbarDragStartPoint;
+
     private void Toolbar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ClickCount == 2)
+        {
+            // Double click to fold/collapse toolbar
+            BtnFoldToolbar_Click(sender, e);
+            return;
+        }
+
+        if (e.ButtonState == MouseButtonState.Pressed)
+        {
+            _isDraggingToolbar = true;
+            _toolbarDragStartPoint = e.GetPosition(this);
+            ToolbarBorder.CaptureMouse();
+        }
+    }
+
+    private void Toolbar_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (_isDraggingToolbar && e.LeftButton == MouseButtonState.Pressed)
+        {
+            System.Windows.Point currentPoint = e.GetPosition(this);
+            double deltaX = currentPoint.X - _toolbarDragStartPoint.X;
+            double deltaY = currentPoint.Y - _toolbarDragStartPoint.Y;
+
+            ToolbarTransform.X += deltaX;
+            ToolbarTransform.Y += deltaY;
+            _toolbarDragStartPoint = currentPoint;
+        }
+    }
+
+    private void Toolbar_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (_isDraggingToolbar)
+        {
+            _isDraggingToolbar = false;
+            ToolbarBorder.ReleaseMouseCapture();
+        }
+    }
+
+    private bool _isDraggingMiniToolbar;
+    private System.Windows.Point _miniDragStartPoint;
+
+    private void MiniToolbar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         if (e.ButtonState == MouseButtonState.Pressed)
         {
-            DragMove();
+            _isDraggingMiniToolbar = true;
+            _miniDragStartPoint = e.GetPosition(this);
+            MiniToolbarBorder.CaptureMouse();
         }
     }
+
+    private void MiniToolbar_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (_isDraggingMiniToolbar && e.LeftButton == MouseButtonState.Pressed)
+        {
+            System.Windows.Point currentPoint = e.GetPosition(this);
+            double deltaX = currentPoint.X - _miniDragStartPoint.X;
+            double deltaY = currentPoint.Y - _miniDragStartPoint.Y;
+
+            MiniToolbarTransform.X += deltaX;
+            MiniToolbarTransform.Y += deltaY;
+            _miniDragStartPoint = currentPoint;
+        }
+    }
+
+    private void MiniToolbar_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (_isDraggingMiniToolbar)
+        {
+            _isDraggingMiniToolbar = false;
+            MiniToolbarBorder.ReleaseMouseCapture();
+        }
+    }
+
+    private void BtnFoldToolbar_Click(object sender, RoutedEventArgs e)
+    {
+        ToolbarBorder.Visibility = Visibility.Collapsed;
+        MiniToolbarBorder.Visibility = Visibility.Visible;
+        MiniToolbarTransform.X = ToolbarTransform.X;
+        MiniToolbarTransform.Y = Math.Max(0, ToolbarTransform.Y);
+    }
+
+    private void BtnExpandToolbar_Click(object sender, RoutedEventArgs e)
+    {
+        MiniToolbarBorder.Visibility = Visibility.Collapsed;
+        ToolbarBorder.Visibility = Visibility.Visible;
+        ToolbarTransform.X = MiniToolbarTransform.X;
+        ToolbarTransform.Y = MiniToolbarTransform.Y;
+    }
+
+    private bool _isOneRowMode = false;
+
+    private void BtnToggleRowLayout_Click(object sender, RoutedEventArgs e)
+    {
+        _isOneRowMode = !_isOneRowMode;
+        if (_isOneRowMode)
+        {
+            ToolbarMainStack.Orientation = Orientation.Horizontal;
+            PanelRow1.Margin = new Thickness(0, 0, 10, 0);
+            BtnToggleRowLayout.Content = "↕ 2줄로";
+            BtnToggleRowLayout.ToolTip = "툴바를 2줄로 표시하여 모든 버튼을 한눈에 확인";
+        }
+        else
+        {
+            ToolbarMainStack.Orientation = Orientation.Vertical;
+            PanelRow1.Margin = new Thickness(0, 0, 0, 6);
+            BtnToggleRowLayout.Content = "↕ 1줄로";
+            BtnToggleRowLayout.ToolTip = "툴바를 1줄로 슬림하게 표시";
+        }
+    }
+
+    #endregion
 
     private void RbPen_Checked(object sender, RoutedEventArgs e)
     {
@@ -430,6 +560,21 @@ public partial class ScreenDrawingOverlayWindow : Window
         }
     }
 
+    private string GetTargetSaveDirectory()
+    {
+        string baseDir = _configService?.GetEffectiveSaveDirectory()
+            ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+
+        bool useSubfolder = _configService?.StorageConfig?.CreateSubfolderForDrawings ?? true;
+        string saveDir = useSubfolder ? Path.Combine(baseDir, "놀티쳐_판서") : baseDir;
+
+        if (!Directory.Exists(saveDir))
+        {
+            Directory.CreateDirectory(saveDir);
+        }
+        return saveDir;
+    }
+
     private void BtnSaveDrawing_Click(object sender, RoutedEventArgs e)
     {
         try
@@ -461,11 +606,8 @@ public partial class ScreenDrawingOverlayWindow : Window
             // 1. Copy to Clipboard
             Clipboard.SetImage(rtb);
 
-            // 2. Save PNG to Pictures/놀티쳐_판서
-            var picturesDir = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
-            var saveDir = Path.Combine(picturesDir, "놀티쳐_판서");
-            Directory.CreateDirectory(saveDir);
-
+            // 2. Save PNG to configured save directory
+            string saveDir = GetTargetSaveDirectory();
             string fileName = $"판서_{DateTime.Now:yyyyMMdd_HHmmss}.png";
             string fullPath = Path.Combine(saveDir, fileName);
 
@@ -476,11 +618,57 @@ public partial class ScreenDrawingOverlayWindow : Window
                 encoder.Save(fs);
             }
 
-            HudNotificationWindow.Instance.ShowToast("💾 판서 저장 완료", $"클립보드 복사 및 저장 완료:\n{fileName}");
+            HudNotificationWindow.Instance.ShowToast("💾 판서 저장 완료", $"클립보드 복사 및 저장:\n{fileName}");
         }
         catch (Exception ex)
         {
             MessageBox.Show($"판서 저장 중 오류가 발생했습니다: {ex.Message}", "저장 오류", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void BtnOpenSaveFolder_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            string saveDir = GetTargetSaveDirectory();
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = saveDir,
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"폴더 열기 실패: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void BtnChangeSaveFolder_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var dlg = new Microsoft.Win32.OpenFolderDialog
+            {
+                Title = "판서 및 파일 기본 저장 폴더 선택",
+                InitialDirectory = _configService?.GetEffectiveSaveDirectory() ?? string.Empty
+            };
+
+            if (dlg.ShowDialog() == true)
+            {
+                string chosen = dlg.FolderName;
+                if (!string.IsNullOrWhiteSpace(chosen) && Directory.Exists(chosen))
+                {
+                    if (_configService != null)
+                    {
+                        _configService.SetDefaultSaveDirectory(chosen);
+                        HudNotificationWindow.Instance.ShowToast("📁 저장 위치 변경", $"기본 저장 폴더가 설정되었습니다:\n{chosen}");
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"저장 폴더 변경 실패: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 

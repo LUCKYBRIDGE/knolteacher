@@ -1370,6 +1370,16 @@ public partial class MainWindow : FluentWindow
         dlg.ShowDialog();
     }
 
+    private void BtnOpenStorageSettings_Click(object sender, RoutedEventArgs e)
+    {
+        var dlg = new PeriodAlarmSettingsDialog(_configService, _soundService, _timetableService)
+        {
+            Owner = this
+        };
+        dlg.SelectTab(2);
+        dlg.ShowDialog();
+    }
+
     private void BtnOpenHotkeySettings_Click(object sender, RoutedEventArgs e)
     {
         var dlg = new HotkeySettingsDialog(_configService, _hotkeyService)
@@ -1651,7 +1661,8 @@ public partial class MainWindow : FluentWindow
             var sfd = new SaveFileDialog
             {
                 Filter = "Excel 통합 문서 (*.xlsx)|*.xlsx",
-                FileName = $"나이스_평어_입력양식_{DateTime.Now:yyyyMMdd}.xlsx"
+                FileName = $"나이스_평어_입력양식_{DateTime.Now:yyyyMMdd}.xlsx",
+                InitialDirectory = _configService.GetEffectiveSaveDirectory()
             };
             if (sfd.ShowDialog() == true)
             {

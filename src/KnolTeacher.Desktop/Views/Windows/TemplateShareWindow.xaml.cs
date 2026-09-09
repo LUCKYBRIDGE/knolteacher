@@ -52,7 +52,8 @@ public partial class TemplateShareWindow : Window
         {
             Filter = "CSV 파일 (*.csv)|*.csv",
             FileName = "학생명렬_양식.csv",
-            Title = "학생 명렬표 CSV 양식 다운로드"
+            Title = "학생 명렬표 CSV 양식 다운로드",
+            InitialDirectory = _configService.GetEffectiveSaveDirectory()
         };
         if (sfd.ShowDialog() == true)
         {
@@ -95,7 +96,8 @@ public partial class TemplateShareWindow : Window
         {
             Filter = "CSV 파일 (*.csv)|*.csv",
             FileName = "학사일정_D데이_양식.csv",
-            Title = "학사일정 & D-Day CSV 양식 다운로드"
+            Title = "학사일정 & D-Day CSV 양식 다운로드",
+            InitialDirectory = _configService.GetEffectiveSaveDirectory()
         };
         if (sfd.ShowDialog() == true)
         {
@@ -137,7 +139,8 @@ public partial class TemplateShareWindow : Window
         {
             Filter = "CSV 파일 (*.csv)|*.csv",
             FileName = "주간시간표_양식.csv",
-            Title = "주간 시간표 CSV 양식 다운로드"
+            Title = "주간 시간표 CSV 양식 다운로드",
+            InitialDirectory = _configService.GetEffectiveSaveDirectory()
         };
         if (sfd.ShowDialog() == true)
         {
@@ -179,7 +182,8 @@ public partial class TemplateShareWindow : Window
         {
             Filter = "놀티쳐 설정 패키지 (*.knolcfg)|*.knolcfg|JSON 파일 (*.json)|*.json",
             FileName = "놀티쳐_맞춤설정_공유.knolcfg",
-            Title = "놀티쳐 설정 공유 패키지 내보내기"
+            Title = "놀티쳐 설정 공유 패키지 내보내기",
+            InitialDirectory = _configService.GetEffectiveSaveDirectory()
         };
         if (sfd.ShowDialog() == true)
         {

@@ -40,7 +40,7 @@
                     
                     <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                         <Border Background="#334155" CornerRadius="6" Padding="8,3" Margin="0,0,8,0">
-                            <TextBlock x:Name="TxtCurrentVersion" Text="현재 버전: v3.0.1" FontSize="11" Foreground="#94A3B8" FontWeight="SemiBold"/>
+                            <TextBlock x:Name="TxtCurrentVersion" Text="현재 버전: v3.0.2" FontSize="11" Foreground="#94A3B8" FontWeight="SemiBold"/>
                         </Border>
                         <TextBlock Text="➔" FontSize="12" Foreground="#38BDF8" VerticalAlignment="Center" Margin="0,0,8,0"/>
                         <Border Background="#0284C7" CornerRadius="6" Padding="8,3">
