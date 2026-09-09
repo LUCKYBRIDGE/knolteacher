@@ -42,7 +42,11 @@ public static class SafeLocalFileStore
         }
     }
 
-    public static void WriteAllTextAtomic(string path, string content, Encoding? encoding = null)
+    public static void WriteAllTextAtomic(
+        string path,
+        string content,
+        Encoding? encoding = null,
+        bool preserveExistingBackup = false)
     {
         if (string.IsNullOrWhiteSpace(path))
         {
@@ -59,6 +63,7 @@ public static class SafeLocalFileStore
 
         string tempPath = path + $".tmp.{Guid.NewGuid():N}";
         string backupPath = BackupPath(path);
+        string? displacedPath = null;
 
         try
         {
@@ -66,7 +71,18 @@ public static class SafeLocalFileStore
 
             if (File.Exists(path))
             {
-                File.Replace(tempPath, path, backupPath, ignoreMetadataErrors: true);
+                string replacementBackupPath = backupPath;
+                if (preserveExistingBackup && File.Exists(backupPath))
+                {
+                    displacedPath = path + $".displaced.{Guid.NewGuid():N}";
+                    replacementBackupPath = displacedPath;
+                }
+
+                File.Replace(tempPath, path, replacementBackupPath, ignoreMetadataErrors: true);
+                if (displacedPath != null)
+                {
+                    TryDelete(displacedPath);
+                }
             }
             else
             {
@@ -76,6 +92,7 @@ public static class SafeLocalFileStore
         catch
         {
             TryDelete(tempPath);
+            if (displacedPath != null) TryDelete(displacedPath);
             throw;
         }
     }
