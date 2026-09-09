@@ -3,24 +3,69 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using KnolTeacher.Desktop.Models;
 using KnolTeacher.Desktop.Services;
+using KnolTeacher.Desktop.Views.Controls;
 using KnolTeacher.Desktop.Views.Windows;
 
 namespace KnolTeacher.Desktop.Views.Controls.Widgets;
 
-public partial class TimetableWidgetView : UserControl
+public partial class TimetableWidgetView : UserControl, IWidgetLifecycle
 {
     private readonly ITimetableService? _timetableService;
+    private bool _isActive = false;
+    private bool _disposed = false;
 
     public TimetableWidgetView(ITimetableService? timetableService = null)
     {
         _timetableService = timetableService;
         InitializeComponent();
-        Loaded += (s, e) => RefreshData();
+    }
+
+    public void Activate()
+    {
+        if (_disposed || _isActive) return;
+
+        _isActive = true;
+        if (_timetableService != null)
+        {
+            _timetableService.OnTimetableChanged += HandleTimetableChanged;
+        }
+        RefreshData();
+    }
+
+    public void Deactivate()
+    {
+        if (_disposed || !_isActive) return;
 
         if (_timetableService != null)
         {
-            _timetableService.OnTimetableChanged += () => Dispatcher.Invoke(RefreshData);
+            _timetableService.OnTimetableChanged -= HandleTimetableChanged;
         }
+        _isActive = false;
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+
+        Deactivate();
+        if (_timetableService != null)
+        {
+            _timetableService.OnTimetableChanged -= HandleTimetableChanged;
+        }
+        _disposed = true;
+    }
+
+    private void HandleTimetableChanged()
+    {
+        if (_disposed || !_isActive) return;
+
+        _ = Dispatcher.BeginInvoke(() =>
+        {
+            if (!_disposed && _isActive)
+            {
+                RefreshData();
+            }
+        });
     }
 
     public void RefreshData()

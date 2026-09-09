@@ -4,25 +4,59 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using KnolTeacher.Desktop.Models;
 using KnolTeacher.Desktop.Services;
+using KnolTeacher.Desktop.Views.Controls;
 using KnolTeacher.Desktop.Views.Windows;
 
 namespace KnolTeacher.Desktop.Views.Controls.Widgets;
 
-public partial class DDayWidgetView : UserControl
+public partial class DDayWidgetView : UserControl, IWidgetLifecycle
 {
     private readonly IConfigService _configService;
+    private bool _isActive = false;
+    private bool _disposed = false;
 
     public DDayWidgetView(IConfigService? configService = null)
     {
         _configService = configService ?? ((Application.Current as App)?.Services?.GetService(typeof(IConfigService)) as IConfigService)!;
         InitializeComponent();
+    }
 
-        Loaded += (s, e) => UpdateDisplay(_configService.DDayConfig);
+    public void Activate()
+    {
+        if (_disposed || _isActive) return;
 
-        DDayEditDialog.OnDDayChanged += (cfg) =>
+        _isActive = true;
+        DDayEditDialog.OnDDayChanged += HandleDDayChanged;
+        UpdateDisplay(_configService.DDayConfig);
+    }
+
+    public void Deactivate()
+    {
+        if (_disposed || !_isActive) return;
+
+        DDayEditDialog.OnDDayChanged -= HandleDDayChanged;
+        _isActive = false;
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+
+        Deactivate();
+        DDayEditDialog.OnDDayChanged -= HandleDDayChanged;
+        _disposed = true;
+    }
+
+    private void HandleDDayChanged(DDayConfig cfg)
+    {
+        if (_disposed || !_isActive) return;
+        _ = Dispatcher.BeginInvoke(() =>
         {
-            Dispatcher.Invoke(() => UpdateDisplay(cfg));
-        };
+            if (!_disposed && _isActive)
+            {
+                UpdateDisplay(cfg);
+            }
+        });
     }
 
     private void UpdateDisplay(DDayConfig cfg)
