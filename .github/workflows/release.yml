@@ -34,14 +34,18 @@ jobs:
             throw "Release tags must point to a commit contained in main."
           }
 
-      - name: Verify tag matches project version
+      - name: Verify tag matches centralized version
         shell: pwsh
         run: |
-          [xml]$project = Get-Content "src/KnolTeacher.Desktop/KnolTeacher.Desktop.csproj"
-          $version = [string]$project.Project.PropertyGroup.Version
+          [xml]$props = Get-Content "Directory.Build.props"
+          $version = [string]$props.Project.PropertyGroup.KnolTeacherVersion
+          if ([string]::IsNullOrWhiteSpace($version)) {
+            throw "Directory.Build.props does not define KnolTeacherVersion."
+          }
+
           $expectedTag = "v$version"
           if ($env:GITHUB_REF_NAME -ne $expectedTag) {
-            throw "Tag '$env:GITHUB_REF_NAME' does not match project version '$expectedTag'."
+            throw "Tag '$env:GITHUB_REF_NAME' does not match centralized version '$expectedTag'."
           }
 
       - name: Restore
@@ -54,7 +58,7 @@ jobs:
         shell: cmd
         run: publish.bat
 
-      - name: Verify release asset
+      - name: Verify release asset and embedded version
         shell: pwsh
         run: |
           $releaseAsset = "dist-net/놀티쳐.exe"
@@ -67,7 +71,21 @@ jobs:
             throw "Release output must contain exactly one file: 놀티쳐.exe"
           }
 
+          [xml]$props = Get-Content "Directory.Build.props"
+          $expectedVersion = [string]$props.Project.PropertyGroup.KnolTeacherVersion
+          $embeddedVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo((Resolve-Path $releaseAsset)).FileVersion
+          if ([string]::IsNullOrWhiteSpace($embeddedVersion)) {
+            throw "Release executable has no embedded FileVersion."
+          }
+
+          $embeddedCore = ([version]$embeddedVersion)
+          $embeddedSemVer = "$($embeddedCore.Major).$($embeddedCore.Minor).$($embeddedCore.Build)"
+          if ($embeddedSemVer -ne $expectedVersion) {
+            throw "Embedded executable version '$embeddedSemVer' does not match centralized version '$expectedVersion'."
+          }
+
           $hash = (Get-FileHash -LiteralPath $releaseAsset -Algorithm SHA256).Hash.ToLowerInvariant()
+          Write-Host "Release version: $embeddedSemVer"
           Write-Host "Release SHA-256: $hash"
 
       - name: Create GitHub Release

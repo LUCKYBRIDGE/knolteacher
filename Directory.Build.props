@@ -1,0 +1,10 @@
+<Project>
+  <PropertyGroup>
+    <!--
+      Single source of truth for the KnolTeacher desktop version.
+      Keep this value ahead of the latest published GitHub Release while app changes are being accumulated.
+      Release tags must match this value exactly (vX.Y.Z).
+    -->
+    <KnolTeacherVersion>3.0.7</KnolTeacherVersion>
+  </PropertyGroup>
+</Project>

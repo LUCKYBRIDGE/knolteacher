@@ -21,6 +21,84 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify version contract
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          [xml]$props = Get-Content "Directory.Build.props"
+          $versionText = [string]$props.Project.PropertyGroup.KnolTeacherVersion
+          if ([string]::IsNullOrWhiteSpace($versionText)) {
+            throw "Directory.Build.props must define KnolTeacherVersion."
+          }
+
+          try {
+            $currentVersion = [version]$versionText
+          }
+          catch {
+            throw "KnolTeacherVersion '$versionText' is not a valid X.Y.Z version."
+          }
+
+          $headers = @{
+            Authorization = "Bearer $env:GITHUB_TOKEN"
+            Accept = "application/vnd.github+json"
+            "User-Agent" = "KnolTeacher-CI"
+          }
+
+          $latestVersion = [version]"0.0.0"
+          $latestTag = "none"
+          try {
+            $release = Invoke-RestMethod `
+              -Uri "https://api.github.com/repos/LUCKYBRIDGE/knolteacher/releases/latest" `
+              -Headers $headers `
+              -Method Get
+            $latestTag = [string]$release.tag_name
+            $cleanLatest = $latestTag -replace '^[vV]', ''
+            $latestVersion = [version]$cleanLatest
+          }
+          catch {
+            Write-Host "No published release version could be resolved; treating latest as 0.0.0."
+          }
+
+          Write-Host "Central version : v$currentVersion"
+          Write-Host "Latest release  : $latestTag"
+
+          if ($currentVersion -lt $latestVersion) {
+            throw "Central version v$currentVersion is older than latest release $latestTag."
+          }
+
+          $compareBase = $null
+          if ($env:GITHUB_EVENT_NAME -eq "pull_request" -and -not [string]::IsNullOrWhiteSpace($env:PR_BASE_SHA)) {
+            $compareBase = $env:PR_BASE_SHA
+          }
+          elseif ($env:GITHUB_EVENT_NAME -eq "push" -and
+                  -not [string]::IsNullOrWhiteSpace($env:PUSH_BEFORE_SHA) -and
+                  $env:PUSH_BEFORE_SHA -notmatch '^0+$') {
+            $compareBase = $env:PUSH_BEFORE_SHA
+          }
+
+          if ($compareBase) {
+            $changedFiles = @(git diff --name-only $compareBase HEAD)
+            $appChanges = @($changedFiles | Where-Object {
+              $_ -like "src/KnolTeacher.Desktop/*" -or
+              $_ -eq "publish.bat" -or
+              $_ -eq "build_and_deploy_desktop.bat"
+            })
+
+            if ($appChanges.Count -gt 0) {
+              Write-Host "Releasable desktop changes detected:"
+              $appChanges | ForEach-Object { Write-Host " - $_" }
+
+              if ($currentVersion -le $latestVersion) {
+                throw "Desktop app changed, but KnolTeacherVersion v$currentVersion is not newer than latest release $latestTag. Bump Directory.Build.props before merging."
+              }
+            }
+          }
 
       - name: Setup .NET 8
         uses: actions/setup-dotnet@v4

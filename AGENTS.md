@@ -5,20 +5,21 @@
 ## 1. 현재 구현 기준
 
 - 제품: 놀티쳐 (KnolTeacher)
-- 현재 기준 버전: v3.0.6
+- 현재 개발 버전: v3.0.7 (다음 Release 후보)
+- 버전 SSOT: 루트 `Directory.Build.props`의 `KnolTeacherVersion`
 - 주력 구현: C# / .NET 8 / WPF
 - 대상: Windows 10/11 x64
 - 솔루션: `KnolTeacher.sln`
 - 앱 프로젝트: `src/KnolTeacher.Desktop/KnolTeacher.Desktop.csproj`
 - 과거 Python 구현: `legacy-python/`에 보관
 
-작업 시작 시 문서에 적힌 버전을 그대로 신뢰하지 말고 GitHub의 현재 `main`, 최신 Release, 열린 PR, Actions와 `.csproj`의 `Version`을 먼저 확인한다.
+작업 시작 시 문서에 적힌 버전을 그대로 신뢰하지 말고 GitHub의 현재 `main`, 최신 Release, 열린 PR, Actions와 `Directory.Build.props`의 `KnolTeacherVersion`을 먼저 확인한다.
 
 ## 2. 정보 우선순위
 
 충돌이 있을 때 다음 순서를 따른다.
 
-1. 현재 `main`의 실제 코드와 `KnolTeacher.Desktop.csproj`
+1. 현재 `main`의 실제 코드와 `Directory.Build.props`
 2. 이 `AGENTS.md`
 3. `docs/DEVELOPMENT_MASTER_PLAN.md`
 4. `docs/PROJECT_CONTEXT.md`
@@ -116,9 +117,19 @@ KnolTeacher는 수업 도구, 놀보드, 학급 운영, 교사업무 보조 기�
 
 ## 9. 버전·문서 동기화
 
+버전은 루트 `Directory.Build.props`의 `KnolTeacherVersion` 한 곳에서 관리한다. `.csproj`의 `Version`, `AssemblyVersion`, `FileVersion`, `InformationalVersion`은 이 값을 소비해야 하며 숫자를 별도로 하드코딩하지 않는다.
+
+버전 규칙:
+
+- 최신 GitHub Release가 `vX.Y.Z`라면, 다음 데스크톱 앱 변경이 들어가는 개발 브랜치는 `KnolTeacherVersion`이 그보다 큰 버전이어야 한다.
+- 같은 다음 Release 후보 버전에 여러 PR을 누적하는 것은 허용한다. 예: 최신 Release가 v3.0.6이고 개발 버전이 v3.0.7이면 여러 안정화 PR을 v3.0.7에 누적할 수 있다.
+- v3.0.7이 실제 Release된 이후 추가 앱 코드가 바뀌면 v3.0.8 이상으로 올리지 않는 PR은 CI가 실패해야 한다.
+- updater의 fallback 버전에 실제 제품 버전을 하드코딩하지 않는다. 버전 메타데이터를 읽지 못한 경우에는 최신 정식 Release로 복구할 수 있는 보수적 fallback을 사용한다.
+
 릴리스 버전을 변경할 때 최소한 다음을 함께 점검한다.
 
-- `KnolTeacher.Desktop.csproj`의 Version / AssemblyVersion / FileVersion
+- `Directory.Build.props`의 `KnolTeacherVersion`
+- 빌드된 `놀티쳐.exe`에 내장된 FileVersion
 - `README.md`의 표시 버전과 변경 기능
 - `docs/PROJECT_CONTEXT.md`의 기준 버전
 - 필요한 경우 `docs/DEVELOPMENT_MASTER_PLAN.md`의 진행 상태
@@ -163,7 +174,8 @@ publish.bat
 - Windows 공식 배포물은 `win-x64`, self-contained, single-file 실행 파일 하나다.
 - 사용자용 GitHub Release asset 이름은 정확히 `놀티쳐.exe`로 한다.
 - Release에 다른 실행 파일을 대체 패키지로 올려 updater가 임의 선택하게 하지 않는다.
-- GitHub Release tag는 `vX.Y.Z`이며 `.csproj`의 `Version`과 일치해야 한다.
+- GitHub Release tag는 `vX.Y.Z`이며 `Directory.Build.props`의 `KnolTeacherVersion`과 일치해야 한다.
+- Release 전에 빌드된 `놀티쳐.exe`의 embedded FileVersion이 tag 버전과 일치하는지 자동 검증한다.
 - Release tag는 `main`에 포함된 검증된 커밋을 가리켜야 한다.
 - 앱의 `버전 확인`은 `LUCKYBRIDGE/knolteacher`의 최신 GitHub Release를 기준으로 한다.
 - updater는 `놀티쳐.exe`만 선택하고 HTTPS GitHub Release URL만 허용한다.
