@@ -12,7 +12,7 @@ namespace KnolTeacher.Desktop.Services;
 
 public class UpdateService : IUpdateService
 {
-    public const string FallbackVersion = "v3.0.0";
+    public const string FallbackVersion = "v3.0.1";
 
     public string CurrentVersion
     {

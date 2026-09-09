@@ -142,14 +142,26 @@
                                                 <RowDefinition Height="Auto" />
                                             </Grid.RowDefinitions>
 
-                                            <!-- Row 0: Period Title & Use Global Toggle -->
+                                            <!-- Row 0: Period Title & Use Global Toggle & Quick Presets -->
                                             <Grid Grid.Row="0">
-                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                                                     <Border Background="#B45309" CornerRadius="4" Padding="8,2" Margin="0,0,8,0">
                                                         <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="12" Foreground="White"/>
                                                     </Border>
                                                     <CheckBox IsChecked="{Binding Enabled}" Content="알람 켜기" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0"/>
                                                     <CheckBox IsChecked="{Binding UseGlobal}" Content="🌐 일괄 기본값 사용" FontWeight="SemiBold" Foreground="#0284C7" VerticalAlignment="Center"/>
+                                                </StackPanel>
+
+                                                <!-- Quick Travel / Disable Action Buttons for This Period -->
+                                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <Button Content="🎒 이동10분전" Click="BtnQuickPreset_Click" Tag="travel_10" Margin="0,0,4,0" Padding="6,2" FontSize="10.5" Background="#EEF2FF" Foreground="#4F46E5" FontWeight="Bold" BorderThickness="0" Cursor="Hand" ToolTip="이동수업 10분 전 시작 ~ 3분 전 종료"/>
+                                                    <Button Content="🏃 특별실7분전" Click="BtnQuickPreset_Click" Tag="special_7" Margin="0,0,4,0" Padding="6,2" FontSize="10.5" Background="#FEF3C7" Foreground="#B45309" FontWeight="Bold" BorderThickness="0" Cursor="Hand" ToolTip="특별실 7분 전 시작 ~ 2분 전 종료"/>
+                                                    <Button Content="👨‍🏫 전담5분전" Click="BtnQuickPreset_Click" Tag="specialist_5" Margin="0,0,4,0" Padding="6,2" FontSize="10.5" Background="#ECFDF5" Foreground="#059669" FontWeight="Bold" BorderThickness="0" Cursor="Hand" ToolTip="전담수업 5분 전 시작 ~ 0초 종료"/>
+                                                    <Button Content="🗑️ 끄기" Click="BtnQuickDisable_Click" Padding="6,2" FontSize="10.5" Background="#FEE2E2" Foreground="#DC2626" FontWeight="Bold" BorderThickness="0" Cursor="Hand" ToolTip="이 교시 알람 삭제(끄기)"/>
                                                 </StackPanel>
                                             </Grid>
 

@@ -1,49 +1,153 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 
 namespace KnolTeacher.Desktop.Models;
 
-public class PeriodCountdownItem
+public class PeriodCountdownItem : INotifyPropertyChanged
 {
+    private int _periodNumber = 0;
+    private string _name = "일괄 기본값";
+    private bool _enabled = true;
+    private bool _useGlobal = true;
+    private int _leadStartMinutes = 5;
+    private int _leadStartSeconds = 0;
+    private int _leadEndMinutes = 3;
+    private int _leadEndSeconds = 0;
+    private int _targetMonitorIndex = 1;
+    private string _preNoticeText = "🔔 다음 시간 {교시} ({과목}) 준비 시간입니다! 자리에 앉아 교과서를 펴주세요.";
+    private string _postNoticeText = "👏 수업 준비 완료! 자리에 모두 착석했습니다.";
+    private bool _playSoundChime = true;
+    private int _autoCloseSeconds = 8;
+
     [JsonPropertyName("period_number")]
-    public int PeriodNumber { get; set; } = 0; // 0 = Global default
+    public int PeriodNumber
+    {
+        get => _periodNumber;
+        set => SetField(ref _periodNumber, value);
+    }
 
     [JsonPropertyName("name")]
-    public string Name { get; set; } = "일괄 기본값";
+    public string Name
+    {
+        get => _name;
+        set => SetField(ref _name, value);
+    }
 
     [JsonPropertyName("enabled")]
-    public bool Enabled { get; set; } = true;
+    public bool Enabled
+    {
+        get => _enabled;
+        set
+        {
+            if (SetField(ref _enabled, value))
+                OnPropertyChanged(nameof(TimeSummary));
+        }
+    }
 
     [JsonPropertyName("use_global")]
-    public bool UseGlobal { get; set; } = true;
+    public bool UseGlobal
+    {
+        get => _useGlobal;
+        set => SetField(ref _useGlobal, value);
+    }
 
     [JsonPropertyName("lead_start_minutes")]
-    public int LeadStartMinutes { get; set; } = 5;
+    public int LeadStartMinutes
+    {
+        get => _leadStartMinutes;
+        set
+        {
+            if (SetField(ref _leadStartMinutes, value))
+            {
+                OnPropertyChanged(nameof(TotalLeadStartSeconds));
+                OnPropertyChanged(nameof(CountdownDurationSeconds));
+                OnPropertyChanged(nameof(TimeSummary));
+            }
+        }
+    }
 
     [JsonPropertyName("lead_start_seconds")]
-    public int LeadStartSeconds { get; set; } = 0;
+    public int LeadStartSeconds
+    {
+        get => _leadStartSeconds;
+        set
+        {
+            if (SetField(ref _leadStartSeconds, value))
+            {
+                OnPropertyChanged(nameof(TotalLeadStartSeconds));
+                OnPropertyChanged(nameof(CountdownDurationSeconds));
+                OnPropertyChanged(nameof(TimeSummary));
+            }
+        }
+    }
 
     [JsonPropertyName("lead_end_minutes")]
-    public int LeadEndMinutes { get; set; } = 3;
+    public int LeadEndMinutes
+    {
+        get => _leadEndMinutes;
+        set
+        {
+            if (SetField(ref _leadEndMinutes, value))
+            {
+                OnPropertyChanged(nameof(TotalLeadEndSeconds));
+                OnPropertyChanged(nameof(CountdownDurationSeconds));
+                OnPropertyChanged(nameof(TimeSummary));
+            }
+        }
+    }
 
     [JsonPropertyName("lead_end_seconds")]
-    public int LeadEndSeconds { get; set; } = 0;
+    public int LeadEndSeconds
+    {
+        get => _leadEndSeconds;
+        set
+        {
+            if (SetField(ref _leadEndSeconds, value))
+            {
+                OnPropertyChanged(nameof(TotalLeadEndSeconds));
+                OnPropertyChanged(nameof(CountdownDurationSeconds));
+                OnPropertyChanged(nameof(TimeSummary));
+            }
+        }
+    }
 
     [JsonPropertyName("target_monitor_index")]
-    public int TargetMonitorIndex { get; set; } = 1; // 1: Secondary (학생용 전자칠판/모니터 2 권장), 0: Primary
+    public int TargetMonitorIndex
+    {
+        get => _targetMonitorIndex;
+        set => SetField(ref _targetMonitorIndex, value);
+    }
 
     [JsonPropertyName("pre_notice_text")]
-    public string PreNoticeText { get; set; } = "🔔 다음 시간 {교시} ({과목}) 준비 시간입니다! 자리에 앉아 교과서를 펴주세요.";
+    public string PreNoticeText
+    {
+        get => _preNoticeText;
+        set => SetField(ref _preNoticeText, value);
+    }
 
     [JsonPropertyName("post_notice_text")]
-    public string PostNoticeText { get; set; } = "👏 수업 준비 완료! 자리에 모두 착석했습니다.";
+    public string PostNoticeText
+    {
+        get => _postNoticeText;
+        set => SetField(ref _postNoticeText, value);
+    }
 
     [JsonPropertyName("play_sound_chime")]
-    public bool PlaySoundChime { get; set; } = true;
+    public bool PlaySoundChime
+    {
+        get => _playSoundChime;
+        set => SetField(ref _playSoundChime, value);
+    }
 
     [JsonPropertyName("auto_close_seconds")]
-    public int AutoCloseSeconds { get; set; } = 8;
+    public int AutoCloseSeconds
+    {
+        get => _autoCloseSeconds;
+        set => SetField(ref _autoCloseSeconds, value);
+    }
 
     [JsonIgnore]
     public int TotalLeadStartSeconds => LeadStartMinutes * 60 + LeadStartSeconds;
@@ -56,6 +160,21 @@ public class PeriodCountdownItem
 
     [JsonIgnore]
     public string TimeSummary => $"{LeadStartMinutes}분 {LeadStartSeconds:D2}초 전 ~ {LeadEndMinutes}분 {LeadEndSeconds:D2}초 전 (총 {CountdownDurationSeconds / 60}분 {CountdownDurationSeconds % 60}초 카운트다운)";
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+
+    protected bool SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
+    {
+        if (EqualityComparer<T>.Default.Equals(field, value)) return false;
+        field = value;
+        OnPropertyChanged(propertyName);
+        return true;
+    }
 }
 
 public class PeriodAlarmSystemConfig

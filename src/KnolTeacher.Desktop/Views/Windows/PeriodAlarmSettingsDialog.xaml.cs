@@ -135,6 +135,49 @@ public partial class PeriodAlarmSettingsDialog : Window
         overlay.Show();
     }
 
+    private void BtnQuickPreset_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.DataContext is PeriodCountdownItem item && btn.Tag is string mode)
+        {
+            item.Enabled = true;
+            item.UseGlobal = false;
+
+            switch (mode)
+            {
+                case "travel_10":
+                    item.LeadStartMinutes = 10;
+                    item.LeadStartSeconds = 0;
+                    item.LeadEndMinutes = 3;
+                    item.LeadEndSeconds = 0;
+                    item.PreNoticeText = $"🎒 다음 시간 {item.Name} ({{과목}}) 이동수업입니다! 이동시간을 고려하여 필요한 교재를 챙겨 조용히 이동합시다.";
+                    break;
+                case "special_7":
+                    item.LeadStartMinutes = 7;
+                    item.LeadStartSeconds = 0;
+                    item.LeadEndMinutes = 2;
+                    item.LeadEndSeconds = 0;
+                    item.PreNoticeText = $"🏃 다음 시간 {item.Name} ({{과목}}) 특별실 수업입니다! 필요한 준비물을 챙겨 특별실로 이동해 주세요.";
+                    break;
+                case "specialist_5":
+                    item.LeadStartMinutes = 5;
+                    item.LeadStartSeconds = 0;
+                    item.LeadEndMinutes = 0;
+                    item.LeadEndSeconds = 0;
+                    item.PreNoticeText = $"👨‍🏫 다음 시간 {item.Name} ({{과목}}) 전담 선생님 수업입니다! 바르게 앉아 전담 선생님을 맞이합시다.";
+                    break;
+            }
+        }
+    }
+
+    private void BtnQuickDisable_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.DataContext is PeriodCountdownItem item)
+        {
+            item.Enabled = false;
+            item.UseGlobal = false;
+        }
+    }
+
     private void BtnResetDefaults_Click(object sender, RoutedEventArgs e)
     {
         if (MessageBox.Show("모든 예비령 및 카운트다운 알람 설정을 초기 기본값으로 되돌리시겠습니까?", "초기화 확인", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
@@ -171,6 +214,25 @@ public partial class PeriodAlarmSettingsDialog : Window
 
         _configService.PeriodAlarmConfig = _editingConfig;
         _configService.SavePeriodAlarmConfig();
+
+        // Sync periods alarm_enabled state
+        var periods = _timetableService.GetPeriods();
+        bool anyChanged = false;
+        foreach (var p in periods)
+        {
+            if (p.IsLunch) continue;
+            var eff = _editingConfig.GetEffectiveConfig(p.Period);
+            bool shouldEnable = _editingConfig.GlobalConfig.Enabled && eff.Enabled;
+            if (p.AlarmEnabled != shouldEnable)
+            {
+                p.AlarmEnabled = shouldEnable;
+                anyChanged = true;
+            }
+        }
+        if (anyChanged)
+        {
+            _timetableService.SavePeriods(periods);
+        }
 
         HudNotificationWindow.Instance.ShowToast("🔔", "수업 시작 전 카운트다운 알람 설정이 성공적으로 저장되었습니다.");
         DialogResult = true;
