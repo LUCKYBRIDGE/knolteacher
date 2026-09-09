@@ -7,6 +7,7 @@
         mc:Ignorable="d"
         Title="📷 스마트 실물화상기 (Knol Visualizer)" Height="700" Width="1000"
         WindowStartupLocation="Manual"
+        Icon="/assets/app_icon.ico"
         Background="#0F172A">
     <Grid>
         <Grid.RowDefinitions>

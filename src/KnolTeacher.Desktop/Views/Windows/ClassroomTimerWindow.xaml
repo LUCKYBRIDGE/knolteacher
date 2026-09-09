@@ -8,6 +8,7 @@
         MinHeight="460" MinWidth="520"
         WindowStartupLocation="Manual"
         Topmost="True"
+        Icon="/assets/app_icon.ico"
         Background="#0F172A">
     <Grid Margin="18,14,18,18">
         <Grid.RowDefinitions>

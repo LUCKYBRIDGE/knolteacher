@@ -8,6 +8,7 @@
         Height="680" Width="880"
         MinWidth="780" MinHeight="580"
         WindowStartupLocation="CenterOwner"
+        Icon="/assets/app_icon.ico"
         Background="{DynamicResource BeigeAppBg}"
         AllowDrop="True"
         Drop="Window_Drop"

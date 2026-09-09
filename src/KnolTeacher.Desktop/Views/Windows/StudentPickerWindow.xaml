@@ -7,6 +7,7 @@
         Title="🌱 뽑기 레이스 (Alt+8)" Height="740" Width="1220"
         MinHeight="620" MinWidth="960"
         Topmost="True"
+        Icon="/assets/app_icon.ico"
         Background="#1E1E24">
     <Window.Resources>
         <!-- 🎨 Dark High-Contrast Race ComboBox Style -->
