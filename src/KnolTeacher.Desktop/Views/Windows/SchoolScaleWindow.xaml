@@ -9,6 +9,8 @@
         Height="700" Width="920"
         MinWidth="800" MinHeight="580"
         WindowStartupLocation="CenterScreen"
+        ShowInTaskbar="True"
+        Icon="/assets/app_icon.ico"
         Background="{DynamicResource BeigeAppBg}">
 
     <Window.Resources>

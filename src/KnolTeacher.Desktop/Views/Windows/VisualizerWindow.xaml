@@ -4,8 +4,9 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="실물화상기 - 놀티쳐" Height="720" Width="1120"
+        Title="실물화상기" Height="720" Width="1120"
         WindowStartupLocation="Manual"
+        ShowInTaskbar="True"
         Icon="/assets/app_icon.ico"
         Background="#090D16">
     <Grid Background="#090D16">

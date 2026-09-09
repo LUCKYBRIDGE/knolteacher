@@ -6,6 +6,7 @@
         mc:Ignorable="d"
         Title="뽑기 레이스" Height="740" Width="1220"
         MinHeight="620" MinWidth="960"
+        ShowInTaskbar="True"
         Topmost="True"
         Icon="/assets/app_icon.ico"
         Background="#1E1E24">

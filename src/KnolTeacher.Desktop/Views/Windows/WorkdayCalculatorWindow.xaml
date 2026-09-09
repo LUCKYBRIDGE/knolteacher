@@ -4,10 +4,12 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="복무·수당 출근일수 계산기"
+        Title="출근일수 계산기"
         Height="650" Width="760"
         MinWidth="700" MinHeight="560"
         WindowStartupLocation="CenterScreen"
+        ShowInTaskbar="True"
+        Icon="/assets/app_icon.ico"
         Background="{DynamicResource BeigeAppBg}">
 
     <Grid Margin="18">

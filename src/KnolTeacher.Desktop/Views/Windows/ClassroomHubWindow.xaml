@@ -7,6 +7,7 @@
         mc:Ignorable="d"
         Title="학급 관리 허브" Height="750" Width="1120"
         WindowStartupLocation="CenterScreen"
+        ShowInTaskbar="True"
         Icon="/assets/app_icon.ico"
         Background="#0B1120">
 

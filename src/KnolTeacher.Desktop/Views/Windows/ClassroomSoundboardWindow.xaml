@@ -8,7 +8,9 @@
         Height="510" Width="630"
         MinWidth="560" MinHeight="460"
         WindowStartupLocation="CenterScreen"
+        ShowInTaskbar="True"
         Topmost="True"
+        Icon="/assets/app_icon.ico"
         Background="{DynamicResource BeigeAppBg}">
 
     <Grid Margin="18,14,18,16">

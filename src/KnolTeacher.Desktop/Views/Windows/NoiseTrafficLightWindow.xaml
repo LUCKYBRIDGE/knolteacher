@@ -8,6 +8,8 @@
         Height="720" Width="560"
         MinWidth="460" MinHeight="600"
         WindowStartupLocation="CenterScreen"
+        ShowInTaskbar="True"
+        Icon="/assets/app_icon.ico"
         Background="#0F172A">
 
     <Grid Margin="18">

@@ -1200,7 +1200,6 @@ public partial class MainWindow : FluentWindow
 
     private void BtnLaunchClassroomHub_Click(object sender, RoutedEventArgs e)
     {
-        _classroomHubWindow.Owner = this;
         _classroomHubWindow.SelectTab(0);
         _classroomHubWindow.RefreshAll();
         if (_classroomHubWindow.IsVisible)
@@ -1216,7 +1215,6 @@ public partial class MainWindow : FluentWindow
 
     private void BtnLaunchChecklist_Click(object sender, RoutedEventArgs e)
     {
-        _classroomHubWindow.Owner = this;
         _classroomHubWindow.SelectTab(1);
         _classroomHubWindow.RefreshAll();
         if (_classroomHubWindow.IsVisible)
