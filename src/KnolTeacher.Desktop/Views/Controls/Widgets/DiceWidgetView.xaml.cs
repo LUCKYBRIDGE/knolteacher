@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using KnolTeacher.Desktop.Services;
+using KnolTeacher.Desktop.Views.Controls;
 
 namespace KnolTeacher.Desktop.Views.Controls.Widgets;
 
@@ -17,7 +19,7 @@ public class DiceStatRow
     public string PercentStr { get; set; } = "0.0%";
 }
 
-public partial class DiceWidgetView : UserControl
+public partial class DiceWidgetView : UserControl, IWidgetLifecycle
 {
     private readonly ISoundService? _soundService;
     private static readonly Dictionary<int, string> DiceChars = new()
@@ -28,9 +30,12 @@ public partial class DiceWidgetView : UserControl
     private int _diceCount = 1;
     private int _maxFace = 6;
     private readonly Dictionary<int, int> _faceCounts = new();
+    private CancellationTokenSource? _rollCts;
     private int _totalThrows = 0;
     private bool _isRolling = false;
     private bool _isReady = false;
+    private bool _isActive = false;
+    private bool _disposed = false;
 
     public DiceWidgetView(ISoundService? soundService = null)
     {
@@ -39,6 +44,37 @@ public partial class DiceWidgetView : UserControl
         _isReady = true;
         UpdateDisplay(6, null);
         UpdateStatsTable();
+    }
+
+    public void Activate()
+    {
+        if (_disposed) return;
+        _isActive = true;
+    }
+
+    public void Deactivate()
+    {
+        if (_disposed || !_isActive) return;
+        _isActive = false;
+        CancelRoll();
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _isActive = false;
+        CancelRoll();
+        _disposed = true;
+    }
+
+    private void CancelRoll()
+    {
+        var cts = _rollCts;
+        _rollCts = null;
+        if (cts == null) return;
+
+        try { cts.Cancel(); } catch { }
+        cts.Dispose();
     }
 
     private void CbFaces_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
@@ -83,36 +119,57 @@ public partial class DiceWidgetView : UserControl
 
     private async void BtnRoll_Click(object sender, RoutedEventArgs e)
     {
-        if (_isRolling) return;
+        if (_isRolling || !_isActive || _disposed) return;
+
+        CancelRoll();
+        _rollCts = new CancellationTokenSource();
+        var token = _rollCts.Token;
+
         _isRolling = true;
         BtnRoll.IsEnabled = false;
 
-        var rng = new Random();
-        for (int step = 0; step < 10; step++)
+        try
         {
-            int r1 = rng.Next(1, _maxFace + 1);
-            int? r2 = _diceCount == 2 ? rng.Next(1, _maxFace + 1) : null;
-            UpdateDisplay(r1, r2);
-            await Task.Delay(40 + step * 8);
-        }
+            var rng = new Random();
+            for (int step = 0; step < 10; step++)
+            {
+                token.ThrowIfCancellationRequested();
+                int r1 = rng.Next(1, _maxFace + 1);
+                int? r2 = _diceCount == 2 ? rng.Next(1, _maxFace + 1) : null;
+                UpdateDisplay(r1, r2);
+                await Task.Delay(40 + step * 8, token);
+            }
 
-        int final1 = rng.Next(1, _maxFace + 1);
-        int? final2 = _diceCount == 2 ? rng.Next(1, _maxFace + 1) : null;
-        UpdateDisplay(final1, final2);
+            token.ThrowIfCancellationRequested();
+            if (_disposed || !_isActive) return;
 
-        _faceCounts[final1] = _faceCounts.GetValueOrDefault(final1, 0) + 1;
-        _totalThrows++;
-        if (final2.HasValue)
-        {
-            _faceCounts[final2.Value] = _faceCounts.GetValueOrDefault(final2.Value, 0) + 1;
+            int final1 = rng.Next(1, _maxFace + 1);
+            int? final2 = _diceCount == 2 ? rng.Next(1, _maxFace + 1) : null;
+            UpdateDisplay(final1, final2);
+
+            _faceCounts[final1] = _faceCounts.GetValueOrDefault(final1, 0) + 1;
             _totalThrows++;
+            if (final2.HasValue)
+            {
+                _faceCounts[final2.Value] = _faceCounts.GetValueOrDefault(final2.Value, 0) + 1;
+                _totalThrows++;
+            }
+
+            UpdateStatsTable();
+            _soundService?.PlayChime();
         }
-
-        UpdateStatsTable();
-        _soundService?.PlayChime();
-
-        _isRolling = false;
-        BtnRoll.IsEnabled = true;
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        {
+            // Normal lifecycle cancellation.
+        }
+        finally
+        {
+            _isRolling = false;
+            if (!_disposed && BtnRoll != null)
+            {
+                BtnRoll.IsEnabled = true;
+            }
+        }
     }
 
     private void UpdateDisplay(int v1, int? v2)
@@ -162,6 +219,9 @@ public partial class DiceWidgetView : UserControl
 
     private void BtnReset_Click(object sender, RoutedEventArgs e)
     {
+        CancelRoll();
+        _isRolling = false;
+        if (BtnRoll != null) BtnRoll.IsEnabled = true;
         _faceCounts.Clear();
         _totalThrows = 0;
         UpdateStatsTable();
