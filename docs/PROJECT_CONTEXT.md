@@ -5,136 +5,248 @@
 ## 1. 기준 상태
 
 - 제품명: 놀티쳐 (KnolTeacher)
-- 기준 버전: v3.0.6
+- 기준 버전: v3.0.9 Release 후보
 - 플랫폼: Windows 10/11 x64
 - 프레임워크: .NET 8 WPF
 - 앱 프로젝트: `src/KnolTeacher.Desktop/KnolTeacher.Desktop.csproj`
-- 배포 방식: self-contained, single-file, win-x64
-- 사용자용 로컬 배포 파일: `dist-net/놀티쳐.exe`
+- 버전 SSOT: `Directory.Build.props`의 `KnolTeacherVersion`
+- 배포: self-contained, single-file, win-x64
+- 로컬 사용자 실행 파일: `놀티쳐.exe`
+- GitHub Release transport asset: `KnolTeacher.exe`
 
-버전과 브랜치는 계속 변경될 수 있으므로 작업 시작 시 GitHub의 현재 상태와 `.csproj`를 다시 확인한다.
+버전과 브랜치는 계속 변경되므로 작업 시작 시 현재 `main`, 최신 Release, 열린 PR, Actions와 `Directory.Build.props`를 다시 확인한다.
 
-## 2. 제품 구조
+## 2. 제품 정의
 
-놀티쳐는 네 영역을 하나의 데스크톱 앱으로 통합한다.
+KnolTeacher는 단순한 도구 모음보다 **교실 운영 환경(Classroom Operating Environment)**에 가깝다. 다음 네 영역을 하나의 Windows 앱에 통합한다.
 
 ### 교사 업무 & 학급 관리
-- 학급 관리 허브: 학생 명렬표, 과제/준비물 체크리스트, 누가기록 & 나이스 서술형 평어 자동 생성
-- NEIS 평어 Excel/클립보드 입력 보조
-- 17개 시도 교육청 4대 포털(업무포털, K-에듀파인, 4세대 나이스, EVPN) 및 검증된 교육 사이트 바로가기
-- QR 생성, 전자서명 & 직인 생성기
+
+- 번호 우선 학생 명렬과 선택형 이름/아바타
+- 과제/준비물 체크리스트
+- 누가기록 및 NEIS 서술형 평어 보조
+- NEIS Excel/클립보드 입력 보조
+- 17개 시도 교육청 업무포털 / K-에듀파인 / NEIS / EVPN 바로가기
+- QR 생성, 전자서명·직인
 
 ### 수업 진행
-- 교실 타이머 (원형/숫자 모드, 음수 초과 표시)
-- 뽑기 레이스 (i-Scream 스타일 3단 어드벤처 & 32종 동물 아바타)
-- 통합 스마트 판서 스튜디오 (화면/칠판/화이트/모눈 배경 원터치 전환, 수학교구, 자동 저장)
-- 실물화상기 (AF/MF 초점 제어, 교재 텍스트 선명화 필터, 풀 뷰포트 HUD 독)
-- 스마트 상단 플로팅 독 (Alt+9)
-- 전역 단축키
+
+- 교실 타이머
+- 발표자 추첨
+- 32종 동물 뽑기 레이스
+- 통합 판서 스튜디오
+- 스마트 실물화상기
+- 플로팅 도크와 전역 단축키
+- 소음 신호등, 자리 바꾸기, 사운드보드
 
 ### 학생 제시
-- 놀보드 (올인원 칠판 캔버스)
-- 다중 위젯 (타이머, 시간표, 급식, 알림장, 체크리스트, QR 등)
-- 모니터 2 기본 출력 & 원터치 모니터 전환
+
+- 놀보드(StudentDisplayWindow)
+- 13종 in-canvas 위젯
+- 모니터 2 기본 학생 화면
+- 위젯 이동, 8방향 resize, 잠금, 닫기, 재열기, 레이아웃 저장
 
 ### 교실 운영
-- 메인화면 커스텀 위젯 시스템 (드래그 이동, 리사이즈, 추가/삭제, 위치 고정)
-- 시간표 및 학교 기반 실시간 동네 날씨
-- 교시/수업 예비령 대형 카운트다운 (5분 전 예비 알림)
-- 스케줄/예약
-- 소음 신호등, 스마트 자리 바꾸기, 교실 효과음 사운드보드
 
-## 3. 주요 소스 영역
+- 메인화면 커스텀 위젯
+- 시간표, 급식, 날씨/미세먼지
+- 일정, 알림, D-Day
+- 교시 예비령/카운트다운
+- 반복 스케줄 및 예약
+
+## 3. 핵심 아키텍처
 
 ### App / MainWindow
-- `App.xaml`, `App.xaml.cs`: 앱 수명주기와 전역 초기화
-- `MainWindow.xaml`, `MainWindow.xaml.cs`: 메인 대시보드와 기능 진입점, 커스텀 위젯 캔버스
 
-### Services
-- `ClassroomRecordService.cs`: 명렬표, 과제 체크리스트, 누가기록 로컬 영구 관리 및 나이스 서술형 평어 합성, UTF-8 BOM CSV 생성
-- `ConfigService.cs`: 설정 및 위젯 레이아웃 저장
-- `DesktopCleanerService.cs`: 바탕화면 정리
-- `DisplayManager.cs`: 모니터 탐색·배치
-- `GlobalHotkeyService.cs`: 전역 단축키
-- `NeisCommentBatchService.cs`: 평어 일괄입력 데이터 처리
-- `NeisService.cs`: NEIS 관련 보조 로직
-- `QrCodeService.cs`: QR 생성
-- `SchedulerService.cs`: 예약/스케줄
-- `SiteBookmarkService.cs`: 17개 시도 교육청 4대 포털 및 교육 사이트 바로가기
-- `StudentManagerService.cs`: 학생 명렬 및 아바타
-- `ThemeService.cs`: 테마
-- `TimetableService.cs`: 시간표
-- `WeatherService.cs`: 학교 위치 기반 동네 날씨 및 미세먼지
+- `App.xaml`, `App.xaml.cs`: 앱 수명주기, DI, 전역 초기화, 단축키 연결
+- `MainWindow.xaml`, `MainWindow.xaml.cs`: 메인 대시보드 및 주요 기능 진입점
+- `MainWindow.V309Ux.cs`: v3.0.9 런타임 버전/팝업 멀티 모니터 UX 보완
 
-### 놀보드 위젯
-`Views/Controls/Widgets/` 아래에 타이머, 시간표, 급식, 메모, QR, 점수판, 주사위, 추첨, 룰렛, 판서, 체크리스트 위젯이 분리되어 있다. 놀보드 내부 위젯은 칠판 내장 컴포넌트로 작업표시줄에 별도 창을 만들지 않는다.
+`MainWindow`는 여전히 큰 code-behind를 가진 핵심 기술 부채다. 전체 재작성보다 기능 영역별 View/ViewModel/Service 분리를 단계적으로 진행한다.
 
-### 독립 도구 창
-`Views/Windows/` 아래에 놀보드, 타이머, 뽑기 레이스, 실물화상기, 통합 판서 스튜디오, 학급 관리 허브, 소음 신호등, 자리 바꾸기, 사운드보드, 전자서명, 출근일수 계산기 등이 독립 창으로 존재하며 작업표시줄에 개별 슬롯을 유지한다.
+### 주요 Services
 
-### 판서 수학교구
-`Views/Controls/`의 `RulerToolControl`, `TriangleRulerToolControl`, `ProtractorToolControl`을 사용한다.
+- `ConfigService`: 설정과 위젯 레이아웃 로컬 저장
+- `SafeLocalFileStore` / `SafeLocalJsonStore`: 원자적 로컬 저장, backup/복구 기반
+- `StudentManagerService`: 번호 우선 학생 관리
+- `ClassroomRecordService`: 교사 기록/체크리스트/NEIS 참고 자료
+- `DisplayManager`: 모니터 탐색과 창 이동
+- `GlobalHotkeyService`: 전역 단축키
+- `TimetableService`: 시간표
+- `SchedulerService`: 반복 예약/알림
+- `AcademicCalendarService`: 학교 학사일정
+- `WeatherService`: 학교 위치 기반 날씨/미세먼지
+- `NeisService`, `NeisCommentBatchService`: NEIS 보조
+- `QrCodeService`: QR 생성
+- `UpdateService`: GitHub Release 확인, 안전 다운로드, 교체, 재실행
 
-## 4. v2.9.0 디스플레이 정책
+## 4. 데이터 정책
 
-교실의 일반적인 듀얼 디스플레이 구성을 다음처럼 본다.
+학생·학급 개인정보는 Local-Only가 원칙이다.
 
-- Monitor 1: 교사 PC
-- Monitor 2: 전자칠판/TV/학생용 화면
+- 학생 데이터를 KnolTeacher 서버/클라우드/원격 텔레메트리로 자동 전송하지 않는다.
+- 저장하지 않아도 되는 데이터는 저장하지 않는다.
+- 핵심 수업 기능은 학생 이름 없이 번호만으로 동작한다.
+- 이름/성별/아바타 등 개인 식별 정보는 선택 기능이다.
+- 영구 저장이 필요한 작은 데이터는 가능한 한 SafeLocal 저장 계층을 사용한다.
+- 실제 학생 개인정보, 평어, 학교 계정 정보는 저장소/로그/테스트 fixture에 넣지 않는다.
 
-타이머, 핀볼 추첨, 실물화상기, 놀보드, 예비령 카운트다운은 모니터 2를 기본 대상으로 사용한다. 각 주요 창은 교사가 모니터 1과 2 사이를 즉시 전환할 수 있어야 한다.
+기본 설정 폴더는 사용자 홈의 `.knol_teacher_desk`다. 저장 실패 로그에는 파일 내용이나 사용자별 전체 경로를 기록하지 않는다.
 
-단일 모니터 환경에서는 기본 모니터로 안전하게 fallback해야 한다.
+## 5. 놀보드 구조
 
-## 5. NEIS 입력 흐름
+### 실제 in-canvas 위젯 13종
 
-현재 목표는 “무검토 완전자동 저장”이 아니라 **교사가 확인 가능한 빠른 입력 보조**이다.
+`WidgetRegistry` 기준:
 
-일반 흐름:
+1. timer
+2. picker
+3. dice
+4. wheel
+5. score
+6. drawing
+7. timetable
+8. meal
+9. memo
+10. checklist
+11. qr
+12. weather
+13. dday
 
-```text
-Excel/클립보드
-→ 학생별 행 파싱
-→ 바이트/입력 데이터 점검
-→ 현재 대상 학생 표시
-→ F8 또는 수동 복사
-→ 다음 입력 칸 이동
-→ 교사 검토
-→ 교사가 NEIS에서 최종 저장
-```
+`pinball`은 WidgetRegistry 위젯이 아니다. `StudentPickerWindow`를 사용하는 **별도 창 도구**다.
 
-학생 순서가 밀리는 문제를 방지하는 것을 편의성보다 우선한다.
+### 공통 Host
 
-## 6. 배포
+`BoardWidgetHost`가 다음 공통 계약을 담당한다.
 
-개발 빌드:
+- drag 이동
+- N/S/E/W/NW/NE/SW/SE 8방향 resize
+- 최소 크기 제한
+- canvas 범위 clamp
+- 위치/크기 lock
+- content zoom
+- 닫기
+- `IWidgetLifecycle` Activate/Deactivate/Dispose 연결
+
+### lifecycle
+
+장시간 동작이 있는 위젯은 hide/delete 시 자원을 정리한다.
+
+- Timer: DispatcherTimer 중지/복원
+- Picker: 진행 중 추첨 CancellationToken 취소
+- Dice: 주사위 animation 취소
+- Wheel: 회전 animation 취소
+- Timetable: service event 구독/해제
+- Meal: 비동기 NEIS 급식 요청 취소
+- Weather: 비동기 날씨 요청 취소
+- Memo: static notice event, 자동공지 timer, TTS 정리
+
+Score와 Memo 영구 데이터는 로컬 SafeLocal 저장 계층을 사용한다.
+
+## 6. 팝업 / 위젯 구분과 멀티 모니터 정책
+
+기본 물리 환경:
+
+- Monitor 1: 교사 메인 PC
+- Monitor 2: 학생용 전자칠판/TV
+
+학생 제시 화면인 놀보드 자체는 모니터 2 기본 배치를 유지한다.
+
+사용자가 **독립 Window/Dialog를 여는 버튼을 명시적으로 누르는 경우**:
+
+- 왼클릭 → 모니터 1
+- 우클릭 → 모니터 2 (`팝업 우클릭 모니터 2` 설정 기본 ON)
+- 단일 모니터 → 모니터 1 fallback
+
+놀보드 내부 위젯, 탭, 드로어, 패널 전환은 popup 규칙 대상이 아니다. 실제 위젯 런처는 별도 Window 런처와 미묘하게 다른 teal/slate 톤을 사용한다.
+
+뽑기 레이스는 위젯이 아니라 별도 Window이므로 이 popup 입력 규칙을 따른다.
+
+## 7. 일정 / 캘린더
+
+`TeacherCalendarEvent`와 `calendar_events.json`을 유지한다.
+
+v3.0.9부터 UI의 중심 개념은 `일정`이다.
+
+- 메모는 별도 기능이 아니라 일정의 선택 상세정보/준비사항
+- 등록 흐름: 제목 → 날짜/시간 → 알림 → 구분 → 메모
+- `Ctrl+Enter` 저장, `Esc` 취소
+- 메인 달력: `새 일정` / `일정 보기`
+- 기존 데이터 schema 호환 유지
+
+## 8. 자동 업데이트 계약
+
+### 버전
+
+`Directory.Build.props` → `.csproj` Version/AssemblyVersion/FileVersion/InformationalVersion → 실행 중 UI 표시는 같은 버전 계약을 사용한다.
+
+### 파일명
+
+- 개발/로컬 최종 산출물: `dist-net/놀티쳐.exe`
+- GitHub Release asset: `KnolTeacher.exe`
+- updater 호환 허용 이름: `KnolTeacher.exe`, legacy `놀티쳐.exe`
+- `default.exe`, `setup.exe` 등 임의 이름은 허용하지 않는다.
+
+### 검증/적용
+
+1. GitHub latest stable Release 조회
+2. 대상 asset 이름 확인
+3. HTTPS GitHub URL 확인
+4. 다운로드
+5. 크기 확인
+6. SHA-256 확인
+7. 다운로드 exe embedded FileVersion 확인
+8. 기존 프로세스 종료
+9. 설치 위치 `놀티쳐.exe` 교체 재시도
+10. 설치된 파일 SHA-256 재검증
+11. 설치 위치의 새 `놀티쳐.exe` 실행
+12. 완료 marker를 새 앱이 소비해 업데이트 완료 안내
+
+임시 다운로드 파일을 그대로 새 제품 실행 파일처럼 사용하지 않는다.
+
+## 9. Release 계약
+
+- `vX.Y.Z` tag == `KnolTeacherVersion`
+- Release commit은 검증된 `main`에 포함되어야 한다.
+- Release workflow는 restore → build → test → `publish.bat`을 다시 수행한다.
+- `dist-net`에는 `놀티쳐.exe` 한 파일만 있어야 한다.
+- embedded FileVersion을 tag 버전과 비교한다.
+- GitHub에는 `KnolTeacher.exe` 한 asset만 업로드한다.
+- upload asset 크기와 digest를 검증한다.
+- 모든 검증이 끝난 후에만 draft를 stable로 공개한다.
+
+## 10. 검증 기준
 
 ```powershell
 dotnet restore KnolTeacher.sln
-dotnet build KnolTeacher.sln -c Release
+dotnet build KnolTeacher.sln -c Release --no-restore
+dotnet test KnolTeacher.sln -c Release --no-build --no-restore
 ```
 
-사용자용 single-file 빌드는 루트의 `publish.bat`을 사용한다.
+```bat
+publish.bat
+```
 
-`publish.bat`은 기존 `dist-net`을 정리한 뒤 win-x64 self-contained publish를 수행하고 최종 사용자용 EXE를 `dist-net/놀티쳐.exe`로 정리한다.
+기능별 smoke test에서 특히 확인한다.
 
-## 7. Legacy 정책
+- 앱 실행/종료
+- 단일/듀얼 모니터
+- 팝업 좌클릭/우클릭 위치
+- 놀보드 Hide/재열기
+- 13종 위젯 열기/닫기/재열기/이동/8방향 resize/lock
+- timer/event/async 중복 동작 여부
+- 일정 등록/수정/삭제/알람
+- 업데이트 확인/다운로드/교체/재실행
+- NEIS 입력은 비식별 샘플로 dry-run
 
-`legacy-python/`은 .NET 이전 구현을 보존하기 위한 디렉터리이다.
+## 11. 다음 구조 개선 방향
 
-- 신규 기능 개발 금지
-- 현재 빌드/실행 가이드로 사용 금지
-- 현재 아키텍처의 근거로 사용 금지
-- 마이그레이션 비교가 필요한 경우에만 참조
+v3.0.9 안정화 이후의 우선순위는 기능 수 증가보다 다음 구조 개선이다.
 
-과거 자동 push 스크립트처럼 현재 저장소를 잘못 조작할 수 있는 파일은 보존 가치보다 위험이 크면 제거한다.
+1. MainWindow의 기능 영역별 View/ViewModel 분리
+2. Window/Navigation/Dialog/Notification 책임의 공통 service화
+3. 저장 오류를 사용자에게 전달할 수 있는 명시적 결과 계약
+4. 핵심 Service 단위 테스트 확대
+5. 실제 Windows classroom smoke checklist 정형화
 
-## 8. 다음 개발에서 우선 지킬 것
-
-1. 실제 코드와 문서 버전의 동기화
-2. 작업 브랜치 + PR
-3. CI build 통과
-4. 학생 개인정보를 저장소에 넣지 않기
-5. 멀티 모니터와 단일 모니터 모두 확인
-6. NEIS 자동화는 검토/중단/복구 가능성 유지
-7. 기능 추가보다 기존 서비스와 View 경계를 우선 재사용
+현재 구현 상태가 문서보다 우선한다. 큰 변경 전 `AGENTS.md`와 `docs/DEVELOPMENT_MASTER_PLAN.md`를 다시 확인한다.
