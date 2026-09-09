@@ -1,11 +1,12 @@
 ﻿<Window x:Class="KnolTeacher.Desktop.Views.Windows.CalendarEventDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="일정 및 메모 관리" Height="560" Width="440"
+        Title="일정 관리" Height="585" Width="460"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
         Background="#F8FAFC" Foreground="#1E293B"
-        WindowStyle="SingleBorderWindow">
+        WindowStyle="SingleBorderWindow"
+        PreviewKeyDown="Window_PreviewKeyDown">
     <Grid Margin="20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -13,75 +14,73 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Header -->
-        <StackPanel Grid.Row="0" Margin="0,0,0,16">
+        <StackPanel Grid.Row="0" Margin="0,0,0,14">
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                 <TextBlock x:Name="TxtHeaderIcon" Text="🗓️" FontSize="20" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                <TextBlock x:Name="TxtHeaderTitle" Text="새 일정 및 메모 등록" FontSize="16" FontWeight="Bold" Foreground="#0F172A" VerticalAlignment="Center"/>
+                <TextBlock x:Name="TxtHeaderTitle" Text="새 일정" FontSize="17" FontWeight="Bold" Foreground="#0F172A" VerticalAlignment="Center"/>
             </StackPanel>
-            <TextBlock Text="구글 캘린더 스타일로 일정을 기록하고 사전 알람을 설정합니다." FontSize="11.5" Foreground="#64748B" Margin="0,4,0,0"/>
+            <TextBlock Text="날짜와 시간을 정하고, 필요할 때만 알림과 메모를 더하세요." FontSize="11.5" Foreground="#64748B" Margin="0,4,0,0"/>
         </StackPanel>
 
-        <!-- Form Body -->
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <StackPanel Margin="0,0,10,0">
-                <!-- 1. Date Selection -->
-                <TextBlock Text="날짜" FontSize="12" FontWeight="Bold" Foreground="#334155" Margin="0,0,0,4"/>
-                <DatePicker x:Name="DpDate" Height="32" Margin="0,0,0,12"/>
+                <TextBlock Text="일정 제목 *" FontSize="12" FontWeight="Bold" Foreground="#334155" Margin="0,0,0,4"/>
+                <TextBox x:Name="TbTitle" Height="34" Background="White" Foreground="#0F172A" BorderBrush="#CBD5E1" BorderThickness="1" Padding="8,4" FontSize="13" Margin="0,0,0,12" ToolTip="예: 학부모 상담, 미술 준비물 확인, 교직원 회의"/>
 
-                <!-- 2. Event Title -->
-                <TextBlock Text="일정 / 메모 제목 *" FontSize="12" FontWeight="Bold" Foreground="#334155" Margin="0,0,0,4"/>
-                <TextBox x:Name="TbTitle" Height="32" Background="White" Foreground="#0F172A" BorderBrush="#CBD5E1" BorderThickness="1" Padding="8,4" FontSize="13" Margin="0,0,0,12"/>
-
-                <!-- 3. Time Selection -->
-                <DockPanel Margin="0,0,0,4" LastChildFill="True">
-                    <CheckBox x:Name="ChkAllDay" Content="종일 (시간 미지정)" DockPanel.Dock="Right" IsChecked="true" FontWeight="SemiBold" FontSize="11.5" VerticalAlignment="Center" Checked="ChkAllDay_CheckChanged" Unchecked="ChkAllDay_CheckChanged"/>
-                    <TextBlock Text="시간 설정" FontSize="12" FontWeight="Bold" Foreground="#334155" VerticalAlignment="Center"/>
-                </DockPanel>
-                <StackPanel x:Name="PanelTime" Orientation="Horizontal" Margin="0,0,0,12" Visibility="Collapsed">
-                    <ComboBox x:Name="CboHour" Width="72" Height="30" Margin="0,0,6,0"/>
-                    <TextBlock Text=":" VerticalAlignment="Center" FontSize="14" FontWeight="Bold" Margin="0,0,6,0"/>
-                    <ComboBox x:Name="CboMinute" Width="72" Height="30"/>
-                    <TextBlock Text="(24시간 기준)" VerticalAlignment="Center" FontSize="11" Foreground="#94A3B8" Margin="8,0,0,0"/>
-                </StackPanel>
-
-                <!-- 4. Alarm Selection -->
-                <Border Background="#F1F5F9" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Padding="10,8" Margin="0,0,0,12">
+                <Border Background="White" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="9" Padding="12" Margin="0,0,0,12">
                     <StackPanel>
-                        <CheckBox x:Name="ChkAlarm" Content="🔔 알람 받기 (토스트 팝업 + 차임벨)" FontWeight="Bold" FontSize="12" Foreground="#1E293B" IsChecked="false" Checked="ChkAlarm_CheckChanged" Unchecked="ChkAlarm_CheckChanged"/>
-                        <StackPanel x:Name="PanelAlarmOffset" Margin="22,8,0,0" Orientation="Horizontal" Visibility="Collapsed">
-                            <TextBlock Text="알람 시점:" VerticalAlignment="Center" FontSize="11.5" Foreground="#475569" Margin="0,0,8,0"/>
-                            <ComboBox x:Name="CboAlarmOffset" Width="140" Height="28"/>
+                        <TextBlock Text="언제" FontSize="12" FontWeight="Bold" Foreground="#334155" Margin="0,0,0,7"/>
+                        <DatePicker x:Name="DpDate" Height="32" Margin="0,0,0,9"/>
+                        <DockPanel Margin="0,0,0,4" LastChildFill="True">
+                            <CheckBox x:Name="ChkAllDay" Content="종일" DockPanel.Dock="Right" IsChecked="true" FontWeight="SemiBold" FontSize="11.5" VerticalAlignment="Center" Checked="ChkAllDay_CheckChanged" Unchecked="ChkAllDay_CheckChanged"/>
+                            <TextBlock Text="시간" FontSize="11.5" FontWeight="SemiBold" Foreground="#475569" VerticalAlignment="Center"/>
+                        </DockPanel>
+                        <StackPanel x:Name="PanelTime" Orientation="Horizontal" Visibility="Collapsed">
+                            <ComboBox x:Name="CboHour" Width="72" Height="30" Margin="0,0,6,0"/>
+                            <TextBlock Text=":" VerticalAlignment="Center" FontSize="14" FontWeight="Bold" Margin="0,0,6,0"/>
+                            <ComboBox x:Name="CboMinute" Width="72" Height="30"/>
+                            <TextBlock Text="24시간 기준" VerticalAlignment="Center" FontSize="10.5" Foreground="#94A3B8" Margin="8,0,0,0"/>
                         </StackPanel>
                     </StackPanel>
                 </Border>
 
-                <!-- 5. Color Labels -->
-                <TextBlock Text="구분 라벨 색상" FontSize="12" FontWeight="Bold" Foreground="#334155" Margin="0,0,0,6"/>
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
-                    <RadioButton x:Name="RbColorBlue" Content="업무" Tag="#3B82F6" IsChecked="True" Margin="0,0,8,0" Foreground="#2563EB" FontWeight="Bold" Cursor="Hand"/>
-                    <RadioButton x:Name="RbColorGreen" Content="수업" Tag="#10B981" Margin="0,0,8,0" Foreground="#059669" FontWeight="Bold" Cursor="Hand"/>
-                    <RadioButton x:Name="RbColorOrange" Content="상담" Tag="#F59E0B" Margin="0,0,8,0" Foreground="#D97706" FontWeight="Bold" Cursor="Hand"/>
-                    <RadioButton x:Name="RbColorRed" Content="중요" Tag="#EF4444" Margin="0,0,8,0" Foreground="#DC2626" FontWeight="Bold" Cursor="Hand"/>
-                    <RadioButton x:Name="RbColorPurple" Content="개인" Tag="#8B5CF6" Margin="0,0,8,0" Foreground="#7C3AED" FontWeight="Bold" Cursor="Hand"/>
-                </StackPanel>
+                <Border Background="#F1F5F9" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="9" Padding="11,9" Margin="0,0,0,12">
+                    <StackPanel>
+                        <CheckBox x:Name="ChkAlarm" Content="🔔 알림 받기" FontWeight="Bold" FontSize="12" Foreground="#1E293B" IsChecked="false" Checked="ChkAlarm_CheckChanged" Unchecked="ChkAlarm_CheckChanged"/>
+                        <StackPanel x:Name="PanelAlarmOffset" Margin="22,8,0,0" Orientation="Horizontal" Visibility="Collapsed">
+                            <TextBlock Text="알림 시점" VerticalAlignment="Center" FontSize="11.5" Foreground="#475569" Margin="0,0,8,0"/>
+                            <ComboBox x:Name="CboAlarmOffset" Width="150" Height="28"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
 
-                <!-- 6. Detailed Memo -->
-                <TextBlock Text="상세 내용 및 준비물 (메모)" FontSize="12" FontWeight="Bold" Foreground="#334155" Margin="0,0,0,4"/>
-                <TextBox x:Name="TbMemo" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="70" Background="White" Foreground="#0F172A" BorderBrush="#CBD5E1" BorderThickness="1" Padding="8" FontSize="12.5" VerticalScrollBarVisibility="Auto"/>
+                <TextBlock Text="구분" FontSize="12" FontWeight="Bold" Foreground="#334155" Margin="0,0,0,6"/>
+                <WrapPanel Margin="0,0,0,13">
+                    <RadioButton x:Name="RbColorBlue" Content="업무" Tag="#3B82F6" IsChecked="True" Margin="0,0,10,4" Foreground="#2563EB" FontWeight="Bold" Cursor="Hand"/>
+                    <RadioButton x:Name="RbColorGreen" Content="수업" Tag="#10B981" Margin="0,0,10,4" Foreground="#059669" FontWeight="Bold" Cursor="Hand"/>
+                    <RadioButton x:Name="RbColorOrange" Content="상담" Tag="#F59E0B" Margin="0,0,10,4" Foreground="#D97706" FontWeight="Bold" Cursor="Hand"/>
+                    <RadioButton x:Name="RbColorRed" Content="중요" Tag="#EF4444" Margin="0,0,10,4" Foreground="#DC2626" FontWeight="Bold" Cursor="Hand"/>
+                    <RadioButton x:Name="RbColorPurple" Content="개인" Tag="#8B5CF6" Margin="0,0,10,4" Foreground="#7C3AED" FontWeight="Bold" Cursor="Hand"/>
+                </WrapPanel>
+
+                <DockPanel Margin="0,0,0,4">
+                    <TextBlock Text="메모 · 준비사항" FontSize="12" FontWeight="Bold" Foreground="#334155"/>
+                    <TextBlock Text="선택" FontSize="10.5" Foreground="#94A3B8" Margin="6,1,0,0"/>
+                </DockPanel>
+                <TextBox x:Name="TbMemo" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="78" Background="White" Foreground="#0F172A" BorderBrush="#CBD5E1" BorderThickness="1" Padding="8" FontSize="12.5" VerticalScrollBarVisibility="Auto" ToolTip="준비물, 장소, 참고사항 등을 자유롭게 적을 수 있습니다."/>
             </StackPanel>
         </ScrollViewer>
 
-        <!-- Bottom Action Buttons -->
-        <DockPanel Grid.Row="2" Margin="0,16,0,0" LastChildFill="False">
+        <DockPanel Grid.Row="2" Margin="0,15,0,0" LastChildFill="False">
             <Button x:Name="BtnDelete" Content="🗑️ 삭제" Click="BtnDelete_Click" DockPanel.Dock="Left" Width="76" Height="34" Background="#FEE2E2" Foreground="#DC2626" BorderBrush="#FECACA" BorderThickness="1" FontWeight="Bold" Cursor="Hand" Visibility="Collapsed">
                 <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
             </Button>
+            <TextBlock DockPanel.Dock="Left" Text="Ctrl+Enter 저장 · Esc 취소" FontSize="10.5" Foreground="#94A3B8" VerticalAlignment="Center" Margin="10,0,0,0"/>
             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
                 <Button Content="취소" Click="BtnCancel_Click" Width="76" Height="34" Margin="0,0,8,0" Background="#E2E8F0" Foreground="#475569" BorderThickness="0" Cursor="Hand">
                     <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
                 </Button>
-                <Button x:Name="BtnSave" Content="💾 저장" Click="BtnSave_Click" Width="100" Height="34" Background="#2563EB" Foreground="White" FontWeight="Bold" BorderThickness="0" Cursor="Hand">
+                <Button x:Name="BtnSave" Content="등록" Click="BtnSave_Click" Width="92" Height="34" Background="#2563EB" Foreground="White" FontWeight="Bold" BorderThickness="0" Cursor="Hand">
                     <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
                 </Button>
             </StackPanel>
