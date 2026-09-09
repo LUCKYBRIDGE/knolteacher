@@ -307,9 +307,9 @@ public partial class MainWindow : FluentWindow
             {
                 TxtLivePeriodStatus.Text = $"{cur.Name} ({cur.Subject}) • {rem}분 남음";
                 DotLiveStatus.Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#10B981"));
-                TxtLivePeriodStatus.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#047857"));
-                PillLivePeriodStatus.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#ECFDF5"));
-                PillLivePeriodStatus.BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#A7F3D0"));
+                TxtLivePeriodStatus.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#1E293B"));
+                PillLivePeriodStatus.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F8FAFC"));
+                PillLivePeriodStatus.BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E2E8F0"));
             }
         }
         else
@@ -321,10 +321,10 @@ public partial class MainWindow : FluentWindow
             if (TxtLivePeriodStatus != null)
             {
                 TxtLivePeriodStatus.Text = "☕ 쉬는 시간 / 수업 준비";
-                DotLiveStatus.Fill = (Brush)FindResource("BeigeAccent");
-                TxtLivePeriodStatus.Foreground = (Brush)FindResource("BeigeAccent");
-                PillLivePeriodStatus.Background = (Brush)FindResource("BeigeAccentSoft");
-                PillLivePeriodStatus.BorderBrush = (Brush)FindResource("BeigeCardBorder");
+                DotLiveStatus.Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#94A3B8"));
+                TxtLivePeriodStatus.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#475569"));
+                PillLivePeriodStatus.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F8FAFC"));
+                PillLivePeriodStatus.BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E2E8F0"));
             }
         }
     }

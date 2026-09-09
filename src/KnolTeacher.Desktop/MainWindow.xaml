@@ -179,19 +179,18 @@
         <ui:TitleBar Grid.Row="0" Title="놀티쳐 (KnolTeacher v3.0.0)">
             <ui:TitleBar.Header>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,0,0">
-                    <Image Source="/assets/app_icon.png" Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                    <Border Background="{DynamicResource BeigeAccentSoft}" CornerRadius="6" Padding="8,2" Margin="0,0,8,0" Cursor="Hand" MouseLeftButtonUp="BtnLaunchSchoolScale_Click" ToolTip="클릭하여 내 기본 학교 변경 및 전국 학교 규모 통계 조회">
+                    <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="8,3" Margin="0,0,8,0" Cursor="Hand" MouseLeftButtonUp="BtnLaunchSchoolScale_Click" ToolTip="클릭하여 내 기본 학교 변경 및 전국 학교 규모 통계 조회">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="🏫 " FontSize="11" VerticalAlignment="Center"/>
-                            <TextBlock Text="{Binding SchoolName}" FontWeight="Bold" FontSize="11" Foreground="{DynamicResource BeigeAccent}" VerticalAlignment="Center"/>
-                            <TextBlock Text=" • " FontSize="11" Foreground="{DynamicResource BeigeTextMuted}" VerticalAlignment="Center"/>
-                            <TextBlock Text="{Binding GradeClassInfo}" FontWeight="SemiBold" FontSize="11" Foreground="{DynamicResource BeigeTextSub}" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding SchoolName}" FontWeight="Bold" FontSize="11" Foreground="#334155" VerticalAlignment="Center"/>
+                            <TextBlock Text=" • " FontSize="11" Foreground="#94A3B8" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding GradeClassInfo}" FontWeight="SemiBold" FontSize="11" Foreground="#64748B" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Border>
-                    <Border Background="#FEF3C7" BorderBrush="#FCD34D" BorderThickness="1" CornerRadius="6" Padding="8,2" Margin="0,0,8,0" Cursor="Hand" MouseLeftButtonUp="BtnUpdate_Click" ToolTip="최신 버전 확인 및 사이트 이동 없는 원클릭 자동 업데이트">
+                    <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="8,3" Margin="0,0,8,0" Cursor="Hand" MouseLeftButtonUp="BtnUpdate_Click" ToolTip="최신 버전 확인 및 사이트 이동 없는 원클릭 자동 업데이트">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="🚀 v3.0.0" FontWeight="Bold" FontSize="11" Foreground="#B45309" VerticalAlignment="Center"/>
-                            <TextBlock Text=" (버전확인)" FontSize="10" Foreground="#D97706" VerticalAlignment="Center" Margin="3,0,0,0"/>
+                            <TextBlock Text="🚀 v3.0.0" FontWeight="Bold" FontSize="11" Foreground="#334155" VerticalAlignment="Center"/>
+                            <TextBlock Text=" (버전확인)" FontSize="10" Foreground="#64748B" VerticalAlignment="Center" Margin="3,0,0,0"/>
                         </StackPanel>
                     </Border>
                 </StackPanel>
@@ -224,21 +223,21 @@
                     <!-- Left: Brand + Live Capsule -->
                     <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,14,0" Cursor="Hand" MouseLeftButtonUp="BtnReturnDashboard_Click" ToolTip="메인 대시보드로 이동">
-                            <TextBlock Text="🎓" FontSize="22" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                            <Image Source="/assets/app_icon_mono.png" Width="24" Height="24" Margin="0,0,8,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality"/>
                             <TextBlock Text="KnolTeacher" FontSize="19" FontWeight="Bold" Foreground="{DynamicResource BeigeTextMain}" VerticalAlignment="Center" FontFamily="Segoe UI Variable Display, Malgun Gothic, Segoe UI"/>
                         </StackPanel>
 
-                        <!-- 🔴 Live Period Status Capsule (Mockup Signature) -->
+                        <!-- 🔴 Live Period Status Capsule (Refined Calm Slate Signature) -->
                         <Border x:Name="PillLivePeriodStatus"
-                                Background="#E0F2FE"
-                                BorderBrush="#BAE6FD"
+                                Background="#F8FAFC"
+                                BorderBrush="#E2E8F0"
                                 BorderThickness="1"
                                 CornerRadius="16"
                                 Padding="11,5"
                                 VerticalAlignment="Center">
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <Ellipse x:Name="DotLiveStatus" Width="7.5" Height="7.5" Fill="#0284C7" Margin="0,0,7,0" VerticalAlignment="Center"/>
-                                <TextBlock x:Name="TxtLivePeriodStatus" Text="확인 중..." FontSize="11.5" FontWeight="Bold" Foreground="#0284C7" VerticalAlignment="Center"/>
+                                <Ellipse x:Name="DotLiveStatus" Width="7.5" Height="7.5" Fill="#10B981" Margin="0,0,7,0" VerticalAlignment="Center"/>
+                                <TextBlock x:Name="TxtLivePeriodStatus" Text="확인 중..." FontSize="11.5" FontWeight="Bold" Foreground="#1E293B" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Border>
 

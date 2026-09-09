@@ -171,7 +171,7 @@
                            ToolTip="클릭하고 드래그하여 도구바 이동"/>
 
                 <!-- Brand Logo -->
-                <Image Source="/assets/app_icon.png" Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <Image Source="/assets/app_icon_mono.png" Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,8,0" RenderOptions.BitmapScalingMode="HighQuality"/>
 
                 <!-- ══════ PRIMARY / COMPACT TOOLS (ALWAYS VISIBLE) ══════ -->
 
