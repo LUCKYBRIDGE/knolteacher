@@ -16,10 +16,13 @@ using KnolTeacher.Desktop.Services;
 using KnolTeacher.Desktop.ViewModels;
 using KnolTeacher.Desktop.Views.Windows;
 using KnolTeacher.Desktop.Views.Controls;
+using KnolTeacher.Desktop.Views.Controls.Widgets;
 using System.Linq;
 using MessageBoxButton = System.Windows.MessageBoxButton;
 using MessageBoxResult = System.Windows.MessageBoxResult;
 using MessageBoxImage = System.Windows.MessageBoxImage;
+using MessageBox = System.Windows.MessageBox;
+using Button = System.Windows.Controls.Button;
 
 namespace KnolTeacher.Desktop;
 
@@ -68,8 +71,6 @@ public partial class MainWindow : FluentWindow
     private DateTime _selectedCalDate = DateTime.Today;
     private List<AcademicScheduleItem> _monthScheduleEvents = new();
     private DateTime _selectedMealDate = DateTime.Today;
-    private bool _isWidgetLayoutInitialized = false;
-    private bool _isWidgetsLocked = false;
     private readonly List<MainWidgetCard> _mainWidgets = new();
     private readonly IStartupService _startupService;
     private readonly IDataShareService _dataShareService;
@@ -226,6 +227,8 @@ public partial class MainWindow : FluentWindow
             // 8. Initialize Main Screen Widgets & Customization
             InitWidgetSystem();
             LoadTodos();
+            LoadMainNotice();
+            UpdateMonitorStatusBadge();
 
             // 9. Startup Auto-Run Status & Tutorial Auto-Launch
             ChkAutoStartup.IsChecked = _startupService.IsStartupEnabled();
@@ -1639,6 +1642,161 @@ public partial class MainWindow : FluentWindow
         _todoItems.Add(new TodoItem { Text = "학부모 상담 설문지 취합 및 확인", IsCompleted = false });
         _todoItems.Add(new TodoItem { Text = "하교 전 알림장 지도 및 준비물 확인", IsCompleted = false });
         SaveTodos();
+    }
+
+    #endregion
+
+    #region Dual-Focus Workspace: Teacher Todo vs Student Notice & Monitor Sync
+
+    private string _noticeFile => Path.Combine(_configService.ConfigDir, "board_memo.txt");
+
+    private void LoadMainNotice()
+    {
+        try
+        {
+            if (File.Exists(_noticeFile))
+            {
+                TbMainNotice.Text = File.ReadAllText(_noticeFile);
+            }
+            else
+            {
+                TbMainNotice.Text = "• [알림] 오늘 5교시는 음악실에서 수업합니다.\n• [준비물] 수학익힘책 42쪽 풀어오기\n• [과제] 주말 독서록 작성하기";
+                File.WriteAllText(_noticeFile, TbMainNotice.Text);
+            }
+        }
+        catch { }
+
+        MemoWidgetView.OnNoticeChanged += (newText, sender) =>
+        {
+            if (sender != this)
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    if (TbMainNotice != null && TbMainNotice.Text != newText)
+                    {
+                        TbMainNotice.Text = newText;
+                    }
+                });
+            }
+        };
+    }
+
+    private void RbMemoTab_Checked(object sender, RoutedEventArgs e)
+    {
+        if (PanelTeacherTodo == null || PanelStudentNotice == null) return;
+
+        if (RbTabTeacherTodo?.IsChecked == true)
+        {
+            PanelTeacherTodo.Visibility = Visibility.Visible;
+            PanelStudentNotice.Visibility = Visibility.Collapsed;
+        }
+        else
+        {
+            PanelTeacherTodo.Visibility = Visibility.Collapsed;
+            PanelStudentNotice.Visibility = Visibility.Visible;
+        }
+    }
+
+    private void TbMainNotice_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (TbMainNotice == null) return;
+        try
+        {
+            File.WriteAllText(_noticeFile, TbMainNotice.Text);
+        }
+        catch { }
+        MemoWidgetView.NotifyNoticeChanged(TbMainNotice.Text, this);
+    }
+
+    private void BtnInsertNoticeTag_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.Tag is string tag)
+        {
+            if (!string.IsNullOrEmpty(TbMainNotice.Text) && !TbMainNotice.Text.EndsWith("\n"))
+            {
+                TbMainNotice.AppendText("\n");
+            }
+            TbMainNotice.AppendText(tag);
+            TbMainNotice.CaretIndex = TbMainNotice.Text.Length;
+            TbMainNotice.Focus();
+        }
+    }
+
+    private void BtnSendNoticeToMonitor2_Click(object sender, RoutedEventArgs e)
+    {
+        _displayManager.MoveToStudentMonitor(_studentDisplayWindow, maximize: true);
+        _studentDisplayWindow.Show();
+        _studentDisplayWindow.Activate();
+
+        var existingMemo = _studentDisplayWindow.FindWidget("memo");
+        if (existingMemo == null)
+        {
+            _studentDisplayWindow.SpawnWidget("memo", 750, 30);
+        }
+        HudNotificationWindow.Instance.ShowToast("📢", "학급 알림장을 모니터 2(학생 화면)에 띄웠습니다.");
+    }
+
+    private void BtnZoomNoticeFromMain_Click(object sender, RoutedEventArgs e)
+    {
+        var tts = (Application.Current as App)?.Services?.GetService(typeof(ITtsService)) as ITtsService;
+        var zoomWin = new NoticeZoomWindow(TbMainNotice.Text, tts);
+        zoomWin.ShowDialog();
+    }
+
+    private void BtnTtsNoticeMain_Click(object sender, RoutedEventArgs e)
+    {
+        var tts = (Application.Current as App)?.Services?.GetService(typeof(ITtsService)) as ITtsService;
+        if (tts == null) return;
+        if (tts.IsSpeaking)
+        {
+            tts.Stop();
+            BtnTtsNoticeMain.Content = "🔊 낭독";
+        }
+        else
+        {
+            BtnTtsNoticeMain.Content = "⏹️ 중지";
+            _ = tts.SpeakAsync(TbMainNotice.Text);
+        }
+    }
+
+    private void UpdateMonitorStatusBadge()
+    {
+        if (PillMonitorStatus == null || TxtMonitorStatus == null || TxtMonitorIcon == null) return;
+
+        bool isDual = _displayManager.IsDualMonitor;
+        if (isDual)
+        {
+            PillMonitorStatus.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#EFF6FF"));
+            PillMonitorStatus.BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#BFDBFE"));
+            TxtMonitorIcon.Text = "📺";
+            TxtMonitorStatus.Text = "듀얼 모니터 (모니터 2 학생용 감지)";
+            TxtMonitorStatus.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#1D4ED8"));
+        }
+        else
+        {
+            PillMonitorStatus.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F1F5F9"));
+            PillMonitorStatus.BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E2E8F0"));
+            TxtMonitorIcon.Text = "💻";
+            TxtMonitorStatus.Text = "단일 모니터 모드 (화면 공유)";
+            TxtMonitorStatus.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#64748B"));
+        }
+    }
+
+    private void PillMonitorStatus_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        string desc = _displayManager.MonitorStatusDescription;
+        int count = _displayManager.ScreenCount;
+        string msg = $"🖥️ 디스플레이 환경 안내\n\n" +
+                     $"• 감지된 모니터: 총 {count}대\n" +
+                     $"• 상태: {desc}\n\n" +
+                     $"【기본 화면 배치 원칙】\n" +
+                     $"• 모니터 1: 선생님 메인 PC (교사 비공개 업무, 시간표, 개인 할 일)\n" +
+                     $"• 모니터 2: 학생용 전자칠판 / TV (놀보드, 알림장, 판서, 타이머, 뽑기)\n\n" +
+                     (count >= 2 
+                        ? "✅ 듀얼 모니터가 최적화되어 작동 중입니다. 학생용 도구는 모니터 2에 우선 전송됩니다." 
+                        : "ℹ️ 현재 단일 모니터 환경입니다. 모든 학생용 도구는 현재 화면(모니터 1) 위에 안전하게 표시됩니다.");
+
+        MessageBox.Show(msg, "디스플레이 및 모니터 설정 안내", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     #endregion

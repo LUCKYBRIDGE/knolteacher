@@ -6,16 +6,41 @@
              mc:Ignorable="d">
     <Grid Margin="6">
         <Grid.RowDefinitions>
-            <RowDefinition Height="*" />
+            <!-- Date & Calorie Nav Header -->
             <RowDefinition Height="Auto" />
+            <!-- Menu Items Scroll -->
+            <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
-            <TextBlock x:Name="TxtMeal" Text="급식 메뉴 불러오는 중..." FontSize="12" LineHeight="20" Foreground="White" FontWeight="SemiBold" TextWrapping="Wrap"/>
-        </ScrollViewer>
+        <!-- Top Date Navigation & Calorie Pill -->
+        <Border Grid.Row="0" Background="#0F172A" CornerRadius="8" BorderBrush="#334155" BorderThickness="1" Padding="8,5" Margin="0,0,0,8">
+            <DockPanel LastChildFill="True">
+                <!-- Right Calorie Pill -->
+                <Border DockPanel.Dock="Right" Background="#1E293B" CornerRadius="10" BorderBrush="#38BDF8" BorderThickness="1" Padding="8,2" VerticalAlignment="Center">
+                    <TextBlock x:Name="TxtCalorie" Text="720 kcal" FontSize="11" Foreground="#38BDF8" FontWeight="Bold"/>
+                </Border>
 
-        <Border Grid.Row="1" Background="#0F172A" CornerRadius="6" Padding="8,4" Margin="0,6,0,0">
-            <TextBlock x:Name="TxtCalorie" Text="열량: 계산 중" FontSize="11" Foreground="#38BDF8" HorizontalAlignment="Right" FontWeight="Bold"/>
+                <!-- Left Date Navigation -->
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Content="‹" Click="BtnPrevMeal_Click" Width="22" Height="22" Padding="0" Background="#1E293B" Foreground="#CBD5E1" BorderBrush="#334155" BorderThickness="1" FontSize="13" FontWeight="Bold" Cursor="Hand">
+                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="5"/></Style></Button.Resources>
+                    </Button>
+                    <TextBlock x:Name="TxtMealDate" Text="오늘 (9.9 수)" FontSize="11.5" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" Margin="8,0"/>
+                    <Button Content="›" Click="BtnNextMeal_Click" Width="22" Height="22" Padding="0" Background="#1E293B" Foreground="#CBD5E1" BorderBrush="#334155" BorderThickness="1" FontSize="13" FontWeight="Bold" Cursor="Hand">
+                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="5"/></Style></Button.Resources>
+                    </Button>
+                    <Button Content="오늘" Click="BtnTodayMeal_Click" Padding="6,2" Margin="6,0,0,0" Background="#1E293B" Foreground="#38BDF8" BorderBrush="#0284C7" BorderThickness="1" FontSize="10.5" FontWeight="Bold" Cursor="Hand">
+                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="5"/></Style></Button.Resources>
+                    </Button>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- Menu Container Box -->
+        <Border Grid.Row="1" Background="#0F172A" CornerRadius="8" BorderBrush="#334155" BorderThickness="1" Padding="12,10">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <TextBlock x:Name="TxtMeal" Text="급식 메뉴 불러오는 중..." FontSize="13" LineHeight="22" Foreground="#F8FAFC" FontWeight="SemiBold" TextWrapping="Wrap"/>
+            </ScrollViewer>
         </Border>
     </Grid>
 </UserControl>

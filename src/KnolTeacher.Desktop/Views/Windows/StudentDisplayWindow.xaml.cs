@@ -71,6 +71,8 @@ public partial class StudentDisplayWindow : Window
 
         BoardInkCanvas.StrokeCollected += (s, e) => _undoStack.Clear();
 
+        SizeChanged += (s, e) => ClampAllWidgetsWithinCanvas();
+
         _isReady = true;
         Loaded += (s, e) =>
         {
@@ -121,6 +123,8 @@ public partial class StudentDisplayWindow : Window
         UpdateDockButtonsState();
         return host;
     }
+
+    public BoardWidgetHost? FindWidget(string type) => _widgets.Find(w => w.WidgetType == type);
 
     public void ToggleWidget(string key)
     {
@@ -180,12 +184,17 @@ public partial class StudentDisplayWindow : Window
         }
     }
 
-    private void BtnSwitchBoardMonitor_Click(object sender, RoutedEventArgs e)
+    public void ToggleMonitor()
     {
         if (_displayManager == null || _displayManager.ScreenCount < 2) return;
         _currentMonitorIndex = _currentMonitorIndex == 1 ? 0 : 1;
         _displayManager.MoveWindowToScreen(this, _currentMonitorIndex, maximize: true);
         UpdateMonitorButtonText();
+    }
+
+    private void BtnSwitchBoardMonitor_Click(object sender, RoutedEventArgs e)
+    {
+        ToggleMonitor();
     }
 
     private RulerToolControl? _boardRuler;
@@ -319,7 +328,32 @@ public partial class StudentDisplayWindow : Window
             btn.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#94A3B8"));
             btn.BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#334155"));
             btn.BorderThickness = new Thickness(1);
-            btn.FontWeight = FontWeights.Normal;
+            btn.FontWeight = FontWeights.SemiBold;
+        }
+    }
+
+    public void ClampAllWidgetsWithinCanvas()
+    {
+        double canvasWidth = WidgetCanvas.ActualWidth;
+        double canvasHeight = WidgetCanvas.ActualHeight;
+        if (canvasWidth <= 100 || canvasHeight <= 100) return;
+
+        foreach (var w in _widgets)
+        {
+            double curLeft = Canvas.GetLeft(w);
+            double curTop = Canvas.GetTop(w);
+
+            if (double.IsNaN(curLeft)) curLeft = 20;
+            if (double.IsNaN(curTop)) curTop = 20;
+
+            if (w.ActualWidth > canvasWidth - 20) w.Width = Math.Max(240, canvasWidth - 20);
+            if (w.ActualHeight > canvasHeight - 20) w.Height = Math.Max(180, canvasHeight - 20);
+
+            double maxLeft = Math.Max(0, canvasWidth - w.ActualWidth - 10);
+            double maxTop = Math.Max(0, canvasHeight - w.ActualHeight - 10);
+
+            Canvas.SetLeft(w, Math.Clamp(curLeft, 10, maxLeft));
+            Canvas.SetTop(w, Math.Clamp(curTop, 10, maxTop));
         }
     }
 
@@ -339,8 +373,8 @@ public partial class StudentDisplayWindow : Window
         if (n == 1)
         {
             var w = _widgets[0];
-            double ww = Math.Min(680, canvasWidth - 40);
-            double wh = Math.Min(480, canvasHeight - 40);
+            double ww = Math.Min(780, canvasWidth - 40);
+            double wh = Math.Min(520, canvasHeight - 40);
             Canvas.SetLeft(w, Math.Max(20, (canvasWidth - ww) / 2));
             Canvas.SetTop(w, Math.Max(20, (canvasHeight - wh) / 2));
             w.Width = ww;
@@ -348,45 +382,59 @@ public partial class StudentDisplayWindow : Window
         }
         else if (n == 2)
         {
-            double halfW = (canvasWidth - 30) / 2;
+            double halfW = (canvasWidth - 36) / 2;
             double h = Math.Max(300, canvasHeight - 40);
             for (int i = 0; i < 2; i++)
             {
                 var w = _widgets[i];
-                Canvas.SetLeft(w, 10 + i * (halfW + 10));
-                Canvas.SetTop(w, 20);
+                Canvas.SetLeft(w, 12 + i * (halfW + 12));
+                Canvas.SetTop(w, 16);
                 w.Width = halfW;
                 w.Height = h;
             }
         }
-        else if (n <= 4)
+        else if (n == 3)
         {
-            double halfW = (canvasWidth - 30) / 2;
-            double halfH = (canvasHeight - 30) / 2;
-            for (int i = 0; i < n; i++)
+            // 3 Columns layout: Perfect for Timetable + Meal + Memo
+            double colW = (canvasWidth - 48) / 3;
+            double h = Math.Max(300, canvasHeight - 36);
+            for (int i = 0; i < 3; i++)
+            {
+                var w = _widgets[i];
+                Canvas.SetLeft(w, 12 + i * (colW + 12));
+                Canvas.SetTop(w, 16);
+                w.Width = colW;
+                w.Height = h;
+            }
+        }
+        else if (n == 4)
+        {
+            double halfW = (canvasWidth - 36) / 2;
+            double halfH = (canvasHeight - 36) / 2;
+            for (int i = 0; i < 4; i++)
             {
                 int r = i / 2;
                 int c = i % 2;
                 var w = _widgets[i];
-                Canvas.SetLeft(w, 10 + c * (halfW + 10));
-                Canvas.SetTop(w, 10 + r * (halfH + 10));
+                Canvas.SetLeft(w, 12 + c * (halfW + 12));
+                Canvas.SetTop(w, 12 + r * (halfH + 12));
                 w.Width = halfW;
                 w.Height = halfH;
             }
         }
         else
         {
-            int cols = 3;
+            int cols = (n <= 6) ? 3 : 4;
             int rows = (n + cols - 1) / cols;
-            double cw = (canvasWidth - (cols + 1) * 10) / cols;
-            double ch = (canvasHeight - (rows + 1) * 10) / rows;
+            double cw = (canvasWidth - (cols + 1) * 12) / cols;
+            double ch = (canvasHeight - (rows + 1) * 12) / rows;
             for (int i = 0; i < n; i++)
             {
                 int r = i / cols;
                 int c = i % cols;
                 var w = _widgets[i];
-                Canvas.SetLeft(w, 10 + c * (cw + 10));
-                Canvas.SetTop(w, 10 + r * (ch + 10));
+                Canvas.SetLeft(w, 12 + c * (cw + 12));
+                Canvas.SetTop(w, 12 + r * (ch + 12));
                 w.Width = cw;
                 w.Height = ch;
             }

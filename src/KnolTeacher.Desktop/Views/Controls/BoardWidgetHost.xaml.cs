@@ -84,9 +84,14 @@ public partial class BoardWidgetHost : UserControl
             double newLeft = currentPos.X - _dragStartPoint.X;
             double newTop = currentPos.Y - _dragStartPoint.Y;
 
-            // Boundaries
-            newLeft = Math.Max(0, Math.Min(newLeft, canvas.ActualWidth - ActualWidth));
-            newTop = Math.Max(0, Math.Min(newTop, canvas.ActualHeight - ActualHeight));
+            double currentW = ActualWidth > 0 ? ActualWidth : Width;
+            double currentH = ActualHeight > 0 ? ActualHeight : Height;
+
+            double maxLeft = Math.Max(0, canvas.ActualWidth - currentW);
+            double maxTop = Math.Max(0, canvas.ActualHeight - currentH);
+
+            newLeft = Math.Clamp(newLeft, 0, maxLeft);
+            newTop = Math.Clamp(newTop, 0, maxTop);
 
             Canvas.SetLeft(this, newLeft);
             Canvas.SetTop(this, newTop);
@@ -109,18 +114,22 @@ public partial class BoardWidgetHost : UserControl
         if (_isLocked) return;
         BringToFront();
 
-        double newWidth = ActualWidth + e.HorizontalChange;
-        double newHeight = ActualHeight + e.VerticalChange;
+        double curLeft = Canvas.GetLeft(this);
+        double curTop = Canvas.GetTop(this);
+        if (double.IsNaN(curLeft)) curLeft = 0;
+        if (double.IsNaN(curTop)) curTop = 0;
 
-        if (newWidth >= MinWidth)
-        {
-            Width = newWidth;
-        }
+        double canvasWidth = (VisualParent is Canvas canvas) ? canvas.ActualWidth : double.MaxValue;
+        double canvasHeight = (VisualParent is Canvas c) ? c.ActualHeight : double.MaxValue;
 
-        if (newHeight >= MinHeight)
-        {
-            Height = newHeight;
-        }
+        double maxAllowedW = Math.Max(MinWidth, canvasWidth - curLeft - 6);
+        double maxAllowedH = Math.Max(MinHeight, canvasHeight - curTop - 6);
+
+        double newWidth = Math.Clamp(ActualWidth + e.HorizontalChange, MinWidth, maxAllowedW);
+        double newHeight = Math.Clamp(ActualHeight + e.VerticalChange, MinHeight, maxAllowedH);
+
+        Width = newWidth;
+        Height = newHeight;
 
         e.Handled = true;
     }

@@ -64,7 +64,7 @@
                                     <Setter Property="BorderThickness" Value="1"/>
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding IsCurrentPeriod}" Value="True">
-                                            <Setter Property="Background" Value="#0369A1"/>
+                                            <Setter Property="Background" Value="#075985"/>
                                             <Setter Property="BorderBrush" Value="#38BDF8"/>
                                             <Setter Property="BorderThickness" Value="1.5"/>
                                         </DataTrigger>
@@ -73,14 +73,19 @@
                             </Border.Style>
                             <Grid>
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="60" />
+                                    <ColumnDefinition Width="52" />
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="{Binding DisplayBadge}" FontWeight="Bold" FontSize="11" Foreground="#38BDF8" VerticalAlignment="Center"/>
-                                <TextBlock Grid.Column="1" Text="{Binding Subject}" FontWeight="Bold" FontSize="12" Foreground="White" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                <TextBlock Grid.Column="2" Text="{Binding Start}" FontSize="10" Foreground="#94A3B8" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <TextBlock Grid.Column="0" Text="{Binding DisplayBadge}" FontWeight="Bold" FontSize="11.5" Foreground="#38BDF8" VerticalAlignment="Center"/>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Subject}" FontWeight="Bold" FontSize="12.5" Foreground="White" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                    <Border Margin="6,0,0,0" CornerRadius="4" Padding="5,1" Background="#0284C7" Visibility="{Binding IsCurrentPeriod, Converter={StaticResource BoolToVisConverter}}">
+                                        <TextBlock Text="현재 수업" FontSize="9.5" FontWeight="Bold" Foreground="White"/>
+                                    </Border>
+                                </StackPanel>
+                                <TextBlock Grid.Column="2" Text="{Binding TimeRange}" FontSize="10" Foreground="#94A3B8" VerticalAlignment="Center" Margin="0,0,6,0"/>
                                 <Button Grid.Column="3" Content="✏️" Click="BtnEdit_Click" Tag="{Binding}" Width="24" Height="22" Padding="0" Background="#1E293B" Foreground="#38BDF8" BorderThickness="0" Cursor="Hand" ToolTip="과목명 수정 (메인 시간표와 자동 연동)"/>
                             </Grid>
                         </Border>

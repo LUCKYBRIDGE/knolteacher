@@ -10,6 +10,8 @@ namespace KnolTeacher.Desktop.Services;
 public interface IDisplayManager
 {
     int ScreenCount { get; }
+    bool IsDualMonitor { get; }
+    string MonitorStatusDescription { get; }
     int RecommendedStudentMonitorIndex { get; }
     List<ScreenInfo> GetScreens();
     void MoveWindowToScreen(Window window, int screenIndex, bool maximize = false);
@@ -29,6 +31,10 @@ public class ScreenInfo
 public class DisplayManager : IDisplayManager
 {
     public int ScreenCount => GetScreens().Count;
+    public bool IsDualMonitor => ScreenCount >= 2;
+    public string MonitorStatusDescription => IsDualMonitor 
+        ? "📺 듀얼 모니터 (모니터 2: 학생용 전자칠판 감지됨)" 
+        : "💻 단일 모니터 (교실 화면 공유 모드)";
     public int RecommendedStudentMonitorIndex => ScreenCount >= 2 ? 1 : 0;
 
     public List<ScreenInfo> GetScreens()

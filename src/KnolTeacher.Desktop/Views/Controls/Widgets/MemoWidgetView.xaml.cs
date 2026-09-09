@@ -10,6 +10,13 @@ namespace KnolTeacher.Desktop.Views.Controls.Widgets;
 
 public partial class MemoWidgetView : UserControl
 {
+    public static event Action<string, object?>? OnNoticeChanged;
+
+    public static void NotifyNoticeChanged(string newText, object? sender)
+    {
+        OnNoticeChanged?.Invoke(newText, sender);
+    }
+
     private readonly IConfigService? _configService;
     private readonly ITtsService? _ttsService;
     private readonly ITimetableService? _timetableService;
@@ -42,6 +49,21 @@ public partial class MemoWidgetView : UserControl
         TbMemo.TextChanged += (s, e) =>
         {
             try { File.WriteAllText(_memoFile, TbMemo.Text); } catch { }
+            NotifyNoticeChanged(TbMemo.Text, this);
+        };
+
+        OnNoticeChanged += (newText, sender) =>
+        {
+            if (sender != this)
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    if (TbMemo.Text != newText)
+                    {
+                        TbMemo.Text = newText;
+                    }
+                });
+            }
         };
 
         _autoNoticeTimer = new DispatcherTimer { Interval = TimeSpan.FromMinutes(1) };

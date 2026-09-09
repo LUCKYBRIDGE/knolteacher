@@ -148,7 +148,7 @@ public partial class ChecklistWidgetView : UserControl
 
             if (student.IsChecked)
             {
-                btn.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#10B981"));
+                btn.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#059669"));
                 btn.BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#34D399"));
                 btn.Foreground = Brushes.White;
                 btn.Content = new StackPanel
@@ -157,21 +157,21 @@ public partial class ChecklistWidgetView : UserControl
                     HorizontalAlignment = HorizontalAlignment.Center,
                     Children =
                     {
-                        new TextBlock { Text = "✓ ", FontSize = 10, FontWeight = FontWeights.Bold, VerticalAlignment = VerticalAlignment.Center },
-                        new TextBlock { Text = label, FontSize = 11, FontWeight = FontWeights.Bold, VerticalAlignment = VerticalAlignment.Center }
+                        new TextBlock { Text = "✓ ", FontSize = 11, FontWeight = FontWeights.Bold, VerticalAlignment = VerticalAlignment.Center },
+                        new TextBlock { Text = label, FontSize = 12, FontWeight = FontWeights.Bold, VerticalAlignment = VerticalAlignment.Center }
                     }
                 };
             }
             else
             {
                 btn.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#1E293B"));
-                btn.BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#334155"));
-                btn.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#CBD5E1"));
+                btn.BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#475569"));
+                btn.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F8FAFC"));
                 btn.Content = new TextBlock
                 {
                     Text = label,
-                    FontSize = 11,
-                    FontWeight = FontWeights.SemiBold,
+                    FontSize = 12,
+                    FontWeight = FontWeights.Bold,
                     HorizontalAlignment = HorizontalAlignment.Center,
                     VerticalAlignment = VerticalAlignment.Center
                 };
