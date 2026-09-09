@@ -13,6 +13,11 @@ public class NolboardWidgetState
 
 public class NolboardLayoutConfig
 {
+    public const int CurrentSchemaVersion = 2;
+
+    public int SchemaVersion { get; set; } = CurrentSchemaVersion;
     public bool HasCustomLayout { get; set; } = false;
+    public double CanvasWidth { get; set; }
+    public double CanvasHeight { get; set; }
     public List<NolboardWidgetState> Widgets { get; set; } = new();
 }
