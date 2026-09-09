@@ -115,14 +115,21 @@ public partial class PickerWidgetView : UserControl, IWidgetLifecycle
     {
         if (_isPicking || !_isActive || _disposed) return;
 
-        bool isName = RbName.IsChecked == true;
+        // Name/gender presentation is opt-in. Number-only mode remains fully functional.
+        bool personalDetailsEnabled = _studentService?.PersistPersonalDetails == true;
+        bool isName = personalDetailsEnabled
+            && _studentService?.UseNamesInPicker == true
+            && RbName.IsChecked == true;
+
         int genderIdx = CbGender?.SelectedIndex ?? 0;
-        string? genderFilter = genderIdx switch
-        {
-            1 => "남",
-            2 => "여",
-            _ => null
-        };
+        string? genderFilter = personalDetailsEnabled
+            ? genderIdx switch
+            {
+                1 => "남",
+                2 => "여",
+                _ => null
+            }
+            : null;
 
         var allStudents = _studentService?.Students ?? new();
         var students = genderFilter != null
@@ -136,7 +143,7 @@ public partial class PickerWidgetView : UserControl, IWidgetLifecycle
             foreach (var s in students)
             {
                 string tag = s.Gender == "남" ? " 👦" : (s.Gender == "여" ? " 👧" : "");
-                candidates.Add(($"{s.Number}번 {s.Name}{tag}", s.EffectiveAvatarId));
+                candidates.Add(($"{s.DisplayText}{tag}", s.EffectiveAvatarId));
             }
         }
         else
