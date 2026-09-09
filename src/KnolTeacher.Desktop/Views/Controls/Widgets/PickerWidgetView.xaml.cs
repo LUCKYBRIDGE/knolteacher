@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -8,17 +9,21 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using KnolTeacher.Desktop.Models;
 using KnolTeacher.Desktop.Services;
+using KnolTeacher.Desktop.Views.Controls;
 using KnolTeacher.Desktop.Views.Windows;
 
 namespace KnolTeacher.Desktop.Views.Controls.Widgets;
 
-public partial class PickerWidgetView : UserControl
+public partial class PickerWidgetView : UserControl, IWidgetLifecycle
 {
     private readonly IStudentManagerService? _studentService;
     private readonly ISoundService? _soundService;
     private readonly List<string> _pickedHistory = new();
+    private CancellationTokenSource? _pickCts;
     private bool _isPicking = false;
     private bool _isReady = false;
+    private bool _isActive = false;
+    private bool _disposed = false;
 
     public PickerWidgetView(IStudentManagerService? studentService = null, ISoundService? soundService = null)
     {
@@ -26,6 +31,37 @@ public partial class PickerWidgetView : UserControl
         _soundService = soundService;
         InitializeComponent();
         _isReady = true;
+    }
+
+    public void Activate()
+    {
+        if (_disposed) return;
+        _isActive = true;
+    }
+
+    public void Deactivate()
+    {
+        if (_disposed || !_isActive) return;
+        _isActive = false;
+        CancelPick();
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _isActive = false;
+        CancelPick();
+        _disposed = true;
+    }
+
+    private void CancelPick()
+    {
+        var cts = _pickCts;
+        _pickCts = null;
+        if (cts == null) return;
+
+        try { cts.Cancel(); } catch { }
+        cts.Dispose();
     }
 
     private void BtnOpenPinball_Click(object sender, RoutedEventArgs e)
@@ -77,7 +113,7 @@ public partial class PickerWidgetView : UserControl
 
     private async void BtnPick_Click(object sender, RoutedEventArgs e)
     {
-        if (_isPicking) return;
+        if (_isPicking || !_isActive || _disposed) return;
 
         bool isName = RbName.IsChecked == true;
         int genderIdx = CbGender?.SelectedIndex ?? 0;
@@ -89,8 +125,8 @@ public partial class PickerWidgetView : UserControl
         };
 
         var allStudents = _studentService?.Students ?? new();
-        var students = genderFilter != null 
-            ? allStudents.Where(s => s.Gender == genderFilter).ToList() 
+        var students = genderFilter != null
+            ? allStudents.Where(s => s.Gender == genderFilter).ToList()
             : allStudents;
 
         List<(string Display, string? AvatarId)> candidates = new();
@@ -124,51 +160,72 @@ public partial class PickerWidgetView : UserControl
             return;
         }
 
+        CancelPick();
+        _pickCts = new CancellationTokenSource();
+        var token = _pickCts.Token;
+
         _isPicking = true;
         BtnPick.IsEnabled = false;
 
-        var rng = new Random();
-        for (int step = 0; step < 12; step++)
+        try
         {
-            var temp = candidates[rng.Next(candidates.Count)];
-            TxtWinner.Text = temp.Display;
-            TxtWinner.Foreground = Brushes.White;
-            var tempBmp = AnimalAvatarCatalog.GetAvatarBitmap(temp.AvatarId);
-            if (tempBmp != null && BorderWinnerAvatar != null && ImgWinnerAvatar != null)
+            var rng = new Random();
+            for (int step = 0; step < 12; step++)
             {
-                ImgWinnerAvatar.ImageSource = tempBmp;
+                token.ThrowIfCancellationRequested();
+                var temp = candidates[rng.Next(candidates.Count)];
+                TxtWinner.Text = temp.Display;
+                TxtWinner.Foreground = Brushes.White;
+                var tempBmp = AnimalAvatarCatalog.GetAvatarBitmap(temp.AvatarId);
+                if (tempBmp != null && BorderWinnerAvatar != null && ImgWinnerAvatar != null)
+                {
+                    ImgWinnerAvatar.ImageSource = tempBmp;
+                    BorderWinnerAvatar.Visibility = Visibility.Visible;
+                }
+                else if (BorderWinnerAvatar != null)
+                {
+                    BorderWinnerAvatar.Visibility = Visibility.Collapsed;
+                }
+                await Task.Delay(40 + step * 10, token);
+            }
+
+            token.ThrowIfCancellationRequested();
+            if (_disposed || !_isActive) return;
+
+            var winner = available[rng.Next(available.Count)];
+            _pickedHistory.Add(winner.Display);
+
+            TxtWinner.Text = winner.Display;
+            TxtWinner.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#10B981"));
+            var winnerBmp = AnimalAvatarCatalog.GetAvatarBitmap(winner.AvatarId);
+            if (winnerBmp != null && BorderWinnerAvatar != null && ImgWinnerAvatar != null)
+            {
+                ImgWinnerAvatar.ImageSource = winnerBmp;
                 BorderWinnerAvatar.Visibility = Visibility.Visible;
             }
             else if (BorderWinnerAvatar != null)
             {
                 BorderWinnerAvatar.Visibility = Visibility.Collapsed;
             }
-            await Task.Delay(40 + step * 10);
+
+            if (TxtHistory != null)
+            {
+                TxtHistory.Text = $"기록 ({_pickedHistory.Count}명): {string.Join(", ", _pickedHistory)}";
+            }
+
+            _soundService?.PlayChime();
         }
-
-        var winner = available[rng.Next(available.Count)];
-        _pickedHistory.Add(winner.Display);
-
-        TxtWinner.Text = winner.Display;
-        TxtWinner.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#10B981"));
-        var winnerBmp = AnimalAvatarCatalog.GetAvatarBitmap(winner.AvatarId);
-        if (winnerBmp != null && BorderWinnerAvatar != null && ImgWinnerAvatar != null)
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
         {
-            ImgWinnerAvatar.ImageSource = winnerBmp;
-            BorderWinnerAvatar.Visibility = Visibility.Visible;
+            // Normal lifecycle cancellation.
         }
-        else if (BorderWinnerAvatar != null)
+        finally
         {
-            BorderWinnerAvatar.Visibility = Visibility.Collapsed;
+            _isPicking = false;
+            if (!_disposed && BtnPick != null)
+            {
+                BtnPick.IsEnabled = true;
+            }
         }
-
-        if (TxtHistory != null)
-        {
-            TxtHistory.Text = $"기록 ({_pickedHistory.Count}명): {string.Join(", ", _pickedHistory)}";
-        }
-
-        _soundService?.PlayChime();
-        _isPicking = false;
-        BtnPick.IsEnabled = true;
     }
 }
