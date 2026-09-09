@@ -50,7 +50,8 @@ public class MainWidgetLayoutConfig
                 new() { Id = "timer", X = x1 + 20, Y = 30, Width = 360, Height = 260, IsVisible = false, ZIndex = 10 },
                 new() { Id = "picker", X = x1 + 40, Y = 310, Width = 360, Height = 280, IsVisible = false, ZIndex = 11 },
                 new() { Id = "notice", X = x2 + 20, Y = 30, Width = 480, Height = 220, IsVisible = false, ZIndex = 12 },
-                new() { Id = "dday", X = x3 - 20, Y = 40, Width = 360, Height = 220, IsVisible = false, ZIndex = 13 }
+                new() { Id = "dday", X = x3 - 20, Y = 40, Width = 360, Height = 220, IsVisible = false, ZIndex = 13 },
+                new() { Id = "weather", X = x3, Y = 360, Width = 360, Height = 280, IsVisible = false, ZIndex = 14 }
             }
         };
     }

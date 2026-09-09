@@ -4,19 +4,22 @@ using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace KnolTeacher.Desktop.Views.Controls.Widgets;
 
 public class ScoreDataModel
 {
-    public string[] Names { get; set; } = new[] { "1모둠", "2모둠", "3모둠", "4모둠", "5모둠", "6모둠" };
-    public int[] Scores { get; set; } = new int[6];
+    public int GroupCount { get; set; } = 6;
+    public string[] Names { get; set; } = new[] { "1모둠", "2모둠", "3모둠", "4모둠", "5모둠", "6모둠", "7모둠", "8모둠" };
+    public int[] Scores { get; set; } = new int[8];
 }
 
 public partial class ScoreWidgetView : UserControl
 {
-    private readonly int[] _scores = new int[6];
-    private readonly string[] _names = new[] { "1모둠", "2모둠", "3모둠", "4모둠", "5모둠", "6모둠" };
+    private int _groupCount = 6;
+    private readonly int[] _scores = new int[8];
+    private readonly string[] _names = new[] { "1모둠", "2모둠", "3모둠", "4모둠", "5모둠", "6모둠", "7모둠", "8모둠" };
     private readonly string _stateFile;
     private bool _isLoaded = false;
 
@@ -29,8 +32,12 @@ public partial class ScoreWidgetView : UserControl
 
         Loaded += (s, e) =>
         {
-            LoadState();
-            _isLoaded = true;
+            if (!_isLoaded)
+            {
+                LoadState();
+                _isLoaded = true;
+                BuildUi();
+            }
         };
     }
 
@@ -44,20 +51,36 @@ public partial class ScoreWidgetView : UserControl
                 var data = JsonSerializer.Deserialize<ScoreDataModel>(json);
                 if (data != null)
                 {
-                    if (data.Scores != null && data.Scores.Length == 6)
+                    if (data.GroupCount >= 2 && data.GroupCount <= 8)
                     {
-                        Array.Copy(data.Scores, _scores, 6);
+                        _groupCount = data.GroupCount;
                     }
-                    if (data.Names != null && data.Names.Length == 6)
+                    if (data.Scores != null)
                     {
-                        Array.Copy(data.Names, _names, 6);
+                        int len = Math.Min(data.Scores.Length, _scores.Length);
+                        Array.Copy(data.Scores, _scores, len);
+                    }
+                    if (data.Names != null)
+                    {
+                        int len = Math.Min(data.Names.Length, _names.Length);
+                        Array.Copy(data.Names, _names, len);
                     }
                 }
             }
             catch { }
         }
 
-        UpdateUi();
+        // Set combo box
+        for (int i = 0; i < CbGroupCount.Items.Count; i++)
+        {
+            if (CbGroupCount.Items[i] is ComboBoxItem item &&
+                int.TryParse(item.Tag?.ToString(), out int cnt) &&
+                cnt == _groupCount)
+            {
+                CbGroupCount.SelectedIndex = i;
+                break;
+            }
+        }
     }
 
     private void SaveState()
@@ -66,6 +89,7 @@ public partial class ScoreWidgetView : UserControl
         {
             var data = new ScoreDataModel
             {
+                GroupCount = _groupCount,
                 Names = _names,
                 Scores = _scores
             };
@@ -75,106 +99,189 @@ public partial class ScoreWidgetView : UserControl
         catch { }
     }
 
-    private void UpdateUi()
+    private void BuildUi()
     {
-        TbName1.Text = _names[0];
-        TbName2.Text = _names[1];
-        TbName3.Text = _names[2];
-        TbName4.Text = _names[3];
-        TbName5.Text = _names[4];
-        TbName6.Text = _names[5];
+        GridGroups.Children.Clear();
 
-        TbScore1.Text = _scores[0].ToString();
-        TbScore2.Text = _scores[1].ToString();
-        TbScore3.Text = _scores[2].ToString();
-        TbScore4.Text = _scores[3].ToString();
-        TbScore5.Text = _scores[4].ToString();
-        TbScore6.Text = _scores[5].ToString();
-    }
+        // Determine Columns & Rows for optimal appearance
+        if (_groupCount == 2) { GridGroups.Columns = 2; GridGroups.Rows = 1; }
+        else if (_groupCount == 3) { GridGroups.Columns = 3; GridGroups.Rows = 1; }
+        else if (_groupCount == 4) { GridGroups.Columns = 2; GridGroups.Rows = 2; }
+        else if (_groupCount <= 6) { GridGroups.Columns = 3; GridGroups.Rows = 2; }
+        else { GridGroups.Columns = 4; GridGroups.Rows = 2; }
 
-    private void BtnScore_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is Button btn && btn.Tag is string tag)
+        for (int i = 0; i < _groupCount; i++)
         {
-            var parts = tag.Split(',');
-            if (parts.Length == 2 && int.TryParse(parts[0], out int grp) && int.TryParse(parts[1], out int delta))
+            int idx = i;
+            var border = new Border
             {
-                int idx = grp - 1;
-                if (idx >= 0 && idx < 6)
-                {
-                    _scores[idx] = Math.Max(0, _scores[idx] + delta);
-                    UpdateScoreDisplay(idx);
-                    SaveState();
-                }
-            }
-        }
-    }
+                Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#0F172A")),
+                CornerRadius = new CornerRadius(8),
+                BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#334155")),
+                BorderThickness = new Thickness(1),
+                Margin = new Thickness(2),
+                Padding = new Thickness(4)
+            };
 
-    private void UpdateScoreDisplay(int idx)
-    {
-        TextBox? tb = idx switch
-        {
-            0 => TbScore1,
-            1 => TbScore2,
-            2 => TbScore3,
-            3 => TbScore4,
-            4 => TbScore5,
-            5 => TbScore6,
-            _ => null
-        };
+            var grid = new Grid();
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
-        if (tb != null)
-        {
-            tb.Text = _scores[idx].ToString();
-        }
-    }
-
-    private void Score_LostFocus(object sender, RoutedEventArgs e)
-    {
-        if (!_isLoaded) return;
-        if (sender is TextBox tb && tb.Tag is string tagStr && int.TryParse(tagStr, out int grp))
-        {
-            int idx = grp - 1;
-            if (idx >= 0 && idx < 6)
+            // Name TextBox
+            var tbName = new TextBox
             {
-                if (int.TryParse(tb.Text.Trim(), out int val))
+                Text = _names[idx],
+                FontSize = 11,
+                Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#94A3B8")),
+                Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#1E293B")),
+                BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#334155")),
+                BorderThickness = new Thickness(1),
+                TextAlignment = TextAlignment.Center,
+                Padding = new Thickness(2, 1, 2, 1),
+                Margin = new Thickness(2, 0, 2, 2)
+            };
+            tbName.LostFocus += (s, e) =>
+            {
+                _names[idx] = string.IsNullOrWhiteSpace(tbName.Text) ? $"{idx + 1}모둠" : tbName.Text.Trim();
+                SaveState();
+            };
+            Grid.SetRow(tbName, 0);
+            grid.Children.Add(tbName);
+
+            // Score Viewbox & TextBox
+            var viewbox = new Viewbox { Stretch = Stretch.Uniform, Margin = new Thickness(0, 1, 0, 1) };
+            var tbScore = new TextBox
+            {
+                Text = _scores[idx].ToString(),
+                MinWidth = 40,
+                FontSize = 32,
+                FontWeight = FontWeights.Bold,
+                Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#38BDF8")),
+                Background = Brushes.Transparent,
+                BorderThickness = new Thickness(0),
+                TextAlignment = TextAlignment.Center
+            };
+            tbScore.LostFocus += (s, e) =>
+            {
+                if (int.TryParse(tbScore.Text.Trim(), out int val))
                 {
                     _scores[idx] = Math.Max(0, val);
                 }
-                tb.Text = _scores[idx].ToString();
+                tbScore.Text = _scores[idx].ToString();
                 SaveState();
-            }
+            };
+            tbScore.KeyDown += (s, e) =>
+            {
+                if (e.Key == Key.Enter)
+                {
+                    Keyboard.ClearFocus();
+                }
+            };
+            viewbox.Child = tbScore;
+            Grid.SetRow(viewbox, 1);
+            grid.Children.Add(viewbox);
+
+            // Buttons: -1, +1, +5
+            var spButtons = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Margin = new Thickness(0, 2, 0, 0)
+            };
+
+            var btnMinus = new Button
+            {
+                Content = "-1",
+                Width = 22,
+                Height = 20,
+                Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#334155")),
+                Foreground = Brushes.White,
+                FontSize = 10,
+                FontWeight = FontWeights.Bold,
+                Margin = new Thickness(0, 0, 2, 0),
+                BorderThickness = new Thickness(0),
+                Cursor = Cursors.Hand
+            };
+            btnMinus.Click += (s, e) =>
+            {
+                _scores[idx] = Math.Max(0, _scores[idx] - 1);
+                tbScore.Text = _scores[idx].ToString();
+                SaveState();
+            };
+
+            var btnPlus1 = new Button
+            {
+                Content = "+1",
+                Width = 24,
+                Height = 20,
+                Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#0284C7")),
+                Foreground = Brushes.White,
+                FontSize = 10,
+                FontWeight = FontWeights.Bold,
+                Margin = new Thickness(0, 0, 2, 0),
+                BorderThickness = new Thickness(0),
+                Cursor = Cursors.Hand
+            };
+            btnPlus1.Click += (s, e) =>
+            {
+                _scores[idx] += 1;
+                tbScore.Text = _scores[idx].ToString();
+                SaveState();
+            };
+
+            var btnPlus5 = new Button
+            {
+                Content = "+5",
+                Width = 24,
+                Height = 20,
+                Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#0369A1")),
+                Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FDE047")),
+                FontSize = 10,
+                FontWeight = FontWeights.Bold,
+                BorderThickness = new Thickness(0),
+                Cursor = Cursors.Hand
+            };
+            btnPlus5.Click += (s, e) =>
+            {
+                _scores[idx] += 5;
+                tbScore.Text = _scores[idx].ToString();
+                SaveState();
+            };
+
+            spButtons.Children.Add(btnMinus);
+            spButtons.Children.Add(btnPlus1);
+            spButtons.Children.Add(btnPlus5);
+
+            Grid.SetRow(spButtons, 2);
+            grid.Children.Add(spButtons);
+
+            border.Child = grid;
+            GridGroups.Children.Add(border);
         }
     }
 
-    private void Score_KeyDown(object sender, KeyEventArgs e)
-    {
-        if (e.Key == Key.Enter)
-        {
-            Score_LostFocus(sender, e);
-            Keyboard.ClearFocus();
-        }
-    }
-
-    private void Name_LostFocus(object sender, RoutedEventArgs e)
+    private void CbGroupCount_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (!_isLoaded) return;
-        _names[0] = string.IsNullOrWhiteSpace(TbName1.Text) ? "1모둠" : TbName1.Text.Trim();
-        _names[1] = string.IsNullOrWhiteSpace(TbName2.Text) ? "2모둠" : TbName2.Text.Trim();
-        _names[2] = string.IsNullOrWhiteSpace(TbName3.Text) ? "3모둠" : TbName3.Text.Trim();
-        _names[3] = string.IsNullOrWhiteSpace(TbName4.Text) ? "4모둠" : TbName4.Text.Trim();
-        _names[4] = string.IsNullOrWhiteSpace(TbName5.Text) ? "5모둠" : TbName5.Text.Trim();
-        _names[5] = string.IsNullOrWhiteSpace(TbName6.Text) ? "6모둠" : TbName6.Text.Trim();
-        SaveState();
+
+        if (CbGroupCount.SelectedItem is ComboBoxItem item &&
+            int.TryParse(item.Tag?.ToString(), out int cnt) &&
+            cnt >= 2 && cnt <= 8)
+        {
+            _groupCount = cnt;
+            BuildUi();
+            SaveState();
+        }
     }
 
     private void BtnAddAll_Click(object sender, RoutedEventArgs e)
     {
-        for (int i = 0; i < 6; i++)
+        for (int i = 0; i < _groupCount; i++)
         {
-            _scores[i] = _scores[i] + 1;
+            _scores[i]++;
         }
-        UpdateUi();
+        BuildUi();
         SaveState();
     }
 
@@ -183,7 +290,7 @@ public partial class ScoreWidgetView : UserControl
         if (MessageBox.Show("모든 모둠의 점수를 0점으로 초기화하시겠습니까?", "점수 초기화", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
         {
             Array.Clear(_scores, 0, _scores.Length);
-            UpdateUi();
+            BuildUi();
             SaveState();
         }
     }

@@ -14,6 +14,7 @@ public partial class BoardWidgetHost : UserControl
     public string WidgetType { get; set; } = string.Empty;
 
     public event Action<BoardWidgetHost>? Closed;
+    public event Action<BoardWidgetHost>? MovedOrResized;
 
     private bool _isDragging = false;
     private Point _dragStartPoint;
@@ -106,7 +107,13 @@ public partial class BoardWidgetHost : UserControl
             _isDragging = false;
             TitleBar.ReleaseMouseCapture();
             e.Handled = true;
+            MovedOrResized?.Invoke(this);
         }
+    }
+
+    private void ResizeThumb_DragCompleted(object sender, DragCompletedEventArgs e)
+    {
+        MovedOrResized?.Invoke(this);
     }
 
     private void ResizeThumb_DragDelta(object sender, DragDeltaEventArgs e)

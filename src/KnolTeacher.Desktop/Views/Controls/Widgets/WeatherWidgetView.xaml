@@ -1,0 +1,88 @@
+<UserControl x:Class="KnolTeacher.Desktop.Views.Controls.Widgets.WeatherWidgetView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d">
+    <Grid Margin="6">
+        <Grid.RowDefinitions>
+            <!-- Region & Refresh Bar -->
+            <RowDefinition Height="Auto"/>
+            <!-- Main Weather & Temp Display -->
+            <RowDefinition Height="*"/>
+            <!-- Dust & Outdoor Activity Guide -->
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Top Region Select & Refresh Bar -->
+        <Border Grid.Row="0" Background="#0F172A" CornerRadius="8" BorderBrush="#334155" BorderThickness="1" Padding="8,4" Margin="0,0,0,8">
+            <DockPanel LastChildFill="True">
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Content="🔄 새로고침" Click="BtnRefresh_Click" Height="24" Padding="6,0" Background="#1E293B" Foreground="#38BDF8" BorderBrush="#334155" BorderThickness="1" FontSize="10.5" FontWeight="Bold" Cursor="Hand">
+                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
+                    </Button>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="📍 " FontSize="12" VerticalAlignment="Center"/>
+                    <ComboBox x:Name="CbRegion" Height="24" FontSize="11" Background="#1E293B" Foreground="White" BorderBrush="#334155" Padding="6,0" VerticalContentAlignment="Center" SelectionChanged="CbRegion_SelectionChanged"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- Main Weather & Temp Hero -->
+        <Border Grid.Row="1" Background="#0F172A" CornerRadius="10" BorderBrush="#334155" BorderThickness="1" Padding="12,8" Margin="0,0,0,8">
+            <Viewbox Stretch="Uniform">
+                <Grid Margin="6">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <TextBlock x:Name="TxtWeatherIcon" Text="☀️" FontSize="44" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock x:Name="TxtTemperature" Text="18.5°C" FontFamily="Consolas, Malgun Gothic" FontSize="32" FontWeight="Bold" Foreground="White"/>
+                            <TextBlock x:Name="TxtWeatherDesc" Text="맑음 (체감 17.8°C)" FontSize="12" Foreground="#94A3B8"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Details: Humidity & Wind -->
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,6,0,0">
+                        <TextBlock x:Name="TxtHumidity" Text="💧 습도 45%" FontSize="11" Foreground="#38BDF8" Margin="0,0,10,0"/>
+                        <TextBlock x:Name="TxtWind" Text="💨 풍속 1.8m/s" FontSize="11" Foreground="#CBD5E1"/>
+                    </StackPanel>
+                </Grid>
+            </Viewbox>
+        </Border>
+
+        <!-- Dust & Outdoor Activity Guide -->
+        <StackPanel Grid.Row="2">
+            <!-- Air Quality Badges -->
+            <Border Background="#0F172A" CornerRadius="8" BorderBrush="#334155" BorderThickness="1" Padding="10,6" Margin="0,0,0,6">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <TextBlock Text="미세(PM10): " FontSize="11" Foreground="#94A3B8"/>
+                        <Border x:Name="BdPm10" Background="#14532D" CornerRadius="4" Padding="5,1">
+                            <TextBlock x:Name="TxtPm10" Text="좋음" FontSize="10.5" FontWeight="Bold" Foreground="#86EFAC"/>
+                        </Border>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <TextBlock Text="초미세(PM2.5): " FontSize="11" Foreground="#94A3B8"/>
+                        <Border x:Name="BdPm25" Background="#14532D" CornerRadius="4" Padding="5,1">
+                            <TextBlock x:Name="TxtPm25" Text="좋음" FontSize="10.5" FontWeight="Bold" Foreground="#86EFAC"/>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Outdoor Activity Safety Guide (Ministry of Education Standard) -->
+            <Border x:Name="BdOutdoorGuide" Background="#14532D" BorderBrush="#22C55E" BorderThickness="1" CornerRadius="8" Padding="10,6">
+                <TextBlock x:Name="TxtOutdoorGuide" Text="🏃 실외활동 및 체육수업 정상 가능" FontSize="11.5" FontWeight="Bold" Foreground="#86EFAC" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"/>
+            </Border>
+        </StackPanel>
+    </Grid>
+</UserControl>

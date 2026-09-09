@@ -112,7 +112,8 @@
             <Grid Grid.Row="2">
                 <Thumb x:Name="ResizeThumb" HorizontalAlignment="Right" VerticalAlignment="Bottom"
                        Style="{StaticResource ResizeThumbStyle}"
-                       DragDelta="ResizeThumb_DragDelta"/>
+                       DragDelta="ResizeThumb_DragDelta"
+                       DragCompleted="ResizeThumb_DragCompleted"/>
             </Grid>
         </Grid>
     </Border>

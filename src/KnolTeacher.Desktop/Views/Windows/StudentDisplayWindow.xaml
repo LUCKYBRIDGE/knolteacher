@@ -128,6 +128,8 @@
                             <ComboBoxItem Content="📝 학급 알림장" Tag="memo"/>
                             <ComboBoxItem Content="📋 과제 체크리스트" Tag="checklist"/>
                             <ComboBoxItem Content="📱 실시간 QR코드" Tag="qr"/>
+                            <ComboBoxItem Content="☀️ 날씨 &amp; 미세먼지" Tag="weather"/>
+                            <ComboBoxItem Content="🎯 D-Day 카운트다운" Tag="dday"/>
                         </ComboBox>
 
                         <!-- Lock & Opacity Tools -->
@@ -276,10 +278,15 @@
                             <Button x:Name="BtnToolMemo" Content="📝 학급 알림장" Click="DockToolBtn_Click" Tag="memo" Height="34" Padding="10,0" Margin="0,2,6,2" Style="{StaticResource BoardNavButtonStyle}"/>
                             <Button x:Name="BtnToolChecklist" Content="📋 과제 체크리스트" Click="DockToolBtn_Click" Tag="checklist" Height="34" Padding="10,0" Margin="0,2,6,2" Style="{StaticResource BoardNavButtonStyle}" ToolTip="학생 제출물·과제 번호별 완료 체크"/>
                             <Button x:Name="BtnToolQr" Content="📱 수업 QR코드" Click="DockToolBtn_Click" Tag="qr" Height="34" Padding="10,0" Margin="0,2,6,2" Style="{StaticResource BoardNavButtonStyle}" ToolTip="수업 링크 및 자료 실시간 QR코드 생성"/>
+                            <Button x:Name="BtnToolWeather" Content="☀️ 날씨·미세먼지" Click="DockToolBtn_Click" Tag="weather" Height="34" Padding="10,0" Margin="0,2,6,2" Style="{StaticResource BoardNavButtonStyle}" ToolTip="오늘의 날씨, 기온, 미세먼지 및 체육 실외활동 가이드"/>
+                            <Button x:Name="BtnToolDDay" Content="🎯 D-Day" Click="DockToolBtn_Click" Tag="dday" Height="34" Padding="10,0" Margin="0,2,6,2" Style="{StaticResource BoardNavButtonStyle}" ToolTip="학급 목표 D-Day 카운트다운"/>
                         </WrapPanel>
 
                         <!-- Right: Layout & Close Actions -->
                         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Button x:Name="BtnSaveBoardLayout" Content="💾 현재 배치 저장" Click="BtnSaveBoardLayout_Click" Height="34" Padding="10,0" Margin="4,2,4,2" Background="#1E293B" Foreground="#38BDF8" BorderBrush="#0284C7" BorderThickness="1" FontSize="11.5" FontWeight="Bold" Cursor="Hand" ToolTip="현재 열려있는 위젯들과 배치 위치를 저장하여 다음 실행 시 자동 복원">
+                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></Button.Resources>
+                            </Button>
                             <Button x:Name="BtnTileWidgets" Content="📐 바둑판 자동 정렬" Click="BtnTileWidgets_Click" Height="34" Padding="12,0" Margin="4,2,4,2" Background="#0284C7" Foreground="White" FontWeight="Bold" FontSize="11.5" BorderThickness="0" Cursor="Hand" ToolTip="열려 있는 위젯들을 화면에 바둑판 형태로 균등 자동 정렬">
                                 <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></Button.Resources>
                             </Button>

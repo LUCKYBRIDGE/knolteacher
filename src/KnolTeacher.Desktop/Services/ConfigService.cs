@@ -20,6 +20,8 @@ public interface IConfigService
     BoardSetStore BoardSetStore { get; set; }
     int TimerTargetMonitorIndex { get; set; }
     MainWidgetLayoutConfig MainWidgetLayout { get; set; }
+    NolboardLayoutConfig NolboardLayout { get; set; }
+    DDayConfig DDayConfig { get; set; }
     string? LastSeenTutorialVersion { get; set; }
     StorageConfig StorageConfig { get; set; }
     string GetEffectiveSaveDirectory();
@@ -37,6 +39,8 @@ public interface IConfigService
     void SaveBoardSetStore();
     void SaveTimerSettings();
     void SaveMainWidgetLayout();
+    void SaveNolboardLayout();
+    void SaveDDayConfig();
     void SaveTutorialVersion();
 }
 
@@ -60,6 +64,8 @@ public class ConfigService : IConfigService
     public BoardSetStore BoardSetStore { get; set; } = new();
     public int TimerTargetMonitorIndex { get; set; } = 1;
     public MainWidgetLayoutConfig MainWidgetLayout { get; set; } = MainWidgetLayoutConfig.CreateDefault();
+    public NolboardLayoutConfig NolboardLayout { get; set; } = new();
+    public DDayConfig DDayConfig { get; set; } = new();
     public string? LastSeenTutorialVersion { get; set; }
     public StorageConfig StorageConfig { get; set; } = new();
 
@@ -88,6 +94,8 @@ public class ConfigService : IConfigService
         LoadBoardSetStore();
         LoadTimerSettings();
         LoadMainWidgetLayout();
+        LoadNolboardLayout();
+        LoadDDayConfig();
         LoadTutorialVersion();
         LoadStorageConfig();
     }
@@ -431,6 +439,69 @@ public class ConfigService : IConfigService
         {
             string path = Path.Combine(ConfigDir, "main_widget_layout.json");
             string json = JsonSerializer.Serialize(MainWidgetLayout, _jsonOptions);
+            File.WriteAllText(path, json);
+        }
+        catch { }
+    }
+
+    private void LoadNolboardLayout()
+    {
+        string path = Path.Combine(ConfigDir, "nolboard_widgets.json");
+        if (File.Exists(path))
+        {
+            try
+            {
+                string json = File.ReadAllText(path);
+                var layout = JsonSerializer.Deserialize<NolboardLayoutConfig>(json, _jsonOptions);
+                if (layout != null)
+                {
+                    NolboardLayout = layout;
+                    return;
+                }
+            }
+            catch { }
+        }
+        NolboardLayout = new();
+    }
+
+    public void SaveNolboardLayout()
+    {
+        try
+        {
+            string path = Path.Combine(ConfigDir, "nolboard_widgets.json");
+            string json = JsonSerializer.Serialize(NolboardLayout, _jsonOptions);
+            File.WriteAllText(path, json);
+        }
+        catch { }
+    }
+
+    private void LoadDDayConfig()
+    {
+        string path = Path.Combine(ConfigDir, "dday_config.json");
+        if (File.Exists(path))
+        {
+            try
+            {
+                string json = File.ReadAllText(path);
+                var cfg = JsonSerializer.Deserialize<DDayConfig>(json, _jsonOptions);
+                if (cfg != null)
+                {
+                    DDayConfig = cfg;
+                    return;
+                }
+            }
+            catch { }
+        }
+        DDayConfig = new();
+        SaveDDayConfig();
+    }
+
+    public void SaveDDayConfig()
+    {
+        try
+        {
+            string path = Path.Combine(ConfigDir, "dday_config.json");
+            string json = JsonSerializer.Serialize(DDayConfig, _jsonOptions);
             File.WriteAllText(path, json);
         }
         catch { }
