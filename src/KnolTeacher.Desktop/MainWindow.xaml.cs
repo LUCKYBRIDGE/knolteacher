@@ -76,6 +76,7 @@ public partial class MainWindow : FluentWindow
     private readonly IDataShareService _dataShareService;
     private readonly TemplateShareWindow _templateShareWindow;
     private readonly ClassroomHubWindow _classroomHubWindow;
+    private readonly IStudentManagerService _studentManagerService;
     private int _tutorialStep = 1;
 
     public MainWindow(
@@ -112,7 +113,8 @@ public partial class MainWindow : FluentWindow
         IStartupService startupService,
         IDataShareService dataShareService,
         TemplateShareWindow templateShareWindow,
-        ClassroomHubWindow classroomHubWindow)
+        ClassroomHubWindow classroomHubWindow,
+        IStudentManagerService studentManagerService)
     {
         DataContext = viewModel;
         _studentDisplayWindow = studentDisplayWindow;
@@ -149,6 +151,7 @@ public partial class MainWindow : FluentWindow
         _templateShareWindow = templateShareWindow;
         _templateShareWindow.DataChanged += OnExternalDataChanged;
         _classroomHubWindow = classroomHubWindow;
+        _studentManagerService = studentManagerService;
 
         InitializeComponent();
         UpdateWindowTitle(0);
@@ -641,6 +644,20 @@ public partial class MainWindow : FluentWindow
                 TxtOutdoorGuide.Text = w.OutdoorActivityGuide;
                 BadgeOutdoorGuide.Background = (Brush)new BrushConverter().ConvertFromString(w.OutdoorGuideBg)!;
                 TxtOutdoorGuide.Foreground = (Brush)new BrushConverter().ConvertFromString(w.OutdoorGuideFg)!;
+
+                // 독립 미니 날씨 카드 (CardWeather) UI 동기화
+                if (TxtMiniWeatherIcon != null) TxtMiniWeatherIcon.Text = w.WeatherIcon;
+                if (TxtMiniWeatherTemp != null) TxtMiniWeatherTemp.Text = $"{w.Temperature:0.0}°C";
+                if (TxtMiniWeatherDesc != null) TxtMiniWeatherDesc.Text = $"{w.WeatherDescription} (체감 {w.ApparentTemperature:0.0}°C · 습도 {w.Humidity}%)";
+                if (TxtMiniOutdoorGuide != null)
+                {
+                    TxtMiniOutdoorGuide.Text = w.OutdoorActivityGuide;
+                    TxtMiniOutdoorGuide.Foreground = (Brush)new BrushConverter().ConvertFromString(w.OutdoorGuideFg)!;
+                    if (TxtMiniOutdoorGuide.Parent is Border guideBorder)
+                    {
+                        guideBorder.Background = (Brush)new BrushConverter().ConvertFromString(w.OutdoorGuideBg)!;
+                    }
+                }
             }
         }
         catch { }
@@ -1783,17 +1800,6 @@ public partial class MainWindow : FluentWindow
     private DispatcherTimer? _miniTimer;
     private int _miniTimerRemainingSeconds = 300;
     private bool _isMiniTimerRunning = false;
-    private DateTime _miniDDayTarget = DateTime.Today.AddDays(14);
-    private string _miniDDayTitle = "여름방학";
-    private int _ddayPresetIndex = 0;
-    private readonly (string title, DateTime target)[] _ddayPresets = new[]
-    {
-        ("여름방학", new DateTime(DateTime.Today.Year, 7, 24)),
-        ("2학기 개학", new DateTime(DateTime.Today.Year, 8, 20)),
-        ("가을 운동회", new DateTime(DateTime.Today.Year, 10, 15)),
-        ("겨울방학", new DateTime(DateTime.Today.Year, 12, 28)),
-        ("종업식 & 졸업식", new DateTime(DateTime.Today.Year + 1, 1, 10))
-    };
     private static readonly string[] _avatarPool = { "🦁", "🐯", "🐻", "🐼", "🐨", "🦊", "🐰", "🐵", "🦄", "🐶", "🐱", "🐸" };
     private readonly Random _rand = new();
 
@@ -1807,6 +1813,7 @@ public partial class MainWindow : FluentWindow
         "picker" => CardPicker,
         "notice" => CardNotice,
         "dday" => CardDDay,
+        "weather" => CardWeather,
         _ => null
     };
 
@@ -1820,6 +1827,7 @@ public partial class MainWindow : FluentWindow
         if (CardPicker != null) yield return CardPicker;
         if (CardNotice != null) yield return CardNotice;
         if (CardDDay != null) yield return CardDDay;
+        if (CardWeather != null) yield return CardWeather;
     }
 
     private void InitWidgetSystem()
@@ -2061,31 +2069,67 @@ public partial class MainWindow : FluentWindow
         _miniTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         _miniTimer.Tick += (s, e) =>
         {
-            if (_miniTimerRemainingSeconds > 0)
+            if (_isMiniTimerRunning)
             {
                 _miniTimerRemainingSeconds--;
-                UpdateMiniTimerDisplay();
                 if (_miniTimerRemainingSeconds == 0)
                 {
-                    _miniTimer.Stop();
-                    _isMiniTimerRunning = false;
-                    if (BtnMiniTimerStart != null) BtnMiniTimerStart.Content = "▶ 시작";
-                    if (TxtMiniTimerState != null) TxtMiniTimerState.Text = "🔔 시간 종료!";
                     try { _soundService?.PlayChime(); } catch { }
                 }
+                UpdateMiniTimerDisplay();
             }
         };
         UpdateMiniTimerDisplay();
         UpdateMiniDDayDisplay();
+
+        // 학급 D-Day 변경 이벤트 구독
+        DDayEditDialog.OnDDayChanged += (cfg) => Dispatcher.Invoke(UpdateMiniDDayDisplay);
+
+        // 학급 알림장 초기 로드 및 놀보드와 실시간 양방향 동기화
+        try
+        {
+            if (TbMiniNotice != null && File.Exists(_noticeFile))
+            {
+                TbMiniNotice.Text = File.ReadAllText(_noticeFile);
+            }
+        }
+        catch { }
+
+        MemoWidgetView.OnNoticeChanged += (newText, sender) =>
+        {
+            if (sender != this)
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    if (TbMiniNotice != null && TbMiniNotice.Text != newText)
+                    {
+                        TbMiniNotice.Text = newText;
+                    }
+                });
+            }
+        };
     }
 
     private void UpdateMiniTimerDisplay()
     {
         if (TxtMiniTimerDisplay != null)
         {
-            int m = _miniTimerRemainingSeconds / 60;
-            int s = _miniTimerRemainingSeconds % 60;
-            TxtMiniTimerDisplay.Text = $"{m:D2}:{s:D2}";
+            if (_miniTimerRemainingSeconds >= 0)
+            {
+                int m = _miniTimerRemainingSeconds / 60;
+                int s = _miniTimerRemainingSeconds % 60;
+                TxtMiniTimerDisplay.Text = $"{m:D2}:{s:D2}";
+                TxtMiniTimerDisplay.Foreground = (Brush)FindResource("BeigeTextMain");
+            }
+            else
+            {
+                int overtime = Math.Abs(_miniTimerRemainingSeconds);
+                int m = overtime / 60;
+                int s = overtime % 60;
+                TxtMiniTimerDisplay.Text = $"+{m:D2}:{s:D2}";
+                TxtMiniTimerDisplay.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#EF4444"));
+                if (TxtMiniTimerState != null) TxtMiniTimerState.Text = "⚠️ 시간 초과 진행 중";
+            }
         }
     }
 
@@ -2140,6 +2184,23 @@ public partial class MainWindow : FluentWindow
 
     private void BtnMiniPickerDraw_Click(object sender, RoutedEventArgs e)
     {
+        try { _soundService?.PlayChime(); } catch { }
+
+        // 1순위: 실제 학생 명렬표 (IStudentManagerService)
+        if (_studentManagerService?.Students != null && _studentManagerService.Students.Count > 0)
+        {
+            var student = _studentManagerService.PickRandom(excludePicked: true) ?? _studentManagerService.PickRandom(excludePicked: false);
+            if (student != null)
+            {
+                string emoji = _avatarPool[_rand.Next(_avatarPool.Length)];
+                if (TxtMiniPickerEmoji != null) TxtMiniPickerEmoji.Text = emoji;
+                if (TxtMiniPickerResult != null) TxtMiniPickerResult.Text = $"{student.Number}번 {student.Name}";
+                if (TxtMiniPickerSub != null) TxtMiniPickerSub.Text = "🎉 축하합니다! 당첨되었습니다.";
+                return;
+            }
+        }
+
+        // 2순위: 나이스 학생 데이터
         if (_neisComments != null && _neisComments.Count > 0)
         {
             int idx = _rand.Next(_neisComments.Count);
@@ -2148,39 +2209,62 @@ public partial class MainWindow : FluentWindow
             if (TxtMiniPickerEmoji != null) TxtMiniPickerEmoji.Text = emoji;
             if (TxtMiniPickerResult != null) TxtMiniPickerResult.Text = $"{student.StudentNumber}번 {student.StudentName}";
             if (TxtMiniPickerSub != null) TxtMiniPickerSub.Text = "🎉 축하합니다! 당첨되었습니다.";
+            return;
         }
-        else
-        {
-            int num = _rand.Next(1, 26);
-            string emoji = _avatarPool[_rand.Next(_avatarPool.Length)];
-            if (TxtMiniPickerEmoji != null) TxtMiniPickerEmoji.Text = emoji;
-            if (TxtMiniPickerResult != null) TxtMiniPickerResult.Text = $"{num}번 학생";
-            if (TxtMiniPickerSub != null) TxtMiniPickerSub.Text = "🎉 축하합니다! 당첨되었습니다.";
-        }
+
+        // 3순위: 기본 25명 기준 임의 번호
+        int num = _rand.Next(1, 26);
+        string fallbackEmoji = _avatarPool[_rand.Next(_avatarPool.Length)];
+        if (TxtMiniPickerEmoji != null) TxtMiniPickerEmoji.Text = fallbackEmoji;
+        if (TxtMiniPickerResult != null) TxtMiniPickerResult.Text = $"{num}번 학생";
+        if (TxtMiniPickerSub != null) TxtMiniPickerSub.Text = "🎉 축하합니다! 당첨되었습니다.";
+    }
+
+    private void BtnOpenFullPicker_Click(object sender, RoutedEventArgs e)
+    {
+        BtnLaunchPicker_Click(sender, e);
     }
 
     private void BtnSaveMiniNotice_Click(object sender, RoutedEventArgs e)
     {
-        MessageBox.Show("학급 공지사항이 저장되었습니다.", "공지 저장", MessageBoxButton.OK, MessageBoxImage.Information);
+        try
+        {
+            if (TbMiniNotice != null)
+            {
+                File.WriteAllText(_noticeFile, TbMiniNotice.Text);
+                if (TbMainNotice != null && TbMainNotice.Text != TbMiniNotice.Text)
+                {
+                    TbMainNotice.Text = TbMiniNotice.Text;
+                }
+                MemoWidgetView.NotifyNoticeChanged(TbMiniNotice.Text, this);
+            }
+            HudNotificationWindow.Instance.ShowToast("💾", "학급 공지사항이 저장 및 학생 화면에 동기화되었습니다.");
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"공지 저장 실패: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
     }
 
     private void UpdateMiniDDayDisplay()
     {
-        if (TxtMiniDDayTitle != null) TxtMiniDDayTitle.Text = _miniDDayTitle;
-        if (TxtMiniDDayDate != null) TxtMiniDDayDate.Text = $"목표일: {_miniDDayTarget:yyyy-MM-dd}";
+        var config = _configService.DDayConfig;
+        string title = !string.IsNullOrWhiteSpace(config?.Title) ? config.Title : "여름방학";
+        DateTime target = config != null ? config.TargetDate.Date : DateTime.Today.AddDays(14);
+
+        if (TxtMiniDDayTitle != null) TxtMiniDDayTitle.Text = title;
+        if (TxtMiniDDayDate != null) TxtMiniDDayDate.Text = $"목표일: {target:yyyy-MM-dd}";
         if (TxtMiniDDayCount != null)
         {
-            int days = (_miniDDayTarget.Date - DateTime.Today).Days;
+            int days = (target - DateTime.Today).Days;
             TxtMiniDDayCount.Text = days == 0 ? "D-Day!" : (days > 0 ? $"D-{days}" : $"D+{-days}");
         }
     }
 
     private void BtnSetMiniDDay_Click(object sender, RoutedEventArgs e)
     {
-        _ddayPresetIndex = (_ddayPresetIndex + 1) % _ddayPresets.Length;
-        var preset = _ddayPresets[_ddayPresetIndex];
-        _miniDDayTitle = preset.title;
-        _miniDDayTarget = preset.target;
+        var dlg = new DDayEditDialog(_configService) { Owner = this };
+        dlg.ShowDialog();
         UpdateMiniDDayDisplay();
     }
 
@@ -2295,12 +2379,16 @@ public partial class MainWindow : FluentWindow
         {
             if (File.Exists(_noticeFile))
             {
-                TbMainNotice.Text = File.ReadAllText(_noticeFile);
+                string text = File.ReadAllText(_noticeFile);
+                if (TbMainNotice != null) TbMainNotice.Text = text;
+                if (TbMiniNotice != null) TbMiniNotice.Text = text;
             }
             else
             {
-                TbMainNotice.Text = "• [알림] 오늘 5교시는 음악실에서 수업합니다.\n• [준비물] 수학익힘책 42쪽 풀어오기\n• [과제] 주말 독서록 작성하기";
-                File.WriteAllText(_noticeFile, TbMainNotice.Text);
+                string def = "• [알림] 오늘 5교시는 음악실에서 수업합니다.\n• [준비물] 수학익힘책 42쪽 풀어오기\n• [과제] 주말 독서록 작성하기";
+                if (TbMainNotice != null) TbMainNotice.Text = def;
+                if (TbMiniNotice != null) TbMiniNotice.Text = def;
+                File.WriteAllText(_noticeFile, def);
             }
         }
         catch { }
@@ -2314,6 +2402,10 @@ public partial class MainWindow : FluentWindow
                     if (TbMainNotice != null && TbMainNotice.Text != newText)
                     {
                         TbMainNotice.Text = newText;
+                    }
+                    if (TbMiniNotice != null && TbMiniNotice.Text != newText)
+                    {
+                        TbMiniNotice.Text = newText;
                     }
                 });
             }
@@ -2342,6 +2434,10 @@ public partial class MainWindow : FluentWindow
         try
         {
             File.WriteAllText(_noticeFile, TbMainNotice.Text);
+            if (TbMiniNotice != null && TbMiniNotice.Text != TbMainNotice.Text)
+            {
+                TbMiniNotice.Text = TbMainNotice.Text;
+            }
         }
         catch { }
         MemoWidgetView.NotifyNoticeChanged(TbMainNotice.Text, this);

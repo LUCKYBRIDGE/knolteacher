@@ -442,6 +442,7 @@
                                                     <MenuItem Header="🎲 발표자 뽑기" Click="MenuItemAddWidget_Click" Tag="picker"/>
                                                     <MenuItem Header="📢 학급 공지 배너" Click="MenuItemAddWidget_Click" Tag="notice"/>
                                                     <MenuItem Header="🎯 D-Day 카운트다운" Click="MenuItemAddWidget_Click" Tag="dday"/>
+                                                    <MenuItem Header="☀️ 오늘의 날씨 &amp; 미세먼지" Click="MenuItemAddWidget_Click" Tag="weather"/>
                                                 </ContextMenu>
                                             </Button.ContextMenu>
                                         </Button>
@@ -568,10 +569,8 @@
                                                                     <MenuItem Header="진로활동" Click="MenuQuickSubject_Click" Tag="진로"/>
                                                                 </MenuItem>
                                                                 <MenuItem Header="🏷️ 수업 구분(태그) 설정">
-                                                                    <MenuItem Header="담임 수업" Click="MenuQuickTag_Click" Tag="담임"/>
-                                                                    <MenuItem Header="전담 수업" Click="MenuQuickTag_Click" Tag="전담"/>
-                                                                    <MenuItem Header="교과 교실 (특별실)" Click="MenuQuickTag_Click" Tag="특별실"/>
-                                                                    <MenuItem Header="온라인 / 원격" Click="MenuQuickTag_Click" Tag="원격"/>
+                                                                    <MenuItem Header="🏫 교실 수업" Click="MenuQuickTag_Click" Tag="교실수업"/>
+                                                                    <MenuItem Header="🎒 이동 수업" Click="MenuQuickTag_Click" Tag="이동수업"/>
                                                                     <Separator/>
                                                                     <MenuItem Header="태그 없음" Click="MenuQuickTag_Click" Tag=""/>
                                                                 </MenuItem>
@@ -620,8 +619,9 @@
                                                             </Border>
 
                                                             <!-- Subject + Time Range -->
-                                                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                                                <TextBlock Text="{Binding Subject}" FontSize="13.5" FontWeight="Bold" Margin="0,0,8,0">
+                                                            <DockPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,8,0">
+                                                                <TextBlock DockPanel.Dock="Right" Text="{Binding TimeRange, StringFormat='({0})'}" FontSize="11.5" Foreground="{DynamicResource BeigeTextMuted}" VerticalAlignment="Center" Margin="6,0,0,0"/>
+                                                                <TextBlock Text="{Binding Subject}" FontSize="13.5" FontWeight="Bold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
                                                                     <TextBlock.Style>
                                                                         <Style TargetType="TextBlock">
                                                                             <Setter Property="Foreground" Value="{DynamicResource BeigeTextMain}"/>
@@ -633,8 +633,7 @@
                                                                         </Style>
                                                                     </TextBlock.Style>
                                                                 </TextBlock>
-                                                                <TextBlock Text="{Binding TimeRange, StringFormat='({0})'}" FontSize="11.5" Foreground="{DynamicResource BeigeTextMuted}" VerticalAlignment="Center"/>
-                                                            </StackPanel>
+                                                            </DockPanel>
 
                                                             <!-- Quick action icon (timer / edit / alarm badge) -->
                                                             <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
@@ -1014,13 +1013,13 @@
                                         <!-- Hero Weather -->
                                         <StackPanel Grid.Row="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,8">
                                             <TextBlock x:Name="TxtWeatherIcon" Text="☀️" FontSize="28" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                            <TextBlock x:Name="TxtWeatherTemp" Text="맑음, 18°C" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource BeigeTextMain}" VerticalAlignment="Center"/>
+                                            <TextBlock x:Name="TxtWeatherTemp" Text="18.5°C" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource BeigeTextMain}" VerticalAlignment="Center"/>
                                         </StackPanel>
 
                                         <!-- Details -->
                                         <StackPanel Grid.Row="2" VerticalAlignment="Center">
                                             <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                                                <TextBlock x:Name="TxtWeatherDesc" Text="맑음, 18°C" FontSize="11.5" Foreground="{DynamicResource BeigeTextMuted}"/>
+                                                <TextBlock x:Name="TxtWeatherDesc" Text="맑음" FontSize="11.5" Foreground="{DynamicResource BeigeTextMuted}"/>
                                                 <TextBlock x:Name="TxtWeatherApparent" Text=" (체감 17.5°C)" FontSize="11" Foreground="{DynamicResource BeigeTextMuted}"/>
                                             </StackPanel>
                                             <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
@@ -1091,13 +1090,18 @@
                                                 </StackPanel>
                                             </Border>
                                             <!-- Action Button -->
-                                            <Button Click="BtnMiniPickerDraw_Click" Grid.Row="1" Height="36" Background="#F59E0B" Foreground="White" FontWeight="Bold" FontSize="13" BorderThickness="0" Cursor="Hand">
-                                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></Button.Resources>
-                                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                                    <TextBlock Text="🎲 " FontSize="14" VerticalAlignment="Center"/>
-                                                    <TextBlock Text="무작위 추첨하기" VerticalAlignment="Center"/>
-                                                </StackPanel>
-                                            </Button>
+                                            <StackPanel Grid.Row="1">
+                                                <Button Click="BtnMiniPickerDraw_Click" Height="36" Background="#F59E0B" Foreground="White" FontWeight="Bold" FontSize="13" BorderThickness="0" Cursor="Hand">
+                                                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></Button.Resources>
+                                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                                        <TextBlock Text="🎲 " FontSize="14" VerticalAlignment="Center"/>
+                                                        <TextBlock Text="무작위 추첨하기" VerticalAlignment="Center"/>
+                                                    </StackPanel>
+                                                </Button>
+                                                <Button Click="BtnOpenFullPicker_Click" Height="26" Margin="0,6,0,0" Background="Transparent" Foreground="{DynamicResource BeigeAccent}" BorderThickness="0" FontSize="11" FontWeight="SemiBold" Cursor="Hand" ToolTip="32종 동물 아바타 뽑기 레이스 창 열기">
+                                                    <TextBlock Text="🌱 3D 뽑기 레이스 열기 (Alt+8) →" HorizontalAlignment="Center"/>
+                                                </Button>
+                                            </StackPanel>
                                         </Grid>
                                     </controls:MainWidgetCard>
 
@@ -1138,6 +1142,31 @@
                                             <Button Click="BtnSetMiniDDay_Click" Grid.Row="2" Content="🎯 목표일 변경..." Height="26" Background="White" Foreground="#475569" BorderBrush="#CBD5E1" BorderThickness="1" FontSize="11" Cursor="Hand">
                                                 <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
                                             </Button>
+                                        </Grid>
+                                    </controls:MainWidgetCard>
+
+                                    <!-- 위젯 카드 9 (선택): 오늘의 날씨 & 미세먼지 -->
+                                    <controls:MainWidgetCard x:Name="CardWeather" WidgetId="weather" Title="오늘의 날씨 &amp; 미세먼지" Icon="☀️" MinWidth="300" MinHeight="220" Visibility="Collapsed">
+                                        <Grid Margin="12,10">
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="*"/>
+                                            </Grid.RowDefinitions>
+                                            <DockPanel Grid.Row="0" Margin="0,0,0,8" LastChildFill="True">
+                                                <Button Content="🔄" Click="BtnRefreshWeather_Click" DockPanel.Dock="Right" Width="24" Height="22" Background="Transparent" Foreground="{DynamicResource BeigeTextMuted}" BorderThickness="0" FontSize="13" FontWeight="Bold" Cursor="Hand" ToolTip="날씨 새로고침"/>
+                                                <TextBlock Text="오늘의 기상 &amp; 대기질" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource BeigeTextMain}" VerticalAlignment="Center"/>
+                                            </DockPanel>
+                                            <StackPanel Grid.Row="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,6">
+                                                <TextBlock x:Name="TxtMiniWeatherIcon" Text="☀️" FontSize="32" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                                <StackPanel VerticalAlignment="Center">
+                                                    <TextBlock x:Name="TxtMiniWeatherTemp" Text="18.5°C" FontSize="22" FontWeight="Bold" Foreground="{DynamicResource BeigeTextMain}"/>
+                                                    <TextBlock x:Name="TxtMiniWeatherDesc" Text="맑음 (체감 17.8°C)" FontSize="11.5" Foreground="{DynamicResource BeigeTextMuted}"/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                            <Border Grid.Row="2" Background="#DCFCE7" BorderBrush="#BBF7D0" BorderThickness="1" CornerRadius="8" Padding="8,6" VerticalAlignment="Center">
+                                                <TextBlock x:Name="TxtMiniOutdoorGuide" Text="🏃 실외활동 및 체육수업 정상 가능" FontSize="11" FontWeight="Bold" Foreground="#166534" HorizontalAlignment="Center" TextWrapping="Wrap"/>
+                                            </Border>
                                         </Grid>
                                     </controls:MainWidgetCard>
                                 </Canvas>

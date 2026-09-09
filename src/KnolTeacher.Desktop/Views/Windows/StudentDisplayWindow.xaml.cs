@@ -6,6 +6,7 @@ using System.Windows.Ink;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
+using KnolTeacher.Desktop.Models;
 using KnolTeacher.Desktop.Services;
 using KnolTeacher.Desktop.Views.Controls;
 using KnolTeacher.Desktop.Views.Controls.Widgets;
@@ -22,6 +23,7 @@ public partial class StudentDisplayWindow : Window
     private readonly IQrCodeService _qrCodeService;
     private readonly ITtsService? _ttsService;
     private readonly IDisplayManager? _displayManager;
+    private readonly IWeatherService? _weatherService;
     private int _currentMonitorIndex = 1;
 
     private readonly Stack<Stroke> _undoStack = new();
@@ -38,7 +40,8 @@ public partial class StudentDisplayWindow : Window
         IConfigService configService,
         IQrCodeService qrCodeService,
         ITtsService? ttsService = null,
-        IDisplayManager? displayManager = null)
+        IDisplayManager? displayManager = null,
+        IWeatherService? weatherService = null)
     {
         _soundService = soundService;
         _studentService = studentService;
@@ -48,6 +51,7 @@ public partial class StudentDisplayWindow : Window
         _qrCodeService = qrCodeService;
         _ttsService = ttsService ?? (Application.Current as App)?.Services?.GetService(typeof(ITtsService)) as ITtsService;
         _displayManager = displayManager ?? (Application.Current as App)?.Services?.GetService(typeof(IDisplayManager)) as IDisplayManager;
+        _weatherService = weatherService ?? (Application.Current as App)?.Services?.GetService(typeof(IWeatherService)) as IWeatherService;
 
         InitializeComponent();
 
@@ -77,7 +81,10 @@ public partial class StudentDisplayWindow : Window
         Loaded += (s, e) =>
         {
             PositionToDefaultMonitor();
-            ApplyPresetTools();
+            if (!RestoreWidgetsLayout())
+            {
+                ApplyPresetTools();
+            }
         };
     }
 
@@ -116,12 +123,70 @@ public partial class StudentDisplayWindow : Window
             WidgetCanvas.Children.Remove(target);
             _widgets.Remove(target);
             UpdateDockButtonsState();
+            SaveWidgetsLayout();
+        };
+
+        host.MovedOrResized += (target) =>
+        {
+            SaveWidgetsLayout();
         };
 
         _widgets.Add(host);
         WidgetCanvas.Children.Add(host);
         UpdateDockButtonsState();
+        SaveWidgetsLayout();
         return host;
+    }
+
+    public void SaveWidgetsLayout()
+    {
+        if (!_isReady) return;
+        try
+        {
+            var list = new List<NolboardWidgetState>();
+            foreach (var w in _widgets)
+            {
+                list.Add(new NolboardWidgetState
+                {
+                    Tag = w.WidgetType,
+                    X = Canvas.GetLeft(w),
+                    Y = Canvas.GetTop(w),
+                    Width = w.ActualWidth > 0 ? w.ActualWidth : (double.IsNaN(w.Width) ? 340 : w.Width),
+                    Height = w.ActualHeight > 0 ? w.ActualHeight : (double.IsNaN(w.Height) ? 260 : w.Height)
+                });
+            }
+            _configService.NolboardLayout.Widgets = list;
+            _configService.NolboardLayout.HasCustomLayout = true;
+            _configService.SaveNolboardLayout();
+        }
+        catch { }
+    }
+
+    public bool RestoreWidgetsLayout()
+    {
+        var layout = _configService.NolboardLayout;
+        if (layout == null || !layout.HasCustomLayout || layout.Widgets == null || layout.Widgets.Count == 0)
+        {
+            return false;
+        }
+
+        ClearWidgets();
+        foreach (var state in layout.Widgets)
+        {
+            var host = SpawnWidget(state.Tag, state.X, state.Y);
+            if (host != null)
+            {
+                if (state.Width > 100) host.Width = state.Width;
+                if (state.Height > 80) host.Height = state.Height;
+            }
+        }
+        return _widgets.Count > 0;
+    }
+
+    private void BtnSaveBoardLayout_Click(object sender, RoutedEventArgs e)
+    {
+        SaveWidgetsLayout();
+        MessageBox.Show("현재 놀보드 위젯 배치가 안전하게 저장되었습니다.\n다음에 놀보드를 열 때 이 상태로 자동 복원됩니다.", "놀보드 배치 저장 완료", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     public BoardWidgetHost? FindWidget(string type) => _widgets.Find(w => w.WidgetType == type);
@@ -288,6 +353,8 @@ public partial class StudentDisplayWindow : Window
             "memo" => AddWidget("memo", "📝 학급 알림장", new MemoWidgetView(_configService, _ttsService), nextX, nextY, 360, 340),
             "checklist" => AddWidget("checklist", "📋 과제 체크리스트", new ChecklistWidgetView(_configService, _studentService), nextX, nextY, 360, 360),
             "qr" => AddWidget("qr", "📱 실시간 수업 QR코드", new QrWidgetView(_qrCodeService), nextX, nextY, 320, 360),
+            "weather" => AddWidget("weather", "☀️ 오늘의 날씨 & 미세먼지", new WeatherWidgetView(_weatherService), nextX, nextY, 340, 290),
+            "dday" => AddWidget("dday", "🎯 학급 D-Day", new DDayWidgetView(_configService), nextX, nextY, 340, 240),
             _ => null
         };
     }
@@ -308,6 +375,8 @@ public partial class StudentDisplayWindow : Window
         UpdateBtnState(BtnToolMemo, "memo");
         UpdateBtnState(BtnToolChecklist, "checklist");
         UpdateBtnState(BtnToolQr, "qr");
+        UpdateBtnState(BtnToolWeather, "weather");
+        UpdateBtnState(BtnToolDDay, "dday");
     }
 
     private void UpdateBtnState(Button? btn, string tag)
@@ -612,11 +681,13 @@ public partial class StudentDisplayWindow : Window
 
     private void BtnClose_Click(object sender, RoutedEventArgs e)
     {
+        SaveWidgetsLayout();
         Hide();
     }
 
     protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
     {
+        SaveWidgetsLayout();
         e.Cancel = true;
         Hide();
     }

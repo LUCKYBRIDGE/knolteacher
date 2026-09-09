@@ -46,10 +46,8 @@
                                         <MenuItem Header="진로활동" Click="MenuQuickSubject_Click" Tag="진로"/>
                                     </MenuItem>
                                     <MenuItem Header="🏷️ 수업 구분(태그) 설정">
-                                        <MenuItem Header="담임 수업" Click="MenuQuickTag_Click" Tag="담임"/>
-                                        <MenuItem Header="전담 수업" Click="MenuQuickTag_Click" Tag="전담"/>
-                                        <MenuItem Header="교과 교실 (특별실)" Click="MenuQuickTag_Click" Tag="특별실"/>
-                                        <MenuItem Header="온라인 / 원격" Click="MenuQuickTag_Click" Tag="원격"/>
+                                        <MenuItem Header="🏫 교실 수업" Click="MenuQuickTag_Click" Tag="교실수업"/>
+                                        <MenuItem Header="🎒 이동 수업" Click="MenuQuickTag_Click" Tag="이동수업"/>
                                         <Separator/>
                                         <MenuItem Header="태그 없음" Click="MenuQuickTag_Click" Tag=""/>
                                     </MenuItem>
@@ -79,12 +77,12 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0" Text="{Binding DisplayBadge}" FontWeight="Bold" FontSize="11.5" Foreground="#38BDF8" VerticalAlignment="Center"/>
-                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding Subject}" FontWeight="Bold" FontSize="12.5" Foreground="White" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                    <Border Margin="6,0,0,0" CornerRadius="4" Padding="5,1" Background="#0284C7" Visibility="{Binding IsCurrentPeriod, Converter={StaticResource BoolToVisConverter}}">
+                                <DockPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,6,0">
+                                    <Border DockPanel.Dock="Right" Margin="6,0,0,0" CornerRadius="4" Padding="5,1" Background="#0284C7" Visibility="{Binding IsCurrentPeriod, Converter={StaticResource BoolToVisConverter}}" VerticalAlignment="Center">
                                         <TextBlock Text="현재 수업" FontSize="9.5" FontWeight="Bold" Foreground="White"/>
                                     </Border>
-                                </StackPanel>
+                                    <TextBlock Text="{Binding Subject}" FontWeight="Bold" FontSize="12.5" Foreground="White" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                </DockPanel>
                                 <TextBlock Grid.Column="2" Text="{Binding TimeRange}" FontSize="10" Foreground="#94A3B8" VerticalAlignment="Center" Margin="0,0,6,0"/>
                                 <Button Grid.Column="3" Content="✏️" Click="BtnEdit_Click" Tag="{Binding}" Width="24" Height="22" Padding="0" Background="#1E293B" Foreground="#38BDF8" BorderThickness="0" Cursor="Hand" ToolTip="과목명 수정 (메인 시간표와 자동 연동)"/>
                             </Grid>
