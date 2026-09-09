@@ -161,9 +161,6 @@ public partial class MainWindow
 
         if (e.ChangedButton == MouseButton.Left)
         {
-            // Confirmed popup launchers always target monitor 1 on a normal left-click.
-            // The callback runs after the existing XAML Click/MouseLeftButtonUp handler and
-            // therefore also overrides older launcher code that used monitor 2 by default.
             var visibleBefore = SnapshotVisibleWindows();
             _pendingPopupMonitorIndex = 0;
             _ = window.Dispatcher.BeginInvoke(
@@ -267,25 +264,27 @@ public partial class MainWindow
     {
         if (string.IsNullOrWhiteSpace(text)) return false;
 
-        // NolBoard itself and its internal widget controls are a workspace, not popup launchers.
-        if (text.Contains("놀보드", StringComparison.Ordinal) || text.Contains("위젯", StringComparison.Ordinal))
+        // NolBoard, its internal widgets, screen overlays and floating docks are workspaces/tools,
+        // not ordinary popup windows. Keep them out of the right-click monitor gesture.
+        if (text.Contains("놀보드", StringComparison.Ordinal) ||
+            text.Contains("위젯", StringComparison.Ordinal) ||
+            text.Contains("화면판서", StringComparison.Ordinal) ||
+            text.Contains("칠판보드", StringComparison.Ordinal) ||
+            text.Contains("플로팅", StringComparison.Ordinal))
         {
             return false;
         }
 
         string[] popupSignals =
         {
-            "화면판서",
-            "칠판보드",
-            "수업 타이머",
-            "발표자 추첨",
-            "스마트 실물화상기",
+            "타이머",
+            "추첨",
+            "실물화상기",
             "스마트 자리 바꾸기",
             "교실 소음 신호등",
-            "빠른 QR",
+            "QR코드",
             "학급 관리 허브",
             "사운드보드",
-            "플로팅",
             "복무 계산기",
             "전자 서명",
             "전국 학교 지도",
