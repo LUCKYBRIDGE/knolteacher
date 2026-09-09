@@ -7,13 +7,15 @@ using KnolTeacher.Desktop.Services;
 
 namespace KnolTeacher.Desktop.Views.Controls.Widgets;
 
-public partial class TimerWidgetView : UserControl
+public partial class TimerWidgetView : UserControl, IWidgetLifecycle
 {
     private readonly ISoundService? _soundService;
     private readonly DispatcherTimer _timer;
     private int _remainingSeconds = 300;
     private int _initialSeconds = 300;
     private bool _isRunning = false;
+    private bool _resumeWhenActivated = false;
+    private bool _disposed = false;
 
     public TimerWidgetView(ISoundService? soundService = null)
     {
@@ -26,6 +28,40 @@ public partial class TimerWidgetView : UserControl
     }
 
     private bool _hasPlayedEndChime = false;
+
+    public void Activate()
+    {
+        if (_disposed) return;
+
+        if (_resumeWhenActivated && _isRunning)
+        {
+            _timer.Start();
+        }
+
+        _resumeWhenActivated = false;
+    }
+
+    public void Deactivate()
+    {
+        if (_disposed) return;
+
+        if (_isRunning && _timer.IsEnabled)
+        {
+            _timer.Stop();
+            _resumeWhenActivated = true;
+        }
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+
+        _timer.Stop();
+        _timer.Tick -= Timer_Tick;
+        _resumeWhenActivated = false;
+        _isRunning = false;
+        _disposed = true;
+    }
 
     private void Timer_Tick(object? sender, EventArgs e)
     {
@@ -86,6 +122,7 @@ public partial class TimerWidgetView : UserControl
             int total = Math.Max(1, m * 60 + s);
             _timer.Stop();
             _isRunning = false;
+            _resumeWhenActivated = false;
             _hasPlayedEndChime = false;
             BtnStartPause.Content = "▶ 시작";
             BtnStartPause.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#0284C7"));
@@ -120,6 +157,7 @@ public partial class TimerWidgetView : UserControl
         {
             _timer.Stop();
             _isRunning = false;
+            _resumeWhenActivated = false;
             BtnStartPause.Content = "▶ 계속";
             BtnStartPause.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#0284C7"));
         }
@@ -131,6 +169,7 @@ public partial class TimerWidgetView : UserControl
             }
             _timer.Start();
             _isRunning = true;
+            _resumeWhenActivated = false;
             BtnStartPause.Content = "⏸ 일시정지";
             BtnStartPause.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#EA580C"));
         }
@@ -140,6 +179,7 @@ public partial class TimerWidgetView : UserControl
     {
         _timer.Stop();
         _isRunning = false;
+        _resumeWhenActivated = false;
         _hasPlayedEndChime = false;
         _remainingSeconds = _initialSeconds;
         BtnStartPause.Content = "▶ 시작";
@@ -153,6 +193,7 @@ public partial class TimerWidgetView : UserControl
         {
             _timer.Stop();
             _isRunning = false;
+            _resumeWhenActivated = false;
             _hasPlayedEndChime = false;
             BtnStartPause.Content = "▶ 시작";
             BtnStartPause.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#0284C7"));
