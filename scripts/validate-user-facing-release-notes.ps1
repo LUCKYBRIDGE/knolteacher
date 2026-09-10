@@ -42,18 +42,18 @@ foreach ($pattern in $developerTerms) {
     }
 }
 
-$designImitationTerms = @(
-    '디자인.{0,12}(따라|모방|카피|복제)',
-    '(따라|모방|카피|복제).{0,12}디자인',
-    '디자인.{0,12}참고(?:했|한|하여|해서)',
-    '(?i)inspired by',
-    '(?i)based on.{0,30}design',
-    '(?i)clone of'
+# Public update notes should describe KnolTeacher itself, not point to an external
+# product, web page, or implementation lineage as the basis of a change.
+$externalReferencePatterns = @(
+    '(?i)https?://',
+    '(?i)\bwww\.',
+    '(?i)\b[a-z0-9-]+\.(com|net|org|io|kr)\b',
+    '외부 (제품|서비스).{0,30}(구현 출처|유사성|비교 기준)'
 )
 
-foreach ($pattern in $designImitationTerms) {
+foreach ($pattern in $externalReferencePatterns) {
     if ($notes -match $pattern) {
-        throw "User-facing release notes must not describe design imitation or design-source references."
+        throw "User-facing release notes must describe KnolTeacher itself without external product or source references."
     }
 }
 
