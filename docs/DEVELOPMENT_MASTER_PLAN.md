@@ -1,6 +1,7 @@
 # KnolTeacher Development Master Plan
 
-> 기준 제품: 놀티쳐 (KnolTeacher) v3.0.9 Release 후보  
+> 기준 제품: 놀티쳐 (KnolTeacher) v3.0.9 Stable Release  
+> 자동 업데이트 지원 기준선: v3.0.9 이후 설치본  
 > 목적: 교사용 올인원 Windows 앱을 안정적으로 확장하면서 Local-Only 학생 데이터, 전자칠판 UX, 단일 파일 자동 업데이트 계약을 지킨다.
 
 ## 1. 제품 방향
@@ -48,6 +49,14 @@ KnolTeacher는 수업 도구, 놀보드, 학급 운영, 학생 제시, 교사업
 - updater: GitHub latest stable Release 조회
 
 Release tag, `Directory.Build.props`, 실행 파일 embedded FileVersion이 일치하지 않으면 배포하지 않는다.
+
+### 2.4 자동 업데이트 지원 기준선
+
+- 자동 업데이트 연속성의 공식 기준선은 **v3.0.9**다.
+- v3.0.9 이후 정식 Release는 앱의 `버전 확인 → 다운로드 → 검증 → 설치 위치 교체 → 새 버전 자동 재실행` 흐름을 유지해야 한다.
+- v3.0.9 이전 배포본과의 자동 업데이트 호환은 필수 제품 계약으로 두지 않는다.
+- 앞으로 Release asset transport 이름은 `KnolTeacher.exe`를 기본으로 유지한다.
+- 로컬 사용자 실행 파일명은 계속 `놀티쳐.exe`를 유지한다.
 
 ---
 
@@ -115,6 +124,8 @@ Release tag, `Directory.Build.props`, 실행 파일 embedded FileVersion이 일�
 - [x] 설치 위치의 새 `놀티쳐.exe`만 재실행
 - [x] 업데이트 완료 marker / 새 버전 안내
 - [x] Release workflow restore/build/test/publish/asset 검증/stable publish 자동화
+- [x] draft Release 생성 직후 GitHub API 반영 지연에 대한 retry 처리
+- [x] v3.0.9 → v3.0.10 / v3.1.0 / v4.0.0 semantic version 회귀 테스트 추가
 
 ### 팝업 멀티 모니터 UX — 완료
 
@@ -127,32 +138,37 @@ Release tag, `Directory.Build.props`, 실행 파일 embedded FileVersion이 일�
 
 ---
 
-## 4. v3.0.9 Release 완료 조건
+## 4. v3.0.9 Release 마감 상태
 
-다음 항목을 모두 만족해야 v3.0.9 stable로 공개한다.
+v3.0.9는 아래 자동 검증과 배포 조건을 모두 만족한 stable Release다.
 
 - [x] 업데이트/팝업 UX PR CI 통과 및 main 병합
 - [x] 일정 UX PR CI 통과 및 main 병합
 - [x] 놀보드 안정화 PR CI 통과 및 main 병합
 - [x] 문서의 버전/배포/멀티 모니터 계약을 실제 코드와 일치시킴
-- [ ] 문서 정합성 PR CI 통과 및 main 병합
-- [ ] main 최종 CI 성공 확인
-- [ ] `release/release-version.txt`를 3.0.9로 승격하는 Release PR 병합
-- [ ] Release workflow의 restore/build/test/publish 성공
-- [ ] GitHub latest stable tag가 `v3.0.9`
-- [ ] Release asset이 `KnolTeacher.exe` 정확히 1개
-- [ ] asset digest/size/embedded version 검증 성공
+- [x] 문서 정합성 PR CI 통과 및 main 병합
+- [x] main 최종 CI 성공 확인
+- [x] `release/release-version.txt`를 3.0.9로 승격하는 Release PR 병합
+- [x] Release workflow의 restore/build/test/publish 성공
+- [x] GitHub latest stable tag가 `v3.0.9`
+- [x] Release asset이 `KnolTeacher.exe` 정확히 1개
+- [x] asset digest/size/embedded version 검증 성공
+- [x] draft Release API race 재발 방지 workflow 보강 및 CI 통과
+- [x] v3.0.9 이후 semantic version 업데이트 계약 테스트 보강
+- [x] v3.0.9 마감 시점의 stale/superseded 열린 PR 정리
 
-가능한 경우 실제 Windows 교실 PC에서 다음 smoke test도 수행한다.
+실제 Windows 교실 PC의 물리적 상호작용은 CI가 대체할 수 없으므로 다음 smoke test는 배포 후 운영 검증 항목으로 유지한다.
 
-- 기존 앱 실행
-- 버전 확인
-- v3.0.9 다운로드
+- v3.0.9 설치본 실행
+- 이후 새 버전이 나왔을 때 버전 확인
+- 새 버전 다운로드
 - 교체
 - 자동 재실행
-- 상단 버전 `v3.0.9` 표시
+- 상단 버전이 새 실행 파일의 실제 버전으로 표시되는지 확인
 - 듀얼 모니터 popup 좌/우 클릭 확인
 - 놀보드 위젯 반복 생성/닫기/재열기/resize
+
+이 운영 smoke test에서 문제가 발견되면 같은 버전의 Release asset을 교체하지 않고 다음 patch 버전으로 수정한다.
 
 ---
 
@@ -230,7 +246,7 @@ public sealed record SaveResult(bool Success, string? ErrorCode = null);
 
 - Local-Only / 번호 우선
 - 단일 파일 배포
-- 안전한 updater 검증
+- v3.0.9 이후 안전한 updater 연속성
 - 위젯 lifecycle
 - NEIS 최종 저장 수동 확인
 - 듀얼 모니터 fallback
@@ -260,5 +276,6 @@ public sealed record SaveResult(bool Success, string? ErrorCode = null);
 6. `dist-net/놀티쳐.exe` 한 파일 계약을 유지함
 7. 문서가 실제 동작과 충돌하지 않음
 8. 배포가 필요한 변경은 GitHub Release까지 검증됨
+9. v3.0.9 이후 자동 업데이트 연속성을 깨는 변경은 허용하지 않음
 
 실제 구현 상태가 계획 문서보다 우선하며, 계획과 구현이 달라지면 문서를 다시 맞춘다.
