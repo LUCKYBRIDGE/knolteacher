@@ -19,8 +19,9 @@
 - GitHub Release transport asset: `KnolTeacher.exe` 1개
 - 사용자 PC의 로컬 실행 파일명: `놀티쳐.exe`
 - .NET 런타임 별도 설치 불필요
+- 자동 업데이트 연속성 공식 기준선: **v3.0.9 이후 설치본**
 
-기존 사용자는 바탕화면의 `놀티쳐.exe`에서 **버전 확인 → 업데이트 → 자동 재실행** 흐름을 사용한다. 다운로드 파일은 GitHub HTTPS 주소, 크기, SHA-256, embedded FileVersion을 검증하고 설치 위치의 `놀티쳐.exe`로 교체한 뒤 새 버전을 다시 실행한다.
+v3.0.9 이후 설치본은 바탕화면의 `놀티쳐.exe`에서 **버전 확인 → 업데이트 → 자동 재실행** 흐름을 사용한다. 다운로드 파일은 GitHub HTTPS 주소, 크기, SHA-256, embedded FileVersion을 검증하고 설치 위치의 `놀티쳐.exe`로 교체한 뒤 새 버전을 다시 실행한다. v3.0.9 이전 배포본에서의 자동 업데이트 호환은 필수 지원 범위로 두지 않는다.
 
 개발자가 `publish.bat`을 실행하면 `dist-net\놀티쳐.exe` 한 파일만 생성되도록 검증한다.
 
@@ -30,10 +31,11 @@
 
 - 화면의 버전 숫자를 하드코딩하지 않고 실제 실행 중인 Assembly/FileVersion에서 표시한다.
 - GitHub Release에서는 `KnolTeacher.exe`를 안정적인 ASCII transport 이름으로 사용하고, 로컬에서는 계속 `놀티쳐.exe`를 사용한다.
-- updater는 `KnolTeacher.exe`와 과거 호환용 `놀티쳐.exe`만 허용한다.
+- updater는 `KnolTeacher.exe`와 구현상 legacy `놀티쳐.exe`를 허용한다. 공식 미래 Release는 `KnolTeacher.exe`를 사용한다.
 - asset 크기와 SHA-256뿐 아니라 다운로드한 실행 파일 내부 FileVersion이 대상 Release와 같은지도 확인한다.
 - 앱 종료 후 설치 위치의 `놀티쳐.exe`를 재시도 교체하고 SHA-256을 다시 검증한 경우에만 새 버전을 재실행한다.
 - 새 버전이 다시 열리면 업데이트 완료 상태를 안내한다.
+- v3.0.9 이후에는 `3.0.10`, `3.1.0`처럼 버전 자릿수나 minor가 바뀌어도 semantic version 순서로 업데이트를 판단한다.
 
 ### 🖥️ 팝업과 위젯의 멀티 모니터 UX 정리
 

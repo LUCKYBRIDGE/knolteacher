@@ -21,6 +21,10 @@ public class UpdateServiceContractTests
     [InlineData("v3.0.9", "v3.0.8", true)]
     [InlineData("v3.0.8", "v3.0.8", false)]
     [InlineData("v3.0.7", "v3.0.8", false)]
+    [InlineData("v3.0.10", "v3.0.9", true)]
+    [InlineData("v3.1.0", "v3.0.9", true)]
+    [InlineData("v4.0.0", "v3.0.9", true)]
+    [InlineData("v3.0.9", "v3.0.10", false)]
     public void VersionComparison_UsesSemanticVersionOrdering(string latest, string current, bool expected)
     {
         Assert.Equal(expected, UpdateService.IsNewerVersion(latest, current));
@@ -29,6 +33,8 @@ public class UpdateServiceContractTests
     [Theory]
     [InlineData("v3.0.9", "3.0.9.0", true)]
     [InlineData("3.0.9", "v3.0.9", true)]
+    [InlineData("v3.0.10", "3.0.10.0", true)]
+    [InlineData("v3.1.0", "3.1.0.0", true)]
     [InlineData("v3.0.9", "v3.0.8", false)]
     [InlineData("invalid", "v3.0.9", false)]
     public void SameProductVersion_UsesMajorMinorBuild(string left, string right, bool expected)

@@ -5,7 +5,8 @@
 ## 1. 기준 상태
 
 - 제품명: 놀티쳐 (KnolTeacher)
-- 기준 버전: v3.0.9 Release 후보
+- 기준 버전: v3.0.9 Stable Release
+- 자동 업데이트 연속성 기준선: v3.0.9 이후 설치본
 - 플랫폼: Windows 10/11 x64
 - 프레임워크: .NET 8 WPF
 - 앱 프로젝트: `src/KnolTeacher.Desktop/KnolTeacher.Desktop.csproj`
@@ -14,7 +15,7 @@
 - 로컬 사용자 실행 파일: `놀티쳐.exe`
 - GitHub Release transport asset: `KnolTeacher.exe`
 
-버전과 브랜치는 계속 변경되므로 작업 시작 시 현재 `main`, 최신 Release, 열린 PR, Actions와 `Directory.Build.props`를 다시 확인한다.
+버전과 브랜치는 계속 변경되므로 작업 시작 시 현재 `main`, 최신 Release, 열린 PR, Actions와 `Directory.Build.props`를 다시 확인한다. v3.0.9 이후 첫 데스크톱 코드 변경은 반드시 중앙 버전을 다음 버전으로 올린 뒤 진행한다.
 
 ## 2. 제품 정의
 
@@ -176,15 +177,18 @@ v3.0.9부터 UI의 중심 개념은 `일정`이다.
 
 ## 8. 자동 업데이트 계약
 
+v3.0.9가 자동 업데이트 연속성의 공식 기준선이다. v3.0.9 이전 배포본과의 자동 업데이트 호환은 필수 지원 범위가 아니다.
+
 ### 버전
 
-`Directory.Build.props` → `.csproj` Version/AssemblyVersion/FileVersion/InformationalVersion → 실행 중 UI 표시는 같은 버전 계약을 사용한다.
+`Directory.Build.props` → `.csproj` Version/AssemblyVersion/FileVersion/InformationalVersion → 실행 중 UI 표시는 같은 버전 계약을 사용한다. `3.0.9 → 3.0.10 → 3.1.0`처럼 자릿수와 minor가 바뀌는 경우에도 semantic version 비교를 사용한다.
 
 ### 파일명
 
 - 개발/로컬 최종 산출물: `dist-net/놀티쳐.exe`
 - GitHub Release asset: `KnolTeacher.exe`
-- updater 호환 허용 이름: `KnolTeacher.exe`, legacy `놀티쳐.exe`
+- updater 구현상 허용 이름: `KnolTeacher.exe`, legacy `놀티쳐.exe`
+- 공식 미래 Release transport 이름: `KnolTeacher.exe`
 - `default.exe`, `setup.exe` 등 임의 이름은 허용하지 않는다.
 
 ### 검증/적용
@@ -213,7 +217,8 @@ v3.0.9부터 UI의 중심 개념은 `일정`이다.
 - embedded FileVersion을 tag 버전과 비교한다.
 - GitHub에는 `KnolTeacher.exe` 한 asset만 업로드한다.
 - upload asset 크기와 digest를 검증한다.
-- 모든 검증이 끝난 후에만 draft를 stable로 공개한다.
+- Release는 draft에서 asset 검증을 끝낸 뒤에만 stable로 공개한다.
+- draft 생성 직후 GitHub API 반영 지연은 retry로 흡수하며, 검증 실패 시 stable 공개하지 않는다.
 
 ## 10. 검증 기준
 
