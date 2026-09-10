@@ -31,17 +31,10 @@ $forbiddenPatterns = @(
     '커밋',
     '풀 리퀘스트',
     '내부 구현',
-    '스타일',
-    '따라했',
-    '따라한',
-    '따라 하',
-    '참고했',
-    '참고한',
-    '모방',
-    '카피',
-    '(?i)inspired by',
-    '(?i)based on.{0,30}design',
-    '(?i)clone of'
+    '(?i)https?://',
+    '(?i)\bwww\.',
+    '(?i)\b[a-z0-9-]+\.(com|net|org|io|kr)\b',
+    '외부 (제품|서비스).{0,30}(구현 출처|유사성|비교 기준)'
 )
 
 foreach ($entry in $entries) {
@@ -72,7 +65,7 @@ foreach ($entry in $entries) {
 
     foreach ($pattern in $forbiddenPatterns) {
         if ($title -match $pattern -or $body -match $pattern) {
-            throw "Release '$tag' contains developer-oriented or imitation wording matching: $pattern"
+            throw "Release '$tag' contains developer-oriented or external-source wording matching: $pattern"
         }
     }
 }
