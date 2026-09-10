@@ -66,4 +66,7 @@ if ($notes.Length -gt 5000) {
     throw "User-facing release notes are too long for the in-app update dialog. Keep them concise."
 }
 
+# External commands executed before this script can leave a non-zero LASTEXITCODE in the
+# shared PowerShell runspace. A successful validation must explicitly clear that stale state.
+$global:LASTEXITCODE = 0
 Write-Host "User-facing release notes validated for v$Version ($bulletCount bullet points)."
