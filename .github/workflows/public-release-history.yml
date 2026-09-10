@@ -1,0 +1,48 @@
+name: Public Release History
+
+on:
+  pull_request:
+    paths:
+      - "release/public-release-history.json"
+      - "scripts/apply-user-facing-release-history.ps1"
+      - ".github/workflows/public-release-history.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "release/public-release-history.json"
+      - "scripts/apply-user-facing-release-history.ps1"
+      - ".github/workflows/public-release-history.yml"
+
+jobs:
+  validate:
+    name: Validate historical release notes
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate user-facing history
+        shell: pwsh
+        run: |
+          & "scripts/apply-user-facing-release-history.ps1" -Path "release/public-release-history.json"
+
+  apply:
+    name: Rewrite published release descriptions
+    if: github.event_name == 'push'
+    needs: validate
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Apply user-facing history
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          & "scripts/apply-user-facing-release-history.ps1" -Path "release/public-release-history.json" -Apply
