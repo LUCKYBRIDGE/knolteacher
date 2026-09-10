@@ -1,0 +1,51 @@
+name: User-facing Release Notes
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "release/user-facing-notes.md"
+      - "release/README.md"
+      - "scripts/validate-user-facing-release-notes.ps1"
+      - ".github/workflows/release.yml"
+      - ".github/workflows/release-notes.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "release/user-facing-notes.md"
+      - "release/README.md"
+      - "scripts/validate-user-facing-release-notes.ps1"
+      - ".github/workflows/release.yml"
+      - ".github/workflows/release-notes.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate user-facing update notes
+    runs-on: windows-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve version
+        shell: pwsh
+        run: |
+          [xml]$props = Get-Content "Directory.Build.props"
+          $version = [string]$props.Project.PropertyGroup.KnolTeacherVersion
+          if ([string]::IsNullOrWhiteSpace($version)) {
+            throw "Directory.Build.props does not define KnolTeacherVersion."
+          }
+          "NOTES_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Validate user-facing release notes
+        shell: pwsh
+        run: |
+          & "scripts/validate-user-facing-release-notes.ps1" -Version "$env:NOTES_VERSION" -Path "release/user-facing-notes.md"
+          if ($LASTEXITCODE -ne 0) { throw "User-facing release notes validation failed." }
