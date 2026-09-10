@@ -5,7 +5,8 @@
 ## 1. 현재 구현 기준
 
 - 제품: 놀티쳐 (KnolTeacher)
-- 현재 개발 버전: v3.0.9 (Release 후보)
+- 현재 기준 버전: v3.0.9 (Stable Release)
+- 자동 업데이트 연속성 기준선: v3.0.9 이후 설치본
 - 버전 SSOT: 루트 `Directory.Build.props`의 `KnolTeacherVersion`
 - 주력 구현: C# / .NET 8 / WPF
 - 대상: Windows 10/11 x64
@@ -13,7 +14,7 @@
 - 앱 프로젝트: `src/KnolTeacher.Desktop/KnolTeacher.Desktop.csproj`
 - 과거 Python 구현: `legacy-python/`에 보관
 
-작업 시작 시 문서에 적힌 버전을 그대로 신뢰하지 말고 GitHub의 현재 `main`, 최신 Release, 열린 PR, Actions와 `Directory.Build.props`의 `KnolTeacherVersion`을 먼저 확인한다.
+작업 시작 시 문서에 적힌 버전을 그대로 신뢰하지 말고 GitHub의 현재 `main`, 최신 Release, 열린 PR, Actions와 `Directory.Build.props`의 `KnolTeacherVersion`을 먼저 확인한다. v3.0.9 stable 이후 데스크톱 앱 코드를 변경하는 첫 PR은 반드시 `KnolTeacherVersion`을 다음 버전으로 먼저 올린다.
 
 ## 2. 정보 우선순위
 
@@ -208,12 +209,12 @@ publish.bat
 
 ## 12. 단일 파일 Release / 자동 업데이트 계약
 
-이 계약은 기존 설치본의 연속성을 위해 깨뜨리지 않는다.
+이 계약은 **v3.0.9 이후 설치본의 업데이트 연속성**을 위해 깨뜨리지 않는다. v3.0.9 이전 배포본에서의 자동 업데이트 호환은 필수 제품 계약이 아니다.
 
 - 공식 Windows 배포물은 `win-x64`, self-contained, single-file 실행 파일 하나다.
 - 로컬 사용자 실행 파일명은 `놀티쳐.exe`다.
 - GitHub Release의 기본 transport asset 이름은 ASCII `KnolTeacher.exe`다.
-- updater는 `KnolTeacher.exe`와 과거 호환용 `놀티쳐.exe`만 허용한다. `default.exe`, `setup.exe` 등 임의 이름을 허용하지 않는다.
+- updater는 `KnolTeacher.exe`와 구현상 legacy `놀티쳐.exe`를 허용한다. 공식 미래 Release는 `KnolTeacher.exe`를 사용하며 `default.exe`, `setup.exe` 등 임의 이름을 허용하지 않는다.
 - GitHub Release에는 실행 asset을 정확히 하나만 둔다.
 - Release tag는 `vX.Y.Z`이고 `KnolTeacherVersion`과 일치해야 한다.
 - 빌드된 실행 파일의 embedded FileVersion이 Release 버전과 일치해야 한다.
@@ -221,7 +222,8 @@ publish.bat
 - 다운로드한 실행 파일 자체의 embedded version도 대상 Release와 일치해야 한다.
 - 업데이트 적용 후 설치 위치의 `놀티쳐.exe`가 다운로드 파일과 같은 SHA-256인지 확인한 뒤에만 새 프로세스를 연다.
 - 업데이트 완료 후에는 임시 다운로드 파일이 아니라 설치 위치의 새 `놀티쳐.exe`를 재실행한다.
-- 기존 사용자는 별도 installer 없이 앱의 버전 확인 → 업데이트 → 자동 재실행 흐름을 유지한다.
+- v3.0.9 이후 설치본은 별도 installer 없이 앱의 버전 확인 → 업데이트 → 자동 재실행 흐름을 유지한다.
+- `3.0.9 → 3.0.10 → 3.1.0`처럼 자릿수나 minor가 바뀌어도 semantic version 순서로 비교해야 한다.
 - 개발 커밋마다 Release하지 않고 검증된 기능 묶음을 버전으로 확정한 뒤 Release한다.
 
 ## 13. 개발 로드맵
