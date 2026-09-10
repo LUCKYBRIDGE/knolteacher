@@ -123,6 +123,12 @@ jobs:
             throw "Release commit version '$checkedVersion' does not match '$env:RELEASE_VERSION'."
           }
 
+      - name: Validate user-facing release notes
+        shell: pwsh
+        run: |
+          & "scripts/validate-user-facing-release-notes.ps1" -Version "$env:RELEASE_VERSION" -Path "release/user-facing-notes.md"
+          if ($LASTEXITCODE -ne 0) { throw "User-facing release notes validation failed." }
+
       - name: Restore
         run: dotnet restore KnolTeacher.sln
 
@@ -186,7 +192,8 @@ jobs:
           if ($matches.Count -gt 1) { throw "Multiple releases found for '$env:RELEASE_TAG'." }
 
           if ($matches.Count -eq 0) {
-            gh release create "$env:RELEASE_TAG" --verify-tag --title "$env:RELEASE_TAG" --generate-notes --notes "SHA-256: $env:RELEASE_SHA256" --draft
+            $releaseTitle = "놀티쳐 $env:RELEASE_TAG 업데이트"
+            gh release create "$env:RELEASE_TAG" --verify-tag --title "$releaseTitle" --notes-file "release/user-facing-notes.md" --draft
             if ($LASTEXITCODE -ne 0) { throw "Unable to create draft GitHub Release '$env:RELEASE_TAG'." }
 
             # GitHub can briefly return a stale release collection immediately after
@@ -206,6 +213,17 @@ jobs:
           if ($matches.Count -ne 1 -or $null -eq $matches[0].id) { throw "Unable to resolve release ID for '$env:RELEASE_TAG'." }
           if ($matches[0].draft -ne $true) { throw "Refusing to overwrite an already-published release." }
           "RELEASE_ID=$($matches[0].id)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+          # Always refresh draft metadata from the validated user-facing notes file.
+          # This also handles a draft reused after an interrupted release attempt.
+          $releaseTitle = "놀티쳐 $env:RELEASE_TAG 업데이트"
+          $notesBody = (Get-Content -LiteralPath "release/user-facing-notes.md" -Raw).Trim()
+          $metadataPayload = @{
+            name = $releaseTitle
+            body = $notesBody
+          } | ConvertTo-Json -Compress
+          $metadataPayload | gh api --method PATCH "repos/$env:GITHUB_REPOSITORY/releases/$($matches[0].id)" --input - | Out-Null
+          if ($LASTEXITCODE -ne 0) { throw "Unable to apply user-facing release notes to draft release." }
 
       - name: Upload stable GitHub asset
         shell: pwsh
